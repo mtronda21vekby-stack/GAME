@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b1220">
+  <title>BlackCrown — EvoFish</title>
+  <meta name="description" content="BlackCrown — EvoFish. Играй в браузере на телефоне/ПК.">
+  <link rel="manifest" href="/site/manifest.webmanifest">
+  <link rel="icon" href="/site/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/site/assets/app.css">
+</head>
+<body>
+  <div class="bg"><div class="grain"></div><div class="g g1"></div><div class="g g2"></div><div class="g g3"></div></div>
+
+  <header class="top">
+    <a class="brand" href="/"><span class="dot"></span><span>BlackCrown</span></a>
+    <nav class="nav">
+      <a href="#features">Фичи</a>
+      <a href="#deploy">Деплой</a>
+      <a href="/site/support.html">Поддержка</a>
+    </nav>
+    <div class="act">
+      <button class="ib" id="themeBtn" aria-label="Theme">◐</button>
+      <a class="cta" href="/game/"><span class="pill">EvoFish</span><span>Играть</span></a>
+      <button class="ib hamb" id="menuBtn" aria-label="Menu">≡</button>
+    </div>
+  </header>
+
+  <aside class="drawer" id="drawer" aria-hidden="true">
+    <div class="drawerCard">
+      <div class="drawerTop">
+        <div class="drawerTitle">Меню</div>
+        <button class="ib" id="closeBtn" aria-label="Close">✕</button>
+      </div>
+      <a class="dlink" href="#features">Фичи</a>
+      <a class="dlink" href="#deploy">Деплой</a>
+      <a class="dlink" href="/site/support.html">Поддержка</a>
+      <a class="dlink strong" href="/game/">▶ Открыть EvoFish</a>
+      <div class="hint">PWA: добавь сайт на Home Screen — будет как приложение.</div>
+    </div>
+  </aside>
+
+  <main class="wrap">
+    <section class="hero">
+      <div class="hl">
+        <div class="k">Browser • Mobile • Cloud</div>
+        <h1>EvoFish — v0.00.1 alpha</h1>
+        <p class="lead">Рост → эволюция → мутации → биомы → NPC. Управление: touch + клавиатура + геймпад.</p>
+        <div class="btns">
+          <a class="btn p" href="/game/">▶ Играть</a>
+          <a class="btn g" href="#features">⌁ Подробнее</a>
+        </div>
+        <div class="chips">
+          <span class="chip">Звук по умолчанию OFF</span>
+          <span class="chip">60 FPS target</span>
+          <span class="chip">/game/ no-cache</span>
+        </div>
+      </div>
+      <div class="hr">
+        <div class="card">
+          <div class="cardTop"><div class="dots"><i></i><i></i><i></i></div><div class="muted">blackcrown.work</div><div class="live">LIVE</div></div>
+          <div class="prev">
+            <div class="ring"></div>
+            <div class="hud">
+              <div class="row"><b>EvoFish</b><span class="muted">Tier 1 • Level 1</span></div>
+              <div class="bars"><div class="bar"><i style="width:78%"></i></div><div class="bar b"><i style="width:35%"></i></div></div>
+              <div class="icons"><span>⚙</span><span>🛠</span><span>🎨</span><span>🏷</span></div>
+            </div>
+          </div>
+          <div class="cardFoot"><span class="muted">Safari iOS / Edge / Chrome</span><a class="lnk" href="/game/">Открыть →</a></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec" id="features">
+      <h2>Фичи</h2>
+      <div class="grid">
+        <article class="c">
+          <div class="tag">GAME</div><h3>Игра</h3>
+          <ul>
+            <li>Один файл (index.html) — удобно тестить</li>
+            <li>Прогресс/настройки в localStorage</li>
+            <li>Опционально: онлайн-лобби (позже)</li>
+          </ul>
+        </article>
+        <article class="c">
+          <div class="tag t2">SITE</div><h3>Сайт</h3>
+          <ul>
+            <li>Apple-like UI, без библиотек</li>
+            <li>PWA + оффлайн для /site/</li>
+            <li>Privacy/Terms/Support</li>
+          </ul>
+        </article>
+        <article class="c">
+          <div class="tag t3">CLOUD</div><h3>Cloudflare Pages</h3>
+          <ul>
+            <li>Деплой по push из GitHub</li>
+            <li>HTTPS + кастом домен</li>
+            <li>Кеш-контроль через _headers</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="sec" id="deploy">
+      <h2>Деплой</h2>
+      <div class="c wide">
+        <ol>
+          <li>Заливаешь этот репозиторий в GitHub.</li>
+          <li>Cloudflare → Pages → Create project → Connect to Git → выбираешь repo.</li>
+          <li>Framework preset: <b>None</b>. Build command: пусто. Output: <b>/</b>.</li>
+          <li>Pages → Custom domains: добавь <b>blackcrown.work</b> и (опционально) <b>www</b>.</li>
+        </ol>
+        <div class="muted">Игра будет по адресу <b>/game/</b>, сайт — <b>/</b>.</div>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <div class="muted">© <span id="y"></span> BlackCrown • v0.00.1 alpha</div>
+      <div class="links">
+        <a href="/site/terms.html">Terms</a>
+        <a href="/site/privacy.html">Privacy</a>
+        <a href="/site/support.html">Support</a>
+      </div>
+    </footer>
+  </main>
+
+  <script src="/site/assets/app.js" defer></script>
+</body>
+</html>
