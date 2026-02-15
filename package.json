@@ -4,22 +4,23 @@
   "packageManager": "pnpm@9.15.4",
   "type": "module",
   "scripts": {
-    "dev": "pnpm -r --parallel dev",
+    "dev": "pnpm -r --parallel --if-present dev",
 
-    "build": "pnpm -r build",
     "build:site": "pnpm --filter @blackcrown/site build",
     "build:game": "pnpm --filter @blackcrown/game build",
     "build:lobby": "pnpm --filter @blackcrown/lobby build",
+
+    "build": "pnpm build:site && pnpm build:game && pnpm build:lobby",
+
+    "assemble": "node scripts/assemble.mjs",
+    "build:prod": "pnpm build && pnpm assemble",
 
     "dev:site": "pnpm --filter @blackcrown/site dev",
     "dev:game": "pnpm --filter @blackcrown/game dev",
     "dev:lobby": "pnpm --filter @blackcrown/lobby dev",
 
-    "typecheck": "pnpm -r typecheck",
-    "lint": "pnpm -r lint",
-
-    "assemble": "node scripts/assemble.mjs",
-    "build:prod": "pnpm build && pnpm assemble"
+    "typecheck": "pnpm -r --if-present typecheck",
+    "lint": "pnpm -r --if-present lint"
   },
   "devDependencies": {
     "@types/react": "^18.3.6",
