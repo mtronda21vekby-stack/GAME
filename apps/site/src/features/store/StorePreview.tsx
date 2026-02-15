@@ -1,39 +1,71 @@
 import React from "react";
 import { Button } from "@blackcrown/ui";
 
-const skins = [
-  { id: "glass-fin", name: "Glass Fin", price: "$1.99", tone: "rgba(140,180,255,0.25)" },
-  { id: "midnight-coral", name: "Midnight Coral", price: "$2.99", tone: "rgba(190,90,255,0.22)" },
-  { id: "neon-pearl", name: "Neon Pearl", price: "$4.99", tone: "rgba(80,255,210,0.16)" }
-];
+type Item = {
+  id: string;
+  name: string;
+  desc: string;
+  price: string;
+  rarity: "обычный" | "редкий" | "эпик";
+};
 
-export function StorePreview(props: { onBuy: () => void }) {
+export function StorePreview(props: { onBuy: (id: string) => void }) {
+  const items: Item[] = [
+    { id: "skin_glass_01", name: "Скин: Glasswave", desc: "Стеклянный отблеск + мягкий спектр.", price: "—", rarity: "эпик" },
+    { id: "skin_chrome_02", name: "Скин: Chrome Mist", desc: "Холодный хром, тонкие линии.", price: "—", rarity: "редкий" },
+    { id: "skin_noir_03", name: "Скин: Noir", desc: "Чистый минимализм без шума.", price: "—", rarity: "обычный" }
+  ];
+
   return (
-    <div className="bc-col">
-      <div className="bc-p">Visual preview only. Purchases disabled (stub).</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
-        {skins.map((s) => (
-          <div key={s.id} className="bc-card" style={{ padding: 14, borderRadius: 18, background: "rgba(255,255,255,0.06)" }}>
-            <div style={{
-              height: 110,
-              borderRadius: 14,
-              border: "1px solid var(--stroke)",
-              background: `radial-gradient(200px 140px at 20% 30%, ${s.tone}, transparent 60%), rgba(255,255,255,0.04)`
-            }} />
-            <div style={{ marginTop: 10, fontWeight: 850 }}>{s.name}</div>
-            <div className="bc-p">{s.price}</div>
-            <div style={{ marginTop: 10 }}>
-              <Button variant="primary" onClick={props.onBuy}>Buy (stub)</Button>
-            </div>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
+      {items.map((it) => (
+        <div key={it.id} className="glass bc-motion" style={{ padding: 14, borderRadius: 16 }}>
+          <div className="bc-row" style={{ justifyContent: "space-between", gap: 10 }}>
+            <div style={{ fontWeight: 900 }}>{it.name}</div>
+            <Rarity r={it.rarity} />
           </div>
-        ))}
-      </div>
+
+          <div className="bc-p" style={{ marginTop: 8 }}>{it.desc}</div>
+
+          <div className="bc-divider" style={{ marginTop: 12 }} />
+
+          <div className="bc-row" style={{ justifyContent: "space-between", marginTop: 10, gap: 10, flexWrap: "wrap" }}>
+            <div className="bc-faint" style={{ fontWeight: 800 }}>Цена: {it.price}</div>
+            <Button variant="secondary" onClick={() => props.onBuy(it.id)}>
+              Купить (скоро)
+            </Button>
+          </div>
+        </div>
+      ))}
 
       <style>{`
-        @media (max-width: 900px){
+        @media (max-width: 980px){
+          div[style*="gridTemplateColumns: repeat(3"]{ grid-template-columns: 1fr 1fr !important; }
+        }
+        @media (max-width: 640px){
           div[style*="gridTemplateColumns: repeat(3"]{ grid-template-columns: 1fr !important; }
         }
       `}</style>
+    </div>
+  );
+}
+
+function Rarity(props: { r: "обычный" | "редкий" | "эпик" }) {
+  const bg =
+    props.r === "эпик" ? "rgba(190,90,255,0.16)" :
+    props.r === "редкий" ? "rgba(120,160,255,0.14)" :
+    "rgba(255,255,255,0.10)";
+
+  return (
+    <div style={{
+      padding: "6px 10px",
+      borderRadius: 999,
+      border: "1px solid var(--stroke)",
+      background: bg,
+      fontSize: 13,
+      fontWeight: 900
+    }}>
+      {props.r}
     </div>
   );
 }
