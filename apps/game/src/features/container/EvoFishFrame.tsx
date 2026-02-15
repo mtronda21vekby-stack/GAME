@@ -1,176 +1,176 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Button } from "@blackcrown/ui";
-import { track } from "@blackcrown/core";
+import React, { useMemo, useRef, useState } from "react";
 import type { GameSettings } from "./SettingsPanel";
 
-type Props = {
-  src: string;
-  settings: GameSettings;
-};
+function supportsNativeFullscreen(el: HTMLElement | null): boolean {
+  if (!el) return false;
+  const anyEl = el as any;
+  return Boolean(anyEl.requestFullscreen || anyEl.webkitRequestFullscreen);
+}
 
-export function EvoFishFrame({ src, settings }: Props) {
+async function tryNativeFullscreen(el: HTMLElement | null): Promise<boolean> {
+  if (!el) return false;
+  const anyEl = el as any;
+  const req =
+    anyEl.requestFullscreen ||
+    anyEl.webkitRequestFullscreen ||
+    anyEl.mozRequestFullScreen ||
+    anyEl.msRequestFullscreen;
+
+  if (!req) return false;
+
+  try {
+    await req.call(el);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function tryExitNativeFullscreen(): Promise<void> {
+  const d: any = document;
+  const exit =
+    document.exitFullscreen ||
+    d.webkitExitFullscreen ||
+    d.mozCancelFullScreen ||
+    d.msExitFullscreen;
+
+  try {
+    if (exit) await exit.call(document);
+  } catch {
+    // ignore
+  }
+}
+
+export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
-  const [immersive, setImmersive] = useState(false);
-  const [loaded, setLoaded] = useState(false);
+  // Pseudo fullscreen (works on iOS always)
+  const [pseudoFs, setPseudoFs] = useState(false);
 
-  const summary = useMemo(() => {
-    return `Quality: ${settings.quality}, Input: ${settings.inputMode}, FPS: ${settings.fpsCounter ? "ON" : "OFF"}, Sound: ${settings.sound ? "ON" : "OFF"}`;
-  }, [settings]);
+  const meta = useMemo(() => {
+    const s = props.settings;
+    return `Quality: ${s.quality}, Input: ${s.inputMode}, FPS: ${s.fpsCounter ? "ON" : "OFF"}, Sound: ${s.sound ? "ON" : "OFF"}`;
+  }, [props.settings]);
 
-  // ESC/back fallback: if immersive, exit on history/back or ESC-like cases
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setImmersive(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  const enter = async () => {
+    // Try native fullscreen first (works on some browsers)
+    const ok = await tryNativeFullscreen(wrapRef.current);
+    if (!ok) setPseudoFs(true);
+  };
+
+  const exit = async () => {
+    await tryExitNativeFullscreen();
+    setPseudoFs(false);
+  };
 
   const reload = () => {
-    track({ type: "game_container", action: "reload" });
-    setLoaded(false);
-    iframeRef.current?.contentWindow?.location.reload();
+    const fr = iframeRef.current;
+    if (!fr) return;
+    fr.src = fr.src;
   };
-
-  const enterFullscreen = async () => {
-    track({ type: "game_container", action: "fullscreen" });
-
-    // 1) Try real Fullscreen (best on desktop/Android)
-    const el = wrapRef.current;
-    try {
-      if (el?.requestFullscreen) {
-        await el.requestFullscreen();
-        return;
-      }
-    } catch {
-      // ignore, fallback below
-    }
-
-    // 2) iOS/Safari/iframe fallback: pseudo fullscreen overlay
-    setImmersive(true);
-  };
-
-  const exitImmersive = () => setImmersive(false);
 
   return (
     <div
       ref={wrapRef}
-      className="glassStrong bc-motion"
+      className={`glassStrong bc-motion ${pseudoFs ? "bcPseudoFs" : ""}`}
       style={{
         padding: 14,
         borderRadius: 22,
-        position: "relative",
-        overflow: "hidden"
+        overflow: "hidden",
+        position: "relative"
       }}
     >
+      {/* Top controls */}
       <div className="bc-row" style={{ justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
         <div className="bc-col" style={{ gap: 2 }}>
-          <div style={{ fontWeight: 900, fontSize: 18 }}>EvoFish</div>
-          <div className="bc-faint" style={{ fontWeight: 750 }}>{summary}</div>
+          <div style={{ fontWeight: 900 }}>EvoFish</div>
+          <div className="bc-faint" style={{ fontWeight: 700 }}>{meta}</div>
         </div>
 
         <div className="bc-row" style={{ gap: 10, flexWrap: "wrap" }}>
-          <Button variant="secondary" onClick={enterFullscreen}>
-            Fullscreen
-          </Button>
-          <Button variant="ghost" onClick={reload}>
-            Reload
-          </Button>
+          <button className="bc-focus bcBtnMini" onClick={reload}>Reload</button>
+          {!pseudoFs ? (
+            <button className="bc-focus bcBtnPrimary" onClick={enter}>
+              Fullscreen
+            </button>
+          ) : (
+            <button className="bc-focus bcBtnPrimary" onClick={exit}>
+              Закрыть
+            </button>
+          )}
         </div>
       </div>
 
       <div style={{ height: 12 }} />
 
-      {/* Frame area */}
+      {/* Frame */}
       <div
-        className={immersive ? "bc-immersive" : ""}
         style={{
           borderRadius: 18,
           border: "1px solid var(--stroke)",
-          background: "rgba(0,0,0,0.18)",
           overflow: "hidden",
-          position: "relative"
+          background: "rgba(0,0,0,0.25)"
         }}
       >
-        {/* Immersive top bar (only in pseudo fullscreen) */}
-        {immersive ? (
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              zIndex: 5,
-              padding: `max(10px, env(safe-area-inset-top)) 10px 10px`,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 10,
-              background: "linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0))",
-              backdropFilter: "blur(12px)",
-              WebkitBackdropFilter: "blur(12px)"
-            }}
-          >
-            <div style={{ fontWeight: 850 }}>EvoFish</div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <Button variant="secondary" onClick={reload}>Reload</Button>
-              <Button variant="primary" onClick={exitImmersive}>Закрыть</Button>
-            </div>
-          </div>
-        ) : null}
-
         <iframe
           ref={iframeRef}
           title="EvoFish"
-          src={src}
-          onLoad={() => setLoaded(true)}
-          // IMPORTANT: allow fullscreen + scripts
-          allow="fullscreen; autoplay; gamepad; accelerometer; gyroscope; clipboard-read; clipboard-write"
-          allowFullScreen
-          // IMPORTANT: DO NOT sandbox EvoFish (иначе скрипты/локалстор могут ломаться)
+          src={props.src}
           style={{
             width: "100%",
-            height: immersive ? "100dvh" : "62dvh",
+            height: pseudoFs ? "calc(100vh - 140px)" : "62vh",
+            minHeight: pseudoFs ? "560px" : "420px",
             border: 0,
-            display: "block",
-            background: "transparent"
+            display: "block"
           }}
+          // Fullscreen permissions (must-have)
+          allow="fullscreen; gamepad; autoplay; clipboard-read; clipboard-write"
+          allowFullScreen
         />
-
-        {!loaded ? (
-          <div
-            className="bc-p"
-            style={{
-              position: "absolute",
-              inset: 0,
-              display: "grid",
-              placeItems: "center",
-              background: "rgba(0,0,0,0.18)"
-            }}
-          >
-            Загрузка EvoFish…
-          </div>
-        ) : null}
       </div>
 
-      {/* CSS for iOS-safe pseudo fullscreen */}
+      {/* Styles (safe-area + pseudo fullscreen) */}
       <style>{`
-        .bc-immersive{
+        .bcBtnMini{
+          height: 40px;
+          padding: 0 14px;
+          border-radius: 999px;
+          border: 1px solid var(--stroke);
+          background: rgba(255,255,255,0.08);
+          color: var(--text);
+          cursor: pointer;
+        }
+        .bcBtnPrimary{
+          height: 40px;
+          padding: 0 16px;
+          border-radius: 999px;
+          border: 1px solid rgba(120,160,255,0.28);
+          background: linear-gradient(180deg, rgba(120,160,255,0.40), rgba(120,160,255,0.18));
+          color: var(--text);
+          cursor: pointer;
+          font-weight: 800;
+        }
+
+        /* Pseudo fullscreen: reliable on iOS Safari */
+        .bcPseudoFs{
           position: fixed !important;
           inset: 0 !important;
           z-index: 9999 !important;
           border-radius: 0 !important;
-          border: 0 !important;
-          background: rgba(0,0,0,0.86) !important;
-        }
-        @supports (padding: env(safe-area-inset-top)){
-          .bc-immersive{
-            padding-bottom: env(safe-area-inset-bottom);
-          }
+          padding:
+            max(10px, env(safe-area-inset-top))
+            10px
+            max(10px, env(safe-area-inset-bottom)) !important;
         }
       `}</style>
+
+      {/* iOS hint (optional, subtle) */}
+      {pseudoFs ? (
+        <div className="bc-faint" style={{ marginTop: 10, fontSize: 12, opacity: 0.85 }}>
+          Подсказка: на iPhone лучше играть в горизонтали (Landscape).
+        </div>
+      ) : null}
     </div>
   );
 }
