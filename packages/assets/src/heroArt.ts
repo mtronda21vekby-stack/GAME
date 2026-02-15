@@ -1,5 +1,4 @@
 export const HeroArt = {
-  // Lightweight premium SVG backgrounds (no raster, no heavy filters).
   aurora: `data:image/svg+xml;utf8,${encodeURIComponent(`
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
   <defs>
@@ -26,7 +25,6 @@ export const HeroArt = {
   <rect width="1600" height="900" fill="url(#g2)"/>
   <rect width="1600" height="900" fill="url(#g3)"/>
 
-  <!-- soft glass ribbons -->
   <g opacity="0.55">
     <path d="M-100 210 C 420 120, 680 140, 980 260 C 1250 360, 1520 360, 1740 280"
           fill="none" stroke="#FFFFFF" stroke-opacity="0.10" stroke-width="70" stroke-linecap="round"/>
@@ -36,14 +34,18 @@ export const HeroArt = {
           fill="none" stroke="#57E6D6" stroke-opacity="0.08" stroke-width="62" stroke-linecap="round"/>
   </g>
 
-  <!-- subtle stars -->
   <g fill="#FFFFFF" opacity="0.18">
-    ${Array.from({ length: 60 }).map((_, i) => {
-      const x = (i * 137) % 1600;
-      const y = (i * 89) % 900;
-      const r = (i % 3) + 1;
-      return `<circle cx="${x}" cy="${y}" r="${r}" />`;
-    }).join("")}
+    <circle cx="120" cy="90" r="2"/><circle cx="260" cy="160" r="1"/><circle cx="410" cy="70" r="2"/>
+    <circle cx="560" cy="140" r="1"/><circle cx="720" cy="110" r="2"/><circle cx="880" cy="190" r="1"/>
+    <circle cx="1040" cy="80" r="2"/><circle cx="1180" cy="150" r="1"/><circle cx="1320" cy="120" r="2"/>
+    <circle cx="1460" cy="210" r="1"/><circle cx="1540" cy="120" r="2"/><circle cx="90" cy="260" r="1"/>
+    <circle cx="240" cy="310" r="2"/><circle cx="380" cy="260" r="1"/><circle cx="520" cy="330" r="2"/>
+    <circle cx="660" cy="290" r="1"/><circle cx="800" cy="320" r="2"/><circle cx="940" cy="270" r="1"/>
+    <circle cx="1080" cy="340" r="2"/><circle cx="1220" cy="300" r="1"/><circle cx="1360" cy="330" r="2"/>
+    <circle cx="1500" cy="280" r="1"/><circle cx="160" cy="430" r="2"/><circle cx="300" cy="470" r="1"/>
+    <circle cx="440" cy="420" r="2"/><circle cx="610" cy="480" r="1"/><circle cx="760" cy="430" r="2"/>
+    <circle cx="910" cy="490" r="1"/><circle cx="1050" cy="440" r="2"/><circle cx="1210" cy="470" r="1"/>
+    <circle cx="1370" cy="420" r="2"/><circle cx="1520" cy="480" r="1"/>
   </g>
 </svg>
 `)}`,
@@ -57,7 +59,6 @@ export const HeroArt = {
 </svg>
 `)}`,
 
-  // Small feature banner art (cards)
   cardWave: `data:image/svg+xml;utf8,${encodeURIComponent(`
 <svg xmlns="http://www.w3.org/2000/svg" width="900" height="360" viewBox="0 0 900 360">
   <defs>
