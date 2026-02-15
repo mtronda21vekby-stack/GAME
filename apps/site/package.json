@@ -1,0 +1,23 @@
+{
+  "name": "@blackcrown/site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "node -e \"process.exit(0)\""
+  },
+  "dependencies": {
+    "@blackcrown/assets": "workspace:*",
+    "@blackcrown/core": "workspace:*",
+    "@blackcrown/ui": "workspace:*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vite": "^6.0.7",
+    "@vitejs/plugin-react": "^4.3.1"
+  }
+}
