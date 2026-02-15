@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+<defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#8cb4ff"/><stop offset="1" stop-color="#6e96ff"/></linearGradient></defs>
+<rect x="32" y="32" width="448" height="448" rx="96" fill="url(#g)" opacity="0.9"/>
+<text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-family="system-ui, -apple-system" font-weight="800" font-size="56" fill="rgba(10,12,18,0.86)">BC</text>
+</svg>
