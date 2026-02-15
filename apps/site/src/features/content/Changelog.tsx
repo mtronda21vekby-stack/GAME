@@ -1,20 +1,32 @@
 import React from "react";
 
-const log = [
-  { date: "2026-02-14", lines: ["Initial monorepo structure", "Apple-like UI kit", "Site PWA shell cache", "Game container + lobby mock transport"] }
-];
+type Entry = { version: string; date: string; items: string[] };
 
 export function Changelog() {
+  const entries: Entry[] = [
+    {
+      version: "v0.00.1-alpha",
+      date: "сегодня",
+      items: [
+        "Моно-репо: site + game + lobby",
+        "Сборка под один домен через assemble (dist/)",
+        "Редиректы для SPA (/game, /lobby, страницы сайта)",
+        "Фикс pnpm workspace зависимостей (ui -> assets)"
+      ]
+    }
+  ];
+
   return (
-    <div className="bc-col">
-      {log.map((e) => (
-        <div key={e.date} className="bc-card" style={{ padding: 14, borderRadius: 16, background: "rgba(255,255,255,0.06)" }}>
-          <div className="bc-row" style={{ justifyContent: "space-between" }}>
-            <div style={{ fontWeight: 850 }}>{e.date}</div>
-            <div className="bc-faint">Build</div>
+    <div className="bc-col" style={{ gap: 10 }}>
+      {entries.map((e) => (
+        <div key={e.version} className="glass" style={{ padding: 14, borderRadius: 16 }}>
+          <div className="bc-row" style={{ justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+            <div style={{ fontWeight: 900 }}>{e.version}</div>
+            <div className="bc-faint" style={{ fontWeight: 700 }}>{e.date}</div>
           </div>
-          <ul className="bc-p" style={{ margin: "8px 0 0", paddingLeft: 18 }}>
-            {e.lines.map((l) => <li key={l}>{l}</li>)}
+
+          <ul className="bc-p" style={{ marginTop: 8, lineHeight: 1.75 }}>
+            {e.items.map((it, idx) => <li key={idx}>{it}</li>)}
           </ul>
         </div>
       ))}
