@@ -64,14 +64,37 @@ function isNativeFullscreenActive(): boolean {
   );
 }
 
+/**
+ * Fix viewport height inconsistencies:
+ * - 100vh is not equal to the visible viewport on some browsers (Safari / iOS / some embedded webviews).
+ * We set --app-vh to window.innerHeight and use it for immersive fullscreen sizing.
+ */
+function useAppViewportHeightVar() {
+  useEffect(() => {
+    const set = () => {
+      document.documentElement.style.setProperty("--app-vh", `${window.innerHeight}px`);
+      document.documentElement.style.setProperty("--app-vw", `${window.innerWidth}px`);
+    };
+    set();
+    window.addEventListener("resize", set, { passive: true });
+    window.addEventListener("orientationchange", set as any, { passive: true });
+    return () => {
+      window.removeEventListener("resize", set as any);
+      window.removeEventListener("orientationchange", set as any);
+    };
+  }, []);
+}
+
 export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
+  useAppViewportHeightVar();
+
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   const [pseudoFs, setPseudoFs] = useState(false);
   const [nativeFs, setNativeFs] = useState(false);
 
-  // "Immersive" overlay UI (premium)
+  // Premium overlay UI
   const [uiHidden, setUiHidden] = useState(false);
   const hideTimer = useRef<number | null>(null);
 
@@ -79,7 +102,9 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
 
   const meta = useMemo(() => {
     const s = props.settings;
-    return `Quality: ${s.quality}, Input: ${s.inputMode}, FPS: ${s.fpsCounter ? "ON" : "OFF"}, Sound: ${s.sound ? "ON" : "OFF"}`;
+    return `Quality: ${s.quality}, Input: ${s.inputMode}, FPS: ${
+      s.fpsCounter ? "ON" : "OFF"
+    }, Sound: ${s.sound ? "ON" : "OFF"}`;
   }, [props.settings]);
 
   const clearHideTimer = () => {
@@ -101,11 +126,12 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
     scheduleAutoHide();
   };
 
-  // fullscreen change tracking
+  // Track fullscreen changes
   useEffect(() => {
     const onFs = () => {
       const active = isNativeFullscreenActive();
       setNativeFs(active);
+
       if (active || pseudoFs) {
         setUiHidden(false);
         scheduleAutoHide();
@@ -130,7 +156,7 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pseudoFs]);
 
-  // hotkeys: Esc exit, F toggle, U toggle overlay UI
+  // Hotkeys: Esc exit, F toggle, U toggle overlay UI
   useEffect(() => {
     const onKey = async (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -169,7 +195,7 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inFullscreen]);
 
-  // double click/tap on frame toggles overlay UI
+  // Double tap/click toggles overlay UI in fullscreen
   const lastTap = useRef<number>(0);
   const onFrameTap = () => {
     if (!inFullscreen) return;
@@ -184,7 +210,7 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
   };
 
   const enterFullscreen = async () => {
-    // Try iframe fullscreen first (best for PC/Xbox)
+    // Prefer iframe fullscreen (best for PC/Xbox)
     const iframe = iframeRef.current as unknown as AnyEl | null;
     const okIframe = await tryEnter(iframe);
     if (okIframe) {
@@ -221,24 +247,22 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
     fr.src = fr.src;
   };
 
-  const cardMode = !inFullscreen; // normal view = card, fullscreen = edge-to-edge
-  const frameHeight = inFullscreen ? "100vh" : "62vh";
+  const cardMode = !inFullscreen;
 
   return (
     <div
       ref={wrapRef}
       className={`bcRoot ${pseudoFs ? "bcPseudoFs" : ""} ${inFullscreen ? "bcImmersive" : ""}`}
       style={{
-        // When not fullscreen: glass card.
         padding: cardMode ? 14 : 0,
         borderRadius: cardMode ? 22 : 0,
         overflow: "hidden",
         position: "relative",
         border: cardMode ? "1px solid var(--stroke)" : "none",
-        background: cardMode ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.92)"
+        background: cardMode ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.94)"
       }}
     >
-      {/* Overlay Top Bar (in fullscreen it floats over the game) */}
+      {/* Overlay */}
       <div className={`bcOverlay ${inFullscreen && uiHidden ? "bcOverlayHidden" : ""}`}>
         <div className="bcOverlayInner">
           <div className="bcOverlayLeft">
@@ -289,8 +313,9 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
           src={props.src}
           style={{
             width: "100%",
-            height: frameHeight,
-            minHeight: cardMode ? "460px" : "100vh",
+            // IMPORTANT: when fullscreen, use real visible height via --app-vh
+            height: cardMode ? "62vh" : "var(--app-vh)",
+            minHeight: cardMode ? "460px" : "var(--app-vh)",
             border: 0,
             display: "block"
           }}
@@ -299,7 +324,6 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
         />
       </div>
 
-      {/* Minimal hint when overlay is hidden */}
       {inFullscreen && uiHidden ? (
         <div className="bcHint">
           Двигай мышью/тапни · Double tap — UI · F — fullscreen · Esc — выйти
@@ -307,25 +331,21 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
       ) : null}
 
       <style>{`
+        /* Pseudo fullscreen (fallback) */
         .bcPseudoFs{
           position: fixed !important;
           inset: 0 !important;
           z-index: 9999 !important;
         }
 
-        /* Immersive fullscreen layout */
+        /* Immersive: fill the *visible* viewport */
         .bcImmersive{
-          width: 100vw !important;
-          height: 100vh !important;
-          padding:
-            env(safe-area-inset-top)
-            env(safe-area-inset-right)
-            env(safe-area-inset-bottom)
-            env(safe-area-inset-left) !important;
+          width: var(--app-vw, 100vw) !important;
+          height: var(--app-vh, 100vh) !important;
           background: rgba(0,0,0,0.94) !important;
         }
 
-        /* Overlay top bar */
+        /* Overlay */
         .bcOverlay{
           position: ${cardMode ? "relative" : "absolute"};
           top: 0;
@@ -377,11 +397,6 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
           background: linear-gradient(180deg, rgba(120,160,255,0.40), rgba(120,160,255,0.18));
         }
 
-        .bcFrameWrap{
-          position: relative;
-          z-index: 10;
-        }
-
         .bcHint{
           position: absolute;
           left: 12px;
@@ -401,7 +416,6 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
           -webkit-backdrop-filter: blur(12px);
         }
 
-        /* Reduce motion */
         @media (prefers-reduced-motion: reduce){
           .bcOverlay{ transition: none !important; }
         }
