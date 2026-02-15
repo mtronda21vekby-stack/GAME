@@ -1,25 +1,47 @@
 import React from "react";
 import { Link } from "../router";
-import { Button } from "@blackcrown/ui";
 
 export function Support() {
   return (
-    <main className="bc-container" style={{ padding: "max(16px, env(safe-area-inset-top)) 0 44px" }}>
-      <div className="glassStrong" style={{ padding: 22 }}>
-        <div className="bc-row" style={{ justifyContent: "space-between", flexWrap: "wrap" }}>
-          <h1 className="bc-h2">Support</h1>
-          <Link to="/"><Button variant="secondary">Back</Button></Link>
-        </div>
+    <main className="apple-bg" style={{ minHeight: "100%" }}>
+      <div className="bc-container" style={{ padding: "max(16px, env(safe-area-inset-top)) 0 44px" }}>
+        <div className="glassStrong bc-motion" style={{ padding: 18 }}>
+          <div className="bc-h2">Поддержка</div>
+          <div className="bc-p" style={{ marginTop: 10, maxWidth: 820 }}>
+            Здесь будет центр помощи, FAQ и форма обратной связи. Пока — быстрые подсказки:
+          </div>
 
-        <div style={{ marginTop: 10 }} className="bc-col">
-          <div className="bc-p">FAQ:</div>
-          <ul className="bc-p" style={{ margin: 0, paddingLeft: 18 }}>
-            <li>Nickname is stored locally on your device.</li>
-            <li>Game is loaded in an isolated container (iframe) to avoid breaking logic.</li>
-            <li>Lobby uses a mock WebSocket transport for now.</li>
-          </ul>
-          <div className="bc-p" style={{ marginTop: 10 }}>
-            Contact: <span className="bc-muted">support@blackcrown (placeholder)</span>
+          <div className="bc-divider" style={{ marginTop: 16 }} />
+
+          <div className="bc-col" style={{ gap: 10, marginTop: 12 }}>
+            <div className="glass" style={{ padding: 14, borderRadius: 16 }}>
+              <div style={{ fontWeight: 800 }}>Игра не запускается</div>
+              <div className="bc-p" style={{ marginTop: 6 }}>
+                Убедись, что реальный билд EvoFish лежит в <b>apps/game/public/evofish/</b> и есть файл <b>index.html</b>.
+              </div>
+            </div>
+
+            <div className="glass" style={{ padding: 14, borderRadius: 16 }}>
+              <div style={{ fontWeight: 800 }}>Не открываются /game или /lobby</div>
+              <div className="bc-p" style={{ marginTop: 6 }}>
+                При деплое на один домен нужны пути <b>/game/</b> и <b>/lobby/</b>, и файл <b>dist/_redirects</b> (он создаётся assemble-скриптом).
+              </div>
+            </div>
+
+            <div className="glass" style={{ padding: 14, borderRadius: 16 }}>
+              <div style={{ fontWeight: 800 }}>Ник не сохраняется</div>
+              <div className="bc-p" style={{ marginTop: 6 }}>
+                Ник хранится локально (localStorage). Если включён “Private mode” или очистка данных — настройки могут сбрасываться.
+              </div>
+            </div>
+          </div>
+
+          <div className="bc-divider" style={{ marginTop: 16 }} />
+
+          <div className="bc-row" style={{ gap: 12, flexWrap: "wrap" }}>
+            <a className="bc-muted" href="/game/">Перейти в игру →</a>
+            <a className="bc-muted" href="/lobby/">Перейти в лобби →</a>
+            <Link className="bc-muted" to="/">На главную →</Link>
           </div>
         </div>
       </div>
