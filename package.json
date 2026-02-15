@@ -5,23 +5,29 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm -r --parallel dev",
+
     "build": "pnpm -r build",
-    "typecheck": "pnpm -r typecheck",
-    "lint": "pnpm -r lint",
+    "build:site": "pnpm --filter @blackcrown/site build",
+    "build:game": "pnpm --filter @blackcrown/game build",
+    "build:lobby": "pnpm --filter @blackcrown/lobby build",
+
     "dev:site": "pnpm --filter @blackcrown/site dev",
     "dev:game": "pnpm --filter @blackcrown/game dev",
     "dev:lobby": "pnpm --filter @blackcrown/lobby dev",
-    "build:site": "pnpm --filter @blackcrown/site build",
-    "build:game": "pnpm --filter @blackcrown/game build",
-    "build:lobby": "pnpm --filter @blackcrown/lobby build"
+
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+
+    "assemble": "node scripts/assemble.mjs",
+    "build:prod": "pnpm build && pnpm assemble"
   },
   "devDependencies": {
     "@types/react": "^18.3.6",
     "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "typescript": "^5.6.3",
-    "vite": "^6.0.7",
-    "@vitejs/plugin-react": "^4.3.1"
+    "vite": "^6.0.7"
   }
 }
