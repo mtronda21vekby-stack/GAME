@@ -42,7 +42,7 @@ export function Game() {
           position: "sticky",
           top: 0,
           zIndex: 10,
-          background: "linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0))",
+          background: "linear-gradient(180deg, rgba(0,0,0,0.42), rgba(0,0,0,0))",
           backdropFilter: "blur(14px)",
           WebkitBackdropFilter: "blur(14px)"
         }}
@@ -85,31 +85,57 @@ export function Game() {
       <div style={{ padding: 12 }}>
         {!started ? (
           <div
-            className="glassStrong bc-container bc-motion"
+            className="bc-container bc-motion"
             style={{
-              padding: 18,
-              borderRadius: 22,
-              background: "rgba(0,0,0,0.18)"
+              padding: 0
             }}
           >
-            <div className="bc-h2">Контейнер EvoFish</div>
+            <div
+              className="glassStrong"
+              style={{
+                padding: 18,
+                borderRadius: 22,
+                border: "none",                // <- убрали белую рамку
+                boxShadow: "0 30px 120px rgba(0,0,0,0.28)" // <- премиум глубина
+              }}
+            >
+              <div className="bc-h2">Контейнер EvoFish</div>
 
-            <div className="bc-p" style={{ marginTop: 8, opacity: 0.9 }}>
-              Звук по умолчанию <b>ВЫКЛ</b>. Нажми “Открыть EvoFish”.
-            </div>
+              <div className="bc-p" style={{ marginTop: 8, opacity: 0.9 }}>
+                Звук по умолчанию <b>ВЫКЛ</b>. Открой игру — и играй.
+              </div>
 
-            <div className="bc-row" style={{ marginTop: 14, flexWrap: "wrap" }}>
-              <Button variant="primary" size="lg" leftIconSrc={Icons.play} onClick={() => setStarted(true)}>
-                Открыть EvoFish
-              </Button>
+              <div className="bc-row" style={{ marginTop: 12, flexWrap: "wrap" }}>
+                <Button variant="primary" leftIconSrc={Icons.play} onClick={() => setStarted(true)}>
+                  Открыть EvoFish
+                </Button>
 
-              <Button variant="secondary" size="lg" leftIconSrc={Icons.settings} onClick={() => setDrawer(true)}>
-                Настройки
-              </Button>
+                <Button variant="secondary" leftIconSrc={Icons.settings} onClick={() => setDrawer(true)}>
+                  Настройки
+                </Button>
 
-              <Button variant="ghost" size="lg" onClick={() => (window.location.href = PATHS.lobby)}>
-                Lobby
-              </Button>
+                <Button variant="ghost" onClick={() => (window.location.href = PATHS.lobby)}>
+                  Lobby
+                </Button>
+              </div>
+
+              <div style={{ height: 10 }} />
+
+              <div
+                className="glass"
+                style={{
+                  borderRadius: 18,
+                  border: "none",              // <- убрали рамки
+                  background: "rgba(255,255,255,0.05)"
+                }}
+              >
+                <div style={{ padding: 14 }} className="bc-col">
+                  <div style={{ fontWeight: 900 }}>Совет</div>
+                  <div className="bc-p" style={{ marginTop: 6, opacity: 0.9 }}>
+                    На iPhone лучше играть в <b>горизонтали</b>.
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         ) : (
