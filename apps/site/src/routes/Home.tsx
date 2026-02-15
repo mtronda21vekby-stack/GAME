@@ -33,11 +33,7 @@ function Pill(props: { children: React.ReactNode }) {
   );
 }
 
-function FeatureCard(props: {
-  title: string;
-  desc: string;
-  tag: string;
-}) {
+function FeatureCard(props: { title: string; desc: string; tag: string }) {
   return (
     <div
       className="glassStrong bc-motion"
@@ -55,9 +51,7 @@ function FeatureCard(props: {
           <Pill>{props.tag}</Pill>
         </div>
 
-        <div style={{ marginTop: 8, opacity: 0.86, lineHeight: 1.45 }}>
-          {props.desc}
-        </div>
+        <div style={{ marginTop: 8, opacity: 0.86, lineHeight: 1.45 }}>{props.desc}</div>
       </div>
 
       <div style={{ padding: 14, paddingTop: 0 }}>
@@ -98,8 +92,12 @@ export function Home() {
           </div>
 
           <nav className="bcNav">
-            <a className="bcLink" href="/about">О проекте</a>
-            <a className="bcLink" href="/support">Поддержка</a>
+            <a className="bcLink" href="/about">
+              О проекте
+            </a>
+            <a className="bcLink" href="/support">
+              Поддержка
+            </a>
           </nav>
 
           <div className="bcRight">
@@ -204,4 +202,9 @@ export function Home() {
       </section>
     </main>
   );
+}
+
+/** main.tsx ожидает именно App */
+export function App() {
+  return <Home />;
 }
