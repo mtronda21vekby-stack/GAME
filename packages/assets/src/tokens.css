@@ -1,48 +1,84 @@
 :root{
+  /* Base */
   --bg: #07080b;
-  --panel: rgba(255,255,255,0.06);
-  --panel-strong: rgba(255,255,255,0.10);
+  --bg2: #05060a;
   --text: rgba(255,255,255,0.92);
   --muted: rgba(255,255,255,0.70);
   --faint: rgba(255,255,255,0.55);
-  --stroke: rgba(255,255,255,0.14);
-  --shadow: 0 18px 60px rgba(0,0,0,0.45);
-  --shadow-soft: 0 12px 38px rgba(0,0,0,0.35);
+
+  /* Glass */
+  --panel: rgba(255,255,255,0.055);
+  --panel-strong: rgba(255,255,255,0.090);
+  --stroke: rgba(255,255,255,0.12);
+  --stroke-strong: rgba(255,255,255,0.18);
+
+  /* Shadows (premium soft) */
+  --shadow: 0 24px 80px rgba(0,0,0,0.55);
+  --shadow-soft: 0 16px 48px rgba(0,0,0,0.38);
+
   --blur: 18px;
 
-  --r-lg: 20px;
-  --r-md: 14px;
-  --r-sm: 10px;
+  /* Radius */
+  --r-lg: 22px;
+  --r-md: 16px;
+  --r-sm: 12px;
 
+  /* Spacing */
   --pad-lg: 22px;
   --pad-md: 16px;
   --pad-sm: 12px;
-
   --tap: 44px;
 
-  --grad-1: radial-gradient(1200px 800px at 15% 10%, rgba(120,160,255,0.22), transparent 55%),
-            radial-gradient(900px 700px at 80% 30%, rgba(170,120,255,0.18), transparent 55%),
-            radial-gradient(900px 700px at 55% 95%, rgba(80,255,210,0.10), transparent 55%);
-  --line: linear-gradient(90deg, rgba(255,255,255,0.20), rgba(255,255,255,0.02));
+  /* Echo accents (subtle spectral) */
+  --echo-a: rgba(120,160,255,0.22);
+  --echo-b: rgba(190,90,255,0.18);
+  --echo-c: rgba(80,255,210,0.12);
+  --echo-w: rgba(255,255,255,0.10);
 
-  --focus: 0 0 0 3px rgba(120,160,255,0.32);
+  /* Lines & borders */
+  --line: linear-gradient(90deg, rgba(255,255,255,0.22), rgba(255,255,255,0.02));
+  --line2: linear-gradient(90deg, rgba(140,180,255,0.22), rgba(190,90,255,0.10), rgba(80,255,210,0.12));
 
+  /* Focus */
+  --focus: 0 0 0 3px rgba(120,160,255,0.28);
+
+  /* Typography */
   --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+
+  /* Background: Echo beams + depth */
+  --grad-echo:
+    radial-gradient(1100px 900px at 18% 12%, var(--echo-a), transparent 58%),
+    radial-gradient(900px 720px at 82% 26%, var(--echo-b), transparent 60%),
+    radial-gradient(900px 720px at 55% 92%, var(--echo-c), transparent 60%),
+    radial-gradient(1200px 900px at 50% 50%, rgba(255,255,255,0.04), transparent 55%),
+    linear-gradient(180deg, var(--bg2), var(--bg));
 }
 
 @media (prefers-color-scheme: light){
   :root{
-    --bg:#f6f7fb;
-    --panel: rgba(255,255,255,0.70);
-    --panel-strong: rgba(255,255,255,0.86);
+    --bg:#f7f8fc;
+    --bg2:#f2f3fb;
     --text: rgba(10,12,18,0.92);
     --muted: rgba(10,12,18,0.72);
     --faint: rgba(10,12,18,0.58);
-    --stroke: rgba(10,12,18,0.12);
-    --shadow: 0 18px 60px rgba(20,25,40,0.16);
-    --shadow-soft: 0 12px 38px rgba(20,25,40,0.12);
-    --grad-1: radial-gradient(1200px 800px at 15% 10%, rgba(80,120,255,0.18), transparent 55%),
-              radial-gradient(900px 700px at 80% 30%, rgba(190,90,255,0.16), transparent 55%),
-              radial-gradient(900px 700px at 55% 95%, rgba(60,210,170,0.10), transparent 55%);
+
+    --panel: rgba(255,255,255,0.74);
+    --panel-strong: rgba(255,255,255,0.86);
+    --stroke: rgba(10,12,18,0.10);
+    --stroke-strong: rgba(10,12,18,0.14);
+
+    --shadow: 0 24px 80px rgba(20,25,40,0.16);
+    --shadow-soft: 0 16px 48px rgba(20,25,40,0.12);
+
+    --echo-a: rgba(80,120,255,0.18);
+    --echo-b: rgba(190,90,255,0.14);
+    --echo-c: rgba(60,210,170,0.10);
+
+    --grad-echo:
+      radial-gradient(1100px 900px at 18% 12%, var(--echo-a), transparent 58%),
+      radial-gradient(900px 720px at 82% 26%, var(--echo-b), transparent 60%),
+      radial-gradient(900px 720px at 55% 92%, var(--echo-c), transparent 60%),
+      radial-gradient(1200px 900px at 50% 50%, rgba(10,12,18,0.03), transparent 55%),
+      linear-gradient(180deg, var(--bg2), var(--bg));
   }
 }
