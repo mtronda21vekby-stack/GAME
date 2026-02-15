@@ -1,22 +1,40 @@
 import React, { useEffect, useMemo, useState } from "react";
 
+const KEY = "bc_landscape_hint_dismissed_v1";
+
 function isMobileLikely(): boolean {
   const ua = navigator.userAgent || "";
   return /iPhone|iPad|iPod|Android/i.test(ua);
 }
 
 function getPortrait(): boolean {
-  // Prefer screen.orientation where available
   const anyScreen: any = window.screen as any;
   const type = anyScreen?.orientation?.type as string | undefined;
   if (type) return type.includes("portrait");
-  // Fallback: compare viewport
   return window.innerHeight > window.innerWidth;
+}
+
+function getDismissed(): boolean {
+  try {
+    return localStorage.getItem(KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function setDismissed(v: boolean) {
+  try {
+    if (v) localStorage.setItem(KEY, "1");
+    else localStorage.removeItem(KEY);
+  } catch {
+    // ignore
+  }
 }
 
 export function LandscapeHint(props: { enabled?: boolean }) {
   const enabled = props.enabled ?? true;
-  const [dismissed, setDismissed] = useState(false);
+
+  const [dismissed, setDismissedState] = useState<boolean>(() => getDismissed());
   const [portrait, setPortrait] = useState(false);
 
   const shouldShow = useMemo(() => {
@@ -33,7 +51,6 @@ export function LandscapeHint(props: { enabled?: boolean }) {
     window.addEventListener("resize", update, { passive: true });
     window.addEventListener("orientationchange", update as any, { passive: true });
 
-    // Some browsers support orientationchange via screen.orientation
     const anyScreen: any = window.screen as any;
     const so = anyScreen?.orientation;
     if (so?.addEventListener) so.addEventListener("change", update, { passive: true });
@@ -62,7 +79,13 @@ export function LandscapeHint(props: { enabled?: boolean }) {
           </div>
         </div>
 
-        <button className="bcLsBtn" onClick={() => setDismissed(true)}>
+        <button
+          className="bcLsBtn"
+          onClick={() => {
+            setDismissed(true);
+            setDismissedState(true);
+          }}
+        >
           Понял
         </button>
       </div>
@@ -109,7 +132,6 @@ export function LandscapeHint(props: { enabled?: boolean }) {
           border-radius: 6px;
           border: 1px solid rgba(255,255,255,0.20);
           background: rgba(255,255,255,0.06);
-          transform: rotate(0deg);
           transform-origin: center;
           will-change: transform;
           animation: bcRotatePhone 1.7s ease-in-out infinite;
