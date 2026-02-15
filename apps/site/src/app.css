@@ -20,6 +20,7 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 900px){
   .heroGrid{ grid-template-columns: 1fr; }
 }
+
 .kpi{
   display:grid;
   grid-template-columns: repeat(3, 1fr);
@@ -27,4 +28,42 @@ a { color: inherit; text-decoration: none; }
 }
 @media (max-width: 720px){
   .kpi{ grid-template-columns: 1fr; }
+}
+
+/* =========================
+   Echo an AI premium motion
+   (transform/opacity only)
+   ========================= */
+
+.echo-orb{
+  position:absolute;
+  inset:auto;
+  width: 420px;
+  height: 420px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255,255,255,0.10), transparent 55%),
+    radial-gradient(circle at 55% 45%, var(--echo-a), transparent 60%),
+    radial-gradient(circle at 65% 70%, var(--echo-b), transparent 62%);
+  opacity: 0.42;
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  pointer-events:none;
+}
+
+@media (prefers-reduced-motion: no-preference){
+  .echo-orb{ animation: echoFloat 10s ease-in-out infinite; }
+}
+
+@keyframes echoFloat{
+  0%{ transform: translate3d(0,0,0) scale(1); }
+  50%{ transform: translate3d(0,-10px,0) scale(1.02); }
+  100%{ transform: translate3d(0,0,0) scale(1); }
+}
+
+.echo-line{
+  height: 1px;
+  background: var(--line2);
+  border-radius: 999px;
+  opacity: 0.55;
 }
