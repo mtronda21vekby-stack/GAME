@@ -64,11 +64,6 @@ function isNativeFullscreenActive(): boolean {
   );
 }
 
-/**
- * Fix viewport height inconsistencies:
- * - 100vh is not equal to the visible viewport on some browsers (Safari / iOS / some embedded webviews).
- * We set --app-vh to window.innerHeight and use it for immersive fullscreen sizing.
- */
 function useAppViewportHeightVar() {
   useEffect(() => {
     const set = () => {
@@ -94,7 +89,6 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
   const [pseudoFs, setPseudoFs] = useState(false);
   const [nativeFs, setNativeFs] = useState(false);
 
-  // Premium overlay UI
   const [uiHidden, setUiHidden] = useState(false);
   const hideTimer = useRef<number | null>(null);
 
@@ -102,9 +96,9 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
 
   const meta = useMemo(() => {
     const s = props.settings;
-    return `Quality: ${s.quality}, Input: ${s.inputMode}, FPS: ${
+    return `Качество: ${s.quality}, Ввод: ${s.inputMode}, FPS: ${
       s.fpsCounter ? "ON" : "OFF"
-    }, Sound: ${s.sound ? "ON" : "OFF"}`;
+    }, Звук: ${s.sound ? "ON" : "OFF"}`;
   }, [props.settings]);
 
   const clearHideTimer = () => {
@@ -117,7 +111,7 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
   const scheduleAutoHide = () => {
     clearHideTimer();
     if (!inFullscreen) return;
-    hideTimer.current = window.setTimeout(() => setUiHidden(true), 1800);
+    hideTimer.current = window.setTimeout(() => setUiHidden(true), 1700);
   };
 
   const showUiNow = () => {
@@ -126,7 +120,6 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
     scheduleAutoHide();
   };
 
-  // Track fullscreen changes
   useEffect(() => {
     const onFs = () => {
       const active = isNativeFullscreenActive();
@@ -156,12 +149,9 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pseudoFs]);
 
-  // Hotkeys: Esc exit, F toggle, U toggle overlay UI
   useEffect(() => {
     const onKey = async (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        await exitFullscreen();
-      }
+      if (e.key === "Escape") await exitFullscreen();
       if (e.key === "f" || e.key === "F") {
         e.preventDefault();
         if (inFullscreen) await exitFullscreen();
@@ -178,7 +168,6 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inFullscreen, uiHidden]);
 
-  // Any interaction shows overlay UI in fullscreen
   useEffect(() => {
     const onMove = () => {
       if (!inFullscreen) return;
@@ -195,7 +184,6 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inFullscreen]);
 
-  // Double tap/click toggles overlay UI in fullscreen
   const lastTap = useRef<number>(0);
   const onFrameTap = () => {
     if (!inFullscreen) return;
@@ -210,7 +198,6 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
   };
 
   const enterFullscreen = async () => {
-    // Prefer iframe fullscreen (best for PC/Xbox)
     const iframe = iframeRef.current as unknown as AnyEl | null;
     const okIframe = await tryEnter(iframe);
     if (okIframe) {
@@ -219,7 +206,6 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
       return;
     }
 
-    // Try wrapper fullscreen
     const wrap = wrapRef.current as unknown as AnyEl | null;
     const okWrap = await tryEnter(wrap);
     if (okWrap) {
@@ -228,7 +214,6 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
       return;
     }
 
-    // Fallback pseudo fullscreen
     setPseudoFs(true);
     setUiHidden(false);
     scheduleAutoHide();
@@ -252,14 +237,15 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
   return (
     <div
       ref={wrapRef}
-      className={`bcRoot ${pseudoFs ? "bcPseudoFs" : ""} ${inFullscreen ? "bcImmersive" : ""}`}
+      className={`${pseudoFs ? "bcPseudoFs" : ""} ${inFullscreen ? "bcImmersive" : ""}`}
       style={{
-        padding: cardMode ? 14 : 0,
+        padding: cardMode ? 0 : 0,
         borderRadius: cardMode ? 22 : 0,
         overflow: "hidden",
         position: "relative",
-        border: cardMode ? "1px solid var(--stroke)" : "none",
-        background: cardMode ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.94)"
+        border: "none", // <- никаких белых рамок
+        background: cardMode ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.94)",
+        boxShadow: cardMode ? "0 30px 120px rgba(0,0,0,0.28)" : "none"
       }}
     >
       {/* Overlay */}
@@ -298,24 +284,15 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
       </div>
 
       {/* Frame */}
-      <div
-        onClick={onFrameTap}
-        className="bcFrameWrap"
-        style={{
-          borderRadius: cardMode ? 18 : 0,
-          overflow: "hidden",
-          background: "rgba(0,0,0,0.25)"
-        }}
-      >
+      <div onClick={onFrameTap} style={{ borderRadius: cardMode ? 22 : 0, overflow: "hidden" }}>
         <iframe
           ref={iframeRef}
           title="EvoFish"
           src={props.src}
           style={{
             width: "100%",
-            // IMPORTANT: when fullscreen, use real visible height via --app-vh
             height: cardMode ? "62vh" : "var(--app-vh)",
-            minHeight: cardMode ? "460px" : "var(--app-vh)",
+            minHeight: cardMode ? "520px" : "var(--app-vh)",
             border: 0,
             display: "block"
           }}
@@ -326,37 +303,34 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
 
       {inFullscreen && uiHidden ? (
         <div className="bcHint">
-          Двигай мышью/тапни · Double tap — UI · F — fullscreen · Esc — выйти
+          Тапни чтобы показать меню · Double tap — UI
         </div>
       ) : null}
 
       <style>{`
-        /* Pseudo fullscreen (fallback) */
         .bcPseudoFs{
           position: fixed !important;
           inset: 0 !important;
           z-index: 9999 !important;
         }
 
-        /* Immersive: fill the *visible* viewport */
         .bcImmersive{
           width: var(--app-vw, 100vw) !important;
           height: var(--app-vh, 100vh) !important;
           background: rgba(0,0,0,0.94) !important;
         }
 
-        /* Overlay */
         .bcOverlay{
           position: ${cardMode ? "relative" : "absolute"};
           top: 0;
           left: 0;
           right: 0;
           z-index: 20;
-          padding: ${cardMode ? "0 0 12px 0" : "max(10px, env(safe-area-inset-top)) 10px 10px"};
+          padding: ${cardMode ? "12px 12px 10px" : "max(10px, env(safe-area-inset-top)) 10px 10px"};
           transition: transform 160ms ease, opacity 160ms ease;
           will-change: transform, opacity;
-          pointer-events: auto;
         }
+
         .bcOverlayHidden{
           transform: translate3d(0,-10px,0);
           opacity: 0;
@@ -370,8 +344,8 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
           gap: 12px;
           padding: ${cardMode ? "0" : "10px 12px"};
           border-radius: ${cardMode ? "0" : "18px"};
-          border: ${cardMode ? "none" : "1px solid rgba(255,255,255,0.10)"};
-          background: ${cardMode ? "transparent" : "rgba(0,0,0,0.26)"};
+          border: none;
+          background: ${cardMode ? "transparent" : "rgba(0,0,0,0.22)"};
           backdrop-filter: ${cardMode ? "none" : "blur(14px)"};
           -webkit-backdrop-filter: ${cardMode ? "none" : "blur(14px)"};
         }
@@ -386,15 +360,15 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
           height: 40px;
           padding: 0 14px;
           border-radius: 999px;
-          border: 1px solid rgba(255,255,255,0.14);
-          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.10);
+          background: rgba(255,255,255,0.07);
           color: var(--text);
           cursor: pointer;
           font-weight: 850;
         }
         .bcPillPrimary{
-          border: 1px solid rgba(120,160,255,0.28);
-          background: linear-gradient(180deg, rgba(120,160,255,0.40), rgba(120,160,255,0.18));
+          border: 1px solid rgba(120,160,255,0.26);
+          background: linear-gradient(180deg, rgba(120,160,255,0.38), rgba(120,160,255,0.16));
         }
 
         .bcHint{
@@ -405,8 +379,8 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
           z-index: 30;
           padding: 10px 12px;
           border-radius: 999px;
-          border: 1px solid rgba(255,255,255,0.10);
-          background: rgba(0,0,0,0.30);
+          border: none;
+          background: rgba(0,0,0,0.28);
           color: var(--text);
           font-size: 12px;
           opacity: 0.86;
