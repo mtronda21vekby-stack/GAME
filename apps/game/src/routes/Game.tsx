@@ -84,39 +84,32 @@ export function Game() {
 
       <div style={{ padding: 12 }}>
         {!started ? (
-          <div className="glassStrong bc-container" style={{ padding: 18 }}>
+          <div
+            className="glassStrong bc-container bc-motion"
+            style={{
+              padding: 18,
+              borderRadius: 22,
+              background: "rgba(0,0,0,0.18)"
+            }}
+          >
             <div className="bc-h2">Контейнер EvoFish</div>
 
-            <div className="bc-p" style={{ marginTop: 8 }}>
-              Звук по умолчанию <b>ВЫКЛ</b>. Нажми “Открыть EvoFish” — игра загрузится в изолированном iframe (логика игры не ломается).
+            <div className="bc-p" style={{ marginTop: 8, opacity: 0.9 }}>
+              Звук по умолчанию <b>ВЫКЛ</b>. Нажми “Открыть EvoFish”.
             </div>
 
-            <div className="bc-row" style={{ marginTop: 12, flexWrap: "wrap" }}>
-              <Button variant="primary" leftIconSrc={Icons.play} onClick={() => setStarted(true)}>
+            <div className="bc-row" style={{ marginTop: 14, flexWrap: "wrap" }}>
+              <Button variant="primary" size="lg" leftIconSrc={Icons.play} onClick={() => setStarted(true)}>
                 Открыть EvoFish
               </Button>
 
-              <Button variant="secondary" leftIconSrc={Icons.settings} onClick={() => setDrawer(true)}>
+              <Button variant="secondary" size="lg" leftIconSrc={Icons.settings} onClick={() => setDrawer(true)}>
                 Настройки
               </Button>
 
-              <Button variant="ghost" onClick={() => (window.location.href = PATHS.lobby)}>
+              <Button variant="ghost" size="lg" onClick={() => (window.location.href = PATHS.lobby)}>
                 Lobby
               </Button>
-
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  document.documentElement.requestFullscreen?.().catch(() => {});
-                }}
-              >
-                Fullscreen
-              </Button>
-            </div>
-
-            <div className="bc-divider" style={{ marginTop: 14 }} />
-            <div className="bc-p" style={{ marginTop: 10, opacity: 0.8 }}>
-              Если видишь страницу “Place your EvoFish build here…” — значит ещё не положил реальный билд EvoFish в <b>apps/game/public/evofish/</b>.
             </div>
           </div>
         ) : (
@@ -128,7 +121,6 @@ export function Game() {
         <SettingsPanel settings={settings} onChange={saveSettings} />
       </Drawer>
 
-      {/* Mobile premium hint */}
       <LandscapeHint />
     </main>
   );
