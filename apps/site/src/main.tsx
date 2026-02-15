@@ -5,10 +5,13 @@ import "@blackcrown/ui";
 import "./app.css";
 import { App } from "./routes/Home";
 import { registerSW } from "./pwa/registerSW";
+import { ErrorBoundary } from "./ErrorBoundary";
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </React.StrictMode>
 );
 
