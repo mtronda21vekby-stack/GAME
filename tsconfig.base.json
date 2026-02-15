@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": [
+      "vite/client"
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@blackcrown/ui": [
+        "packages/ui/src/index.ts"
+      ],
+      "@blackcrown/core": [
+        "packages/core/src/index.ts"
+      ],
+      "@blackcrown/assets": [
+        "packages/assets/src/index.ts"
+      ]
+    }
+  }
+}
