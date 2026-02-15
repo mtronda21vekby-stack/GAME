@@ -1,0 +1,24 @@
+.apple-bg{
+  background: var(--grad-1), var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  min-height: 100%;
+}
+
+.glass{
+  background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.06));
+  border: 1px solid var(--stroke);
+  box-shadow: var(--shadow-soft);
+  border-radius: var(--r-lg);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+}
+
+.glassStrong{
+  background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.08));
+  border: 1px solid rgba(255,255,255,0.16);
+  box-shadow: var(--shadow);
+  border-radius: var(--r-lg);
+  backdrop-filter: blur(calc(var(--blur) + 6px));
+  -webkit-backdrop-filter: blur(calc(var(--blur) + 6px));
+}
