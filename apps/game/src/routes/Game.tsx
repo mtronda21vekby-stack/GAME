@@ -5,59 +5,77 @@ import { userStorage, track } from "@blackcrown/core";
 import { EvoFishFrame } from "../features/container/EvoFishFrame";
 import { SettingsPanel, GameSettings } from "../features/container/SettingsPanel";
 
+const PATHS = {
+  site: "/",
+  lobby: "/lobby/"
+} as const;
+
 export function Game() {
   const nickname = userStorage.getString("nickname", "");
-  const name = nickname || "Player";
+  const name = nickname || "Игрок";
 
   const [drawer, setDrawer] = useState(false);
   const [started, setStarted] = useState(false);
 
-  const [settings, setSettings] = useState<GameSettings>(() => userStorage.getJSON<GameSettings>("gameSettings", {
-    sound: false,
-    fpsCounter: false,
-    quality: "high",
-    inputMode: "auto"
-  }));
+  const [settings, setSettings] = useState<GameSettings>(() =>
+    userStorage.getJSON<GameSettings>("gameSettings", {
+      sound: false,
+      fpsCounter: false,
+      quality: "high",
+      inputMode: "auto"
+    })
+  );
 
   const saveSettings = (next: GameSettings) => {
     setSettings(next);
     userStorage.setJSON("gameSettings", next);
   };
 
-  const topBar = useMemo(() => (
-    <div className="bc-row" style={{
-      justifyContent: "space-between",
-      padding: "max(12px, env(safe-area-inset-top)) 12px 12px",
-      position: "sticky",
-      top: 0,
-      zIndex: 10,
-      background: "linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0))",
-      backdropFilter: "blur(14px)",
-      WebkitBackdropFilter: "blur(14px)"
-    }}>
-      <div className="bc-row" style={{ gap: 10 }}>
-        <img alt="" src={Icons.crown} width="20" height="20" />
-        <div style={{ fontWeight: 850 }}>Game</div>
-        <div className="bc-faint">— {name}</div>
-      </div>
+  const topBar = useMemo(
+    () => (
+      <div
+        className="bc-row"
+        style={{
+          justifyContent: "space-between",
+          padding: "max(12px, env(safe-area-inset-top)) 12px 12px",
+          position: "sticky",
+          top: 0,
+          zIndex: 10,
+          background: "linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0))",
+          backdropFilter: "blur(14px)",
+          WebkitBackdropFilter: "blur(14px)"
+        }}
+      >
+        <div className="bc-row" style={{ gap: 10 }}>
+          <img alt="" src={Icons.crown} width="20" height="20" />
+          <div style={{ fontWeight: 850 }}>Игра</div>
+          <div className="bc-faint">— {name}</div>
+        </div>
 
-      <div className="bc-row" style={{ flexWrap: "wrap" }}>
-        <Button variant="secondary" leftIconSrc={Icons.settings} onClick={() => setDrawer(true)}>
-          Settings
-        </Button>
-        <Button
-          variant="primary"
-          leftIconSrc={Icons.play}
-          onClick={() => {
-            track({ type: "cta_click", id: "play_container" });
-            setStarted(true);
-          }}
-        >
-          {started ? "Reload" : "Play"}
-        </Button>
+        <div className="bc-row" style={{ flexWrap: "wrap" }}>
+          <Button variant="ghost" onClick={() => (window.location.href = PATHS.site)}>
+            На сайт
+          </Button>
+
+          <Button variant="secondary" leftIconSrc={Icons.settings} onClick={() => setDrawer(true)}>
+            Настройки
+          </Button>
+
+          <Button
+            variant="primary"
+            leftIconSrc={Icons.play}
+            onClick={() => {
+              track({ type: "cta_click", id: "play_container" });
+              setStarted(true);
+            }}
+          >
+            {started ? "Перезапуск" : "Играть"}
+          </Button>
+        </div>
       </div>
-    </div>
-  ), [name, started]);
+    ),
+    [name, started]
+  );
 
   return (
     <main className="apple-bg" style={{ minHeight: "100%" }}>
@@ -66,29 +84,46 @@ export function Game() {
       <div style={{ padding: 12 }}>
         {!started ? (
           <div className="glassStrong bc-container" style={{ padding: 18 }}>
-            <div className="bc-h2">EvoFish Container</div>
+            <div className="bc-h2">Контейнер EvoFish</div>
+
             <div className="bc-p" style={{ marginTop: 8 }}>
-              Sound is <b>OFF</b> by default. Click Play to load EvoFish in isolated iframe.
+              Звук по умолчанию <b>ВЫКЛ</b>. Нажми “Открыть EvoFish” — игра загрузится в изолированном iframe (логика игры не ломается).
             </div>
 
             <div className="bc-row" style={{ marginTop: 12, flexWrap: "wrap" }}>
               <Button variant="primary" leftIconSrc={Icons.play} onClick={() => setStarted(true)}>
-                Open EvoFish
+                Открыть EvoFish
               </Button>
+
               <Button variant="secondary" leftIconSrc={Icons.settings} onClick={() => setDrawer(true)}>
-                Settings
+                Настройки
               </Button>
-              <Button variant="ghost" onClick={() => { document.documentElement.requestFullscreen?.().catch(() => {}); }}>
+
+              <Button variant="ghost" onClick={() => (window.location.href = PATHS.lobby)}>
+                Lobby
+              </Button>
+
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  document.documentElement.requestFullscreen?.().catch(() => {});
+                }}
+              >
                 Fullscreen
               </Button>
             </div>
+
+            <div className="bc-divider" style={{ marginTop: 14 }} />
+            <div className="bc-p" style={{ marginTop: 10, opacity: 0.8 }}>
+              Если видишь страницу “Place your EvoFish build here…” — значит ты ещё не положил реальный билд EvoFish в <b>apps/game/public/evofish/</b>.
+            </div>
           </div>
         ) : (
-          <EvoFishFrame src="/evofish/index.html" settings={settings} />
+          <EvoFishFrame src="/game/evofish/index.html" settings={settings} />
         )}
       </div>
 
-      <Drawer open={drawer} title="Game Settings" onClose={() => setDrawer(false)}>
+      <Drawer open={drawer} title="Настройки игры" onClose={() => setDrawer(false)}>
         <SettingsPanel settings={settings} onChange={saveSettings} />
       </Drawer>
     </main>
