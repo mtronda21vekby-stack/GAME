@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from "react";
+import { userStorage, track } from "@blackcrown/core";
 import { Button, Drawer } from "@blackcrown/ui";
 import { Icons } from "@blackcrown/assets";
-import { userStorage, track } from "@blackcrown/core";
 import { EvoFishFrame } from "../features/container/EvoFishFrame";
 import { SettingsPanel, GameSettings } from "../features/container/SettingsPanel";
+import { LandscapeHint } from "../features/container/LandscapeHint";
 
 const PATHS = {
   site: "/",
@@ -115,7 +116,7 @@ export function Game() {
 
             <div className="bc-divider" style={{ marginTop: 14 }} />
             <div className="bc-p" style={{ marginTop: 10, opacity: 0.8 }}>
-              Если видишь страницу “Place your EvoFish build here…” — значит ты ещё не положил реальный билд EvoFish в <b>apps/game/public/evofish/</b>.
+              Если видишь страницу “Place your EvoFish build here…” — значит ещё не положил реальный билд EvoFish в <b>apps/game/public/evofish/</b>.
             </div>
           </div>
         ) : (
@@ -126,6 +127,9 @@ export function Game() {
       <Drawer open={drawer} title="Настройки игры" onClose={() => setDrawer(false)}>
         <SettingsPanel settings={settings} onChange={saveSettings} />
       </Drawer>
+
+      {/* Mobile premium hint */}
+      <LandscapeHint />
     </main>
   );
 }
