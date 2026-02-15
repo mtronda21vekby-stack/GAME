@@ -25,9 +25,7 @@ function copyDir(src, dst) {
 }
 
 function ensureExists(p, label) {
-  if (!fs.existsSync(p)) {
-    throw new Error(`${label} not found: ${p}. Run builds first.`);
-  }
+  if (!fs.existsSync(p)) throw new Error(`${label} not found: ${p}. Run builds first.`);
 }
 
 ensureExists(SITE, "site dist");
@@ -46,36 +44,23 @@ copyDir(GAME, path.join(OUT, "game"));
 // 3) lobby -> /lobby
 copyDir(LOBBY, path.join(OUT, "lobby"));
 
-// ---- Shared static paths (IMPORTANT) ----
-// Our UI icons are referenced as absolute "/icons/...". When apps are nested under /game and /lobby,
-// we still want icons to resolve from root "/icons".
-// We copy icons from site build to root.
+// Root shared assets referenced as "/icons/..."
 const siteIcons = path.join(SITE, "icons");
-if (fs.existsSync(siteIcons)) {
-  copyDir(siteIcons, path.join(OUT, "icons"));
-}
+if (fs.existsSync(siteIcons)) copyDir(siteIcons, path.join(OUT, "icons"));
 
-// PWA icons referenced as "/pwa/icons/..."
+// Root shared assets referenced as "/pwa/..."
 const sitePwa = path.join(SITE, "pwa");
-if (fs.existsSync(sitePwa)) {
-  copyDir(sitePwa, path.join(OUT, "pwa"));
-}
+if (fs.existsSync(sitePwa)) copyDir(sitePwa, path.join(OUT, "pwa"));
 
-// ---- Combined SPA redirects ----
-// site routes: /about /support /privacy /terms etc
-// game routes: /game and /game/*
-// lobby routes: /lobby and /lobby/*
+// Redirects for SPA routing (site + nested apps)
 const redirects = [
   "/game/*   /game/index.html   200",
   "/lobby/*  /lobby/index.html  200",
   "/*        /index.html        200"
 ].join("\n") + "\n";
-
 fs.writeFileSync(path.join(OUT, "_redirects"), redirects, "utf-8");
 
-// ---- Headers ----
-// Site offline caching is OK, but game must be NO-CACHE.
-// On Pages, _headers is path-matched; we enforce /game as no-store.
+// Headers: site can cache shell normally, game must be NO-CACHE (no-store)
 const headers = [
   "/*",
   "  X-Content-Type-Options: nosniff",
@@ -96,10 +81,10 @@ const headers = [
   "  Cache-Control: no-store",
   ""
 ].join("\n");
-
 fs.writeFileSync(path.join(OUT, "_headers"), headers, "utf-8");
 
-console.log("Assembled dist/ for single-domain deployment:");
-console.log(" - /        -> site");
-console.log(" - /game/   -> game");
-console.log(" - /lobby/  -> lobby");
+console.log("OK: dist/ assembled for single-domain deployment.");
+console.log("Routes:");
+console.log("  /        -> site");
+console.log("  /game/   -> game");
+console.log("  /lobby/  -> lobby");
