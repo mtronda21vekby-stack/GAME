@@ -73,12 +73,21 @@ function Home() {
 
       <main className="bc-container" style={{ padding: "16px 0 44px" }}>
         <section className="heroGrid">
-          <div className="glassStrong bc-motion" style={{ padding: 22 }}>
+          {/* Echo an AI: premium hero */}
+          <div
+            className="glassStrong shimmerBorder echoGrain bc-motion"
+            style={{ padding: 22, position: "relative", overflow: "hidden" }}
+          >
+            <div className="echo-orb" style={{ right: -140, top: -160 }} />
+            <div className="echo-orb" style={{ left: -160, bottom: -180, opacity: 0.28 }} />
+
             <h1 className="bc-h1">Premium browser games.<br/>Apple-like UX.</h1>
             <p className="bc-p" style={{ marginTop: 10, maxWidth: 720 }}>
               BlackCrown is the front door. EvoFish is the game. Lobby is where squads meet.
               Motion is 120fps-friendly: only transform/opacity.
             </p>
+
+            <div style={{ marginTop: 14 }} className="echo-line" />
 
             <div className="bc-row" style={{ marginTop: 16, flexWrap: "wrap" }}>
               <Button variant="primary" size="lg" leftIconSrc={Icons.play} onClick={onPlay}>
@@ -169,7 +178,7 @@ function Home() {
 
 function Kpi(props: { title: string; value: string; desc: string }) {
   return (
-    <div className="bc-card" style={{ padding: 14, borderRadius: 16, background: "rgba(255,255,255,0.06)" }}>
+    <div className="bc-card shimmerBorder echoGrain" style={{ padding: 14, borderRadius: 16, background: "rgba(255,255,255,0.05)" }}>
       <div className="bc-faint" style={{ fontSize: 13 }}>{props.title}</div>
       <div style={{ fontWeight: 850, letterSpacing: "-0.02em", fontSize: 20, marginTop: 4 }}>{props.value}</div>
       <div className="bc-p" style={{ marginTop: 4 }}>{props.desc}</div>
