@@ -5,9 +5,14 @@ import { createLobbyModel, LobbyState } from "../features/lobby/lobbyModel";
 import { PlayersPanel } from "../features/lobby/PlayersPanel";
 import { ChatPanel } from "../features/lobby/ChatPanel";
 
+const PATHS = {
+  site: "/",
+  game: "/game/"
+} as const;
+
 export function Lobby() {
   const nickname = userStorage.getString("nickname", "");
-  const me = nickname || "Player";
+  const me = nickname || "Игрок";
   const lobbyId = "main";
 
   const model = useMemo(() => createLobbyModel({ lobbyId, me }), [lobbyId, me]);
@@ -26,12 +31,12 @@ export function Lobby() {
       <div className="bc-container" style={{ padding: "max(12px, env(safe-area-inset-top)) 0 18px" }}>
         <div className="bc-row" style={{ justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
           <div className="bc-col" style={{ gap: 2 }}>
-            <div className="bc-h2">Lobby</div>
-            <div className="bc-p">Local mock transport. Open multiple tabs to test 8 players.</div>
+            <div className="bc-h2">Лобби</div>
+            <div className="bc-p">Пока локальный mock-транспорт. Открой 2 вкладки — увидишь “8 игроков”.</div>
           </div>
           <div className="bc-row" style={{ flexWrap: "wrap" }}>
-            <Button variant="secondary" onClick={() => (window.location.href = "/")}>Back to Site</Button>
-            <Button variant="primary" onClick={() => (window.location.href = "/game")}>Go to Game</Button>
+            <Button variant="secondary" onClick={() => (window.location.href = PATHS.site)}>На сайт</Button>
+            <Button variant="primary" onClick={() => (window.location.href = PATHS.game)}>В игру</Button>
           </div>
         </div>
 
