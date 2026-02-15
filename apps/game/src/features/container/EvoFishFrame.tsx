@@ -68,23 +68,19 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
-  // Pseudo fullscreen: always works
   const [pseudoFs, setPseudoFs] = useState(false);
-  // Native fullscreen state
   const [nativeFs, setNativeFs] = useState(false);
 
-  // Premium UI controls
+  // "Immersive" overlay UI (premium)
   const [uiHidden, setUiHidden] = useState(false);
   const hideTimer = useRef<number | null>(null);
 
+  const inFullscreen = nativeFs || pseudoFs;
+
   const meta = useMemo(() => {
     const s = props.settings;
-    return `Quality: ${s.quality}, Input: ${s.inputMode}, FPS: ${
-      s.fpsCounter ? "ON" : "OFF"
-    }, Sound: ${s.sound ? "ON" : "OFF"}`;
+    return `Quality: ${s.quality}, Input: ${s.inputMode}, FPS: ${s.fpsCounter ? "ON" : "OFF"}, Sound: ${s.sound ? "ON" : "OFF"}`;
   }, [props.settings]);
-
-  const inFullscreen = nativeFs || pseudoFs;
 
   const clearHideTimer = () => {
     if (hideTimer.current) {
@@ -96,9 +92,7 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
   const scheduleAutoHide = () => {
     clearHideTimer();
     if (!inFullscreen) return;
-    hideTimer.current = window.setTimeout(() => {
-      setUiHidden(true);
-    }, 2200);
+    hideTimer.current = window.setTimeout(() => setUiHidden(true), 1800);
   };
 
   const showUiNow = () => {
@@ -107,16 +101,17 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
     scheduleAutoHide();
   };
 
-  // Listen fullscreen change
+  // fullscreen change tracking
   useEffect(() => {
     const onFs = () => {
       const active = isNativeFullscreenActive();
       setNativeFs(active);
-      // entering/exiting native fullscreen should reset UI state
-      if (!active && !pseudoFs) setUiHidden(false);
-      if (active) {
+      if (active || pseudoFs) {
         setUiHidden(false);
         scheduleAutoHide();
+      } else {
+        setUiHidden(false);
+        clearHideTimer();
       }
     };
 
@@ -135,30 +130,29 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pseudoFs]);
 
-  // ESC exits pseudo fullscreen too; F toggles fullscreen on desktop
+  // hotkeys: Esc exit, F toggle, U toggle overlay UI
   useEffect(() => {
     const onKey = async (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setPseudoFs(false);
-        setUiHidden(false);
-        await tryExit();
+        await exitFullscreen();
       }
-      // Toggle fullscreen with "f" / "F" (desktop)
       if (e.key === "f" || e.key === "F") {
         e.preventDefault();
-        if (inFullscreen) {
-          await exitFullscreen();
-        } else {
-          await enterFullscreen();
-        }
+        if (inFullscreen) await exitFullscreen();
+        else await enterFullscreen();
+      }
+      if (e.key === "u" || e.key === "U") {
+        if (!inFullscreen) return;
+        setUiHidden((v) => !v);
+        if (uiHidden) scheduleAutoHide();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inFullscreen]);
+  }, [inFullscreen, uiHidden]);
 
-  // Any interaction should show UI (mouse move / touch)
+  // Any interaction shows overlay UI in fullscreen
   useEffect(() => {
     const onMove = () => {
       if (!inFullscreen) return;
@@ -168,15 +162,29 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
     window.addEventListener("touchstart", onMove, { passive: true });
     window.addEventListener("pointerdown", onMove, { passive: true });
     return () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("touchstart", onMove);
-      window.removeEventListener("pointerdown", onMove);
+      window.removeEventListener("mousemove", onMove as any);
+      window.removeEventListener("touchstart", onMove as any);
+      window.removeEventListener("pointerdown", onMove as any);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inFullscreen]);
 
+  // double click/tap on frame toggles overlay UI
+  const lastTap = useRef<number>(0);
+  const onFrameTap = () => {
+    if (!inFullscreen) return;
+    const now = Date.now();
+    if (now - lastTap.current < 260) {
+      setUiHidden((v) => !v);
+      if (uiHidden) scheduleAutoHide();
+    } else {
+      showUiNow();
+    }
+    lastTap.current = now;
+  };
+
   const enterFullscreen = async () => {
-    // Prefer iframe fullscreen (best for games on PC/Xbox)
+    // Try iframe fullscreen first (best for PC/Xbox)
     const iframe = iframeRef.current as unknown as AnyEl | null;
     const okIframe = await tryEnter(iframe);
     if (okIframe) {
@@ -213,70 +221,64 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
     fr.src = fr.src;
   };
 
-  // Double-tap on frame toggles UI (mobile-friendly)
-  const lastTap = useRef<number>(0);
-  const onFrameTap = () => {
-    if (!inFullscreen) return;
-    const now = Date.now();
-    if (now - lastTap.current < 260) {
-      // double tap
-      setUiHidden((v) => !v);
-      // if we just showed it, keep it visible for a moment then auto-hide
-      if (uiHidden) scheduleAutoHide();
-    } else {
-      // single tap: show UI briefly
-      showUiNow();
-    }
-    lastTap.current = now;
-  };
-
-  const frameHeight = pseudoFs ? "calc(100vh - 140px)" : "62vh";
+  const cardMode = !inFullscreen; // normal view = card, fullscreen = edge-to-edge
+  const frameHeight = inFullscreen ? "100vh" : "62vh";
 
   return (
     <div
       ref={wrapRef}
-      className={`glassStrong bc-motion ${pseudoFs ? "bcPseudoFs" : ""} ${
-        inFullscreen ? "bcFsRoot" : ""
-      }`}
+      className={`bcRoot ${pseudoFs ? "bcPseudoFs" : ""} ${inFullscreen ? "bcImmersive" : ""}`}
       style={{
-        padding: 14,
-        borderRadius: 22,
+        // When not fullscreen: glass card.
+        padding: cardMode ? 14 : 0,
+        borderRadius: cardMode ? 22 : 0,
         overflow: "hidden",
-        position: "relative"
+        position: "relative",
+        border: cardMode ? "1px solid var(--stroke)" : "none",
+        background: cardMode ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.92)"
       }}
     >
-      {/* Top controls (auto-hide in fullscreen) */}
-      <div className={`bcTop ${inFullscreen && uiHidden ? "bcTopHidden" : ""}`}>
-        <div className="bc-row" style={{ justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-          <div className="bc-col" style={{ gap: 2 }}>
-            <div style={{ fontWeight: 900 }}>EvoFish</div>
-            <div className="bc-faint" style={{ fontWeight: 700 }}>{meta}</div>
+      {/* Overlay Top Bar (in fullscreen it floats over the game) */}
+      <div className={`bcOverlay ${inFullscreen && uiHidden ? "bcOverlayHidden" : ""}`}>
+        <div className="bcOverlayInner">
+          <div className="bcOverlayLeft">
+            <div className="bcTitle">EvoFish</div>
+            <div className="bcSub">{meta}</div>
           </div>
 
-          <div className="bc-row" style={{ gap: 10, flexWrap: "wrap" }}>
-            <button className="bc-focus bcBtnMini" onClick={reload}>Reload</button>
+          <div className="bcOverlayRight">
+            <button className="bcPill" onClick={reload}>Reload</button>
 
             {!inFullscreen ? (
-              <button className="bc-focus bcBtnPrimary" onClick={enterFullscreen}>
+              <button className="bcPill bcPillPrimary" onClick={enterFullscreen}>
                 Fullscreen (F)
               </button>
             ) : (
-              <button className="bc-focus bcBtnPrimary" onClick={exitFullscreen}>
-                Закрыть (Esc)
-              </button>
+              <>
+                <button
+                  className="bcPill"
+                  onClick={() => {
+                    setUiHidden((v) => !v);
+                    if (uiHidden) scheduleAutoHide();
+                  }}
+                >
+                  UI (U)
+                </button>
+                <button className="bcPill bcPillPrimary" onClick={exitFullscreen}>
+                  Закрыть (Esc)
+                </button>
+              </>
             )}
           </div>
         </div>
       </div>
 
-      <div style={{ height: 12 }} />
-
-      {/* Frame (tap/move shows UI, double tap toggles UI) */}
+      {/* Frame */}
       <div
         onClick={onFrameTap}
+        className="bcFrameWrap"
         style={{
-          borderRadius: 18,
-          border: "1px solid var(--stroke)",
+          borderRadius: cardMode ? 18 : 0,
           overflow: "hidden",
           background: "rgba(0,0,0,0.25)"
         }}
@@ -288,7 +290,7 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
           style={{
             width: "100%",
             height: frameHeight,
-            minHeight: pseudoFs ? "560px" : "460px",
+            minHeight: cardMode ? "460px" : "100vh",
             border: 0,
             display: "block"
           }}
@@ -297,74 +299,111 @@ export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
         />
       </div>
 
-      {/* Minimal hint in fullscreen when UI hidden */}
+      {/* Minimal hint when overlay is hidden */}
       {inFullscreen && uiHidden ? (
-        <div className="bcFsHint">
-          Двигай мышью/тапни чтобы показать меню · Double tap — скрыть/показать
+        <div className="bcHint">
+          Двигай мышью/тапни · Double tap — UI · F — fullscreen · Esc — выйти
         </div>
       ) : null}
 
-      {/* Styles */}
       <style>{`
-        .bcBtnMini{
-          height: 40px;
-          padding: 0 14px;
-          border-radius: 999px;
-          border: 1px solid var(--stroke);
-          background: rgba(255,255,255,0.08);
-          color: var(--text);
-          cursor: pointer;
-        }
-        .bcBtnPrimary{
-          height: 40px;
-          padding: 0 16px;
-          border-radius: 999px;
-          border: 1px solid rgba(120,160,255,0.28);
-          background: linear-gradient(180deg, rgba(120,160,255,0.40), rgba(120,160,255,0.18));
-          color: var(--text);
-          cursor: pointer;
-          font-weight: 800;
+        .bcPseudoFs{
+          position: fixed !important;
+          inset: 0 !important;
+          z-index: 9999 !important;
         }
 
-        /* Top bar container */
-        .bcTop{
+        /* Immersive fullscreen layout */
+        .bcImmersive{
+          width: 100vw !important;
+          height: 100vh !important;
+          padding:
+            env(safe-area-inset-top)
+            env(safe-area-inset-right)
+            env(safe-area-inset-bottom)
+            env(safe-area-inset-left) !important;
+          background: rgba(0,0,0,0.94) !important;
+        }
+
+        /* Overlay top bar */
+        .bcOverlay{
+          position: ${cardMode ? "relative" : "absolute"};
+          top: 0;
+          left: 0;
+          right: 0;
+          z-index: 20;
+          padding: ${cardMode ? "0 0 12px 0" : "max(10px, env(safe-area-inset-top)) 10px 10px"};
           transition: transform 160ms ease, opacity 160ms ease;
           will-change: transform, opacity;
+          pointer-events: auto;
         }
-        .bcTopHidden{
+        .bcOverlayHidden{
           transform: translate3d(0,-10px,0);
           opacity: 0;
           pointer-events: none;
         }
 
-        /* Pseudo fullscreen: always works (mobile + restricted envs) */
-        .bcPseudoFs{
-          position: fixed !important;
-          inset: 0 !important;
-          z-index: 9999 !important;
-          border-radius: 0 !important;
-          padding:
-            max(10px, env(safe-area-inset-top))
-            10px
-            max(10px, env(safe-area-inset-bottom)) !important;
+        .bcOverlayInner{
+          display:flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          padding: ${cardMode ? "0" : "10px 12px"};
+          border-radius: ${cardMode ? "0" : "18px"};
+          border: ${cardMode ? "none" : "1px solid rgba(255,255,255,0.10)"};
+          background: ${cardMode ? "transparent" : "rgba(0,0,0,0.26)"};
+          backdrop-filter: ${cardMode ? "none" : "blur(14px)"};
+          -webkit-backdrop-filter: ${cardMode ? "none" : "blur(14px)"};
         }
 
-        .bcFsHint{
+        .bcOverlayLeft{ min-width: 0; }
+        .bcTitle{ font-weight: 900; letter-spacing: -0.01em; }
+        .bcSub{ margin-top: 2px; font-size: 12px; opacity: 0.8; }
+
+        .bcOverlayRight{ display:flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+
+        .bcPill{
+          height: 40px;
+          padding: 0 14px;
+          border-radius: 999px;
+          border: 1px solid rgba(255,255,255,0.14);
+          background: rgba(255,255,255,0.08);
+          color: var(--text);
+          cursor: pointer;
+          font-weight: 850;
+        }
+        .bcPillPrimary{
+          border: 1px solid rgba(120,160,255,0.28);
+          background: linear-gradient(180deg, rgba(120,160,255,0.40), rgba(120,160,255,0.18));
+        }
+
+        .bcFrameWrap{
+          position: relative;
+          z-index: 10;
+        }
+
+        .bcHint{
           position: absolute;
-          left: 14px;
-          right: 14px;
+          left: 12px;
+          right: 12px;
           bottom: max(12px, env(safe-area-inset-bottom));
+          z-index: 30;
           padding: 10px 12px;
           border-radius: 999px;
-          border: 1px solid var(--stroke);
+          border: 1px solid rgba(255,255,255,0.10);
           background: rgba(0,0,0,0.30);
           color: var(--text);
           font-size: 12px;
-          opacity: 0.85;
+          opacity: 0.86;
           text-align: center;
           pointer-events: none;
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+        }
+
+        /* Reduce motion */
+        @media (prefers-reduced-motion: reduce){
+          .bcOverlay{ transition: none !important; }
         }
       `}</style>
     </div>
