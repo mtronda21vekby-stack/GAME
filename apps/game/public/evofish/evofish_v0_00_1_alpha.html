@@ -1,0 +1,2751 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"/>
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>EvoFish v0.00.1 alpha — v0.00.1 alpha</title>
+<style>
+  :root{
+    --bg:#07121f; --panel:rgba(0,0,0,.35); --panel2:rgba(10,20,35,.78);
+    --bd:rgba(255,255,255,.12); --txt:#e7f2ff; --muted:rgba(231,242,255,.72);
+    --glow:rgba(120,240,255,.25);
+  }
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+  canvas{position:fixed;left:0;top:0;width:100vw;height:100vh;display:block;z-index:1;touch-action:none}
+  /* HUD (как было, но чуть компактнее) */
+  #hud{
+    position:fixed;left:12px;top:12px;z-index:50;
+    background:var(--panel);backdrop-filter:blur(8px);
+    border:1px solid var(--bd);border-radius:12px;
+    padding:10px 12px;min-width:220px;
+    transform:scale(.92);transform-origin:top left;
+    pointer-events:auto;
+  }
+  #hud .row{display:flex;justify-content:space-between;gap:10px;font-size:12px;opacity:.97}
+  #bars{margin-top:8px}
+  .bar{height:8px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;margin:6px 0}
+  .bar>i{display:block;height:100%;width:50%}
+  #hp>i{background:linear-gradient(90deg,#ff5a5a,#ffb14a)}
+  #xp>i{background:linear-gradient(90deg,#4ad4ff,#8cffc1)}
+  #st>i{background:linear-gradient(90deg,#b98cff,#4ad4ff)}
+  #tips{
+    position:fixed;left:12px;bottom:72px;z-index:40;
+    background:rgba(0,0,0,.22);backdrop-filter:blur(8px);
+    border:1px solid rgba(255,255,255,.10);border-radius:12px;
+    padding:10px 12px;max-width:520px;font-size:12px;line-height:1.35;
+    pointer-events:none;
+    transform:scale(.94);transform-origin:bottom left;
+  }
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.18);font-size:11px;opacity:.95;margin-right:6px}
+  kbd{padding:2px 6px;border-radius:8px;border:1px solid rgba(255,255,255,.20);background:rgba(255,255,255,.06);font-size:11px}
+  /* Start */
+  #start{
+    position:fixed;inset:0;display:flex;z-index:100;
+    align-items:center;justify-content:center;
+    background:radial-gradient(circle at 50% 30%,#153a60,#07121f 70%);
+  }
+  #start .box{
+    width:min(780px,92vw);
+    border:1px solid rgba(255,255,255,.14);border-radius:18px;
+    background:rgba(0,0,0,.30);backdrop-filter:blur(10px);
+    padding:18px 18px 14px 18px;
+  }
+  #start h1{margin:0 0 10px 0;font-size:22px}
+  #start p{margin:6px 0 0 0;font-size:13px;opacity:.92;line-height:1.45}
+  #btnStart{
+    margin-top:14px;display:inline-flex;gap:10px;align-items:center;
+    padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.18);
+    background:rgba(255,255,255,.06);cursor:pointer;font-weight:700;user-select:none;
+  }
+  #btnStart:hover{background:rgba(255,255,255,.10)}
+  /* Bottom-left dock (табы) */
+  #dock{
+    position:fixed;left:12px;bottom:12px;z-index:80;
+    display:flex;gap:10px;align-items:center;
+    background:rgba(0,0,0,.28);backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,.12);border-radius:16px;
+    padding:8px 8px;
+    pointer-events:auto;
+  }
+  .tabBtn{
+    width:36px;height:36px;border-radius:14px;
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(255,255,255,.06);
+    display:grid;place-items:center;
+    cursor:pointer;user-select:none;
+    box-shadow:0 0 0 0 rgba(120,240,255,.0);
+    transition:.15s transform,.15s background,.15s box-shadow;
+  }
+  .tabBtn:hover{transform:translateY(-1px);background:rgba(255,255,255,.10)}
+  .tabBtn.active{box-shadow:0 0 0 3px rgba(120,240,255,.18);border-color:rgba(120,240,255,.35)}
+  .ico{width:18px;height:18px;display:block}
+  /* Drawer */
+  #shade{
+    position:fixed;inset:0;z-index:90;
+    background:rgba(0,0,0,.38);
+    display:none;
+    pointer-events:none; /* включаем только когда открыт drawer */
+  }
+  #drawer{
+    position:fixed;left:12px;bottom:72px;z-index:95;
+    width:min(420px,92vw);max-height:min(70vh,560px);
+    border-radius:18px;border:1px solid rgba(255,255,255,.14);
+    background:rgba(10,20,35,.82);backdrop-filter:blur(12px);
+    overflow:hidden;
+    display:none;
+    pointer-events:auto;
+    box-shadow:0 18px 60px rgba(0,0,0,.45);
+  }
+  #drawerHeader{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 12px;border-bottom:1px solid rgba(255,255,255,.10);
+  }
+  #drawerTitle{font-weight:800;font-size:13px;letter-spacing:.2px}
+  #drawerClose{
+    cursor:pointer;border-radius:12px;padding:6px 10px;
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(255,255,255,.06);
+    user-select:none;
+  }
+  #drawerClose:hover{background:rgba(255,255,255,.10)}
+  #drawerBody{padding:12px;overflow:auto;max-height:calc(min(70vh,560px) - 54px)}
+  .muted{color:var(--muted);font-size:12px}
+  .hr{height:1px;background:rgba(255,255,255,.10);margin:10px 0}
+  /* Buttons */
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:9px 12px;border-radius:12px;
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(255,255,255,.06);
+    cursor:pointer;font-weight:700;font-size:12px;
+    user-select:none;
+  }
+  .btn:hover{background:rgba(255,255,255,.10)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  /* Lists */
+  .list{display:flex;flex-direction:column;gap:10px}
+  .card{
+    border:1px solid rgba(255,255,255,.12);border-radius:14px;
+    padding:10px;background:rgba(255,255,255,.04);
+  }
+  .row2{display:flex;justify-content:space-between;gap:10px;align-items:center}
+  .small{font-size:11px;color:rgba(231,242,255,.75)}
+  /* Icons (coins/perks) */
+  .icoPearl,.icoCoral,.icoSpd,.icoDmg,.icoShd{
+    width:14px;height:14px;border-radius:999px;display:inline-block;vertical-align:-2px;margin-right:6px;
+    box-shadow:0 0 0 1px rgba(255,255,255,.10) inset, 0 4px 14px rgba(0,0,0,.25);
+  }
+  /* Skin thumbnails */
+  .skinThumb{width:22px;height:22px;border-radius:10px;display:inline-block;flex:0 0 auto;
+    background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);
+    box-shadow:0 6px 18px rgba(0,0,0,.25) inset; position:relative; overflow:hidden}
+  .skinThumb:after{content:'';position:absolute;inset:-6px;border-radius:14px;opacity:.65;
+    background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.25), transparent 55%);}
+  .skin_default{background:linear-gradient(135deg, rgba(120,180,220,.35), rgba(40,70,120,.35));}
+  .skin_premium_fish{background:linear-gradient(135deg, rgba(70,220,255,.65), rgba(190,255,230,.35));}
+  .skin_neon_koi{background:linear-gradient(135deg, rgba(255,120,220,.45), rgba(120,240,255,.35));}
+  .skin_reef_royal{background:linear-gradient(135deg, rgba(255,220,120,.35), rgba(120,180,255,.30));}
+  .skin_shark_classic{background:linear-gradient(135deg, rgba(190,210,220,.45), rgba(70,90,110,.30));}
+  .skin_shark_tiger{background:repeating-linear-gradient(135deg, rgba(190,210,220,.45) 0 8px, rgba(70,90,110,.22) 8px 16px);}
+  .skin_mega_deep{background:linear-gradient(135deg, rgba(90,100,110,.45), rgba(20,25,30,.35));}
+  .skin_mega_bone{background:linear-gradient(135deg, rgba(210,210,200,.35), rgba(70,70,80,.30));}
+
+  .skin_clown_pop{background:repeating-linear-gradient(135deg, rgba(255,150,90,.45) 0 8px, rgba(255,255,255,.20) 8px 16px);}
+  .skin_angler_glow{background:linear-gradient(135deg, rgba(40,60,90,.45), rgba(10,20,35,.35));}
+  .skin_deep_sapphire{background:linear-gradient(135deg, rgba(60,120,255,.40), rgba(20,40,90,.35));}
+  .skin_gold_scale{background:linear-gradient(135deg, rgba(255,215,120,.42), rgba(120,80,20,.28));}
+  .skin_cyber_fish{background:repeating-linear-gradient(135deg, rgba(120,240,255,.35) 0 6px, rgba(20,30,60,.25) 6px 12px);}
+  .skin_pirate_fish{background:linear-gradient(135deg, rgba(255,120,120,.30), rgba(40,20,30,.35));}
+  .skin_shark_shadow{background:linear-gradient(135deg, rgba(90,100,110,.40), rgba(15,18,22,.35));}
+  .skin_shark_azure{background:linear-gradient(135deg, rgba(120,200,255,.35), rgba(20,40,80,.30));}
+  .skin_shark_white{background:linear-gradient(135deg, rgba(235,245,255,.38), rgba(80,90,110,.28));}
+  .skin_mega_lava{background:linear-gradient(135deg, rgba(255,110,70,.38), rgba(40,10,10,.35));}
+  .skin_mega_ice{background:linear-gradient(135deg, rgba(170,240,255,.38), rgba(20,60,80,.30));}
+  .skin_mega_nebula{background:linear-gradient(135deg, rgba(200,140,255,.35), rgba(80,160,255,.28));}
+
+  .icoPearl{background:radial-gradient(circle at 30% 30%, #fff, #bfe9ff 45%, #3fa8ff 100%);filter:drop-shadow(0 0 8px rgba(120,240,255,.25))}
+  .icoCoral{border-radius:6px;transform:rotate(45deg);background:linear-gradient(135deg,#ff6d7a,#ffcc6d)}
+  .icoSpd{background:linear-gradient(135deg,#5bf0ff,#2b79ff)}
+  .icoDmg{background:linear-gradient(135deg,#ffd36d,#ff7a2b)}
+  .icoShd{background:linear-gradient(135deg,#9affc1,#35d47b)}
+  /* Mutation pick overlay */
+  #pickOverlay{
+    position:fixed;inset:0;z-index:110;
+    display:none;align-items:center;justify-content:center;padding:18px;
+    background:rgba(0,0,0,.55);backdrop-filter:blur(10px);
+    pointer-events:auto;
+  }
+  #pickPanel{
+    width:min(980px,100%);border-radius:16px;
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(10,20,35,.85);
+    padding:18px;
+  }
+  #pickPanel h2{margin:0 0 10px 0;font-size:16px}
+  #choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .pickCard{cursor:pointer;transition:.15s transform,.15s background}
+  .pickCard:hover{transform:translateY(-2px);background:rgba(255,255,255,.06)}
+  /* Toast */
+  #toast{
+    position:fixed;top:16px;right:16px;z-index:120;
+    background:rgba(10,20,35,.85);backdrop-filter:blur(8px);
+    border:1px solid rgba(255,215,0,.35);border-radius:12px;
+    padding:12px;max-width:320px;display:none;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="hud">
+  <div class="row"><b>EvoFish</b><span id="ver">v0.00.1 alpha</span></div>
+  <div class="row"><span>Biome</span><span id="biomeName">—</span></div>
+  <div class="row"><span>Tier</span><span id="tier">1</span></div>
+  <div class="row"><span>Level</span><span id="lvl">1</span></div>
+  <div class="row"><span>Mass</span><span id="mass">1.00</span></div>
+  <div class="row"><span>DMG</span><span id="dmg">10</span></div>
+  <div class="row"><span>SPD</span><span id="spd">160</span></div>
+  <div class="row"><span>Buffs</span><span id="buffs">—</span></div>
+  <div class="row"><span><span class="icoPearl"></span><span id="pearls">0</span></span><span><span class="icoCoral" style="margin-right:6px"></span><span id="corals">0</span></span></div>
+  <div class="row"><span>FPS</span><span id="fps">—</span></div>
+  <div id="bars">
+    <div class="row"><span>HP</span><span id="hpTxt">60/60</span></div>
+    <div class="bar" id="hp"><i></i></div>
+    <div class="row"><span>XP</span><span id="xpTxt">0/100</span></div>
+    <div class="bar" id="xp"><i></i></div>
+    <div class="row"><span>Stamina</span><span id="stTxt">100%</span></div>
+    <div class="bar" id="st"><i></i></div>
+  </div>
+</div>
+
+<div id="tips">
+  <div><span class="pill">Управление</span> Мышь/тач — направление • <kbd>Space</kbd> или двойной тап — рывок • ЛКМ/тап — укус</div>
+  <div style="margin-top:6px;opacity:.88">Съесть целиком можно, если твоя <b>Mass</b> ≥ <b>1.08×</b> Mass цели.</div>
+</div>
+
+<div id="dock">
+  <div class="tabBtn active" id="tHud" title="Хаб">
+    <svg class="ico" viewBox="0 0 24 24" fill="none"><path d="M3 12c4-4 10-6 18-2-3 6-9 8-18 2Z" stroke="white" stroke-width="1.6" opacity=".9"/><circle cx="16.5" cy="10.5" r="1.2" fill="white" opacity=".9"/></svg>
+  </div>
+  <div class="tabBtn" id="tShop" title="Магазин">
+    <svg class="ico" viewBox="0 0 24 24" fill="none"><path d="M7 7h14l-2 9H8L7 7Z" stroke="white" stroke-width="1.6" opacity=".9"/><path d="M7 7 6 4H3" stroke="white" stroke-width="1.6" opacity=".9"/><circle cx="9" cy="20" r="1.2" fill="white" opacity=".9"/><circle cx="18" cy="20" r="1.2" fill="white" opacity=".9"/></svg>
+  </div>
+  <div class="tabBtn" id="tQuests" title="Задания">
+    <svg class="ico" viewBox="0 0 24 24" fill="none"><path d="M6 4h12v16H6z" stroke="white" stroke-width="1.6" opacity=".9"/><path d="M8 8h8M8 12h8M8 16h6" stroke="white" stroke-width="1.6" opacity=".9"/></svg>
+  </div>
+  <div class="tabBtn" id="tCraft" title="Крафт">
+    <svg class="ico" viewBox="0 0 24 24" fill="none"><path d="M14 3 3 14l7 7L21 10l-7-7Z" stroke="white" stroke-width="1.6" opacity=".9"/><path d="M10 7 17 14" stroke="white" stroke-width="1.6" opacity=".9"/></svg>
+  </div>
+  <div class="tabBtn" id="tSettings" title="Настройки">
+    <svg class="ico" viewBox="0 0 24 24" fill="none"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z" stroke="white" stroke-width="1.6" opacity=".9"/><path d="M4 12l2-1 1-2-1-2 2-2 2 1 2-1 1-2h3l1 2 2 1 2-1 2 2-1 2 1 2 2 1-2 3-2-1-2 1-1 2h-3l-1-2-2-1-2 1-2-2 1-2-1-2-2-1Z" stroke="white" stroke-width="1.1" opacity=".35"/></svg>
+  </div>
+</div>
+
+<div id="shade"></div>
+<div id="drawer" role="dialog" aria-modal="true">
+  <div id="drawerHeader">
+    <div id="drawerTitle">—</div>
+    <div id="drawerClose">Закрыть</div>
+  </div>
+  <div id="drawerBody"></div>
+</div>
+
+<div id="pickOverlay">
+  <div id="pickPanel">
+    <h2>Эволюция! Выбери 1 мутацию</h2>
+    <div id="choices"></div>
+    <div style="margin-top:10px;font-size:12px;opacity:.9">Мутации стакаются. Редкие сильнее.</div>
+  </div>
+</div>
+
+<div id="toast">
+  <div style="font-size:12px;color:#ffd700;margin-bottom:4px;font-weight:900">🏆</div>
+  <div id="toastTitle" style="font-size:12px;font-weight:800"></div>
+  <div id="toastDesc" class="small"></div>
+</div>
+
+<div id="start">
+  <div class="box">
+    <h1>EvoFish — v0.00.1 alpha</h1>
+    <p>Рост → эволюция → мутации → биомы → NPC. <b>Звук по умолчанию выключен</b> (включается в настройках).</p>
+    <p><b>Цель:</b> прокачайся, дойди до Tier 12. На 30 уровне — форма “Акула”, на 60 — “Мегалодон”.</p>
+    <div id="btnStart">▶ Играть</div>
+    <p style="opacity:.7;margin-top:10px">Подсказка: если открываешь через file:// — всё работает без сервера.</p>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ======= Utils (ES5 safe) ======= */
+var TAU = Math.PI*2;
+function clamp(v,a,b){ return Math.max(a, Math.min(b,v)); }
+function lerp(a,b,t){ return a+(b-a)*t; }
+function rnd(a,b){ if(a===undefined)a=0; if(b===undefined)b=1; return a+Math.random()*(b-a); }
+function rndi(a,b){ return Math.floor(rnd(a,b+1)); }
+function dist(ax,ay,bx,by){ var dx=ax-bx, dy=ay-by; return Math.sqrt(dx*dx+dy*dy); }
+function norm(dx,dy){ var L=Math.sqrt(dx*dx+dy*dy)||1; return [dx/L, dy/L, L]; }
+function now(){ return (window.performance && performance.now)? performance.now() : Date.now(); }
+
+/* ======= Canvas ======= */
+var canvas=document.getElementById('c');
+var ctx=canvas.getContext('2d',{alpha:false});
+var W=0,H=0,DPR=1;
+function resize(){
+  DPR=Math.max(1, Math.min(2.0, window.devicePixelRatio||1));
+  W=Math.floor(innerWidth*DPR);
+  H=Math.floor(innerHeight*DPR);
+  canvas.width=W; canvas.height=H;
+}
+addEventListener('resize', resize, {passive:true});
+resize();
+
+/* ======= FPS ======= */
+var fps=60, fc=0, lastF=0;
+function tickFPS(t){
+  fc++;
+  if(t-lastF>=1000){ fps=fc; fc=0; lastF=t; document.getElementById('fps').textContent=String(fps); }
+}
+
+/* ======= Save ======= */
+var SAVE_KEY='evofish_save_v0_00_1_alpha';
+var gameSave={
+  pearls:0, corals:0, achievements:[],
+  settings:{quality:2, particles:1.0, sound:0.0},
+  ownedSkins:{}, equippedSkin:'default',
+  questClaims:{}, questDay:''
+};
+function loadSave(){
+  try{
+    var s=localStorage.getItem(SAVE_KEY);
+    if(s){
+      var p=JSON.parse(s);
+      if(p && typeof p==='object'){
+        if(p.pearls!=null) gameSave.pearls=p.pearls|0;
+        if(p.corals!=null) gameSave.corals=p.corals|0;
+        if(p.achievements) gameSave.achievements=p.achievements;
+        if(p.settings) gameSave.settings=p.settings;
+        if(p.ownedSkins) gameSave.ownedSkins=p.ownedSkins;
+        if(p.equippedSkin) gameSave.equippedSkin=p.equippedSkin;
+      }
+    }
+  }catch(e){}
+}
+function saveGame(){
+  try{
+    localStorage.setItem(SAVE_KEY, JSON.stringify(gameSave));
+  }catch(e){}
+}
+loadSave();
+
+/* ======= Settings (no UI sliders yet, but working) ======= */
+var graphicsQuality = clamp(gameSave.settings && gameSave.settings.quality!=null ? gameSave.settings.quality : 2, 1, 3);
+var particleMul = clamp(gameSave.settings && gameSave.settings.particles!=null ? gameSave.settings.particles : 1.0, 0.3, 3.0);
+var soundVol = clamp(gameSave.settings && gameSave.settings.sound!=null ? gameSave.settings.sound : 0.0, 0.0, 1.0);
+
+/* ======= World data ======= */
+var Tier=[];
+for(var i=0;i<12;i++){
+  var t=i+1;
+  Tier.push({
+    t:t,
+    baseHP: Math.round(60*Math.pow(1.28,t-1)),
+    baseDMG: Math.round(10*Math.pow(1.22,t-1)),
+    baseSPD: Math.round(180*Math.pow(1.02,t-1)),
+    xpToNext: Math.round(100*Math.pow(1.35,t-1)),
+    radius: 10*Math.pow(1.12,t-1)
+  });
+}
+var Biomes=[
+  {id:'reef', name:'Риф', tint1:'#0a2b3f', tint2:'#134d67', hazard:0.00, tierMin:1, tierMax:4},
+  {id:'abyss', name:'Глубины', tint1:'#070b1d', tint2:'#0c1a3b', hazard:0.05, tierMin:3, tierMax:8},
+  {id:'ice', name:'Ледяная впадина', tint1:'#06202a', tint2:'#1b5a6a', hazard:0.08, tierMin:6, tierMax:10},
+  {id:'vent', name:'Вулканический разлом', tint1:'#1a0b16', tint2:'#4b1a33', hazard:0.12, tierMin:9, tierMax:12}
+];
+var WORLD={ w:6400, h:4200, pelletsTarget:420, npcTarget:70, perksTarget:5, biome:Biomes[0], difficulty:1.0 };
+
+/* ======= Player ======= */
+var player={
+  x:WORLD.w*0.5, y:WORLD.h*0.5, vx:0, vy:0,
+  tier:1, level:1, xp:0, xpToNext:Tier[0].xpToNext,
+  levelXp:0, levelXpToNext:220,
+  mass:1.0, r:Tier[0].radius,
+  hp:Tier[0].baseHP, hpMax:Tier[0].baseHP,
+  speed:Tier[0].baseSPD, dmg:Tier[0].baseDMG,
+  hpM:1.0, speedM:1.0, dmgM:1.0, dmgTakenM:1.0,
+  st:1.0, stMax:1.0, stRegen:0.24, stRegenM:1.0,
+  dashCost:0.35, dashPow:520, invulnT:0, biteCd:0,
+  biteAnimT:0,
+  temp:{spdT:0, dmgT:0, shdT:0},
+  worldAggroM:1.0, xpOnHitM:1.0,
+  thorns:0, venom:0, venomDps:0, suction:false, chain:false, phase:false,
+  form:'fish',
+  skin: gameSave.equippedSkin || 'default'
+};
+player.pearls = gameSave.pearls|0;
+player.corals = gameSave.corals|0;
+
+function applyTierStats(){
+  // safety clamps (stacking mutations)
+  player.hpM=clamp(player.hpM,0.6,4.0);
+  player.speedM=clamp(player.speedM,0.6,2.8);
+  player.dmgM=clamp(player.dmgM,0.6,4.5);
+  var base=Tier[player.tier-1];
+  player.hpMax=Math.round(base.baseHP*player.hpM);
+  var spdBuff = (player.temp.spdT>0)?1.25:1.0;
+  var dmgBuff = (player.temp.dmgT>0)?1.25:1.0;
+  var slow = (player.slowT && player.slowT>0)?0.75:1.0;
+  player.speed=base.baseSPD*player.speedM*spdBuff*slow;
+  player.dmg=Math.round(base.baseDMG*player.dmgM*dmgBuff);
+  player.r=base.radius*(1+(player.mass-1)*0.20);
+  player.xpToNext=base.xpToNext;
+}
+applyTierStats();
+
+/* ======= Entities ======= */
+var entities=[], pellets=[], vfx=[], perks=[];
+
+/* ======= Input ======= */
+var input={x:0,y:0, down:false, bite:false, dash:false, lastTap:0};
+function pointerPos(ev){
+  var rect=canvas.getBoundingClientRect();
+  var x=(ev.clientX-rect.left)*DPR;
+  var y=(ev.clientY-rect.top)*DPR;
+  return {x:x,y:y};
+}
+canvas.addEventListener('pointermove', function(ev){
+  var p=pointerPos(ev); input.x=p.x; input.y=p.y;
+},{passive:true});
+canvas.addEventListener('pointerdown', function(ev){
+  if(ev && ev.preventDefault) ev.preventDefault();
+  try{ if(canvas.setPointerCapture) canvas.setPointerCapture(ev.pointerId); }catch(e){}
+  var p=pointerPos(ev); input.x=p.x; input.y=p.y;
+  input.down=true; input.bite=true;
+  var t=now();
+  if(t-input.lastTap<280) input.dash=true;
+  input.lastTap=t;
+},{passive:false});
+canvas.addEventListener('pointerup', function(){ input.down=false; },{passive:true});
+addEventListener('keydown', function(ev){
+  if(ev.code==='Space') input.dash=true;
+  if(ev.code==='KeyR') resetRun();
+});
+
+/* ======= Keyboard + Gamepad (PC/Xbox) ======= */
+var kb={u:false,d:false,l:false,r:false, lastNX:1,lastNY:0};
+function kbVec(){
+  var x=0,y=0;
+  if(kb.l) x-=1;
+  if(kb.r) x+=1;
+  if(kb.u) y-=1;
+  if(kb.d) y+=1;
+  if(x||y){
+    var n=norm(x,y); kb.lastNX=n[0]; kb.lastNY=n[1];
+    return {x:n[0],y:n[1],active:true};
+  }
+  return {x:0,y:0,active:false};
+}
+var gp={active:false, lx:0,ly:0, rx:0,ry:0, dash:false, bite:false, connected:false};
+function pollGamepad(){
+  gp.active=false; gp.dash=false; gp.bite=false;
+  var pads = (navigator.getGamepads && navigator.getGamepads()) ? navigator.getGamepads() : [];
+  if(!pads) return;
+  var p=null;
+  for(var i=0;i<pads.length;i++){ if(pads[i]){ p=pads[i]; break; } }
+  if(!p) return;
+  gp.connected=true;
+  var ax = p.axes || [];
+  var lx = ax[0]||0, ly = ax[1]||0, rx = ax[2]||0, ry = ax[3]||0;
+  // deadzone
+  var dz=0.18;
+  if(Math.abs(lx)<dz) lx=0;
+  if(Math.abs(ly)<dz) ly=0;
+  if(Math.abs(rx)<dz) rx=0;
+  if(Math.abs(ry)<dz) ry=0;
+  gp.lx=lx; gp.ly=ly; gp.rx=rx; gp.ry=ry;
+  if(lx||ly||rx||ry) gp.active=true;
+
+  // Xbox mapping: A dash, X bite, RT bite
+  var b = p.buttons || [];
+  var aBtn = b[0] && b[0].pressed;
+  var xBtn = b[2] && b[2].pressed;
+  var rt = b[7] ? (b[7].value||0) : 0;
+  if(aBtn) gp.dash=true;
+  if(xBtn || rt>0.35) gp.bite=true;
+}
+function preventNavKeys(ev){
+  // prevent page scroll / browser actions for gameplay keys
+  var k=ev.code;
+  if(k==='ArrowUp'||k==='ArrowDown'||k==='ArrowLeft'||k==='ArrowRight'||k==='Space') {
+    if(ev && ev.preventDefault) ev.preventDefault();
+  }
+}
+addEventListener('keydown', function(ev){
+  preventNavKeys(ev);
+  var c=ev.code;
+  if(c==='KeyW'||c==='ArrowUp') kb.u=true;
+  if(c==='KeyS'||c==='ArrowDown') kb.d=true;
+  if(c==='KeyA'||c==='ArrowLeft') kb.l=true;
+  if(c==='KeyD'||c==='ArrowRight') kb.r=true;
+  // Space dash already handled above, keep
+});
+addEventListener('keyup', function(ev){
+  var c=ev.code;
+  if(c==='KeyW'||c==='ArrowUp') kb.u=false;
+  if(c==='KeyS'||c==='ArrowDown') kb.d=false;
+  if(c==='KeyA'||c==='ArrowLeft') kb.l=false;
+  if(c==='KeyD'||c==='ArrowRight') kb.r=false;
+});
+
+/* ======= Audio (disabled by default) ======= */
+var audio=null, audioStarted=false;
+function startAudio(){
+  if(audioStarted) return;
+  if(soundVol<=0) return; // sound off by default
+  audioStarted=true;
+  try{
+    var AC=window.AudioContext||window.webkitAudioContext;
+    var ac=new AC();
+    var master=ac.createGain(); master.gain.value=soundVol*0.18; master.connect(ac.destination);
+    var pad1=ac.createOscillator(); pad1.type='sine';
+    var pad2=ac.createOscillator(); pad2.type='triangle';
+    var padGain=ac.createGain(); padGain.gain.value=0.08;
+    var filter=ac.createBiquadFilter(); filter.type='lowpass'; filter.frequency.value=520; filter.Q.value=0.7;
+    pad1.connect(filter); pad2.connect(filter); filter.connect(padGain); padGain.connect(master);
+    pad1.frequency.value=110; pad2.frequency.value=165;
+    pad1.start(); pad2.start();
+    audio={ac:ac, master:master, filter:filter};
+  }catch(e){}
+}
+function sfx(type,str){
+  if(!audio || soundVol<=0) return;
+  var ac=audio.ac;
+  var g=ac.createGain(); g.gain.value=0.06*(str||1)*soundVol;
+  var o=ac.createOscillator(); o.type='square';
+  o.connect(g); g.connect(audio.master);
+  var t=ac.currentTime;
+  if(type==='bite'){
+    o.frequency.setValueAtTime(320,t);
+    o.frequency.exponentialRampToValueAtTime(140,t+0.07);
+    g.gain.setValueAtTime(0.09*(str||1)*soundVol,t);
+    g.gain.exponentialRampToValueAtTime(0.001,t+0.09);
+    o.start(t); o.stop(t+0.10);
+  }else if(type==='hit'){
+    o.frequency.setValueAtTime(120,t);
+    o.frequency.exponentialRampToValueAtTime(80,t+0.12);
+    g.gain.setValueAtTime(0.08*(str||1)*soundVol,t);
+    g.gain.exponentialRampToValueAtTime(0.001,t+0.14);
+    o.start(t); o.stop(t+0.15);
+  }else if(type==='evolve'){
+    o.type='triangle';
+    o.frequency.setValueAtTime(220,t);
+    o.frequency.exponentialRampToValueAtTime(720,t+0.22);
+    g.gain.setValueAtTime(0.10*(str||1)*soundVol,t);
+    g.gain.exponentialRampToValueAtTime(0.001,t+0.25);
+    o.start(t); o.stop(t+0.26);
+  }
+}
+
+/* ======= Achievements / Quests ======= */
+var ACH=[
+ {id:'first_kill', title:'Первая кровь', desc:'Убей первую рыбу', reward:{pearls:5}},
+ {id:'kills_25', title:'Разминка', desc:'Убей 25 рыб', reward:{pearls:20}},
+ {id:'kills_200', title:'Мясорубка', desc:'Убей 200 рыб', reward:{pearls:120,corals:2}},
+ {id:'tier_5', title:'Хищник', desc:'Достигни 5 тира', reward:{pearls:20,corals:1}},
+ {id:'tier_10', title:'Апекс', desc:'Достигни 10 тира', reward:{pearls:80,corals:3}},
+ {id:'lvl_10', title:'Опытный', desc:'Достигни 10 уровня', reward:{pearls:20}},
+ {id:'lvl_30', title:'Акула!', desc:'Достигни 30 уровня', reward:{pearls:120,corals:2}},
+ {id:'lvl_60', title:'Мегалодон!', desc:'Достигни 60 уровня', reward:{pearls:260,corals:4}},
+ {id:'craft_1', title:'Сварил первое', desc:'Скрафти 1 предмет', reward:{pearls:15}},
+ {id:'craft_10', title:'Ремесленник', desc:'Скрафти 10 предметов', reward:{pearls:120,corals:2}},
+ {id:'skins_1', title:'Стиль', desc:'Купи 1 скин', reward:{pearls:40}},
+ {id:'boss_1', title:'Босс повержен', desc:'Победи 1 босса', reward:{pearls:120,corals:2}},
+ {id:'boss_5', title:'Охотник на титанов', desc:'Победи 5 боссов', reward:{pearls:400,corals:6}}
+];
+var stats={kills:0, startTime:Date.now(), mutations:0, perksPicked:0, artifacts:0};
+function hasAch(id){
+  var a=gameSave.achievements||[];
+  for(var i=0;i<a.length;i++) if(a[i]===id) return true;
+  return false;
+}
+function unlockAch(id){
+  if(hasAch(id)) return;
+  var def=null;
+  for(var i=0;i<ACH.length;i++) if(ACH[i].id===id) def=ACH[i];
+  if(!def) return;
+  if(!gameSave.achievements) gameSave.achievements=[];
+  gameSave.achievements.push(id);
+  if(def.reward){
+    if(def.reward.pearls) player.pearls += def.reward.pearls;
+    if(def.reward.corals) player.corals += def.reward.corals;
+  }
+  toast(def.title, def.desc);
+  syncSaveFromPlayer();
+  saveGame();
+}
+function checkAch(){
+  if(stats.kills>=1) unlockAch('first_kill');
+  if(stats.kills>=25) unlockAch('kills_25');
+  if(stats.kills>=200) unlockAch('kills_200');
+  if(player.tier>=5) unlockAch('tier_5');
+  if(player.tier>=10) unlockAch('tier_10');
+  if(player.level>=10) unlockAch('lvl_10');
+  if(player.level>=30) unlockAch('lvl_30');
+  if(player.level>=60) unlockAch('lvl_60');
+  if(stats.crafts>=1) unlockAch('craft_1');
+  if(stats.crafts>=10) unlockAch('craft_10');
+  if(stats.skinsBought>=1) unlockAch('skins_1');
+  if(stats.bossKills>=1) unlockAch('boss_1');
+  if(stats.bossKills>=5) unlockAch('boss_5');
+}
+function toast(title,desc){
+  var el=document.getElementById('toast');
+  document.getElementById('toastTitle').textContent=title;
+  document.getElementById('toastDesc').textContent=desc;
+  el.style.display='block';
+  setTimeout(function(){ el.style.display='none'; }, 2800);
+}
+
+/* ======= Mutations ======= */
+function mut(id,name,rarity,w,desc,apply,opt){ var o={id:id,name:name,rarity:rarity,w:w,desc:desc,apply:apply}; if(opt){ for(var k in opt){ o[k]=opt[k]; } } return o; }
+var MUTATIONS=[
+  mut('bigger_bite','Большая пасть','Common',40,'+18% урона укуса.',function(p){ p.dmgM*=1.18; }),
+  mut('stream_tail','Стрим-хвост','Common',40,'+10% скорости.',function(p){ p.speedM*=1.10; }),
+  mut('thick_scales','Плотная чешуя','Common',38,'+20% max HP.',function(p){ p.hpM*=1.20; p.hp=Math.min(p.hp,p.hpMax); }),
+  mut('stamina_gills','Жабры-турбо','Common',36,'+30% реген стамины.',function(p){ p.stRegenM*=1.30; }),
+  mut('keen_eyes','Зоркость','Common',34,'+8% зум-обзор (камера чуть дальше).',function(p){ p.zoomBonus=(p.zoomBonus||0)+0.08; }),
+  mut('slick_skin','Скользкая кожа','Common',34,'-10% входящего урона от контакта.',function(p){ p.dmgTakenM*=0.90; }),
+  mut('bite_cooldown','Хищный ритм','Common',32,'-10% перезарядка укуса.',function(p){ p.biteCdM=(p.biteCdM||1)*0.90; }),
+  mut('dash_eff','Экономный рывок','Common',32,'-12% расход стамины на рывок.',function(p){ p.dashCost*=0.88; }),
+  mut('mass_gain','Жадный метаболизм','Common',30,'+12% прирост массы от поглощения.',function(p){ p.massGainM=(p.massGainM||1)*1.12; }),
+  mut('xp_hunger','Опытный голод','Common',30,'+12% XP за поглощение.',function(p){ p.xpGainM=(p.xpGainM||1)*1.12; }),
+  mut('regen','Регенерация','Uncommon',22,'Вне боя (2с без урона) восстанавливаешь 1.2% HP/с.',function(p){ p.regen=true; }),
+  mut('bubble_guard','Пузырь-щит','Uncommon',22,'Поднятый перк SHD даёт ещё +15% отражения.',function(p){ p.shieldThorns=(p.shieldThorns||0)+0.15; }),
+  mut('fin_blades','Лезвия-плавники','Uncommon',22,'+10% урона и +5% скорости.',function(p){ p.dmgM*=1.10; p.speedM*=1.05; }),
+  mut('blood_scent','Запах крови','Uncommon',20,'NPC агрессивнее вблизи. +15% XP за укусы.',function(p){ p.worldAggroM*=1.20; p.xpOnHitM*=1.15; }),
+  mut('spine_barbs','Шипы-барбы','Rare',14,'Отражение 12% урона при контакте.',function(p){ p.thorns=(p.thorns||0)+0.12; }),
+  mut('venom_bite','Ядовитый укус','Rare',14,'Яд: 6% DMG/сек 3 сек.',function(p){ p.venom=(p.venom||0)+0.06; }),
+  mut('dash_slice','Рывок-лезвие','Rare',14,'Рывок наносит 40% DMG в контакте.',function(p){ p.dashDamageM=(p.dashDamageM||0)+0.40; }),
+  mut('bio_glow','Биолюминесценция','Rare',12,'Пульс света раз в 6с замедляет рядом.',function(p){ p.glowPulse=true; }),
+  mut('shock_bite','Электроукус','Rare',12,'Каждый 4-й укус оглушает NPC на 0.35с.',function(p){ p.stun=true; }),
+  mut('armor_plating','Панцирь','Rare',12,'+28% HP, -5% скорость.',function(p){ p.hpM*=1.28; p.speedM*=0.95; }),
+  mut('predator_mark','Метка хищника','Rare',12,'+20% урон по целям выше твоего Tier.',function(p){ p.predMark=true; }),
+  mut('phase_shift','Фазовый сдвиг','Epic',6,'Рывок даёт неуязвимость 0.35с.',function(p){ p.phase=true; }),
+  mut('chain_lightning','Цепной разряд','Epic',6,'Каждый 5-й укус бьёт 2 ближайших (45% DMG).',function(p){ p.chain=true; }),
+  mut('void_suction','Вакуум-пасть','Epic',6,'После укуса слегка притягиваешь цель.',function(p){ p.suction=true; }),
+  mut('time_dilation','Временной пузырь','Epic',5,'Рывок замедляет NPC вокруг на 25% на 1с.',function(p){ p.dashSlow=true; }),
+  mut('boss_hunter','Охотник на боссов','Epic',5,'+18% урон по боссам/элитам, +10% добыча.',function(p){ p.bossDMG=true; }),
+  mut('shark_serrated','Зубы-пила','Epic',5,'(Акула) +25% урон укуса, но -6% скорость.',function(p){ if(p.form==='shark'){p.dmgM*=1.25; p.speedM*=0.94;} }),
+  mut('shark_sense','Чутьё акулы','Epic',5,'(Акула) добыча с <40% HP подсвечивается и даёт +20% XP.',function(p){ if(p.form==='shark'){p.finisher=true;} }),
+  mut('mega_bone','Костяные плиты','Legendary',2,'(Мегалодон) +45% HP и отражение 10%.',function(p){ if(p.form==='megalodon'){p.hpM*=1.45; p.thorns=(p.thorns||0)+0.10;} }),
+  mut('mega_rampage','Ярость меги','Legendary',2,'(Мегалодон) после поглощения: +20% скорость на 3с.',function(p){ if(p.form==='megalodon'){p.rampage=true;} }),
+  mut('apex_instinct','Инстинкт апекса','Legendary',2,'Если ты на 10% слабее цели — получаешь +12% скорость и -10% входящего урона.',function(p){ p.fairness=true; })
+
+  ,mut('fin_blades','Лезвия-плавники','Common',30,'+8% урона и +4% скорости.',function(p){ p.dmgM*=1.08; p.speedM*=1.04; })
+  ,mut('deep_lungs','Глубокие лёгкие','Common',28,'+18% макс. стамины.',function(p){ p.stMax*=1.18; p.st=Math.min(p.st,p.stMax); })
+  ,mut('quick_turn','Резкий разворот','Common',28,'+18% управляемость (быстрее разворот).',function(p){ p.turnM=(p.turnM||1)*1.18; })
+  ,mut('bubble_veil','Пузырьковая вуаль','Common',26,'При получении урона: 12% шанс дать щит на 2с.',function(p){ p.procShield=(p.procShield||0)+0.12; })
+  ,mut('gold_nose','Золотой нюх','Common',26,'+10% шанс жемчуга из добычи.',function(p){ p.pearlChanceM=(p.pearlChanceM||1)*1.10; })
+
+  ,mut('bleed_bite','Кровоточащий укус','Rare',16,'Укус накладывает кровотечение: 4% DMG/сек 4с.',function(p){ p.bleed=(p.bleed||0)+0.04; })
+  ,mut('shock_skin','Электро-чешуя','Rare',16,'Контакт бьёт током: 10% шанс нанести 35% DMG.',function(p){ p.procShock=(p.procShock||0)+0.10; })
+  ,mut('armor_plating','Костяные пластины','Rare',16,'-14% входящего урона и +10% HP.',function(p){ p.dmgTakenM*=0.86; p.hpM*=1.10; })
+  ,mut('predator_focus','Фокус хищника','Rare',14,'Если цель слабее на 10% массы — +20% DMG по ней.',function(p){ p.execM=(p.execM||0)+0.20; })
+  ,mut('dash_wake','След рывка','Rare',14,'После рывка: 1.5с +20% скорости.',function(p){ p.postDashSpeedT=(p.postDashSpeedT||0)+1.5; })
+
+  ,mut('meat_vamp','Вампиризм','Epic',6,'Поглощение лечит +8% HP дополнительно.',function(p){ p.devourHealM=(p.devourHealM||0)+0.08; })
+  ,mut('triple_bite','Тройной укус','Epic',6,'Каждый 7-й укус бьёт 3 раза по 30% DMG.',function(p){ p.tripleBite=true; })
+  ,mut('hard_shell','Твёрдый панцирь','Epic',5,'Щит (perks) сильнее: -35% урона вместо -25%.',function(p){ p.shieldStrong=true; })
+  ,mut('hunter_instinct','Инстинкт охоты','Epic',5,'При убийстве: +25% скорость на 2с.',function(p){ p.onKillSpeedT=(p.onKillSpeedT||0)+2.0; })
+  ,mut('pearl_magnet','Магнит жемчуга','Epic',5,'Жемчуг притягивается в радиусе 2.4R.',function(p){ p.pearlMagnet=true; })
+
+  ,mut('shark_rend','Акулий разрыв','Rare',14,'(Акула) +22% DMG укуса.',function(p){ p.dmgM*=1.22; },{form:'shark'})
+  ,mut('shark_nose','Акулий сонар','Common',24,'(Акула) камера ещё дальше +6%.',function(p){ p.zoomBonus=(p.zoomBonus||0)+0.06; },{form:'shark'})
+  ,mut('mega_crush','Давление меги','Epic',5,'(Мегалодон) +18% HP и отражение 10%.',function(p){ p.hpM*=1.18; p.thorns=(p.thorns||0)+0.10; },{form:'megalodon'})
+  ,mut('mega_frenzy','Ярость меги','Rare',12,'(Мегалодон) при <40% HP: +18% DMG.',function(p){ p.frenzy=true; },{form:'megalodon'})
+  ,mut('crit_bite','Критический укус','Uncommon',22,'10% шанс нанести +70% урона укусом.',function(p){ p.crit=(p.crit||0)+0.10; p.critM=(p.critM||1)+0.70; })
+  ,mut('sprint_fin','Спурт плавников','Uncommon',22,'Пока стамина >70%: +12% скорость.',function(p){ p.sprintFin=true; })
+  ,mut('iron_stomach','Железный желудок','Uncommon',20,'Поглощение даёт +6% стамины.',function(p){ p.devourStam=(p.devourStam||0)+0.06; })
+  ,mut('bubble_dash','Пузырьковый рывок','Uncommon',20,'После рывка оставляешь пузырьки: враги в них замедляются на 20% (0.8с).',function(p){ p.dashBubble=true; })
+  ,mut('hunter_radar','Радар охоты','Rare',14,'Цели слабее на 10% массы подсвечиваются мягким контуром.',function(p){ p.radar=true; })
+  ,mut('spike_burst','Шипованный всплеск','Rare',14,'При получении урона: 20% шанс выпустить шипы (15% DMG вокруг).',function(p){ p.spikeBurst=(p.spikeBurst||0)+0.20; })
+  ,mut('dash_refund','Возврат рывка','Rare',14,'Если рывком попал по врагу — вернуть 18% стамины.',function(p){ p.dashRefund=true; })
+  ,mut('thick_mucus','Слизь','Rare',12,'Враги рядом имеют -8% скорости (аура).',function(p){ p.mucusAura=true; })
+  ,mut('plankton_alchemy','Алхимия планктона','Rare',12,'+12% шанс дропа жемчуга и +8% его ценность.',function(p){ p.pearlChanceM=(p.pearlChanceM||1)*1.12; p.pearlValueM=(p.pearlValueM||1)*1.08; })
+  ,mut('double_dash','Двойной рывок','Epic',6,'Раз в 5с можно сделать 2 рывка подряд (вторая стоит +15% стамины).',function(p){ p.doubleDash=true; })
+  ,mut('shock_wave','Ударная волна','Epic',6,'Поглощение даёт волну: отталкивает и замедляет ближайших (0.9с).',function(p){ p.devourWave=true; })
+  ,mut('ink_cloud','Чернильный выброс','Epic',5,'При <35% HP: раз в 12с создаёшь облако — враги теряют агро на 2с.',function(p){ p.inkCloud=true; })
+  ,mut('shark_bleed','Акулий разрез','Rare',12,'(Акула) Кровотечение сильнее: +3% DMG/сек к bleed.',function(p){ p.bleed=(p.bleed||0)+0.03; },{form:'shark'})
+  ,mut('shark_dorsal','Дорсальный плавник','Uncommon',20,'(Акула) +8% скорость и +6% зум.',function(p){ p.speedM*=1.08; p.zoomBonus=(p.zoomBonus||0)+0.06; },{form:'shark'})
+  ,mut('mega_terror','Ужас меги','Epic',5,'(Мегалодон) враги в радиусе 3R получают -10% DMG.',function(p){ p.terrorAura=true; },{form:'megalodon'})
+  ,mut('mega_bulk','Масса меги','Rare',12,'(Мегалодон) +18% прирост массы.',function(p){ p.massGainM=(p.massGainM||1)*1.18; },{form:'megalodon'})
+
+
+];
+
+/* --- Mutation normalization & gating (keeps old content but avoids duplicate ids) --- */
+function mutAllowed(m){
+  if(m.form && m.form!=='any' && m.form!==player.form) return false;
+  if(m.tierMin && player.tier < m.tierMin) return false;
+  if(m.tierMax && player.tier > m.tierMax) return false;
+  return true;
+}
+(function(){
+  var seen={}; var arr=[];
+  for(var i=0;i<MUTATIONS.length;i++){
+    var mm=MUTATIONS[i];
+    if(!mm||!mm.id) continue;
+    if(seen[mm.id]) continue;
+    seen[mm.id]=1;
+    arr.push(mm);
+  }
+  MUTATIONS = arr;
+})();
+
+
+/* ======= Skins ======= */
+var SKINS=[
+ {id:'default', name:'Стандарт', price:0, form:'any', desc:'Базовый скин.'},
+ {id:'premium_fish', name:'Премиум Рыбка', price:100, form:'fish', desc:'Красивая 2D-рыбка (не овал).'},
+ {id:'neon_koi', name:'Неон-Кои', price:160, form:'fish', desc:'Неоновый рисунок + лёгкое свечение.'},
+ {id:'reef_royal', name:'Рифовый Роял', price:220, form:'fish', desc:'Контрастный «премиум» градиент.'},
+ {id:'shark_classic', name:'Акула Классик', price:180, form:'shark', desc:'Классический серый скин для акулы.'},
+ {id:'shark_tiger', name:'Тигровая акула', price:260, form:'shark', desc:'Полосатая, агрессивная.'},
+ {id:'mega_deep', name:'Мегалодон Глубин', price:320, form:'megalodon', desc:'Тёмный, тяжёлый силуэт.'},
+ {id:'mega_bone', name:'Костяной Мегалодон', price:420, form:'megalodon', desc:'Костяные пластины и шрамы.'},
+
+ {id:'clown_pop', name:'Клоун Поп', price:140, form:'fish', desc:'Яркий клоун с полосками.'},
+ {id:'angler_glow', name:'Удильщик', price:240, form:'fish', desc:'Лампочка-удочка и глубокий цвет.'},
+ {id:'deep_sapphire', name:'Сапфир', price:260, form:'fish', desc:'Холодный сапфировый градиент.'},
+ {id:'gold_scale', name:'Золотая чешуя', price:300, form:'fish', desc:'Металлические блики, богато.'},
+ {id:'cyber_fish', name:'Кибер', price:340, form:'fish', desc:'Техно-полосы и подсветка.'},
+ {id:'pirate_fish', name:'Пират', price:380, form:'fish', desc:'Шрам, повязка и стиль.'},
+ {id:'shark_shadow', name:'Акула Тень', price:260, form:'shark', desc:'Тёмная, агрессивная.'},
+ {id:'shark_azure', name:'Акула Азур', price:280, form:'shark', desc:'Синий холодный тон.'},
+ {id:'shark_white', name:'Белая акула', price:320, form:'shark', desc:'Контрастная белая.'},
+ {id:'mega_lava', name:'Мега Лава', price:420, form:'megalodon', desc:'Трещины лавы и жар.'},
+ {id:'mega_ice', name:'Мега Лёд', price:420, form:'megalodon', desc:'Ледяные пластины.'},
+ {id:'mega_nebula', name:'Мега Туманность', price:520, form:'megalodon', desc:'Космический перелив.'},
+
+];
+
+// palette-driven skin rendering (keeps one-file, fast)
+var SKIN_STYLE={
+  premium_fish:{c1:'#46dcff',c2:'#beffe6',c3:'#5078ff',pattern:'none'},
+  neon_koi:{c1:'#ff6ad5',c2:'#6af0ff',c3:'#fff3a0',pattern:'koi'},
+  reef_royal:{c1:'#8cffc1',c2:'#4ad4ff',c3:'#b98cff',pattern:'royal'},
+  clown_pop:{c1:'#ffb36a',c2:'#fff7d0',c3:'#ff5a5a',pattern:'stripes'},
+  angler_glow:{c1:'#20405a',c2:'#0a1423',c3:'#7cffc8',pattern:'glowdot'},
+  deep_sapphire:{c1:'#3c78ff',c2:'#14285a',c3:'#8cffc1',pattern:'none'},
+  gold_scale:{c1:'#ffd778',c2:'#7a5514',c3:'#fff1c8',pattern:'scales'},
+  cyber_fish:{c1:'#78f0ff',c2:'#101e3c',c3:'#b98cff',pattern:'circuit'},
+  pirate_fish:{c1:'#ff7878',c2:'#28141e',c3:'#ffffff',pattern:'pirate'},
+  shark_classic:{c1:'#bfc7d0',c2:'#546070',c3:'#ffffff',pattern:'none'},
+  shark_tiger:{c1:'#d4c4a6',c2:'#6b5a44',c3:'#ffffff',pattern:'tiger'},
+  shark_shadow:{c1:'#6d747c',c2:'#14171b',c3:'#ff5a5a',pattern:'none'},
+  shark_azure:{c1:'#78c8ff',c2:'#142850',c3:'#ffffff',pattern:'none'},
+  shark_white:{c1:'#eef6ff',c2:'#586274',c3:'#0b0f14',pattern:'none'},
+  mega_deep:{c1:'#1f2a3b',c2:'#0a0f18',c3:'#7cffc8',pattern:'glow'},
+  mega_bone:{c1:'#d2d2c8',c2:'#464650',c3:'#ffffff',pattern:'bone'},
+  mega_lava:{c1:'#ff6e46',c2:'#280a0a',c3:'#ffd778',pattern:'cracks'},
+  mega_ice:{c1:'#aaf0ff',c2:'#143c50',c3:'#ffffff',pattern:'plates'},
+  mega_nebula:{c1:'#c88cff',c2:'#50a0ff',c3:'#ffffff',pattern:'stars'}
+};
+
+
+/* ======= UI Drawer content builders ======= */
+var shade=document.getElementById('shade');
+var drawer=document.getElementById('drawer');
+var drawerTitle=document.getElementById('drawerTitle');
+var drawerBody=document.getElementById('drawerBody');
+function openDrawer(title, html){
+  drawerTitle.textContent=title;
+  drawerBody.innerHTML=html;
+  drawer.style.display='block';
+  setTimeout(function(){ refreshDrawerWidgets(); },0);
+  shade.style.display='block';
+  shade.style.pointerEvents='auto';
+}
+function closeDrawer(){
+  drawer.style.display='none';
+  shade.style.display='none';
+  shade.style.pointerEvents='none';
+  // деактив табов кроме HUD
+  setActiveTab('hud');
+}
+document.getElementById('drawerClose').onclick=closeDrawer;
+shade.addEventListener('click', closeDrawer, {passive:true});
+
+function setActiveTab(which){
+  var map={hud:'tHud', shop:'tShop', quests:'tQuests', craft:'tCraft', settings:'tSettings'};
+  for(var k in map){
+    var el=document.getElementById(map[k]);
+    if(el) el.classList.remove('active');
+  }
+  var id=map[which];
+  if(id) document.getElementById(id).classList.add('active');
+}
+
+function fmtCost(cost){
+  var s='';
+  if(cost.pearls) s+='<span class="icoPearl"></span>'+cost.pearls+' ';
+  if(cost.corals) s+='<span class="icoCoral" style="margin-right:6px;display:inline-block"></span>'+cost.corals+' ';
+  return s.trim();
+}
+
+/* ======= Craft ======= */
+var CRAFT=[
+ {id:'heal', name:'Лечение', desc:'Восстановить 50% HP', cost:{pearls:10}, use:function(p){ p.hp=Math.min(p.hpMax, p.hp+p.hpMax*0.5);} },
+ {id:'spd', name:'Скорость', desc:'+25% скорости на 30с', cost:{pearls:15,corals:1}, use:function(p){ p.temp.spdT=Math.max(p.temp.spdT,30);} },
+ {id:'dmg', name:'Урон', desc:'+25% урона на 30с', cost:{pearls:15,corals:1}, use:function(p){ p.temp.dmgT=Math.max(p.temp.dmgT,30);} },
+ {id:'shd', name:'Защита', desc:'-25% входящего урона на 30с', cost:{pearls:15,corals:1}, use:function(p){ p.temp.shdT=Math.max(p.temp.shdT,30);} },
+ {id:'xp', name:'Опыт', desc:'+20% XP на 10 минут', cost:{pearls:25,corals:1}, use:function(p){ p.xpBoostT=Math.max(p.xpBoostT,600);} },
+ {id:'stam', name:'Стамина+', desc:'+15% к макс. стамине (постоянно)', cost:{pearls:30,corals:2}, use:function(p){ p.stMax*=1.15; p.st=Math.min(p.st,p.stMax);} },
+ {id:'reroll', name:'Реролл мутаций', desc:'Открыть выбор мутаций (3) прямо сейчас', cost:{pearls:40,corals:2}, use:function(p){ showMutationPick(); } },
+ {id:'boss', name:'Приманка босса', desc:'Призвать босса биома (если нет активного)', cost:{pearls:60,corals:3}, use:function(p){ if(!activeBoss) spawnBoss(); } }
+];
+function canAfford(cost){
+  if(cost.pearls && player.pearls<cost.pearls) return false;
+  if(cost.corals && player.corals<cost.corals) return false;
+  return true;
+}
+function pay(cost){
+  if(cost.pearls) player.pearls-=cost.pearls;
+  if(cost.corals) player.corals-=cost.corals;
+}
+function renderCraft(){
+  var h='<div class="muted">Крафт использует валюту. Эффекты применяются сразу.</div><div class="hr"></div><div class="list">';
+  for(var i=0;i<CRAFT.length;i++){
+    var it=CRAFT[i];
+    var ok=canAfford(it.cost);
+    h+='<div class="card"><div class="row2"><div><div style="font-weight:800">'+it.name+'</div><div class="small">'+it.desc+'</div></div>'
+      +'<div style="text-align:right"><div class="small">'+fmtCost(it.cost)+'</div>'
+      +'<button class="btn" data-craft="'+it.id+'" '+(ok?'':'disabled')+'>Создать</button></div></div></div>';
+  }
+  h+='</div>';
+  return h;
+}
+function craftClick(id){
+  for(var i=0;i<CRAFT.length;i++){
+    if(CRAFT[i].id===id){
+      var it=CRAFT[i];
+      if(!canAfford(it.cost)) return;
+      pay(it.cost);
+      it.use(player);
+      syncSaveFromPlayer();
+      saveGame();
+      sfx('evolve',0.6);
+      openDrawer('Крафт', renderCraft()); // refresh
+    }
+  }
+}
+
+/* ======= Settings UI ======= */
+function renderSettings(){
+  var h='';
+  h+='<div class="card"><div style="font-weight:900;margin-bottom:6px">Звук</div>'
+    +'<div class="small">По умолчанию выключен. Включи слайдер — и звук стартует.</div>'
+    +'<div style="margin-top:10px" class="row2"><div class="small">Громкость</div>'
+    +'<input id="sVol" type="range" min="0" max="1" step="0.01" value="'+soundVol+'" style="width:220px"></div></div>';
+  h+='<div class="card"><div style="font-weight:900;margin-bottom:6px">Графика</div>'
+    +'<div class="row2"><div class="small">Quality (1..3)</div>'
+    +'<input id="sQual" type="range" min="1" max="3" step="1" value="'+graphicsQuality+'" style="width:220px"></div>'
+    +'<div class="row2" style="margin-top:8px"><div class="small">Particles (0.3..3)</div>'
+    +'<input id="sPart" type="range" min="0.3" max="3" step="0.1" value="'+particleMul+'" style="width:220px"></div>'
+    +'</div>';
+  h+='<div class="row2" style="margin-top:10px">'
+    +'<button class="btn" id="btnSave">💾 Сохранить</button>'
+    +'<button class="btn" id="btnReset">🔄 Сброс</button>'
+    +'</div>';
+  return h;
+}
+function bindSettings(){
+  var sVol=document.getElementById('sVol');
+  var sQual=document.getElementById('sQual');
+  var sPart=document.getElementById('sPart');
+  if(sVol){
+    sVol.addEventListener('input', function(){
+      soundVol=parseFloat(this.value);
+      gameSave.settings.sound=soundVol;
+      if(soundVol>0){ startAudio(); if(audio) audio.master.gain.value=soundVol*0.18; }
+      else { if(audio) audio.master.gain.value=0; }
+      saveGame();
+    });
+  }
+  if(sQual){
+    sQual.addEventListener('input', function(){
+      graphicsQuality=parseInt(this.value,10);
+      gameSave.settings.quality=graphicsQuality;
+      saveGame();
+    });
+  }
+  if(sPart){
+    sPart.addEventListener('input', function(){
+      particleMul=parseFloat(this.value);
+      gameSave.settings.particles=particleMul;
+      saveGame();
+    });
+  }
+  var bS=document.getElementById('btnSave');
+  if(bS) bS.onclick=function(){ syncSaveFromPlayer(); saveGame(); toast('Сохранено','Прогресс сохранён'); };
+  var bR=document.getElementById('btnReset');
+  if(bR) bR.onclick=function(){
+    if(confirm('Сбросить весь прогресс?')){
+      localStorage.removeItem(SAVE_KEY);
+      location.reload();
+    }
+  };
+}
+
+/* ======= Shop ======= */
+function renderShop(){
+  var h='<div class="muted">Скины покупаются за <span class="icoPearl"></span>жемчуг и надеваются на текущую форму (рыба/акула/мегалодон).</div><div class="hr"></div><div class="list">';
+  for(var i=0;i<SKINS.length;i++){
+    var s=SKINS[i];
+    var owned = (!!gameSave.ownedSkins && !!gameSave.ownedSkins[s.id]) || s.price===0;
+    var equipped = (player.skin===s.id);
+    var allowed = (s.form==='any' || s.form===player.form);
+    var needTxt = (!allowed ? (s.form==='fish'?'Нужна Рыба':(s.form==='shark'?'Нужна Акула':'Нужен Мегалодон')) : '');
+    var btn='';
+    if(s.price===0){
+      btn = '<button class="btn" data-skin-eq="'+s.id+'" '+(allowed?'':'disabled')+'>'+ (equipped?'Надето':'Надеть') +'</button>';
+    }else if(!owned){
+      var ok = player.pearls>=s.price;
+      btn = '<button class="btn" data-skin-buy="'+s.id+'" '+((ok)?'':'disabled')+'>Купить</button>';
+    }else{
+      btn = '<button class="btn" data-skin-eq="'+s.id+'" '+(allowed?'':'disabled')+'>'+ (equipped?'Надето':'Надеть') +'</button>';
+    }
+    var priceTxt = s.price?('<span class="icoPearl"></span>'+s.price):'Бесплатно';
+    h+='<div class="card"><div class="row2"><div style="min-width:0"><div style="font-weight:900;display:flex;gap:8px;align-items:center">'
+      +'<span class="pill">'+(s.form==='any'?'Любая':(s.form==='fish'?'Рыба':(s.form==='shark'?'Акула':'Мега')) )+'</span>'
+      +'<span class="skinThumb skin_'+s.id+'"></span><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+s.name+'</span></div>'
+      +'<div class="small">'+s.desc+(needTxt?(' <span class="muted">('+needTxt+')</span>'):'')+'</div></div>'
+      +'<div style="text-align:right"><div class="small">'+priceTxt+'</div>'+btn+'</div></div></div>';
+  }
+  h+='</div>';
+  return h;
+}
+function buySkin(id){
+  for(var i=0;i<SKINS.length;i++){
+    if(SKINS[i].id===id){
+      var s=SKINS[i];
+      if(player.pearls<s.price) return;
+      player.pearls-=s.price;
+      if(!gameSave.ownedSkins) gameSave.ownedSkins={};
+      gameSave.ownedSkins[id]=true;
+      stats.skinsBought=(stats.skinsBought||0)+1;
+      // авто-надевание только если форма подходит
+      if(s.form==='any' || s.form===player.form){ equipSkin(id); }
+      syncSaveFromPlayer(); saveGame();
+      toast('Покупка','Куплен скин: '+s.name);
+      openDrawer('Магазин', renderShop());
+      return;
+    }
+  }
+}
+function equipSkin(id){
+  // проверка формы
+  var s=null;
+  for(var i=0;i<SKINS.length;i++) if(SKINS[i].id===id) s=SKINS[i];
+  if(s && !(s.form==='any' || s.form===player.form)) { toast('Нельзя надеть', 'Этот скин для другой формы.'); return; }
+  player.skin=id;
+  gameSave.equippedSkin=id;
+  syncSaveFromPlayer(); saveGame();
+}
+
+
+/* ======= Drawer widgets (skin thumbs) ======= */
+function refreshDrawerWidgets(){
+  var cans = drawerBody.querySelectorAll('canvas.skinThumbCan');
+  if(!cans || !cans.length) return;
+  for(var i=0;i<cans.length;i++){
+    var c=cans[i];
+    var id=c.getAttribute('data-skinthumb');
+    drawSkinThumb(c, id);
+  }
+}
+function drawSkinThumb(can, skinId){
+  try{
+    var c=can.getContext('2d');
+    var w=can.width, h=can.height;
+    c.clearRect(0,0,w,h);
+    // bg
+    var g=c.createLinearGradient(0,0,0,h);
+    g.addColorStop(0,'rgba(10,20,35,.0)');
+    g.addColorStop(1,'rgba(10,20,35,.0)');
+    c.fillStyle=g; c.fillRect(0,0,w,h);
+    c.save();
+    c.translate(w*0.54,h*0.55);
+    var r=Math.min(w,h)*0.28;
+    var form='fish';
+    for(var i=0;i<SKINS.length;i++){ if(SKINS[i].id===skinId){ form=(SKINS[i].form==='any'?player.form:SKINS[i].form); break; } }
+    if(form==='shark') drawThumbShark(c,r,skinId);
+    else if(form==='megalodon') drawThumbMega(c,r,skinId);
+    else drawThumbFish(c,r,skinId);
+    c.restore();
+    // border
+    c.strokeStyle='rgba(255,255,255,.14)';
+    c.lineWidth=1;
+    c.strokeRect(0.5,0.5,w-1,h-1);
+  }catch(e){}
+}
+function drawThumbFish(c,r,id){
+  var colA='rgba(90,220,255,.95)', colB='rgba(210,255,230,.92)';
+  if(id==='reef_royal'){ colA='rgba(255,190,90,.95)'; colB='rgba(255,110,180,.90)'; }
+  if(id==='neon_koi'){ colA='rgba(255,120,220,.95)'; colB='rgba(120,255,240,.92)'; }
+  if(id==='default'){ colA='rgba(160,230,255,.92)'; colB='rgba(120,200,255,.88)'; }
+  var L=r*2.6, Hh=r*1.25;
+  var grad=c.createLinearGradient(-L*0.6,0,L*0.6,0);
+  grad.addColorStop(0,colA); grad.addColorStop(1,colB);
+  c.fillStyle=grad;
+  c.beginPath();
+  c.moveTo(-L*0.45,0);
+  c.quadraticCurveTo(-L*0.15,-Hh*0.75,L*0.35,-Hh*0.25);
+  c.quadraticCurveTo(L*0.60,0,L*0.35,Hh*0.25);
+  c.quadraticCurveTo(-L*0.15,Hh*0.75,-L*0.45,0);
+  c.fill();
+  // tail
+  c.fillStyle='rgba(255,255,255,.25)';
+  c.beginPath();
+  c.moveTo(-L*0.45,0);
+  c.lineTo(-L*0.70,-Hh*0.55);
+  c.lineTo(-L*0.70,Hh*0.55);
+  c.closePath(); c.fill();
+  // eye
+  c.fillStyle='rgba(255,255,255,.95)'; c.beginPath(); c.arc(L*0.28,-Hh*0.10,r*0.16,0,TAU); c.fill();
+  c.fillStyle='rgba(0,0,0,.75)'; c.beginPath(); c.arc(L*0.32,-Hh*0.10,r*0.08,0,TAU); c.fill();
+}
+function drawThumbShark(c,r,id){
+  var base='rgba(170,190,205,.95)';
+  if(id==='shark_tiger') base='rgba(195,175,150,.95)';
+  var L=r*3.0, Hh=r*1.15;
+  c.fillStyle=base;
+  c.beginPath();
+  c.moveTo(-L*0.55,0);
+  c.quadraticCurveTo(-L*0.10,-Hh*0.80,L*0.45,-Hh*0.20);
+  c.quadraticCurveTo(L*0.80,0,L*0.45,Hh*0.22);
+  c.quadraticCurveTo(-L*0.10,Hh*0.70,-L*0.55,0);
+  c.fill();
+  // dorsal fin
+  c.fillStyle='rgba(255,255,255,.18)';
+  c.beginPath();
+  c.moveTo(0,-Hh*0.20);
+  c.lineTo(r*0.35,-Hh*1.05);
+  c.lineTo(r*0.65,-Hh*0.15);
+  c.closePath(); c.fill();
+  // stripes for tiger
+  if(id==='shark_tiger'){
+    c.strokeStyle='rgba(40,30,20,.35)'; c.lineWidth=2;
+    for(var i=0;i<3;i++){ c.beginPath(); c.moveTo(-r*0.2+i*r*0.55,-Hh*0.35); c.lineTo(-r*0.4+i*r*0.55,Hh*0.35); c.stroke(); }
+  }
+  // eye
+  c.fillStyle='rgba(255,255,255,.92)'; c.beginPath(); c.arc(L*0.34,-Hh*0.12,r*0.14,0,TAU); c.fill();
+  c.fillStyle='rgba(0,0,0,.75)'; c.beginPath(); c.arc(L*0.37,-Hh*0.12,r*0.07,0,TAU); c.fill();
+}
+function drawThumbMega(c,r,id){
+  var base='rgba(70,85,105,.95)';
+  if(id==='mega_bone') base='rgba(155,140,120,.95)';
+  var L=r*3.4, Hh=r*1.25;
+  c.fillStyle=base;
+  c.beginPath();
+  c.moveTo(-L*0.62,0);
+  c.quadraticCurveTo(-L*0.18,-Hh*0.90,L*0.55,-Hh*0.22);
+  c.quadraticCurveTo(L*0.92,0,L*0.55,Hh*0.25);
+  c.quadraticCurveTo(-L*0.18,Hh*0.78,-L*0.62,0);
+  c.fill();
+  if(id==='mega_bone'){
+    c.strokeStyle='rgba(255,255,255,.35)'; c.lineWidth=2;
+    c.beginPath(); c.moveTo(-r*0.2,-Hh*0.35); c.lineTo(r*1.2,-Hh*0.05); c.stroke();
+    c.beginPath(); c.moveTo(-r*0.25,Hh*0.25); c.lineTo(r*1.1,Hh*0.05); c.stroke();
+  }
+  c.fillStyle='rgba(255,255,255,.90)'; c.beginPath(); c.arc(L*0.40,-Hh*0.12,r*0.13,0,TAU); c.fill();
+  c.fillStyle='rgba(0,0,0,.75)'; c.beginPath(); c.arc(L*0.43,-Hh*0.12,r*0.07,0,TAU); c.fill();
+}
+/* ======= Quests ======= */
+function getTodayKey(){
+  var d=new Date();
+  var m=d.getMonth()+1, day=d.getDate();
+  return d.getFullYear()+'-'+(m<10?'0'+m:m)+'-'+(day<10?'0'+day:day);
+}
+function ensureQuestDay(){
+  var k=getTodayKey();
+  if(!gameSave.questDay) gameSave.questDay=k;
+  if(gameSave.questDay!==k){
+    gameSave.questDay=k;
+    gameSave.questClaims={};
+    saveGame();
+  }
+}
+function questId(name){ return 'q_'+name.replace(/[^a-z0-9]+/ig,'_').toLowerCase(); }
+
+function renderQuests(){
+  ensureQuestDay();
+  // Daily + Weekly-lite (reset daily in prototype)
+  var list=[];
+  list.push({id:'kills_10', name:'Съешь 10 рыб', done:(stats.kills>=10), prog:stats.kills+'/10', reward:{pearls:10}});
+  list.push({id:'tier_6', name:'Дойди до Tier 6', done:(player.tier>=6), prog:player.tier+'/6', reward:{pearls:15,corals:1}});
+  list.push({id:'pearls_50', name:'Собери 50 жемчуга', done:(player.pearls>=50), prog:player.pearls+'/50', reward:{corals:1}});
+  list.push({id:'perk_5', name:'Подними 5 перков', done:((stats.perksPicked||0)>=5), prog:(stats.perksPicked||0)+'/5', reward:{pearls:12}});
+  list.push({id:'artifact_1', name:'Найди древнюю раковину', done:((stats.artifacts||0)>=1), prog:(stats.artifacts||0)+'/1', reward:{pearls:20,corals:2}});
+  list.push({id:'level_30', name:'Дойди до уровня 30 (Акула)', done:(player.level>=30), prog:player.level+'/30', reward:{pearls:25}});
+  list.push({id:'elite_3', name:'Победи 3 элитных рыб', done:((stats.elitesKilled||0)>=3), prog:(stats.elitesKilled||0)+'/3', reward:{pearls:18}});
+  list.push({id:'perk_5', name:'Подбери 5 перков', done:((stats.perksPicked||0)>=5), prog:(stats.perksPicked||0)+'/5', reward:{pearls:12}});
+  list.push({id:'shark_skin', name:'Купи 1 скин', done:((stats.skinsBought||0)>=1), prog:(stats.skinsBought||0)+'/1', reward:{corals:1}});
+
+  var h='<div class="muted">Ежедневные задания (в прототипе обновляются каждый день). Сегодня: <b>'+gameSave.questDay+'</b></div>'
+       +'<div class="hr"></div><div class="list">';
+  for(var i=0;i<list.length;i++){
+    var q=list[i];
+    var claimed = !!gameSave.questClaims[q.id];
+    var canClaim = q.done && !claimed;
+    var rw = (q.reward.pearls?('<span class="icoPearl"></span>'+q.reward.pearls+' '):'')+(q.reward.corals?('<span class="icoCoral" style="margin-right:6px;display:inline-block"></span>'+q.reward.corals):'');
+    var btn = canClaim ? '<button class="btn" data-quest-claim="'+q.id+'">Забрать</button>' : ('<button class="btn" disabled>'+(claimed?'Забрано':(q.done?'Готово':'В процессе'))+'</button>');
+    h+='<div class="card"><div class="row2"><div style="min-width:0"><div style="font-weight:900">'+q.name+'</div>'
+      +'<div class="small">Прогресс: '+q.prog+'</div></div>'
+      +'<div style="text-align:right"><div class="small">'+rw+'</div>'+btn+'</div></div></div>';
+  }
+  h+='</div><div class="hr"></div><div class="small">Достижения: '+(gameSave.achievements?gameSave.achievements.length:0)+'/'+ACH.length+'</div>';
+  return h;
+}
+function claimQuest(id){
+  ensureQuestDay();
+  if(gameSave.questClaims[id]) return;
+  // recompute quest status quickly
+  var done=false, reward=null;
+  if(id==='kills_10'){ done=(stats.kills>=10); reward={pearls:10}; }
+  else if(id==='tier_6'){ done=(player.tier>=6); reward={pearls:15,corals:1}; }
+  else if(id==='pearls_50'){ done=(player.pearls>=50); reward={corals:1}; }
+  else if(id==='level_30'){ done=(player.level>=30); reward={pearls:25}; }
+  else if(id==='elite_3'){ done=((stats.elitesKilled||0)>=3); reward={pearls:18}; }
+  else if(id==='perk_5'){ done=((stats.perksPicked||0)>=5); reward={pearls:12}; }
+  else if(id==='shark_skin'){ done=((stats.skinsBought||0)>=1); reward={corals:1}; }
+  if(!done || !reward) return;
+
+  if(reward.pearls) player.pearls += reward.pearls;
+  if(reward.corals) player.corals += reward.corals;
+  gameSave.questClaims[id]=true;
+  syncSaveFromPlayer(); saveGame();
+  toast('Награда', 'Задание выполнено!');
+  openDrawer('Задания', renderQuests());
+}
+
+/* ======= Tab wiring (ABSOLUTE) ======= */
+function bindDrawerEvents(){
+  // Delegate clicks inside drawer
+  drawerBody.onclick=function(ev){
+    var t=ev.target;
+    while(t && t!==drawerBody){
+      var c=t.getAttribute && t.getAttribute('data-craft');
+      if(c){ craftClick(c); return; }
+      var b=t.getAttribute && t.getAttribute('data-skin-buy');
+      if(b){ buySkin(b); return; }
+      var e=t.getAttribute && t.getAttribute('data-skin-eq');
+      if(e){ equipSkin(e); openDrawer('Магазин', renderShop()); return; }
+      var q=t.getAttribute && t.getAttribute('data-quest-claim');
+      if(q){ claimQuest(q); return; }
+      t=t.parentNode;
+    }
+  };
+}
+
+function openTab(which){
+  if(which==='hud'){ closeDrawer(); return; }
+  if(which==='craft'){ setActiveTab('craft'); openDrawer('Крафт', renderCraft()); return; }
+  if(which==='settings'){ setActiveTab('settings'); openDrawer('Настройки', renderSettings()); setTimeout(bindSettings,0); return; }
+  if(which==='shop'){ setActiveTab('shop'); openDrawer('Магазин', renderShop()); return; }
+  if(which==='quests'){ setActiveTab('quests'); openDrawer('Задания', renderQuests()); return; }
+}
+function bindTabs(){
+  document.getElementById('tHud').onclick=function(){ openTab('hud'); };
+  document.getElementById('tShop').onclick=function(){ openTab('shop'); };
+  document.getElementById('tQuests').onclick=function(){ openTab('quests'); };
+  document.getElementById('tCraft').onclick=function(){ openTab('craft'); };
+  document.getElementById('tSettings').onclick=function(){ openTab('settings'); };
+}
+bindTabs();
+bindDrawerEvents();
+
+/* ======= Mutation pick ======= */
+var pickOverlay=document.getElementById('pickOverlay');
+var choicesEl=document.getElementById('choices');
+function weightedPick(list){
+  var sum=0; for(var i=0;i<list.length;i++) sum+=list[i].w;
+  var r=Math.random()*sum;
+  for(var j=0;j<list.length;j++){ r-=list[j].w; if(r<=0) return list[j]; }
+  return list[list.length-1];
+}
+function uniqueChoices(n){
+  var picked={}, out=[], guard=0;
+  var elig=[];
+  for(var i=0;i<MUTATIONS.length;i++){
+    var m=MUTATIONS[i];
+    // legacy fields support + new gating
+    var minT = m.minTier||m.tierMin||1;
+    var maxT = m.maxTier||m.tierMax||999;
+    if(player.tier<minT || player.tier>maxT) continue;
+    if(!mutAllowed(m)) continue;
+    elig.push(m);
+  }
+  if(!elig.length) elig=MUTATIONS;
+  while(out.length<n && guard++<260){
+    var m2=weightedPick(elig);
+    if(!picked[m2.id]){ picked[m2.id]=true; out.push(m2); }
+  }
+  return out;
+}
+function showMutationPick(){
+  if(player.tier>12) return;
+  pickOverlay.style.display='flex';
+  choicesEl.innerHTML='';
+  var opts=uniqueChoices(3);
+  for(var i=0;i<opts.length;i++){
+    (function(m){
+      var div=document.createElement('div');
+      div.className='card pickCard';
+      div.innerHTML='<div style="margin-bottom:8px"><span class="pill">'+m.rarity+'</span><span class="pill">Tier '+player.tier+'</span></div><div style="font-weight:900">'+m.name+'</div><div class="small">'+m.desc+'</div>';
+      div.onclick=function(){
+        m.apply(player);
+        stats.mutations++;
+        pickOverlay.style.display='none';
+        applyTierStats();
+        sfx('evolve',1.1);
+        checkAch();
+        syncSaveFromPlayer(); saveGame();
+      };
+      choicesEl.appendChild(div);
+    })(opts[i]);
+  }
+}
+
+/* ======= Particles ======= */
+function addParticle(x,y,vx,vy,life,size,kind){
+  vfx.push({x:x,y:y,vx:vx,vy:vy,life:life,life0:life,size:size,kind:kind});
+}
+function burst(x,y,count,spd,life,kind){
+  var num=Math.floor(count*particleMul);
+  if(graphicsQuality===1) num=Math.floor(num*0.55);
+  if(graphicsQuality===2) num=Math.floor(num*0.8);
+  for(var i=0;i<num;i++){
+    var a=rnd(0,TAU), s=spd*rnd(0.35,1.0);
+    addParticle(x,y,Math.cos(a)*s,Math.sin(a)*s, life*rnd(0.7,1.2), rnd(1.4,3.6), kind);
+  }
+}
+
+/* ======= Spawn ======= */
+var NPC_TEMPLATES=[
+  {id:'minnow', name:'Малёк', tier:1, hpM:0.90, dmgM:0.70, spdM:1.25, aggro:'Low', trait:'Flee'},
+  {id:'anchovy', name:'Анчоус', tier:1, hpM:0.95, dmgM:0.75, spdM:1.20, aggro:'Low', trait:'School'},
+  {id:'guppy', name:'Гуппи', tier:2, hpM:1.00, dmgM:0.85, spdM:1.10, aggro:'Low', trait:'School'},
+  {id:'clown', name:'Клоун', tier:2, hpM:1.05, dmgM:0.85, spdM:1.05, aggro:'Low', trait:'Reef'},
+  {id:'snapper', name:'Снэппер', tier:3, hpM:1.10, dmgM:0.95, spdM:1.00, aggro:'Med', trait:'Guard'},
+  {id:'eel', name:'Угорь', tier:3, hpM:0.95, dmgM:1.05, spdM:1.10, aggro:'Med', trait:'Zigzag'},
+  {id:'piranha', name:'Пиранья', tier:4, hpM:0.95, dmgM:1.20, spdM:1.12, aggro:'High', trait:'Bleed'},
+  {id:'lionfish', name:'Крылатка', tier:4, hpM:1.10, dmgM:1.05, spdM:0.95, aggro:'Med', trait:'Thorns'},
+  {id:'barracuda', name:'Барракуда', tier:5, hpM:1.00, dmgM:1.25, spdM:1.10, aggro:'High', trait:'Dash'},
+  {id:'stingray', name:'Скат', tier:5, hpM:1.20, dmgM:1.05, spdM:0.92, aggro:'Med', trait:'Wide'},
+  {id:'tuna', name:'Тунец', tier:6, hpM:1.10, dmgM:1.10, spdM:1.12, aggro:'Med', trait:'Fast'},
+  {id:'swordfish', name:'Рыба-меч', tier:6, hpM:1.05, dmgM:1.30, spdM:1.05, aggro:'High', trait:'Pierce'},
+  {id:'orca', name:'Косатка', tier:7, hpM:1.35, dmgM:1.20, spdM:1.02, aggro:'High', trait:'Pack'},
+  {id:'marlin', name:'Марлин', tier:7, hpM:1.10, dmgM:1.35, spdM:1.12, aggro:'High', trait:'Pierce'},
+  {id:'hammer', name:'Акула-молот', tier:8, hpM:1.35, dmgM:1.25, spdM:1.04, aggro:'High', trait:'Stun'},
+  {id:'greatwhite', name:'Белая акула', tier:9, hpM:1.45, dmgM:1.35, spdM:1.06, aggro:'High', trait:'Apex'},
+  {id:'giantsquid', name:'Гигантский кальмар', tier:9, hpM:1.55, dmgM:1.25, spdM:0.98, aggro:'High', trait:'Suction'},
+  {id:'plesio', name:'Плезиозавр', tier:10, hpM:1.75, dmgM:1.35, spdM:1.00, aggro:'High', trait:'Tank'},
+  {id:'leviathan', name:'Левиафан', tier:11, hpM:2.05, dmgM:1.45, spdM:0.98, aggro:'High', trait:'Bossy'},
+  {id:'kraken', name:'Кракен', tier:11, hpM:2.10, dmgM:1.50, spdM:0.96, aggro:'High', trait:'Suction'},
+  {id:'mecha', name:'Меха-рыба', tier:12, hpM:2.20, dmgM:1.60, spdM:1.02, aggro:'High', trait:'Armor'},
+  {id:'abyss', name:'Бездна-Хищник', tier:12, hpM:2.30, dmgM:1.70, spdM:1.06, aggro:'High', trait:'Apex'}
+];
+function chooseTemplate(){
+  var pt=player.tier;
+  // near tiers
+  var pool=[], i;
+  for(i=0;i<NPC_TEMPLATES.length;i++){
+    var t=NPC_TEMPLATES[i];
+    if(Math.abs(t.tier-pt)<=3 && t.tier>=Math.max(1,pt-5)) pool.push(t);
+  }
+  if(pool.length===0) pool=NPC_TEMPLATES.slice();
+  return pool[rndi(0,pool.length-1)];
+}
+function spawnNPC(){
+  var tpl=chooseTemplate();
+  var base=Tier[Math.max(0,Math.min(11,tpl.tier-1))];
+  // mass band +-10% around player
+  var r=Math.random();
+  var band = (r<0.55)?0.90:(r<0.85)?1.00:1.10;
+  var elite = (Math.random() < Math.min(0.16, 0.02 + player.level*0.003));
+  var mass = player.mass * band * rnd(0.96,1.04);
+  var e={
+    id:tpl.id, name:tpl.name, tier:tpl.tier,
+    x:rnd(0,WORLD.w), y:rnd(0,WORLD.h),
+    vx:rnd(-40,40), vy:rnd(-40,40),
+    hpMax: Math.max(10, Math.round(base.baseHP*tpl.hpM*(elite?1.25:1.0))),
+    hp:0,
+    dmg: Math.max(1, Math.round(base.baseDMG*tpl.dmgM*(elite?1.15:1.0))),
+    spd: Math.max(70, base.baseSPD*tpl.spdM*(elite?1.05:1.0)),
+    mass: mass,
+    r: base.radius*(elite?1.05:1.0),
+    aggro: tpl.aggro, trait: tpl.trait,
+    state:'wander', t:0,
+    engaged:false, disengageT:0, retreatT:0, wallT:0,
+    biteCd:rnd(0.2,1.2),
+      biteAnimT:0,
+    slowT:0, poisonT:0, poisonDps:0,
+    wanderTx: rnd(220, WORLD.w-220),
+    wanderTy: rnd(220, WORLD.h-220),
+    wanderT: rnd(1.0, 4.0),
+    roamSeed: rnd(0, 1000),
+    elite:elite
+  };
+  e.hp=e.hpMax;
+  entities.push(e);
+}
+function spawnPellet(){
+  pellets.push({x:rnd(0,WORLD.w), y:rnd(0,WORLD.h), r:rnd(2.5,4.5), pearl:(Math.random()<0.05)});
+}
+function spawnPerk(){
+  // Rare quest pickup: Ancient Shell (artifact). Only one on map.
+  var hasArt=false;
+  for(var i=0;i<perks.length;i++){ if(perks[i] && perks[i].kind==='art') { hasArt=true; break; } }
+  if(!hasArt && Math.random()<0.035){
+    perks.push({kind:'art', x:rnd(260,WORLD.w-260), y:rnd(260,WORLD.h-260), r:14, t:0});
+    return;
+  }
+  var list=[{k:'spd',dur:12},{k:'dmg',dur:12},{k:'shd',dur:12}];
+  var p=list[rndi(0,list.length-1)];
+  perks.push({kind:p.k, x:rnd(0,WORLD.w), y:rnd(0,WORLD.h), r:12});
+}
+function applyPerk(kind){
+  if(kind==='art'){
+    stats.artifacts = (stats.artifacts||0) + 1;
+    // small reward + quest progress
+    player.pearls += 8;
+    if(Math.random()<0.35) player.corals += 1;
+    toast('Находка', 'Древняя раковина + награда!');
+  }
+  else if(kind==='spd') player.temp.spdT=Math.max(player.temp.spdT,12);
+  else if(kind==='dmg') player.temp.dmgT=Math.max(player.temp.dmgT,12);
+  else if(kind==='shd') player.temp.shdT=Math.max(player.temp.shdT,12);
+  stats.perksPicked = (stats.perksPicked||0)+1;
+  burst(player.x,player.y,16,220,0.55,'spark');
+  sfx('evolve',0.6);
+}
+
+/* ======= Biome ======= */
+function pickBiome(){
+  var opts=[];
+  for(var i=0;i<Biomes.length;i++){
+    var b=Biomes[i];
+    if(player.tier>=b.tierMin && player.tier<=b.tierMax) opts.push(b);
+  }
+  WORLD.biome = (opts.length? opts[rndi(0,opts.length-1)] : Biomes[3]);
+  document.getElementById('biomeName').textContent=WORLD.biome.name;
+}
+
+/* ======= Camera zoom (bigger => zoom out) ======= */
+var ZOOM=1.0;
+function getZoom(){
+  // tier 1 -> 1.0, tier 12 -> ~0.62, plus mass impact
+  var t=(player.tier-1)/11;
+  var z=1.0 - t*0.32;
+  var m = clamp((player.mass-1)/6, 0, 1);
+  z -= m*0.10;
+  return clamp(z, 0.55, 1.0);
+}
+function fairnessTick(dt){
+  // if there is a slightly stronger enemy nearby, give a small assist buff
+  var best=null, bestD=1e9;
+  for(var i=0;i<entities.length;i++){
+    var e=entities[i]; if(!e||e.hp<=0) continue;
+    var d=Math.hypot(e.x-player.x, e.y-player.y);
+    if(d<520 && e.mass>player.mass*1.02 && e.mass<player.mass*1.18 && d<bestD){ bestD=d; best=e; }
+  }
+  if(best) player.fairT = Math.max(player.fairT||0, 0.8);
+}
+
+function getCamera(){
+  var z=getZoom();
+  ZOOM = lerp(ZOOM, z, 0.08);
+  var vw=W/ZOOM, vh=H/ZOOM;
+  var x=clamp(player.x - vw*0.5, 0, WORLD.w - vw);
+  var y=clamp(player.y - vh*0.5, 0, WORLD.h - vh);
+  return {x:x,y:y,vw:vw,vh:vh};
+}
+
+/* ======= Combat & progression ======= */
+function canDevour(pm, tm){ return pm >= 1.08*tm; }
+function xpGainScaled(tTier, pTier){
+  var k=Math.pow(tTier/Math.max(1,pTier), 1.2);
+  return clamp(k, 0.10, 1.00);
+}
+function addXP(amount){
+  player.xp += amount;
+  player.levelXp += amount;
+  while(player.levelXp >= player.levelXpToNext){
+    player.levelXp -= player.levelXpToNext;
+    player.level += 1;
+    player.levelXpToNext = Math.round(player.levelXpToNext*1.18);
+    // transformations
+    if(player.level===30){ evolveTo('shark'); }
+    if(player.level===60){ evolveTo('megalodon'); }
+  }
+  while(player.xp >= player.xpToNext){
+    player.xp -= player.xpToNext;
+    tierUp();
+  }
+}
+function evolveTo(form){
+  if(player.form===form) return;
+  player.form=form;
+  if(form==='shark'){
+    player.dmgM*=1.18; player.speedM*=1.06; player.hpM*=0.96;
+    toast('🦈 Акула','Форма акула: выше урон, компактнее.');
+  }else if(form==='megalodon'){
+    player.dmgM*=1.10; player.hpM*=1.10; player.speedM*=0.98;
+    toast('🦈👑 Мегалодон','Форма мегалодон: мощь и бонусы.');
+  }
+  applyTierStats();
+  player.hp = Math.min(player.hpMax, player.hp + player.hpMax*0.35);
+  sfx('evolve',1.4);
+  burst(player.x,player.y,42,260,0.7,'spark');
+  checkAch();
+  syncSaveFromPlayer(); saveGame();
+}
+function tierUp(){
+  player.tier += 1;
+  if(player.tier>12){ player.tier=12; WORLD.difficulty*=1.08; }
+  player.mass += 0.22 + player.tier*0.03;
+  pickBiome();
+  applyTierStats();
+  player.hp=player.hpMax;
+  showMutationPick();
+  checkAch();
+  syncSaveFromPlayer(); saveGame();
+}
+function dealDamage(e, amount){
+  if(e.hp<=0) return;
+  e.hp -= amount;
+  burst(e.x,e.y,10,180,0.35,'spark');
+  if(e.hp<=0) killNPC(e);
+}
+function devour(e){
+  var scale=xpGainScaled(e.tier, player.tier);
+  var xpMul = (player.xpBoostT>0?1.2:1.0) * (player.xpGainM||1);
+  var xp=Math.round(50*Math.pow(1.4, e.tier-1))*scale*xpMul;
+  // finisher (shark)
+  if(player.finisher && e.hp/e.hpMax < 0.40) xp*=1.20;
+  addXP(xp);
+
+  var mg=(0.08+0.02*e.tier)*(player.massGainM||1);
+  player.mass += mg*scale;
+
+  // heal on eat
+  player.hp = Math.min(player.hpMax, player.hp + player.hpMax*0.10);
+
+  // currencies
+  player.pearls += Math.round(1 + e.tier*0.35);
+  if(Math.random() < 0.01 + e.tier*0.002) player.corals += 1;
+
+  // rampage (megalodon)
+  if(player.rampage){ player.temp.spdT=Math.max(player.temp.spdT,3); }
+
+  stats.kills++;
+    if(player.onKillSpeedT){ player._onKillT = Math.max(player._onKillT||0, player.onKillSpeedT); }
+  if(e.elite) stats.elitesKilled = (stats.elitesKilled||0)+1;
+  if(e.boss){ stats.bossKills++; player.pearls+=50; player.corals+=3; }
+
+  burst(e.x,e.y,16,240,0.5,'bubble');
+  e.hp=0;
+  checkAch();
+  syncSaveFromPlayer(); saveGame();
+}
+function killNPC(e){
+  if(canDevour(player.mass, e.mass)) devour(e);
+  else{
+    // drop pellets
+    var n=clamp(4+Math.floor(e.tier*1.6),4,24);
+    for(var i=0;i<n;i++){
+      var a=rnd(0,TAU), s=rnd(0,e.r);
+      pellets.push({x:e.x+Math.cos(a)*s, y:e.y+Math.sin(a)*s, r:rnd(2.3,4.2), pearl:(Math.random()<0.08)});
+    }
+    stats.kills++;
+    e.hp=0;
+    checkAch();
+  }
+}
+
+/* ======= Bite ======= */
+function tryBite(nx,ny){
+  if(player.biteCd>0) return;
+  player.biteCd=0.24*(player.biteCdM||1);
+  sfx('bite',0.9);
+  var range=player.r*2.3;
+  var best=null, bestD=1e9;
+  for(var i=0;i<entities.length;i++){
+    var e=entities[i]; if(e.hp<=0) continue;
+    var d=dist(player.x,player.y,e.x,e.y);
+    if(d>range+e.r) continue;
+    // cone
+    var vx=(e.x-player.x)/(d||1), vy=(e.y-player.y)/(d||1);
+    var dot=vx*nx+vy*ny;
+    if(dot<Math.cos(0.85)) continue;
+    if(d<bestD){ bestD=d; best=e; }
+  }
+  if(!best){
+    burst(player.x+nx*player.r, player.y+ny*player.r, 8, 160, 0.35, 'bubble');
+    return;
+  }
+  addXP(6*player.tier*player.xpOnHitM);
+  dealDamage(best, player.dmg);
+  if(player.venom){
+    best.poisonT=Math.max(best.poisonT,3.0);
+    best.poisonDps=player.dmg*player.venom;
+  }
+  if(canDevour(player.mass, best.mass) && best.hp<=player.dmg*0.9){
+    devour(best);
+  }else{
+    var k=norm(best.x-player.x, best.y-player.y);
+    best.vx += k[0]*220; best.vy += k[1]*220;
+  }
+}
+
+/* ======= Director ======= */
+function spawnDirector(dt){
+  var pelletTarget=Math.round(WORLD.pelletsTarget*(1+(player.level-1)*0.05));
+  while(pellets.length<pelletTarget) spawnPellet();
+  var perkTarget=Math.round(WORLD.perksTarget + (player.level-1)*0.25);
+  while(perks.length<perkTarget) spawnPerk();
+  var npcTarget=Math.round(WORLD.npcTarget*(1+(player.tier-1)*0.05));
+  while(entities.length<npcTarget) spawnNPC();
+  // cleanup far
+  var cam=getCamera();
+  var cx=cam.x+cam.vw*0.5, cy=cam.y+cam.vh*0.5;
+  for(var i=entities.length-1;i>=0;i--){
+    var e=entities[i];
+    if(e.hp<=0){ entities.splice(i,1); continue; }
+    var dx=e.x-cx, dy=e.y-cy;
+    if(dx*dx+dy*dy > Math.pow(Math.max(cam.vw,cam.vh)*3.0,2) && Math.random()<0.02) entities.splice(i,1);
+  }
+  for(var j=pellets.length-1;j>=0;j--){
+    var p=pellets[j];
+    var ddx=p.x-cx, ddy=p.y-cy;
+    if(ddx*ddx+ddy*ddy > Math.pow(Math.max(cam.vw,cam.vh)*3.2,2) && Math.random()<0.03) pellets.splice(j,1);
+  }
+  for(var k=perks.length-1;k>=0;k--){
+    var pp=perks[k];
+    var ex=pp.x-cx, ey=pp.y-cy;
+    if(ex*ex+ey*ey > Math.pow(Math.max(cam.vw,cam.vh)*3.2,2) && Math.random()<0.04) perks.splice(k,1);
+  }
+}
+
+/* ======= NPC AI (требование: преследуют только близко, если отплыл — 3с и отступают) ======= */
+function updateNPCs(dt){
+  for(var i=0;i<entities.length;i++){
+    var e=entities[i]; if(e.hp<=0) continue;
+    e.t+=dt;
+    e.biteCd = Math.max(0, e.biteCd - dt);
+      e.biteAnimT = Math.max(0, (e.biteAnimT||0) - dt);
+    if(e.poisonT>0){
+      e.poisonT-=dt; e.hp-=e.poisonDps*dt;
+      addParticle(e.x,e.y,rnd(-20,20),rnd(-20,20),0.25,rnd(1.5,3.0),'poison');
+      if(e.hp<=0){ killNPC(e); continue; }
+    }
+    if(e.slowT>0) e.slowT-=dt;
+
+    var dx=player.x-e.x, dy=player.y-e.y;
+    var d=Math.sqrt(dx*dx+dy*dy);
+
+    var ag=e.aggro;
+    var agMul=(ag==='High'?1.18:ag==='Medium'?1.0:0.86);
+    var engageDist=(220 + e.tier*26)*agMul*player.worldAggroM;
+    var disengageDist=engageDist*1.55;
+
+    var threat = (player.mass > e.mass*1.12);
+    var prey = (e.mass > player.mass*1.10);
+
+    if(!e.engaged){
+      if(d<engageDist){ e.engaged=true; e.disengageT=0; e.retreatT=0; }
+      else e.state='wander';
+    }else{
+      if(d>disengageDist){
+        e.disengageT += dt;
+        if(e.disengageT>=3.0){
+          e.state='retreat';
+          e.retreatT=2.6;
+          e.engaged=false;
+        }
+      }else{
+        e.disengageT=0;
+      }
+    }
+    if(e.engaged){
+      if(threat) e.state='flee';
+      else if(prey || ag==='High') e.state='hunt';
+      else e.state='wander';
+    }
+    if(e.state==='retreat'){
+      e.retreatT -= dt;
+      if(e.retreatT<=0) e.state='wander';
+    }
+
+    var ax=0, ay=0;
+    if(e.state==='wander'){
+      // Roam across the whole map (target-based wander) + avoid corner clustering
+      e.wanderT = (e.wanderT||0) - dt;
+      if(e.wanderTx==null){ e.wanderTx = rnd(220, WORLD.w-220); e.wanderTy = rnd(220, WORLD.h-220); e.wanderT = rnd(1.5, 4.5); }
+      var ddx = e.wanderTx - e.x, ddy = e.wanderTy - e.y;
+      var dl = Math.sqrt(ddx*ddx + ddy*ddy) || 1;
+      if(e.wanderT<=0 || dl < 140){
+        e.wanderTx = rnd(220, WORLD.w-220);
+        e.wanderTy = rnd(220, WORLD.h-220);
+        e.wanderT = rnd(1.5, 4.5);
+        ddx = e.wanderTx - e.x; ddy = e.wanderTy - e.y;
+        dl = Math.sqrt(ddx*ddx + ddy*ddy) || 1;
+      }
+      ax = (ddx/dl) * 0.85;
+      ay = (ddy/dl) * 0.85;
+      var sw = Math.sin((e.t + (e.roamSeed||0))*0.9) * 0.35;
+      var px = -ay, py = ax;
+      ax += px * sw;
+      ay += py * sw;
+
+      // local separation to prevent clumps
+      var sepX=0, sepY=0, sepN=0;
+      for(var j=0;j<entities.length;j++){
+        if(j===i) continue;
+        var o=entities[j]; if(!o || o.hp<=0) continue;
+        var rx=e.x-o.x, ry=e.y-o.y;
+        var r2=rx*rx+ry*ry;
+        if(r2>0 && r2<140*140){
+          var inv=1/Math.sqrt(r2);
+          sepX += rx*inv;
+          sepY += ry*inv;
+          sepN++;
+        }
+      }
+      if(sepN>0){
+        sepX/=sepN; sepY/=sepN;
+        ax += sepX*0.55;
+        ay += sepY*0.55;
+      }
+    }else if(e.state==='flee' || e.state==='retreat'){
+      ax = -dx/(d||1); ay=-dy/(d||1);
+    }else if(e.state==='hunt'){
+      ax = dx/(d||1); ay=dy/(d||1);
+    }
+
+
+    // wall avoidance so NPC don't "stick" to borders
+    e.wallT = Math.max(0, (e.wallT||0) - dt);
+    var m=220; // margin
+    if(e.x < m){ ax += (m - e.x)/m * 2.2; e.wallT = Math.max(e.wallT,0.25); }
+    else if(e.x > WORLD.w - m){ ax -= (e.x - (WORLD.w - m))/m * 2.2; e.wallT = Math.max(e.wallT,0.25); }
+    if(e.y < m){ ay += (m - e.y)/m * 2.2; e.wallT = Math.max(e.wallT,0.25); }
+    else if(e.y > WORLD.h - m){ ay -= (e.y - (WORLD.h - m))/m * 2.2; e.wallT = Math.max(e.wallT,0.25); }
+    var spd=e.spd;
+    if(e.slowT>0) spd*=0.75;
+    var accel=spd*2.0;
+    e.vx += ax*accel*dt;
+    e.vy += ay*accel*dt;
+    var fr=Math.pow(0.003,dt);
+    e.vx*=fr; e.vy*=fr;
+    var vL=Math.sqrt(e.vx*e.vx+e.vy*e.vy);
+    if(vL>spd){ e.vx=e.vx/vL*spd; e.vy=e.vy/vL*spd; }
+
+    e.x += e.vx*dt;
+    e.y += e.vy*dt;
+
+    // EDGE TURN (требование: разворот у края без залипания)
+    if(e.x<e.r){ e.x=e.r; e.vx=Math.abs(e.vx); e.wallT=0.6; }
+    if(e.x>WORLD.w-e.r){ e.x=WORLD.w-e.r; e.vx=-Math.abs(e.vx); e.wallT=0.6; }
+    if(e.y<e.r){ e.y=e.r; e.vy=Math.abs(e.vy); e.wallT=0.6; }
+    if(e.y>WORLD.h-e.r){ e.y=WORLD.h-e.r; e.vy=-Math.abs(e.vy); e.wallT=0.6; }
+    if(e.wallT>0){
+      // while turning, reduce engagement to prevent "pressing" into wall
+      e.engaged=false; e.state='wander'; e.disengageT=0;
+    }
+
+    // contact
+    var contact = d < (player.r + e.r)*0.86;
+    if(contact){
+      if(canDevour(player.mass, e.mass) && e.hp<=player.dmg*0.8){ devour(e); continue; }
+      if(player.invulnT<=0){
+        if(e.biteCd<=0){
+          e.biteCd=0.55;
+          var dmg=e.dmg;
+          if(player.temp.shdT>0) dmg*=0.75;
+          player.hp -= dmg*player.dmgTakenM;
+          sfx('hit',0.8);
+          burst(player.x,player.y,12,220,0.45,'spark');
+        }
+      }
+      if(player.thorns>0){
+        e.hp -= e.dmg*player.thorns;
+        if(e.hp<=0){ killNPC(e); continue; }
+      }
+      var k2=norm(e.x-player.x, e.y-player.y);
+      e.vx += k2[0]*160; e.vy += k2[1]*160;
+      player.vx -= k2[0]*120; player.vy -= k2[1]*120;
+    }
+  }
+}
+
+/* ======= Pellets / Perks ======= */
+function updatePellets(dt){
+  // perks pick
+  for(var i=perks.length-1;i>=0;i--){
+    var p=perks[i];
+    var d=dist(player.x,player.y,p.x,p.y);
+    if(d < player.r + p.r){
+      if(p.kind!=='art') stats.perksPicked = (stats.perksPicked||0) + 1;
+      applyPerk(p.kind);
+      perks.splice(i,1);
+    }
+  }
+  // pellets pick
+  for(var j=pellets.length-1;j>=0;j--){
+    var pe=pellets[j];
+    var dd=dist(player.x,player.y,pe.x,pe.y);
+    if(dd < player.r + pe.r){
+      addXP(4+player.tier*0.6);
+      player.mass += 0.005;
+      if(pe.pearl){
+        player.pearls += 1;
+        sfx('evolve',0.3);
+      }else{
+        burst(pe.x,pe.y,8,120,0.35,'spark');
+        sfx('bite',0.4);
+      }
+      pellets.splice(j,1);
+    }
+  }
+}
+
+/* ======= Death penalty (10% mass/levels) ======= */
+function onDeath(){
+  // lose all (run reset), return with 10%
+  var keepMass = Math.max(1.0, player.mass*0.10);
+  var keepLevel = Math.max(1, Math.floor(player.level*0.10));
+  var keepTier = Math.max(1, Math.min(12, Math.floor(player.tier*0.10)));
+  resetRun();
+  player.mass = keepMass;
+  player.level = keepLevel;
+  player.tier = keepTier;
+  player.xp = 0;
+  player.levelXp = 0;
+  applyTierStats();
+  player.hp = player.hpMax;
+}
+
+/* ======= Reset ======= */
+function resetRun(){
+  entities.length=0; pellets.length=0; vfx.length=0; perks.length=0;
+  player.x=WORLD.w*0.5; player.y=WORLD.h*0.5;
+  player.vx=0; player.vy=0;
+  player.tier=1; player.level=1; player.xp=0; player.levelXp=0; player.levelXpToNext=220;
+  player.mass=1.0;
+  player.hpM=1.0; player.speedM=1.0; player.dmgM=1.0; player.dmgTakenM=1.0;
+  player.biteCdM=1; player.massGainM=1; player.xpGainM=1; player.zoomBonus=0;
+  player.regen=false; player.stun=false; player.predMark=false; player.dashSlow=false; player.bossDMG=false; player.finisher=false; player.rampage=false; player.fairness=false; player.fairT=0;
+  player.st=1.0; player.stMax=1.0; player.stRegenM=1.0;
+  player.temp={spdT:0,dmgT:0,shdT:0};
+  player.thorns=0; player.venom=0; player.glowPulse=false; player.phase=false;
+  player.form='fish';
+  pickBiome();
+  applyTierStats();
+  player.hp=player.hpMax;
+  stats.kills=0; stats.mutations=0; stats.startTime=Date.now();
+}
+
+/* ======= Update ======= */
+var lastT=now();
+function update(dt){
+  var paused = (pickOverlay.style.display==='flex');
+  if(paused) dt=0;
+
+  // hazard
+  if(dt>0 && WORLD.biome.hazard>0){
+    player.hp=Math.max(0, player.hp - WORLD.biome.hazard*2.2*dt*(1+(player.tier-1)*0.06));
+  }
+
+  // stamina & timers
+  player.st=clamp(player.st + player.stRegen*player.stRegenM*dt, 0, player.stMax);
+  player.invulnT=Math.max(0, player.invulnT-dt);
+  player.biteCd = Math.max(0, player.biteCd - dt);
+    player.biteAnimT = Math.max(0, player.biteAnimT - dt);
+  player.lastHitT = (player.lastHitT||0) + dt;
+  if(player.fairT>0) player.fairT=Math.max(0, player.fairT-dt);
+  // out-of-combat regen
+  if(player.regen && player.lastHitT>2.0 && dt>0){
+    player.hp = Math.min(player.hpMax, player.hp + player.hpMax*0.012*dt);
+  }
+  player.temp.spdT=Math.max(0, player.temp.spdT-dt);
+  player.temp.dmgT=Math.max(0, player.temp.dmgT-dt);
+  player.temp.shdT=Math.max(0, player.temp.shdT-dt);
+
+  // movement (mouse/touch aim OR keyboard/gamepad)
+  pollGamepad();
+  var cam=getCamera();
+
+  // default aim from pointer (touch/mouse)
+  var aimX=cam.x + input.x/ZOOM;
+  var aimY=cam.y + input.y/ZOOM;
+  var ddx=aimX-player.x, ddy=aimY-player.y;
+  var n=norm(ddx,ddy); var nx=n[0], ny=n[1];
+
+  // override movement dir with keyboard/gamepad left stick if active
+  var kv=kbVec();
+  if(kv.active){
+    nx=kv.x; ny=kv.y;
+  }else if(gp.lx||gp.ly){
+    var nn=norm(gp.lx,gp.ly); nx=nn[0]; ny=nn[1];
+    kb.lastNX=nx; kb.lastNY=ny;
+  }
+
+  // override bite/dash from gamepad
+  if(gp.dash) input.dash=true;
+  if(gp.bite) input.bite=true;
+
+  var accel=player.speed*2.4, maxV=player.speed;
+
+  player.vx += nx*accel*dt;
+  player.vy += ny*accel*dt;
+  var fr=Math.pow(0.001,dt);
+  player.vx*=fr; player.vy*=fr;
+
+  if(input.dash && player.st>=player.dashCost){
+    player.st -= player.dashCost;
+    player.vx += nx*player.dashPow;
+    player.vy += ny*player.dashPow;
+    if(player.phase) player.invulnT=0.35;
+    burst(player.x,player.y,18,220,0.45,'bubble');
+  }
+  input.dash=false;
+
+  var vL=Math.sqrt(player.vx*player.vx+player.vy*player.vy);
+  if(vL>maxV){ player.vx=player.vx/vL*maxV; player.vy=player.vy/vL*maxV; }
+
+  player.x = clamp(player.x + player.vx*dt, 0, WORLD.w);
+  player.y = clamp(player.y + player.vy*dt, 0, WORLD.h);
+
+  // bite
+  if(input.bite && !paused){
+    input.bite=false;
+    tryBite(nx,ny);
+  }
+
+  if(!paused){
+    spawnDirector(dt);
+    updateNPCs(dt);
+    updatePellets(dt);
+  }
+
+  // vfx
+  for(var i=vfx.length-1;i>=0;i--){
+    var p=vfx[i];
+    p.life-=dt;
+    if(p.life<=0){ vfx.splice(i,1); continue; }
+    p.x+=p.vx*dt; p.y+=p.vy*dt;
+    p.vx*=Math.pow(0.03,dt); p.vy*=Math.pow(0.03,dt);
+  }
+
+  applyTierStats();
+  if(player.hp<=0 && !paused) onDeath();
+}
+
+/* ======= Render ======= */
+function drawBackground(b){
+  var g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,b.tint1); g.addColorStop(1,b.tint2);
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  if(graphicsQuality>=2) drawGrid();
+}
+function drawGrid(){
+  ctx.save();
+  ctx.globalAlpha=0.10;
+  var step=220*DPR;
+  ctx.strokeStyle='rgba(255,255,255,.10)';
+  ctx.lineWidth=1*DPR;
+  var cam=getCamera();
+  var ox=-(cam.x% (step/ZOOM))*ZOOM;
+  var oy=-(cam.y% (step/ZOOM))*ZOOM;
+  for(var x=ox;x<W;x+=step*ZOOM){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+  for(var y=oy;y<H;y+=step*ZOOM){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+  ctx.restore();
+}
+
+function draw(){
+  var cam=getCamera();
+  drawBackground(WORLD.biome);
+
+  // perks
+  for(var i=0;i<perks.length;i++){
+    var p=perks[i];
+    var sx=(p.x-cam.x)*ZOOM, sy=(p.y-cam.y)*ZOOM;
+    if(sx<-60||sy<-60||sx>W+60||sy>H+60) continue;
+    var col=(p.kind==='spd')?'rgba(120,240,255,.92)':(p.kind==='dmg')?'rgba(255,210,120,.92)':'rgba(180,255,170,.92)';
+    ctx.save();
+    var pulse=0.6+0.4*Math.sin(now()*0.006+p.x*0.01);
+    ctx.globalAlpha=0.90; ctx.fillStyle=col;
+    ctx.beginPath(); ctx.arc(sx,sy,p.r*pulse*DPR*0.9,0,TAU); ctx.fill();
+    // icon
+    drawPerkIcon(p.kind, sx, sy, 10*DPR*0.9);
+    ctx.restore();
+  }
+
+  // pellets
+  for(var j=0;j<pellets.length;j++){
+    var pe=pellets[j];
+    var px=(pe.x-cam.x)*ZOOM, py=(pe.y-cam.y)*ZOOM;
+    if(px<-30||py<-30||px>W+30||py>H+30) continue;
+    if(pe.pearl) drawPearl(px,py,pe.r*DPR*ZOOM);
+    else{
+      ctx.beginPath();
+      ctx.fillStyle='rgba(170,235,255,.88)';
+      ctx.arc(px,py,pe.r*DPR*ZOOM,0,TAU);
+      ctx.fill();
+    }
+  }
+
+  // NPCs
+  for(var k=0;k<entities.length;k++){
+    var e=entities[k]; if(e.hp<=0) continue;
+    var ex=(e.x-cam.x)*ZOOM, ey=(e.y-cam.y)*ZOOM;
+    if(ex<-200||ey<-200||ex>W+200||ey>H+200) continue;
+    drawFish(ex,ey,e.r*DPR*ZOOM, Math.atan2(e.vy,e.vx), e.tier, e.elite?'elite':'npc', e.hp/e.hpMax);
+  }
+
+  // Player
+  var plx=(player.x-cam.x)*ZOOM, ply=(player.y-cam.y)*ZOOM;
+  drawPlayerAvatar(plx,ply, player.r*DPR*ZOOM, Math.atan2(player.vy,player.vx));
+
+  // vfx
+  for(var v=0;v<vfx.length;v++){
+    var pp=vfx[v];
+    var sx2=(pp.x-cam.x)*ZOOM, sy2=(pp.y-cam.y)*ZOOM;
+    if(sx2<-80||sy2<-80||sx2>W+80||sy2>H+80) continue;
+    var a=clamp(pp.life/pp.life0,0,1);
+    ctx.save(); ctx.globalAlpha=a;
+    if(pp.kind==='bubble'){
+      ctx.fillStyle='rgba(200,240,255,.55)';
+      ctx.beginPath(); ctx.arc(sx2,sy2,pp.size*DPR*ZOOM,0,TAU); ctx.fill();
+    }else if(pp.kind==='spark'){
+      ctx.fillStyle='rgba(255,240,200,.60)';
+      ctx.beginPath(); ctx.arc(sx2,sy2,pp.size*DPR*ZOOM,0,TAU); ctx.fill();
+    }else if(pp.kind==='poison'){
+      ctx.fillStyle='rgba(110,255,160,.55)';
+      ctx.beginPath(); ctx.arc(sx2,sy2,pp.size*DPR*ZOOM,0,TAU); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // subtle vignette
+  ctx.fillStyle='rgba(0,0,0,.10)'; ctx.fillRect(0,0,W,H);
+}
+
+function drawPearl(x,y,r){
+  ctx.save();
+  var g=ctx.createRadialGradient(x-r*0.3,y-r*0.3, r*0.2, x,y,r*1.2);
+  g.addColorStop(0,'rgba(255,255,255,.98)');
+  g.addColorStop(0.45,'rgba(191,233,255,.92)');
+  g.addColorStop(1,'rgba(63,168,255,.25)');
+  ctx.fillStyle=g;
+  ctx.beginPath(); ctx.arc(x,y,r,0,TAU); ctx.fill();
+  ctx.globalAlpha=0.22;
+  ctx.fillStyle='rgba(255,215,120,.35)';
+  ctx.beginPath(); ctx.arc(x,y,r*2.1,0,TAU); ctx.fill();
+  ctx.restore();
+}
+
+function drawPerkIcon(kind,x,y,s){
+  ctx.save();
+  ctx.globalAlpha=0.95;
+  ctx.lineWidth=2;
+  ctx.strokeStyle='rgba(0,0,0,.35)';
+  ctx.fillStyle='rgba(255,255,255,.9)';
+  if(kind==='spd'){
+    // arrow
+    ctx.beginPath();
+    ctx.moveTo(x-s*0.6,y);
+    ctx.lineTo(x+s*0.2,y);
+    ctx.lineTo(x+s*0.2,y-s*0.35);
+    ctx.lineTo(x+s*0.6,y+s*0.0);
+    ctx.lineTo(x+s*0.2,y+s*0.35);
+    ctx.lineTo(x+s*0.2,y);
+    ctx.closePath();
+    ctx.fill();
+  }else if(kind==='dmg'){
+    // blades
+    ctx.beginPath();
+    ctx.moveTo(x-s*0.5,y-s*0.2); ctx.lineTo(x+s*0.5,y+s*0.2);
+    ctx.moveTo(x-s*0.5,y+s*0.2); ctx.lineTo(x+s*0.5,y-s*0.2);
+    ctx.strokeStyle='rgba(255,255,255,.92)';
+    ctx.lineWidth=3;
+    ctx.stroke();
+  }else if(kind==='art'){
+    // ancient shell (quest item)
+    ctx.fillStyle='rgba(255,235,190,.95)';
+    ctx.beginPath();
+    ctx.arc(x,y,s*0.55,0,Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle='rgba(255,180,120,.35)';
+    for(var i=0;i<5;i++){
+      var a=-1.2 + i*0.6;
+      ctx.beginPath();
+      ctx.moveTo(x,y);
+      ctx.lineTo(x+Math.cos(a)*s*0.55,y+Math.sin(a)*s*0.55);
+      ctx.strokeStyle='rgba(255,255,255,.35)';
+      ctx.stroke();
+    }
+  }else{
+    // shield
+    ctx.beginPath();
+    ctx.moveTo(x,y-s*0.65);
+    ctx.quadraticCurveTo(x+s*0.6,y-s*0.25, x+s*0.45,y+s*0.35);
+    ctx.quadraticCurveTo(x,y+s*0.65, x-s*0.45,y+s*0.35);
+    ctx.quadraticCurveTo(x-s*0.6,y-s*0.25, x,y-s*0.65);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+/* ======= Fish drawing ======= */
+function drawFish(x,y,r,ang,tier,kind,hp01){
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.rotate(ang||0);
+  var wob=Math.sin(now()*0.004 + x*0.01)*0.08;
+  ctx.rotate(wob);
+
+  var hue=(kind==='elite')?(30+tier*6):(205);
+  var sat=(kind==='elite')?78:55;
+  var lum=(kind==='elite')?60:48;
+
+  var bodyL=r*2.2, bodyH=r*1.15;
+  // shadow
+  ctx.globalAlpha=0.22; ctx.fillStyle='rgba(0,0,0,.35)';
+  ctx.beginPath(); ctx.ellipse(2*DPR,4*DPR, bodyL*0.55, bodyH*0.65,0,0,TAU); ctx.fill();
+  ctx.globalAlpha=1;
+
+  var grad=ctx.createLinearGradient(-bodyL*0.6,0, bodyL*0.6,0);
+  grad.addColorStop(0, 'hsl('+hue+','+sat+'%,'+(lum-8)+'%)');
+  grad.addColorStop(0.65,'hsl('+(hue+10)+','+(sat+5)+'%,'+(lum+6)+'%)');
+  grad.addColorStop(1, 'hsl('+(hue+18)+','+sat+'%,'+(lum-4)+'%)');
+  ctx.fillStyle=grad;
+  ctx.beginPath(); ctx.ellipse(0,0, bodyL*0.55, bodyH*0.60,0,0,TAU); ctx.fill();
+
+  // tail
+  ctx.fillStyle='hsl('+(hue+8)+','+(sat+10)+'%,'+(lum-2)+'%)';
+  ctx.beginPath();
+  var tailX=-bodyL*0.62, tailW=r*0.95, tailH=r*0.75;
+  ctx.moveTo(tailX,0);
+  ctx.quadraticCurveTo(tailX-tailW,-tailH, tailX-tailW*1.25,0);
+  ctx.quadraticCurveTo(tailX-tailW, tailH, tailX,0);
+  ctx.fill();
+
+  // mouth
+  ctx.fillStyle='rgba(20,20,30,.55)';
+  ctx.beginPath(); ctx.ellipse(bodyL*0.55,0, r*0.26, r*0.18,0,0,TAU); ctx.fill();
+
+  // eye
+  ctx.fillStyle='rgba(255,255,255,.92)';
+  ctx.beginPath(); ctx.arc(r*0.38,-r*0.18, r*0.11,0,TAU); ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,.75)';
+  ctx.beginPath(); ctx.arc(r*0.41,-r*0.18, r*0.06,0,TAU); ctx.fill();
+
+  // small hp bar if elite
+  if(kind==='elite'){
+    ctx.save();
+    ctx.globalAlpha=0.7;
+    ctx.fillStyle='rgba(0,0,0,.35)';
+    ctx.fillRect(-r*1.2,r*1.35,r*2.4,5*DPR);
+    ctx.fillStyle='rgba(255,110,110,.85)';
+    ctx.fillRect(-r*1.2,r*1.35,r*2.4*clamp(hp01,0,1),5*DPR);
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
+function drawPlayerRing(x,y,r){
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.globalAlpha=0.85;
+  ctx.strokeStyle='rgba(255,255,255,.18)'; ctx.lineWidth=3*DPR;
+  ctx.beginPath(); ctx.arc(0,0,r*1.55,0,TAU); ctx.stroke();
+  ctx.strokeStyle='rgba(120,240,200,.70)';
+  ctx.beginPath(); ctx.arc(0,0,r*1.55,-Math.PI/2, -Math.PI/2 + TAU*clamp(player.hp/player.hpMax,0,1)); ctx.stroke();
+  ctx.restore();
+}
+function drawPlayerFish(x,y,r,ang){
+  // fish skin variants (2D) via palette
+  var st = SKIN_STYLE[player.skin];
+  if(st && (player.form==='fish')){
+    drawFishSkinnedGeneric(x,y,r,ang,st);
+    drawPlayerRing(x,y,r);
+    return;
+  }
+  // default
+  drawFish(x,y,r,ang,player.tier,'player', player.hp/player.hpMax);
+  drawPlayerRing(x,y,r);
+}
+
+
+function drawPlayerAvatar(x,y,r,ang){
+  if(player.form==='shark'){
+    drawSharkSkinned(x,y,r,ang);
+    return;
+  }
+  if(player.form==='megalodon'){
+    drawMegalodonSkinned(x,y,r,ang);
+    return;
+  }
+  drawPlayerFish(x,y,r,ang);
+}
+function drawSharkSkinned(x,y,r,ang,skin){
+  var st = SKIN_STYLE[skin] || SKIN_STYLE.shark_classic;
+  drawSharkSkinnedGeneric(x,y,r,ang,st);
+}
+function drawMegalodonSkinned(x,y,r,ang,skin){
+  var st = SKIN_STYLE[skin] || SKIN_STYLE.mega_deep;
+  drawMegalodonSkinnedGeneric(x,y,r,ang,st);
+}
+
+function drawFishSkinnedGeneric(x,y,r,ang,st){
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.rotate(ang||0);
+  var wob=Math.sin(now()*0.004 + x*0.01)*0.08;
+  // animation: bite opens mouth slightly
+  var jawOpen = (player.biteAnimT||0)>0 ? (0.22 * (player.biteAnimT/player.biteAnimT0)) : 0;
+  // tail wave scales with speed
+  var sp=Math.hypot(player.vx,player.vy);
+  ctx.rotate(wob + Math.sin(now()*0.006 + x*0.02)*0.03*(1+sp/260));
+  var L=r*2.6, Hh=r*1.25;
+
+  // body gradient
+  var grad=ctx.createLinearGradient(-L*0.6,0,L*0.6,0);
+  grad.addColorStop(0, st.c1);
+  grad.addColorStop(0.55, st.c2);
+  grad.addColorStop(1, st.c3);
+  ctx.fillStyle=grad;
+  ctx.beginPath();
+  ctx.moveTo(-L*0.55,0);
+  ctx.quadraticCurveTo(-L*0.2,-Hh*0.95, L*0.38,-Hh*0.35);
+  ctx.quadraticCurveTo(L*0.80,0, L*0.38,Hh*0.35);
+  ctx.quadraticCurveTo(-L*0.2,Hh*0.95, -L*0.55,0);
+  ctx.closePath(); ctx.fill();
+
+  // pattern overlays
+  if(st.pattern==='stripes'){
+    ctx.save(); ctx.globalAlpha=0.28; ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=2*DPR;
+    for(var i=0;i<5;i++){ var px=-L*0.2 + i*L*0.18; ctx.beginPath(); ctx.moveTo(px,-Hh*0.55); ctx.lineTo(px,Hh*0.55); ctx.stroke(); }
+    ctx.restore();
+  } else if(st.pattern==='scales'){
+    ctx.save(); ctx.globalAlpha=0.18; ctx.strokeStyle='rgba(255,255,255,.65)'; ctx.lineWidth=1.2*DPR;
+    for(var yy=-2;yy<=2;yy++){ for(var xx=-2;xx<=3;xx++){ ctx.beginPath(); ctx.arc(-L*0.05 + xx*r*0.35, yy*r*0.22, r*0.18, 0, Math.PI); ctx.stroke(); } }
+    ctx.restore();
+  } else if(st.pattern==='circuit'){
+    ctx.save(); ctx.globalAlpha=0.22; ctx.strokeStyle='rgba(120,240,255,.9)'; ctx.lineWidth=2*DPR;
+    ctx.beginPath(); ctx.moveTo(-L*0.15,0); ctx.lineTo(L*0.35,0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-L*0.05,-Hh*0.25); ctx.lineTo(L*0.25,-Hh*0.25); ctx.lineTo(L*0.25,Hh*0.15); ctx.stroke();
+    ctx.restore();
+  } else if(st.pattern==='pirate'){
+    // eyepatch
+    ctx.save(); ctx.globalAlpha=0.9; ctx.fillStyle='rgba(0,0,0,.55)';
+    ctx.fillRect(r*0.18,-r*0.30, r*0.42, r*0.22);
+    ctx.restore();
+  } else if(st.pattern==='glowdot'){
+    ctx.save(); ctx.globalAlpha=0.25; ctx.fillStyle='rgba(124,255,200,.75)';
+    ctx.beginPath(); ctx.arc(L*0.15,-Hh*0.28, r*0.18, 0, TAU); ctx.fill();
+    ctx.restore();
+  } else if(st.pattern==='koi'){
+    ctx.save(); ctx.globalAlpha=0.25; ctx.fillStyle='rgba(255,255,255,.85)';
+    ctx.beginPath(); ctx.ellipse(0,0, r*0.65, r*0.35, 0, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+
+  // tail
+  ctx.fillStyle='rgba(255,255,255,.18)';
+  ctx.beginPath();
+  ctx.moveTo(-L*0.62,0);
+  ctx.lineTo(-L*0.95,-Hh*0.55);
+  ctx.lineTo(-L*0.86,0);
+  ctx.lineTo(-L*0.95,Hh*0.55);
+  ctx.closePath(); ctx.fill();
+
+  // fin
+  ctx.fillStyle='rgba(255,255,255,.14)';
+  ctx.beginPath();
+  ctx.moveTo(-r*0.10,-Hh*0.30);
+  ctx.quadraticCurveTo(r*0.25,-Hh*0.95, r*0.70,-Hh*0.10);
+  ctx.closePath(); ctx.fill();
+
+  // eye
+  ctx.fillStyle='rgba(255,255,255,.92)'; ctx.beginPath(); ctx.arc(r*0.55,-r*0.18, r*0.12,0,TAU); ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,.75)'; ctx.beginPath(); ctx.arc(r*0.58,-r*0.18, r*0.06,0,TAU); ctx.fill();
+
+  // mouth
+  ctx.fillStyle='rgba(20,20,30,.55)';
+  ctx.beginPath(); ctx.ellipse(L*0.48,0, r*(0.24+jawOpen), r*(0.16+jawOpen*0.7),0,0,TAU); ctx.fill();
+
+  ctx.restore();
+}
+
+function drawSharkSkinnedGeneric(x,y,r,ang,st){
+  // reuse existing shark silhouette, but recolor
+  ctx.save();
+  ctx.translate(x,y); ctx.rotate(ang||0);
+  var wob=Math.sin(now()*0.004 + x*0.01)*0.06;
+  ctx.rotate(wob);
+  var L=r*3.1, Hh=r*1.15;
+  var grad=ctx.createLinearGradient(-L*0.6,0,L*0.6,0);
+  grad.addColorStop(0, st.c1); grad.addColorStop(0.6, st.c2); grad.addColorStop(1, st.c3);
+  ctx.fillStyle=grad;
+  ctx.beginPath();
+  ctx.moveTo(-L*0.58,0);
+  ctx.quadraticCurveTo(-L*0.25,-Hh*0.85, L*0.35,-Hh*0.22);
+  ctx.quadraticCurveTo(L*0.78,0, L*0.35,Hh*0.22);
+  ctx.quadraticCurveTo(-L*0.25,Hh*0.85, -L*0.58,0);
+  ctx.closePath(); ctx.fill();
+  // dorsal fin
+  ctx.fillStyle='rgba(255,255,255,.12)';
+  ctx.beginPath(); ctx.moveTo(-r*0.1,-Hh*0.35); ctx.lineTo(r*0.35,-Hh*1.15); ctx.lineTo(r*0.65,-Hh*0.25); ctx.closePath(); ctx.fill();
+  // tail
+  ctx.fillStyle='rgba(255,255,255,.14)';
+  ctx.beginPath(); ctx.moveTo(-L*0.70,0); ctx.lineTo(-L*0.98,-Hh*0.55); ctx.lineTo(-L*0.86,0); ctx.lineTo(-L*0.98,Hh*0.55); ctx.closePath(); ctx.fill();
+
+  if(st.pattern==='tiger'){
+    ctx.save(); ctx.globalAlpha=0.28; ctx.strokeStyle='rgba(0,0,0,.35)'; ctx.lineWidth=2*DPR;
+    for(var i=0;i<6;i++){ var px=-L*0.18 + i*L*0.16; ctx.beginPath(); ctx.moveTo(px,-Hh*0.45); ctx.lineTo(px+ r*0.18, Hh*0.45); ctx.stroke(); }
+    ctx.restore();
+  }
+
+  // eye
+  ctx.fillStyle='rgba(255,255,255,.92)'; ctx.beginPath(); ctx.arc(r*0.72,-r*0.10, r*0.10,0,TAU); ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,.75)'; ctx.beginPath(); ctx.arc(r*0.75,-r*0.10, r*0.05,0,TAU); ctx.fill();
+  // mouth line
+  ctx.strokeStyle='rgba(0,0,0,.45)'; ctx.lineWidth=2*DPR;
+  ctx.beginPath(); ctx.moveTo(r*0.75, r*0.10); ctx.quadraticCurveTo(r*0.95, r*0.10, L*0.52,0); ctx.stroke();
+  ctx.restore();
+}
+
+function drawMegalodonSkinnedGeneric(x,y,r,ang,st){
+  ctx.save();
+  ctx.translate(x,y); ctx.rotate(ang||0);
+  var wob=Math.sin(now()*0.004 + x*0.01)*0.05; ctx.rotate(wob);
+  var L=r*3.6, Hh=r*1.35;
+  var grad=ctx.createLinearGradient(-L*0.6,0,L*0.6,0);
+  grad.addColorStop(0, st.c1); grad.addColorStop(0.55, st.c2); grad.addColorStop(1, st.c3);
+  ctx.fillStyle=grad;
+  ctx.beginPath();
+  ctx.moveTo(-L*0.62,0);
+  ctx.quadraticCurveTo(-L*0.25,-Hh*0.90, L*0.38,-Hh*0.28);
+  ctx.quadraticCurveTo(L*0.88,0, L*0.38,Hh*0.28);
+  ctx.quadraticCurveTo(-L*0.25,Hh*0.90, -L*0.62,0);
+  ctx.closePath(); ctx.fill();
+
+  // dorsal + second fin
+  ctx.fillStyle='rgba(255,255,255,.10)';
+  ctx.beginPath(); ctx.moveTo(-r*0.15,-Hh*0.30); ctx.lineTo(r*0.35,-Hh*1.25); ctx.lineTo(r*0.85,-Hh*0.25); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-r*0.65,-Hh*0.18); ctx.lineTo(-r*0.25,-Hh*0.65); ctx.lineTo(r*0.15,-Hh*0.15); ctx.closePath(); ctx.fill();
+
+  // tail
+  ctx.fillStyle='rgba(255,255,255,.12)';
+  ctx.beginPath(); ctx.moveTo(-L*0.75,0); ctx.lineTo(-L*1.05,-Hh*0.65); ctx.lineTo(-L*0.92,0); ctx.lineTo(-L*1.05,Hh*0.65); ctx.closePath(); ctx.fill();
+
+  // pattern
+  if(st.pattern==='cracks'){
+    ctx.save(); ctx.globalAlpha=0.22; ctx.strokeStyle='rgba(0,0,0,.35)'; ctx.lineWidth=2*DPR;
+    ctx.beginPath(); ctx.moveTo(-r*0.2,-r*0.1); ctx.lineTo(r*0.5,-r*0.35); ctx.lineTo(r*0.9,0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-r*0.1,r*0.2); ctx.lineTo(r*0.6,r*0.35); ctx.stroke();
+    ctx.restore();
+  } else if(st.pattern==='plates'){
+    ctx.save(); ctx.globalAlpha=0.18; ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=1.2*DPR;
+    for(var i=0;i<5;i++){ ctx.beginPath(); ctx.ellipse(-r*0.2+i*r*0.35,0, r*0.45,r*0.35,0,0,TAU); ctx.stroke(); }
+    ctx.restore();
+  } else if(st.pattern==='stars'){
+    ctx.save(); ctx.globalAlpha=0.22; ctx.fillStyle='rgba(255,255,255,.85)';
+    for(var i=0;i<10;i++){ ctx.fillRect(rnd(-L*0.2,L*0.5), rnd(-Hh*0.45,Hh*0.45), 2*DPR,2*DPR); }
+    ctx.restore();
+  }
+
+  // eye + teeth hint
+  ctx.fillStyle='rgba(255,255,255,.92)'; ctx.beginPath(); ctx.arc(r*0.95,-r*0.10, r*0.12,0,TAU); ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,.75)'; ctx.beginPath(); ctx.arc(r*0.98,-r*0.10, r*0.06,0,TAU); ctx.fill();
+  ctx.strokeStyle='rgba(0,0,0,.45)'; ctx.lineWidth=2*DPR;
+  ctx.beginPath(); ctx.moveTo(r*1.0, r*0.15); ctx.quadraticCurveTo(r*1.25, r*0.10, L*0.58, 0); ctx.stroke();
+  ctx.restore();
+}
+
+function drawPremiumFish(x,y,r,ang){
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.rotate(ang||0);
+  var wob=Math.sin(now()*0.004 + x*0.01)*0.08;
+  ctx.rotate(wob);
+
+  // body - stylized fish (not oval)
+  var L=r*2.6, Hh=r*1.25;
+  // gradient
+  var grad=ctx.createLinearGradient(-L*0.6,0,L*0.6,0);
+  grad.addColorStop(0,'rgba(70,220,255,.95)');
+  grad.addColorStop(0.55,'rgba(190,255,230,.95)');
+  grad.addColorStop(1,'rgba(80,120,255,.55)');
+  ctx.fillStyle=grad;
+  ctx.beginPath();
+  ctx.moveTo(-L*0.55,0);
+  ctx.quadraticCurveTo(-L*0.2,-Hh*0.95, L*0.4,-Hh*0.35);
+  ctx.quadraticCurveTo(L*0.75,0, L*0.4,Hh*0.35);
+  ctx.quadraticCurveTo(-L*0.2,Hh*0.95, -L*0.55,0);
+  ctx.closePath(); ctx.fill();
+
+  // tail fin
+  ctx.fillStyle='rgba(255,255,255,.18)';
+  ctx.beginPath();
+  ctx.moveTo(-L*0.62,0);
+  ctx.lineTo(-L*0.95,-Hh*0.55);
+  ctx.lineTo(-L*0.86,0);
+  ctx.lineTo(-L*0.95,Hh*0.55);
+  ctx.closePath(); ctx.fill();
+
+  // top fin
+  ctx.fillStyle='rgba(255,255,255,.16)';
+  ctx.beginPath();
+  ctx.moveTo(-r*0.1,-Hh*0.25);
+  ctx.quadraticCurveTo(r*0.1,-Hh*0.95, r*0.65,-Hh*0.15);
+  ctx.closePath(); ctx.fill();
+
+  // mouth & teeth hint
+  ctx.fillStyle='rgba(20,20,30,.45)';
+  ctx.beginPath(); ctx.ellipse(L*0.52,0, r*0.30, r*0.18,0,0,TAU); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.35)'; ctx.lineWidth=1*DPR;
+  ctx.beginPath(); ctx.moveTo(L*0.48,-r*0.06); ctx.lineTo(L*0.62,-r*0.02); ctx.stroke();
+
+  // eye
+  ctx.fillStyle='rgba(255,255,255,.95)';
+  ctx.beginPath(); ctx.arc(r*0.45,-r*0.18, r*0.12,0,TAU); ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,.75)';
+  ctx.beginPath(); ctx.arc(r*0.48,-r*0.18, r*0.06,0,TAU); ctx.fill();
+
+  // ring hp
+  ctx.restore();
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.globalAlpha=0.85;
+  ctx.strokeStyle='rgba(255,255,255,.18)'; ctx.lineWidth=3*DPR;
+  ctx.beginPath(); ctx.arc(0,0,r*1.55,0,TAU); ctx.stroke();
+  ctx.strokeStyle='rgba(120,240,200,.70)';
+  ctx.beginPath(); ctx.arc(0,0,r*1.55,-Math.PI/2, -Math.PI/2 + TAU*clamp(player.hp/player.hpMax,0,1)); ctx.stroke();
+  ctx.restore();
+}
+
+
+function drawNeonKoiFish(x,y,r,ang){
+  ctx.save(); ctx.translate(x,y); ctx.rotate(ang||0);
+  var wob=Math.sin(now()*0.004 + x*0.01)*0.09; ctx.rotate(wob);
+  var L=r*2.7, Hh=r*1.28;
+  // base body
+  var grad=ctx.createLinearGradient(-L*0.6,0,L*0.6,0);
+  grad.addColorStop(0,'rgba(255,120,220,.85)');
+  grad.addColorStop(0.55,'rgba(120,240,255,.88)');
+  grad.addColorStop(1,'rgba(120,140,255,.55)');
+  ctx.fillStyle=grad;
+  ctx.beginPath();
+  ctx.moveTo(-L*0.55,0);
+  ctx.quadraticCurveTo(-L*0.2,-Hh*0.95, L*0.45,-Hh*0.35);
+  ctx.quadraticCurveTo(L*0.78,0, L*0.45,Hh*0.35);
+  ctx.quadraticCurveTo(-L*0.2,Hh*0.95, -L*0.55,0);
+  ctx.closePath(); ctx.fill();
+  // neon stripes
+  ctx.globalAlpha=0.75;
+  ctx.strokeStyle='rgba(255,255,255,.35)'; ctx.lineWidth=2*DPR;
+  for(var i=0;i<5;i++){
+    var px=-r*0.15 + i*r*0.22;
+    ctx.beginPath(); ctx.moveTo(px,-Hh*0.35); ctx.lineTo(px+r*0.45, Hh*0.35); ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+  // fins
+  ctx.fillStyle='rgba(255,255,255,.16)';
+  ctx.beginPath(); ctx.moveTo(-r*0.1,-Hh*0.25); ctx.quadraticCurveTo(r*0.1,-Hh*0.95, r*0.7,-Hh*0.15); ctx.closePath(); ctx.fill();
+  // tail
+  ctx.fillStyle='rgba(0,0,0,.10)';
+  ctx.beginPath();
+  ctx.moveTo(-L*0.62,0);
+  ctx.lineTo(-L*0.95,-Hh*0.55);
+  ctx.lineTo(-L*0.84,0);
+  ctx.lineTo(-L*0.95,Hh*0.55);
+  ctx.closePath(); ctx.fill();
+  // mouth
+  ctx.fillStyle='rgba(10,10,14,.45)';
+  ctx.beginPath(); ctx.ellipse(L*0.52,0, r*0.30, r*0.18,0,0,TAU); ctx.fill();
+  // eye
+  ctx.fillStyle='rgba(255,255,255,.95)';
+  ctx.beginPath(); ctx.arc(r*0.50,-r*0.18, r*0.11,0,TAU); ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,.75)';
+  ctx.beginPath(); ctx.arc(r*0.53,-r*0.18, r*0.055,0,TAU); ctx.fill();
+  ctx.restore();
+  // ring hp
+  ctx.save(); ctx.translate(x,y);
+  ctx.globalAlpha=0.85;
+  ctx.strokeStyle='rgba(255,255,255,.18)'; ctx.lineWidth=3*DPR;
+  ctx.beginPath(); ctx.arc(0,0,r*1.55,0,TAU); ctx.stroke();
+  ctx.strokeStyle='rgba(120,240,200,.70)';
+  ctx.beginPath(); ctx.arc(0,0,r*1.55,-Math.PI/2, -Math.PI/2 + TAU*clamp(player.hp/player.hpMax,0,1)); ctx.stroke();
+  ctx.restore();
+}
+function drawReefRoyalFish(x,y,r,ang){
+  ctx.save(); ctx.translate(x,y); ctx.rotate(ang||0);
+  var wob=Math.sin(now()*0.004 + x*0.01)*0.08; ctx.rotate(wob);
+  var L=r*2.65, Hh=r*1.22;
+  var grad=ctx.createLinearGradient(-L*0.6,0,L*0.6,0);
+  grad.addColorStop(0,'rgba(255,210,120,.85)');
+  grad.addColorStop(0.55,'rgba(120,180,255,.80)');
+  grad.addColorStop(1,'rgba(80,120,255,.55)');
+  ctx.fillStyle=grad;
+  ctx.beginPath();
+  ctx.moveTo(-L*0.55,0);
+  ctx.quadraticCurveTo(-L*0.2,-Hh*0.95, L*0.42,-Hh*0.34);
+  ctx.quadraticCurveTo(L*0.76,0, L*0.42,Hh*0.34);
+  ctx.quadraticCurveTo(-L*0.2,Hh*0.95, -L*0.55,0);
+  ctx.closePath(); ctx.fill();
+  // crown spot
+  ctx.globalAlpha=0.85;
+  ctx.fillStyle='rgba(255,255,255,.18)';
+  ctx.beginPath(); ctx.ellipse(r*0.05,0, r*0.75, r*0.48,0,0,TAU); ctx.fill();
+  ctx.globalAlpha=1;
+  // fins & tail
+  ctx.fillStyle='rgba(255,255,255,.14)';
+  ctx.beginPath(); ctx.moveTo(-r*0.1,-Hh*0.25); ctx.quadraticCurveTo(r*0.1,-Hh*0.95, r*0.7,-Hh*0.15); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,.10)';
+  ctx.beginPath(); ctx.moveTo(-L*0.62,0); ctx.lineTo(-L*0.95,-Hh*0.55); ctx.lineTo(-L*0.84,0); ctx.lineTo(-L*0.95,Hh*0.55); ctx.closePath(); ctx.fill();
+  // mouth & eye
+  ctx.fillStyle='rgba(10,10,14,.45)';
+  ctx.beginPath(); ctx.ellipse(L*0.52,0, r*0.30, r*0.18,0,0,TAU); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.95)';
+  ctx.beginPath(); ctx.arc(r*0.50,-r*0.18, r*0.11,0,TAU); ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,.75)';
+  ctx.beginPath(); ctx.arc(r*0.53,-r*0.18, r*0.055,0,TAU); ctx.fill();
+  ctx.restore();
+  // ring hp
+  ctx.save(); ctx.translate(x,y);
+  ctx.globalAlpha=0.85;
+  ctx.strokeStyle='rgba(255,255,255,.18)'; ctx.lineWidth=3*DPR;
+  ctx.beginPath(); ctx.arc(0,0,r*1.55,0,TAU); ctx.stroke();
+  ctx.strokeStyle='rgba(120,240,200,.70)';
+  ctx.beginPath(); ctx.arc(0,0,r*1.55,-Math.PI/2, -Math.PI/2 + TAU*clamp(player.hp/player.hpMax,0,1)); ctx.stroke();
+  ctx.restore();
+}
+
+function drawSharkClassic(x,y,r,ang){
+  // just call base shark (already classic)
+  drawShark(x,y,r,ang);
+}
+function drawSharkTiger(x,y,r,ang){
+  ctx.save(); ctx.translate(x,y); ctx.rotate(ang||0);
+  var wob=Math.sin(now()*0.004 + x*0.01)*0.06; ctx.rotate(wob);
+  var L=r*3.0, Hh=r*1.05;
+  var grad=ctx.createLinearGradient(-L*0.6,0,L*0.6,0);
+  grad.addColorStop(0,'rgba(175,195,205,.95)');
+  grad.addColorStop(0.55,'rgba(220,235,245,.85)');
+  grad.addColorStop(1,'rgba(90,110,130,.65)');
+  ctx.fillStyle=grad;
+  ctx.beginPath();
+  ctx.moveTo(-L*0.55,0);
+  ctx.quadraticCurveTo(-L*0.15,-Hh*0.9, L*0.55,-Hh*0.15);
+  ctx.quadraticCurveTo(L*0.85,0, L*0.55,Hh*0.15);
+  ctx.quadraticCurveTo(-L*0.15,Hh*0.9, -L*0.55,0);
+  ctx.closePath(); ctx.fill();
+  // stripes
+  ctx.globalAlpha=0.55;
+  ctx.strokeStyle='rgba(20,20,24,.35)'; ctx.lineWidth=3*DPR;
+  for(var i=0;i<7;i++){
+    var px=-r*0.6 + i*r*0.32;
+    ctx.beginPath(); ctx.moveTo(px,-Hh*0.35); ctx.lineTo(px+r*0.22, Hh*0.35); ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+  // fins, tail, mouth, eye (reuse from base)
+  ctx.fillStyle='rgba(0,0,0,.12)';
+  ctx.beginPath(); ctx.moveTo(-r*0.2,-Hh*0.25); ctx.lineTo(r*0.35,-Hh*1.15); ctx.lineTo(r*0.7,-Hh*0.15); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,.10)';
+  ctx.beginPath(); ctx.moveTo(-L*0.62,0); ctx.lineTo(-L*0.95,-Hh*0.55); ctx.lineTo(-L*0.82,0); ctx.lineTo(-L*0.95,Hh*0.55); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='rgba(10,10,14,.45)';
+  ctx.beginPath(); ctx.ellipse(L*0.62, r*0.12, r*0.55, r*0.28, 0, 0, TAU); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=1*DPR;
+  for(var j=0;j<6;j++){ var tx=L*0.42 + j*(r*0.22); ctx.beginPath(); ctx.moveTo(tx, r*0.02); ctx.lineTo(tx+r*0.08, r*0.12); ctx.stroke(); }
+  ctx.fillStyle='rgba(255,255,255,.92)';
+  ctx.beginPath(); ctx.arc(r*0.55,-r*0.18, r*0.11,0,TAU); ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,.75)';
+  ctx.beginPath(); ctx.arc(r*0.58,-r*0.18, r*0.055,0,TAU); ctx.fill();
+  ctx.restore();
+  // ring hp
+  ctx.save(); ctx.translate(x,y);
+  ctx.globalAlpha=0.85;
+  ctx.strokeStyle='rgba(255,255,255,.18)'; ctx.lineWidth=3*DPR;
+  ctx.beginPath(); ctx.arc(0,0,r*1.55,0,TAU); ctx.stroke();
+  ctx.strokeStyle='rgba(120,240,200,.70)';
+  ctx.beginPath(); ctx.arc(0,0,r*1.55,-Math.PI/2, -Math.PI/2 + TAU*clamp(player.hp/player.hpMax,0,1)); ctx.stroke();
+  ctx.restore();
+}
+
+function drawMegalodonDeep(x,y,r,ang){
+  // deep variant: base megalodon with extra glow/outline
+  drawMegalodon(x,y,r,ang);
+  ctx.save(); ctx.translate(x,y);
+  ctx.globalAlpha=0.25;
+  ctx.strokeStyle='rgba(120,180,255,.18)'; ctx.lineWidth=6*DPR;
+  ctx.beginPath(); ctx.arc(0,0,r*1.25,0,TAU); ctx.stroke();
+  ctx.restore();
+}
+function drawMegalodonBone(x,y,r,ang){
+  ctx.save(); ctx.translate(x,y); ctx.rotate(ang||0);
+  var wob=Math.sin(now()*0.004 + x*0.01)*0.05; ctx.rotate(wob);
+  var L=r*3.4, Hh=r*1.15;
+  var grad=ctx.createLinearGradient(-L*0.6,0,L*0.6,0);
+  grad.addColorStop(0,'rgba(200,200,190,.88)');
+  grad.addColorStop(0.55,'rgba(160,175,190,.85)');
+  grad.addColorStop(1,'rgba(50,60,70,.75)');
+  ctx.fillStyle=grad;
+  ctx.beginPath();
+  ctx.moveTo(-L*0.58,0);
+  ctx.quadraticCurveTo(-L*0.15,-Hh*1.0, L*0.6,-Hh*0.20);
+  ctx.quadraticCurveTo(L*0.95,0, L*0.6,Hh*0.20);
+  ctx.quadraticCurveTo(-L*0.15,Hh*1.0, -L*0.58,0);
+  ctx.closePath(); ctx.fill();
+  // bone plates
+  ctx.globalAlpha=0.55;
+  ctx.strokeStyle='rgba(255,255,255,.35)'; ctx.lineWidth=3*DPR;
+  for(var i=0;i<4;i++){
+    ctx.beginPath();
+    ctx.ellipse(-r*0.4 + i*r*0.35,0, r*0.55, r*0.38,0,0,TAU);
+    ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+  // dorsal fin
+  ctx.fillStyle='rgba(0,0,0,.18)';
+  ctx.beginPath(); ctx.moveTo(-r*0.3,-Hh*0.25); ctx.lineTo(r*0.25,-Hh*1.25); ctx.lineTo(r*0.9,-Hh*0.2); ctx.closePath(); ctx.fill();
+  // tail
+  ctx.fillStyle='rgba(0,0,0,.16)';
+  ctx.beginPath(); ctx.moveTo(-L*0.65,0); ctx.lineTo(-L*1.0,-Hh*0.65); ctx.lineTo(-L*0.86,0); ctx.lineTo(-L*1.0,Hh*0.65); ctx.closePath(); ctx.fill();
+  // mouth & teeth
+  ctx.fillStyle='rgba(10,10,14,.50)';
+  ctx.beginPath(); ctx.ellipse(L*0.68, r*0.14, r*0.75, r*0.36, 0, 0, TAU); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.65)'; ctx.lineWidth=1*DPR;
+  for(var j=0;j<9;j++){ var tx=L*0.34 + j*(r*0.26); ctx.beginPath(); ctx.moveTo(tx, r*0.02); ctx.lineTo(tx+r*0.10, r*0.16); ctx.stroke(); }
+  // eye
+  ctx.fillStyle='rgba(255,255,255,.92)';
+  ctx.beginPath(); ctx.arc(r*0.62,-r*0.20, r*0.12,0,TAU); ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,.80)';
+  ctx.beginPath(); ctx.arc(r*0.66,-r*0.20, r*0.06,0,TAU); ctx.fill();
+  ctx.restore();
+  // ring hp
+  ctx.save(); ctx.translate(x,y);
+  ctx.globalAlpha=0.85;
+  ctx.strokeStyle='rgba(255,255,255,.18)'; ctx.lineWidth=3*DPR;
+  ctx.beginPath(); ctx.arc(0,0,r*1.55,0,TAU); ctx.stroke();
+  ctx.strokeStyle='rgba(120,240,200,.70)';
+  ctx.beginPath(); ctx.arc(0,0,r*1.55,-Math.PI/2, -Math.PI/2 + TAU*clamp(player.hp/player.hpMax,0,1)); ctx.stroke();
+  ctx.restore();
+}
+function drawShark(x,y,r,ang){
+  ctx.save(); ctx.translate(x,y); ctx.rotate(ang||0);
+  var wob=Math.sin(now()*0.004 + x*0.01)*0.06; ctx.rotate(wob);
+  var L=r*3.0, Hh=r*1.05;
+  // body
+  var grad=ctx.createLinearGradient(-L*0.6,0,L*0.6,0);
+  grad.addColorStop(0,'rgba(160,190,210,.95)');
+  grad.addColorStop(0.55,'rgba(210,230,245,.85)');
+  grad.addColorStop(1,'rgba(80,110,140,.65)');
+  ctx.fillStyle=grad;
+  ctx.beginPath();
+  ctx.moveTo(-L*0.55,0);
+  ctx.quadraticCurveTo(-L*0.15,-Hh*0.9, L*0.55,-Hh*0.15);
+  ctx.quadraticCurveTo(L*0.85,0, L*0.55,Hh*0.15);
+  ctx.quadraticCurveTo(-L*0.15,Hh*0.9, -L*0.55,0);
+  ctx.closePath(); ctx.fill();
+  // dorsal fin
+  ctx.fillStyle='rgba(0,0,0,.12)';
+  ctx.beginPath();
+  ctx.moveTo(-r*0.2,-Hh*0.25);
+  ctx.lineTo(r*0.35,-Hh*1.15);
+  ctx.lineTo(r*0.7,-Hh*0.15);
+  ctx.closePath(); ctx.fill();
+  // tail
+  ctx.fillStyle='rgba(0,0,0,.10)';
+  ctx.beginPath();
+  ctx.moveTo(-L*0.62,0);
+  ctx.lineTo(-L*0.95,-Hh*0.55);
+  ctx.lineTo(-L*0.82,0);
+  ctx.lineTo(-L*0.95,Hh*0.55);
+  ctx.closePath(); ctx.fill();
+  // mouth
+  ctx.fillStyle='rgba(10,10,14,.45)';
+  ctx.beginPath(); ctx.ellipse(L*0.62, r*0.12, r*0.55, r*0.28, 0, 0, TAU); ctx.fill();
+  // teeth
+  ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=1*DPR;
+  for(var i=0;i<6;i++){
+    var tx=L*0.42 + i*(r*0.22);
+    ctx.beginPath(); ctx.moveTo(tx, r*0.02); ctx.lineTo(tx+r*0.08, r*0.12); ctx.stroke();
+  }
+  // eye
+  ctx.fillStyle='rgba(255,255,255,.92)';
+  ctx.beginPath(); ctx.arc(r*0.55,-r*0.18, r*0.11,0,TAU); ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,.75)';
+  ctx.beginPath(); ctx.arc(r*0.58,-r*0.18, r*0.055,0,TAU); ctx.fill();
+  ctx.restore();
+  // ring hp
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.globalAlpha=0.85;
+  ctx.strokeStyle='rgba(255,255,255,.18)'; ctx.lineWidth=3*DPR;
+  ctx.beginPath(); ctx.arc(0,0,r*1.55,0,TAU); ctx.stroke();
+  ctx.strokeStyle='rgba(120,240,200,.70)';
+  ctx.beginPath(); ctx.arc(0,0,r*1.55,-Math.PI/2, -Math.PI/2 + TAU*clamp(player.hp/player.hpMax,0,1)); ctx.stroke();
+  ctx.restore();
+}
+
+function drawMegalodon(x,y,r,ang){
+  ctx.save(); ctx.translate(x,y); ctx.rotate(ang||0);
+  var wob=Math.sin(now()*0.004 + x*0.01)*0.05; ctx.rotate(wob);
+  var L=r*3.4, Hh=r*1.15;
+  var grad=ctx.createLinearGradient(-L*0.6,0,L*0.6,0);
+  grad.addColorStop(0,'rgba(90,100,110,.95)');
+  grad.addColorStop(0.55,'rgba(170,185,200,.88)');
+  grad.addColorStop(1,'rgba(40,50,60,.75)');
+  ctx.fillStyle=grad;
+  ctx.beginPath();
+  ctx.moveTo(-L*0.58,0);
+  ctx.quadraticCurveTo(-L*0.15,-Hh*1.0, L*0.6,-Hh*0.20);
+  ctx.quadraticCurveTo(L*0.95,0, L*0.6,Hh*0.20);
+  ctx.quadraticCurveTo(-L*0.15,Hh*1.0, -L*0.58,0);
+  ctx.closePath(); ctx.fill();
+  // dorsal fin
+  ctx.fillStyle='rgba(0,0,0,.18)';
+  ctx.beginPath();
+  ctx.moveTo(-r*0.3,-Hh*0.25);
+  ctx.lineTo(r*0.25,-Hh*1.25);
+  ctx.lineTo(r*0.9,-Hh*0.2);
+  ctx.closePath(); ctx.fill();
+  // tail
+  ctx.fillStyle='rgba(0,0,0,.16)';
+  ctx.beginPath();
+  ctx.moveTo(-L*0.65,0);
+  ctx.lineTo(-L*1.0,-Hh*0.65);
+  ctx.lineTo(-L*0.82,0);
+  ctx.lineTo(-L*1.0,Hh*0.65);
+  ctx.closePath(); ctx.fill();
+  // mouth huge
+  ctx.fillStyle='rgba(5,5,8,.55)';
+  ctx.beginPath(); ctx.ellipse(L*0.62, r*0.16, r*0.75, r*0.38, 0, 0, TAU); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.65)'; ctx.lineWidth=1.2*DPR;
+  for(var i=0;i<9;i++){
+    var tx=L*0.35 + i*(r*0.22);
+    ctx.beginPath(); ctx.moveTo(tx, r*0.02); ctx.lineTo(tx+r*0.10, r*0.18); ctx.stroke();
+  }
+  // eye
+  ctx.fillStyle='rgba(255,255,255,.92)';
+  ctx.beginPath(); ctx.arc(r*0.65,-r*0.22, r*0.12,0,TAU); ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,.75)';
+  ctx.beginPath(); ctx.arc(r*0.69,-r*0.22, r*0.06,0,TAU); ctx.fill();
+  ctx.restore();
+  // ring hp
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.globalAlpha=0.85;
+  ctx.strokeStyle='rgba(255,255,255,.18)'; ctx.lineWidth=3*DPR;
+  ctx.beginPath(); ctx.arc(0,0,r*1.55,0,TAU); ctx.stroke();
+  ctx.strokeStyle='rgba(120,240,200,.70)';
+  ctx.beginPath(); ctx.arc(0,0,r*1.55,-Math.PI/2, -Math.PI/2 + TAU*clamp(player.hp/player.hpMax,0,1)); ctx.stroke();
+  ctx.restore();
+}
+
+/* ======= HUD update ======= */
+function updateHUD(){
+  document.getElementById('tier').textContent=String(player.tier);
+  document.getElementById('lvl').textContent=String(player.level);
+  document.getElementById('mass').textContent=player.mass.toFixed(2);
+  document.getElementById('dmg').textContent=String(player.dmg);
+  document.getElementById('spd').textContent=String(Math.round(player.speed));
+  document.getElementById('pearls').textContent=String(player.pearls|0);
+  document.getElementById('corals').textContent=String(player.corals|0);
+
+  var buffs=[];
+  if(player.temp.spdT>0) buffs.push('SPD '+player.temp.spdT.toFixed(0)+'s');
+  if(player.temp.dmgT>0) buffs.push('DMG '+player.temp.dmgT.toFixed(0)+'s');
+  if(player.temp.shdT>0) buffs.push('SHD '+player.temp.shdT.toFixed(0)+'s');
+  document.getElementById('buffs').textContent=buffs.length?buffs.join(' • '):'—';
+
+  document.getElementById('hpTxt').textContent=Math.round(player.hp)+'/'+player.hpMax;
+  document.getElementById('xpTxt').textContent=Math.round(player.xp)+'/'+player.xpToNext;
+  document.getElementById('stTxt').textContent=Math.round(player.st*100)+'%';
+  document.querySelector('#hp>i').style.width=(clamp(player.hp/player.hpMax,0,1)*100)+'%';
+  document.querySelector('#xp>i').style.width=(clamp(player.xp/player.xpToNext,0,1)*100)+'%';
+  document.querySelector('#st>i').style.width=(clamp(player.st/player.stMax,0,1)*100)+'%';
+}
+
+function syncSaveFromPlayer(){
+  gameSave.pearls = player.pearls|0;
+  gameSave.corals = player.corals|0;
+  gameSave.equippedSkin = player.skin;
+  if(!gameSave.settings) gameSave.settings={};
+  gameSave.settings.sound = soundVol;
+  gameSave.settings.quality = graphicsQuality;
+  gameSave.settings.particles = particleMul;
+}
+
+/* ======= Main loop ======= */
+function frame(){
+  var t=now();
+  var dt=clamp((t-lastT)/1000,0,0.05);
+  lastT=t;
+  tickFPS(t);
+  update(dt);
+  draw();
+  updateHUD();
+  requestAnimationFrame(frame);
+}
+
+/* ======= Start ======= */
+document.getElementById('btnStart').onclick=function(){
+  // sound stays off unless user moves slider
+  document.getElementById('start').style.display='none';
+  // prevent accidental browser zoom
+  document.addEventListener('gesturestart', function(e){ try{e.preventDefault();}catch(_){ } }, {passive:false});
+  var lastTouch=0;
+  canvas.addEventListener('touchend', function(e){
+    var t=Date.now();
+    if(t-lastTouch<250){ try{e.preventDefault();}catch(_){ } }
+    lastTouch=t;
+  }, {passive:false});
+};
+
+/* ======= Init ======= */
+resetRun();
+updateHUD();
+requestAnimationFrame(frame);
+setInterval(function(){ syncSaveFromPlayer(); saveGame(); }, 30000);
+
+})();
+// Prevent accidental page zoom on double tap / pinch (mobile browsers)
+(function(){
+  var lastTouchEnd=0;
+  document.addEventListener('touchend', function(e){
+    var now=Date.now();
+    if(now-lastTouchEnd<=320){
+      // allow interactions inside inputs
+      var t=e.target;
+      if(!(t && (t.tagName==='INPUT' || t.tagName==='TEXTAREA' || t.isContentEditable))){
+        e.preventDefault();
+      }
+    }
+    lastTouchEnd=now;
+  }, {passive:false});
+  document.addEventListener('gesturestart', function(e){ e.preventDefault(); }, {passive:false});
+})();
+</script>
+</body>
+</html>
