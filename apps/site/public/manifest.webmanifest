@@ -8,6 +8,8 @@
   "theme_color": "#0B1022",
   "icons": [
     { "src": "/pwa/icons/pwa-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/pwa/icons/pwa-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/pwa/icons/pwa-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/pwa/icons/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/pwa/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
