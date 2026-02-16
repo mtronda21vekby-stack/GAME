@@ -32,31 +32,34 @@
 
     <!-- Crown (thick silhouette for readability) -->
     <g filter="url(#shadow)">
+      <!-- main crown body -->
       <path fill="url(#metal)" d="
-        M64 100
+        M64 104
         L92 156
-        L128 124
+        L128 122
         L164 156
-        L192 100
+        L192 104
         L192 168
         C192 186 178 200 160 200
         H96
         C78 200 64 186 64 168
         Z"/>
 
+      <!-- top ridge highlight (slightly more defined center peak) -->
       <path fill="none" stroke="url(#edge)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"
-        d="M64 100 L92 156 L128 124 L164 156 L192 100"/>
+        d="M64 104 L92 156 L128 120 L164 156 L192 104"/>
 
-      <!-- Center spike -->
-      <path fill="#070A12" d="M128 124 L144 84 L160 124 Z"/>
-      <path fill="url(#edge)" opacity="0.7" d="M144 84 L152 110 L136 110 Z"/>
+      <!-- inner ridge (subtle, adds structure without the triangle) -->
+      <path fill="none" stroke="url(#edge)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.32"
+        d="M78 122 L100 160 L128 138 L156 160 L178 122"/>
 
-      <!-- Base rim -->
+      <!-- base rim -->
       <path fill="none" stroke="#FFFFFF" stroke-opacity="0.10" stroke-width="6" stroke-linejoin="round"
         d="M82 168 C82 182 94 194 108 194 H148 C162 194 174 182 174 168"/>
     </g>
 
     <!-- Subtle border -->
-    <rect x="18" y="18" width="220" height="220" rx="56" fill="none" stroke="#FFFFFF" stroke-opacity="0.08" stroke-width="2"/>
+    <rect x="18" y="18" width="220" height="220" rx="56"
+      fill="none" stroke="#FFFFFF" stroke-opacity="0.08" stroke-width="2"/>
   </g>
 </svg>
