@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="bg" cx="30%" cy="20%" r="90%">
+      <stop offset="0" stop-color="#182B66"/>
+      <stop offset="0.55" stop-color="#0B1022"/>
+      <stop offset="1" stop-color="#070A15"/>
+    </radialGradient>
+
+    <linearGradient id="crown" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#B9D6FF" stop-opacity="0.95"/>
+      <stop offset="0.45" stop-color="#7AA8FF" stop-opacity="0.92"/>
+      <stop offset="1" stop-color="#39E6D9" stop-opacity="0.80"/>
+    </linearGradient>
+
+    <linearGradient id="edge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.55"/>
+      <stop offset="0.55" stop-color="#FFFFFF" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.10"/>
+    </linearGradient>
+
+    <filter id="softGlow" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="10" result="b"/>
+      <feColorMatrix in="b" type="matrix"
+        values="1 0 0 0 0
+                0 1 0 0 0
+                0 0 1 0 0
+                0 0 0 0.65 0" result="g"/>
+      <feMerge>
+        <feMergeNode in="g"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="shadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="132" fill="url(#bg)"/>
+  <g opacity="0.85">
+    <circle cx="140" cy="120" r="140" fill="#7AA8FF" opacity="0.10"/>
+    <circle cx="402" cy="92" r="160" fill="#9B7CFF" opacity="0.08"/>
+    <circle cx="372" cy="412" r="190" fill="#39E6D9" opacity="0.06"/>
+  </g>
+
+  <!-- Crown -->
+  <g filter="url(#shadow)">
+    <path
+      d="M116 226
+         C110 212,118 196,134 194
+         L168 190
+         C176 172,190 146,214 132
+         C236 120,250 140,256 152
+         C262 140,276 120,298 132
+         C322 146,336 172,344 190
+         L378 194
+         C394 196,402 212,396 226
+         L368 326
+         C365 336,356 344,346 346
+         L166 346
+         C156 344,147 336,144 326
+         Z"
+      fill="url(#crown)"
+      filter="url(#softGlow)"
+    />
+
+    <!-- Crown inner cut (glass depth) -->
+    <path
+      d="M160 224
+         L184 222
+         C194 204,206 184,224 174
+         C240 166,248 178,256 194
+         C264 178,272 166,288 174
+         C306 184,318 204,328 222
+         L352 224
+         L334 292
+         C332 300,324 306,316 306
+         L196 306
+         C188 306,180 300,178 292
+         Z"
+      fill="#FFFFFF"
+      opacity="0.12"
+    />
+
+    <!-- Top gems -->
+    <g opacity="0.95">
+      <circle cx="168" cy="188" r="10" fill="#FFFFFF" opacity="0.35"/>
+      <circle cx="256" cy="152" r="11" fill="#FFFFFF" opacity="0.42"/>
+      <circle cx="344" cy="188" r="10" fill="#FFFFFF" opacity="0.35"/>
+    </g>
+
+    <!-- Rim highlight -->
+    <path
+      d="M132 204
+         L170 200
+         C178 182,194 154,216 142
+         C236 132,248 156,256 170
+         C264 156,276 132,296 142
+         C318 154,334 182,342 200
+         L380 204"
+      fill="none"
+      stroke="url(#edge)"
+      stroke-width="10"
+      stroke-linecap="round"
+      opacity="0.85"
+    />
+
+    <!-- Base plate -->
+    <path
+      d="M164 350
+         C164 334,176 322,192 322
+         L320 322
+         C336 322,348 334,348 350
+         L348 362
+         C348 376,336 388,320 388
+         L192 388
+         C176 388,164 376,164 362
+         Z"
+      fill="rgba(255,255,255,0.14)"
+      stroke="rgba(255,255,255,0.18)"
+      stroke-width="2"
+    />
+  </g>
+</svg>
