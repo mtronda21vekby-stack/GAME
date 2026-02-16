@@ -8,7 +8,7 @@ import { Router } from "./Router";
 function navSite(path: string) {
   window.history.pushState(null, "", path);
   window.dispatchEvent(new PopStateEvent("popstate"));
-  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  window.scrollTo({ top: 0, behavior: "auto" });
 }
 
 function navExternal(path: string) {
@@ -55,7 +55,7 @@ function FeatureCard(props: {
 
   return (
     <div
-      className="glassStrong bc-motion"
+      className="glassStrong bc-motion bcHotCard"
       role={props.href ? "link" : undefined}
       tabIndex={props.href ? 0 : undefined}
       onClick={() => {
@@ -65,7 +65,6 @@ function FeatureCard(props: {
       }}
       onKeyDown={(e) => {
         if (!props.href) return;
-        if (e.key === " ") e.preventDefault();
         if (e.key !== "Enter" && e.key !== " ") return;
         if (kind === "external") navExternal(props.href);
         else navSite(props.href);
@@ -145,31 +144,31 @@ export function Home() {
         </div>
 
         <header className="bcTop">
-          <button type="button" className="bcBrand" onClick={() => navSite("/")} aria-label="BlackCrown Home">
+          <button type="button" className="bcBrand bcHot" onClick={() => navSite("/")} aria-label="BlackCrown Home">
             <img alt="" src={Icons.crown} width="20" height="20" />
             <div style={{ fontWeight: 950 }}>BlackCrown</div>
           </button>
 
           <nav className="bcNav" aria-label="Навигация">
-            <a className="bcLink" href="/about">
+            <a className="bcLink bcHotLink" href="/about">
               О проекте
             </a>
-            <a className="bcLink" href="/support">
+            <a className="bcLink bcHotLink" href="/support">
               Поддержка
             </a>
-            <a className="bcLink" href="/store">
+            <a className="bcLink bcHotLink" href="/store">
               Магазин
             </a>
-            <a className="bcLink" href="/privacy">
+            <a className="bcLink bcHotLink" href="/privacy">
               Privacy
             </a>
-            <a className="bcLink" href="/terms">
+            <a className="bcLink bcHotLink" href="/terms">
               Terms
             </a>
           </nav>
 
           <div className="bcRight">
-            <button type="button" className="bcAccountPill" onClick={() => navSite("/account")} aria-label="Аккаунт">
+            <button type="button" className="bcAccountPill bcHot" onClick={() => navSite("/account")} aria-label="Аккаунт">
               Аккаунт: {name}
             </button>
 
@@ -192,8 +191,8 @@ export function Home() {
             </h1>
 
             <p className="bcLead">
-              BlackCrown — витрина и лончер для наших игр. Сегодня доступна <b>EvoFish</b>, дальше — новые проекты и
-              события. В экосистему входит <b>AI-Coach в Telegram</b>, который помогает с прогрессом и стратегиями.
+              BlackCrown — витрина и лончер для наших игр. Сегодня доступна <b>EvoFish</b>, дальше — новые проекты и события.
+              В экосистему входит <b>AI-Coach в Telegram</b>, который помогает с прогрессом и стратегиями.
             </p>
 
             <div className="bcCtas">
@@ -205,12 +204,16 @@ export function Home() {
                 Открыть Lobby
               </Button>
 
+              <Button variant="secondary" onClick={() => navSite("/store")}>
+                Магазин
+              </Button>
+
               <Button variant="secondary" onClick={openTelegramBot}>
                 AI-Coach в Telegram
               </Button>
 
-              <Button variant="ghost" onClick={() => navSite("/store")}>
-                Магазин
+              <Button variant="ghost" onClick={() => navSite("/about")}>
+                О платформе
               </Button>
             </div>
 
@@ -218,6 +221,7 @@ export function Home() {
               <Pill>iPhone → Xbox</Pill>
               <Pill>120fps motion</Pill>
               <Pill>PWA ready</Pill>
+              <Pill>Store • Collection</Pill>
               <Pill>AI-Coach • Telegram</Pill>
             </div>
           </div>
@@ -225,7 +229,7 @@ export function Home() {
           <div className="bcHeroPanel glassStrong">
             <div className="bcPanelTitle">Разделы</div>
 
-            <div className="bcPanelRow" role="button" tabIndex={0} onClick={() => navExternal("/game/")}>
+            <div className="bcPanelRow bcHot" role="button" tabIndex={0} onClick={() => navExternal("/game/")}>
               <div className="bcDot" />
               <div>
                 <div className="bcPanelH">Игры</div>
@@ -233,7 +237,7 @@ export function Home() {
               </div>
             </div>
 
-            <div className="bcPanelRow" role="button" tabIndex={0} onClick={() => navExternal("/lobby/")}>
+            <div className="bcPanelRow bcHot" role="button" tabIndex={0} onClick={() => navExternal("/lobby/")}>
               <div className="bcDot" />
               <div>
                 <div className="bcPanelH">Lobby</div>
@@ -241,15 +245,15 @@ export function Home() {
               </div>
             </div>
 
-            <div className="bcPanelRow" role="button" tabIndex={0} onClick={() => navSite("/store")}>
+            <div className="bcPanelRow bcHot" role="button" tabIndex={0} onClick={() => navSite("/store")}>
               <div className="bcDot" />
               <div>
                 <div className="bcPanelH">Магазин</div>
-                <div className="bcPanelP">Коллекция, баланс, предметы.</div>
+                <div className="bcPanelP">Предметы, наборы и коллекция.</div>
               </div>
             </div>
 
-            <div className="bcPanelRow" role="button" tabIndex={0} onClick={() => navSite("/account")}>
+            <div className="bcPanelRow bcHot" role="button" tabIndex={0} onClick={() => navSite("/account")}>
               <div className="bcDot" />
               <div>
                 <div className="bcPanelH">Аккаунт</div>
@@ -257,7 +261,7 @@ export function Home() {
               </div>
             </div>
 
-            <div className="bcPanelRow" role="button" tabIndex={0} onClick={openTelegramBot}>
+            <div className="bcPanelRow bcHot" role="button" tabIndex={0} onClick={openTelegramBot}>
               <div className="bcDot" />
               <div>
                 <div className="bcPanelH">AI-Coach</div>
@@ -271,7 +275,7 @@ export function Home() {
       <section className="bcSection">
         <div className="bcSectionHead">
           <div className="bcSectionTitle">Экосистема</div>
-          <div className="bcSectionSub">Игры + сервисы: профиль, лобби, магазин и AI-помощник в Telegram.</div>
+          <div className="bcSectionSub">Игры + сервисы для игроков: профиль, лобби, магазин и AI-помощник в Telegram.</div>
         </div>
 
         <div className="bcCards">
@@ -296,13 +300,14 @@ export function Home() {
           />
 
           <FeatureCard
-            title="Store"
-            desc="Витрина предметов, избранное, покупки и история. Всё сохраняется локально и ощущается как реальный продукт."
+            title="Магазин"
+            desc="Предметы для профиля и интерфейса. Всё попадает в коллекцию и доступно в аккаунте."
             tag="Store"
-            actionLabel="Открыть магазин"
+            actionLabel="Открыть Store"
             onAction={() => navSite("/store")}
             href="/store"
             kind="site"
+            imageSrc={HeroArt.cardWave}
           />
 
           <FeatureCard
@@ -319,14 +324,17 @@ export function Home() {
 
         <div style={{ maxWidth: 980, margin: "16px auto 0", opacity: 0.78 }}>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <a className="bcLink" href="/privacy">
+            <a className="bcLink bcHotLink" href="/privacy">
               Privacy
             </a>
-            <a className="bcLink" href="/terms">
+            <a className="bcLink bcHotLink" href="/terms">
               Terms
             </a>
-            <a className="bcLink" href="/support">
+            <a className="bcLink bcHotLink" href="/support">
               Поддержка
+            </a>
+            <a className="bcLink bcHotLink" href="/store">
+              Магазин
             </a>
           </div>
         </div>
@@ -335,6 +343,7 @@ export function Home() {
   );
 }
 
+// ВАЖНО: это фиксит билд — main.tsx импортирует { App } из "./routes/Home"
 export function App() {
   return <Router />;
 }
