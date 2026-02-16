@@ -12,10 +12,13 @@
   /* Accent (Orange) */
   --bc-accent-rgb: 255, 106, 0;
   --bc-accent: rgb(var(--bc-accent-rgb));
+  --bc-accent-glow: rgba(255,106,0,0.55);
   --bc-accent-10: rgba(255,106,0,0.10);
   --bc-accent-14: rgba(255,106,0,0.14);
   --bc-accent-18: rgba(255,106,0,0.18);
   --bc-accent-26: rgba(255,106,0,0.26);
+
+  color-scheme: dark;
 }
 
 *{ box-sizing:border-box; }
@@ -36,6 +39,7 @@ body{
 
 img{ border:0; outline:0; }
 button{ -webkit-tap-highlight-color: transparent; }
+a{ -webkit-tap-highlight-color: transparent; }
 
 /* Ensure no “white frame” anywhere */
 canvas, iframe{ border:0 !important; outline:0 !important; }
@@ -139,11 +143,6 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
   padding: 8px 10px;
   border-radius: 999px;
   border: 1px solid transparent;
-}
-
-.bcLink:hover{
-  border-color: rgba(255,255,255,0.10);
-  background: rgba(255,255,255,0.05);
 }
 
 .bcRight{
@@ -263,11 +262,6 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
 }
 
 .bcPanelRow + .bcPanelRow{ margin-top: 10px; }
-
-.bcPanelRow:hover{
-  background: rgba(255,255,255,0.06);
-  border-color: rgba(255,255,255,0.11);
-}
 
 .bcDot{
   width: 10px;
@@ -398,7 +392,8 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
       border-color 180ms ease,
       transform 180ms cubic-bezier(.2,.8,.2,1),
       opacity 180ms ease,
-      color 180ms ease;
+      color 180ms ease,
+      text-shadow 180ms ease;
   }
   .bcLink:hover{
     transform: translateY(-1px);
@@ -531,6 +526,7 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
 @media (hover:hover){
   .bcNav .bcLink:hover{
     color: var(--bc-accent);
+    text-shadow: 0 0 16px var(--bc-accent-glow);
     border-color: rgba(255,255,255,0.10);
     background: rgba(255,255,255,0.05);
   }
@@ -542,12 +538,14 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
 
 .bcNav .bcLink:active{
   color: var(--bc-accent);
+  text-shadow: 0 0 18px var(--bc-accent-glow);
   transform: translateY(1px);
 }
 
-/* Optional: if you set aria-current="page" on current link */
+/* Current page (aria-current="page") */
 .bcNav .bcLink[aria-current="page"]{
   color: var(--bc-accent);
+  text-shadow: 0 0 18px var(--bc-accent-glow);
 }
 .bcNav .bcLink[aria-current="page"]::after{
   opacity: 1;
