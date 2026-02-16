@@ -1,33 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Black Crown">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Black metal crown">
   <defs>
-    <!-- Black metal gradients -->
-    <linearGradient id="crownBody" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%"  stop-color="#1A1F2B"/>
-      <stop offset="45%" stop-color="#0B0F18"/>
+    <linearGradient id="bm_body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#1E2432"/>
+      <stop offset="42%" stop-color="#0B0F18"/>
       <stop offset="100%" stop-color="#04060B"/>
     </linearGradient>
 
-    <linearGradient id="crownEdge" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%"  stop-color="#FFFFFF" stop-opacity="0.55"/>
-      <stop offset="18%" stop-color="#FFFFFF" stop-opacity="0.22"/>
-      <stop offset="55%" stop-color="#7AA7FF" stop-opacity="0.12"/>
-      <stop offset="100%" stop-color="#000000" stop-opacity="0.0"/>
+    <linearGradient id="bm_edge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"   stop-color="#FFFFFF" stop-opacity="0.55"/>
+      <stop offset="18%"  stop-color="#FFFFFF" stop-opacity="0.22"/>
+      <stop offset="55%"  stop-color="#7AA7FF" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.00"/>
     </linearGradient>
 
-    <radialGradient id="innerGlow" cx="50%" cy="40%" r="65%">
-      <stop offset="0%" stop-color="#0E1424" stop-opacity="0.95"/>
+    <radialGradient id="bm_inner" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#0D1323" stop-opacity="0.95"/>
       <stop offset="65%" stop-color="#050712" stop-opacity="0.9"/>
       <stop offset="100%" stop-color="#000000" stop-opacity="1"/>
     </radialGradient>
 
-    <!-- Soft shadow -->
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%">
-      <feDropShadow dx="0" dy="18" stdDeviation="14" flood-color="#000000" flood-opacity="0.55"/>
+    <filter id="bm_shadow" x="-20%" y="-20%" width="140%" height="170%">
+      <feDropShadow dx="0" dy="20" stdDeviation="16" flood-color="#000000" flood-opacity="0.60"/>
     </filter>
 
-    <!-- Gentle highlight blur -->
-    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="1.2" result="b"/>
+    <filter id="bm_soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="1.1" result="b"/>
       <feMerge>
         <feMergeNode in="b"/>
         <feMergeNode in="SourceGraphic"/>
@@ -35,61 +32,61 @@
     </filter>
   </defs>
 
-  <!-- Base silhouette -->
-  <g filter="url(#shadow)">
-    <!-- Crown main -->
-    <path fill="url(#crownBody)" d="
-      M88 188
-      L140 300
-      L256 196
-      L372 300
-      L424 188
-      L424 344
-      C424 384 392 416 352 416
-      H160
-      C120 416 88 384 88 344
+  <g filter="url(#bm_shadow)">
+    <!-- Crown body -->
+    <path fill="url(#bm_body)" d="
+      M86 186
+      L142 308
+      L256 198
+      L370 308
+      L426 186
+      L426 346
+      C426 388 392 422 350 422
+      H162
+      C120 422 86 388 86 346
       Z"/>
 
-    <!-- Inner depth -->
-    <path fill="url(#innerGlow)" opacity="0.9" d="
-      M128 224
-      L160 300
-      L256 232
-      L352 300
-      L384 224
-      L384 336
-      C384 356 368 372 348 372
-      H164
-      C144 372 128 356 128 336
+    <!-- Inner cavity -->
+    <path fill="url(#bm_inner)" opacity="0.92" d="
+      M126 224
+      L164 304
+      L256 244
+      L348 304
+      L386 224
+      L386 334
+      C386 358 366 378 342 378
+      H170
+      C146 378 126 358 126 334
       Z"/>
 
     <!-- Top ridge highlight -->
-    <path fill="none" stroke="url(#crownEdge)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"
-      d="M88 188 L140 300 L256 196 L372 300 L424 188"/>
+    <path fill="none" stroke="url(#bm_edge)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"
+      d="M86 186 L142 308 L256 198 L370 308 L426 186"/>
 
     <!-- Spikes -->
-    <g filter="url(#soft)">
-      <path fill="#090C14" d="M140 300 L168 238 L196 300 Z"/>
-      <path fill="#090C14" d="M256 196 L282 132 L308 196 Z"/>
-      <path fill="#090C14" d="M372 300 L400 238 L428 300 Z"/>
+    <g filter="url(#bm_soft)">
+      <path fill="#080B13" d="M142 308 L172 236 L202 308 Z"/>
+      <path fill="#080B13" d="M256 198 L284 126 L312 198 Z"/>
+      <path fill="#080B13" d="M370 308 L400 236 L430 308 Z"/>
+
       <!-- Spike glints -->
-      <path fill="url(#crownEdge)" opacity="0.75" d="M168 238 L180 270 L154 270 Z"/>
-      <path fill="url(#crownEdge)" opacity="0.8"  d="M282 132 L296 170 L268 170 Z"/>
-      <path fill="url(#crownEdge)" opacity="0.75" d="M400 238 L412 270 L386 270 Z"/>
+      <path fill="url(#bm_edge)" opacity="0.72" d="M172 236 L186 272 L158 272 Z"/>
+      <path fill="url(#bm_edge)" opacity="0.78" d="M284 126 L300 168 L268 168 Z"/>
+      <path fill="url(#bm_edge)" opacity="0.72" d="M400 236 L414 272 L386 272 Z"/>
     </g>
 
-    <!-- Jewels (subtle, dark) -->
+    <!-- Jewel nodes (subtle black metal) -->
     <g>
-      <circle cx="140" cy="300" r="10" fill="#0A0F18"/>
-      <circle cx="256" cy="196" r="12" fill="#0A0F18"/>
-      <circle cx="372" cy="300" r="10" fill="#0A0F18"/>
-      <circle cx="140" cy="300" r="10" fill="url(#crownEdge)" opacity="0.25"/>
-      <circle cx="256" cy="196" r="12" fill="url(#crownEdge)" opacity="0.28"/>
-      <circle cx="372" cy="300" r="10" fill="url(#crownEdge)" opacity="0.25"/>
+      <circle cx="142" cy="308" r="12" fill="#06080F"/>
+      <circle cx="256" cy="198" r="14" fill="#06080F"/>
+      <circle cx="370" cy="308" r="12" fill="#06080F"/>
+      <circle cx="142" cy="308" r="12" fill="url(#bm_edge)" opacity="0.22"/>
+      <circle cx="256" cy="198" r="14" fill="url(#bm_edge)" opacity="0.24"/>
+      <circle cx="370" cy="308" r="12" fill="url(#bm_edge)" opacity="0.22"/>
     </g>
 
     <!-- Base rim -->
     <path fill="none" stroke="#FFFFFF" stroke-opacity="0.10" stroke-width="8" stroke-linejoin="round"
-      d="M112 344 C112 372 136 396 164 396 H348 C376 396 400 372 400 344"/>
+      d="M110 346 C110 376 136 402 166 402 H346 C376 402 402 376 402 346"/>
   </g>
 </svg>
