@@ -467,3 +467,156 @@ button{ -webkit-tap-highlight-color: transparent; }
 /* ===== Ensure no “white frame” anywhere ===== */
 *{ box-sizing:border-box; }
 canvas, iframe{ border:0 !important; outline:0 !important; }
+/* =========================
+   BlackCrown Accent (Orange)
+   Hover / Press / Focus
+   Safe: no layout shift, only shadows/overlays
+   ========================= */
+
+:root{
+  --bc-accent-rgb: 255 106 0;     /* ярко-оранжевый */
+  --bc-accent: rgb(var(--bc-accent-rgb));
+  --bc-accent-10: rgba(255,106,0,0.10);
+  --bc-accent-14: rgba(255,106,0,0.14);
+  --bc-accent-18: rgba(255,106,0,0.18);
+  --bc-accent-26: rgba(255,106,0,0.26);
+  --bc-accent-38: rgba(255,106,0,0.38);
+}
+
+/* Убираем стандартный синий tap-highlight на мобилках */
+.bcSiteRoot a,
+.bcSiteRoot button,
+.bcSiteRoot [role="button"]{
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Универсальный фокус (клавиатура) */
+.bcSiteRoot a:focus-visible,
+.bcSiteRoot button:focus-visible,
+.bcSiteRoot [role="button"]:focus-visible{
+  outline: none;
+  box-shadow:
+    0 0 0 3px var(--bc-accent-26),
+    0 18px 80px var(--bc-accent-10);
+}
+
+/* Навигационные ссылки */
+.bcNav .bcLink{
+  position: relative;
+  border-radius: 999px;
+  transition: color .18s ease, opacity .18s ease, transform .18s ease;
+}
+
+.bcNav .bcLink::after{
+  content:"";
+  position:absolute;
+  inset:-8px -12px;
+  border-radius: 999px;
+  background:
+    radial-gradient(60% 120% at 50% 120%, var(--bc-accent-18) 0%, rgba(255,106,0,0.00) 70%);
+  opacity: 0;
+  transform: translateY(2px);
+  transition: opacity .18s ease, transform .18s ease;
+  pointer-events: none;
+}
+
+@media (hover:hover){
+  .bcNav .bcLink:hover{
+    color: var(--bc-accent);
+  }
+  .bcNav .bcLink:hover::after{
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.bcNav .bcLink:active{
+  color: var(--bc-accent);
+  transform: translateY(1px);
+}
+
+/* Активная страница в меню */
+.bcNav .bcLink[aria-current="page"]{
+  color: var(--bc-accent);
+}
+.bcNav .bcLink[aria-current="page"]::after{
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Хедер: бренд и pill аккаунта */
+.bcBrand,
+.bcAccountPill{
+  border-radius: 999px;
+  transition: transform .18s ease, box-shadow .18s ease, color .18s ease;
+}
+
+@media (hover:hover){
+  .bcBrand:hover,
+  .bcAccountPill:hover{
+    box-shadow:
+      0 0 0 1px var(--bc-accent-18) inset,
+      0 18px 90px var(--bc-accent-10);
+  }
+}
+.bcBrand:active,
+.bcAccountPill:active{
+  transform: translateY(1px);
+}
+
+/* Карточки/панели: оранжевый premium glow */
+.glassStrong.bc-motion{
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+}
+
+@media (hover:hover){
+  .glassStrong.bc-motion:hover{
+    box-shadow:
+      0 34px 120px rgba(0,0,0,0.30),
+      0 0 0 1px var(--bc-accent-18) inset,
+      0 28px 110px var(--bc-accent-10);
+  }
+}
+.glassStrong.bc-motion:active{
+  transform: translateY(1px);
+  box-shadow:
+    0 34px 120px rgba(0,0,0,0.30),
+    0 0 0 1px var(--bc-accent-26) inset,
+    0 28px 110px var(--bc-accent-14);
+}
+
+/* Панельные строки (Hero panel rows) */
+.bcPanelRow{
+  border-radius: 18px;
+  transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+}
+
+@media (hover:hover){
+  .bcPanelRow:hover{
+    background: var(--bc-accent-10);
+    box-shadow:
+      0 0 0 1px var(--bc-accent-18) inset,
+      0 18px 90px var(--bc-accent-10);
+  }
+}
+.bcPanelRow:active{
+  transform: translateY(1px);
+}
+
+/* Кнопки: делаем "новый сайт" — мягкий оранжевый glow на hover/press */
+.bcSiteRoot button{
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+
+@media (hover:hover){
+  .bcSiteRoot button:hover{
+    box-shadow:
+      0 0 0 1px var(--bc-accent-18) inset,
+      0 18px 90px var(--bc-accent-10);
+  }
+}
+.bcSiteRoot button:active{
+  transform: translateY(1px);
+  box-shadow:
+    0 0 0 1px var(--bc-accent-26) inset,
+    0 18px 90px var(--bc-accent-14);
+}
