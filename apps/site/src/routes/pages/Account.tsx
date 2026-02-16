@@ -9,6 +9,15 @@ function nav(path: string) {
   window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
 }
 
+function readFileAsText(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onerror = () => reject(new Error("read_failed"));
+    fr.onload = () => resolve(String(fr.result || ""));
+    fr.readAsText(file);
+  });
+}
+
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const fr = new FileReader();
@@ -16,6 +25,18 @@ function readFileAsDataUrl(file: File): Promise<string> {
     fr.onload = () => resolve(String(fr.result || ""));
     fr.readAsDataURL(file);
   });
+}
+
+function downloadJson(filename: string, obj: any) {
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 function formatUpdatedAt(ts: number) {
@@ -143,6 +164,40 @@ export function Account() {
     }
   }
 
+  async function onImportProfile(file?: File | null) {
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".json")) {
+      setToast("Нужен JSON файл");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const raw = await readFileAsText(file);
+      const parsed = JSON.parse(raw);
+
+      const nextNick = typeof parsed.nickname === "string" ? parsed.nickname : profile.nickname;
+      const nextStatus = typeof parsed.status === "string" ? parsed.status : profile.status;
+      const nextAvatar = typeof parsed.avatarDataUrl === "string" ? parsed.avatarDataUrl : profile.avatarDataUrl;
+
+      const v = validateAvatarDataUrl(nextAvatar || "");
+      if (!v.ok) {
+        setToast(v.reason);
+        return;
+      }
+
+      const next = setProfile({ nickname: nextNick, status: nextStatus, avatarDataUrl: nextAvatar || "" });
+      setProfileState(next);
+      setNickname(next.nickname);
+      setStatus(next.status);
+      setToast("Профиль импортирован");
+    } catch {
+      setToast("Не удалось импортировать");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <main className="bcSiteRoot">
       <section className="bcSection" style={{ paddingTop: 18 }}>
@@ -159,7 +214,7 @@ export function Account() {
               alignItems: "center",
             }}
           >
-            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
               <img alt="" src={Icons.crown} width="20" height="20" />
               <div style={{ fontWeight: 980, fontSize: 16 }}>Аккаунт</div>
               <Pill>Обновлено: {formatUpdatedAt(profile.updatedAt)}</Pill>
@@ -234,14 +289,15 @@ export function Account() {
                 </div>
 
                 <div style={{ display: "grid", gap: 8, justifyItems: "end" }}>
-                  <Pill>ID: local</Pill>
                   <Pill>Хранилище: device</Pill>
+                  <Pill>Профиль: v1</Pill>
                 </div>
               </div>
             </div>
 
             <div className="glassStrong" style={{ borderRadius: 22, padding: 16 }}>
               <div style={{ fontWeight: 980, fontSize: 16 }}>Профиль</div>
+
               <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                 <div>
                   <div style={{ fontWeight: 900, marginBottom: 6 }}>Никнейм</div>
@@ -251,7 +307,7 @@ export function Account() {
 
                 <div>
                   <div style={{ fontWeight: 900, marginBottom: 6 }}>Статус</div>
-                  <TextArea value={status} onChange={(e) => setStatus(e.target.value)} placeholder="Например: готов к рейду, ищу команду, на связи" />
+                  <TextArea value={status} onChange={(e) => setStatus(e.target.value)} placeholder="Например: ищу команду / готов играть / на связи" />
                   <div style={{ marginTop: 6, opacity: 0.70, fontWeight: 850, fontSize: 12 }}>До 42 символов</div>
                 </div>
 
@@ -273,22 +329,20 @@ export function Account() {
                     </Button>
                   </div>
 
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    <Button
-                      variant="ghost"
-                      onClick={() => {
-                        clearProfile();
-                        const p = getProfile();
-                        setProfileState(p);
-                        setNickname(p.nickname);
-                        setStatus(p.status);
-                        setToast("Профиль очищен");
-                      }}
-                      disabled={busy}
-                    >
-                      Очистить профиль
-                    </Button>
-                  </div>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      clearProfile();
+                      const p = getProfile();
+                      setProfileState(p);
+                      setNickname(p.nickname);
+                      setStatus(p.status);
+                      setToast("Профиль очищен");
+                    }}
+                    disabled={busy}
+                  >
+                    Очистить профиль
+                  </Button>
                 </div>
 
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -302,6 +356,42 @@ export function Account() {
                     На связи
                   </Button>
                 </div>
+              </div>
+            </div>
+
+            <div className="glassStrong" style={{ borderRadius: 22, padding: 16 }}>
+              <div style={{ fontWeight: 980, fontSize: 16 }}>Перенос профиля</div>
+              <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    const p = getProfile();
+                    downloadJson(`blackcrown-profile.json`, p);
+                    setToast("Файл создан");
+                  }}
+                  disabled={busy}
+                >
+                  Экспорт JSON
+                </Button>
+
+                <label style={{ display: "inline-flex" }}>
+                  <input
+                    type="file"
+                    accept="application/json"
+                    style={{ display: "none" }}
+                    onChange={(e) => onImportProfile(e.target.files?.[0])}
+                    disabled={busy}
+                  />
+                  <span>
+                    <Button variant="secondary" disabled={busy}>
+                      Импорт JSON
+                    </Button>
+                  </span>
+                </label>
+              </div>
+
+              <div style={{ marginTop: 10, opacity: 0.75, fontWeight: 850, lineHeight: 1.4 }}>
+                Экспорт/импорт работает на одном устройстве и между устройствами — через файл.
               </div>
             </div>
           </div>
