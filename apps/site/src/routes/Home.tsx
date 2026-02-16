@@ -3,7 +3,6 @@ import { Button } from "@blackcrown/ui";
 import { Icons, HeroArt } from "@blackcrown/assets";
 import { userStorage } from "@blackcrown/core";
 import { openTelegramBot } from "../lib/telegram";
-import { Router } from "./Router";
 
 function navSite(path: string) {
   window.history.pushState(null, "", path);
@@ -156,6 +155,9 @@ export function Home() {
             <a className="bcLink" href="/support">
               Поддержка
             </a>
+            <a className="bcLink" href="/store">
+              Магазин
+            </a>
             <a className="bcLink" href="/privacy">
               Privacy
             </a>
@@ -189,7 +191,7 @@ export function Home() {
 
             <p className="bcLead">
               BlackCrown — витрина и лончер для наших игр. Сегодня доступна <b>EvoFish</b>, дальше — новые проекты и
-              события. В экосистему входит <b>AI-Coach в Telegram</b>, который помогает с прогрессом и стратегиями.
+              события. В экосистему входит <b>AI-Coach в Telegram</b>.
             </p>
 
             <div className="bcCtas">
@@ -205,8 +207,8 @@ export function Home() {
                 AI-Coach в Telegram
               </Button>
 
-              <Button variant="ghost" onClick={() => navSite("/about")}>
-                О платформе
+              <Button variant="ghost" onClick={() => navSite("/store")}>
+                Магазин
               </Button>
             </div>
 
@@ -237,6 +239,14 @@ export function Home() {
               </div>
             </div>
 
+            <div className="bcPanelRow" role="button" tabIndex={0} onClick={() => navSite("/store")}>
+              <div className="bcDot" />
+              <div>
+                <div className="bcPanelH">Магазин</div>
+                <div className="bcPanelP">Коллекция, предметы, наборы.</div>
+              </div>
+            </div>
+
             <div className="bcPanelRow" role="button" tabIndex={0} onClick={() => navSite("/account")}>
               <div className="bcDot" />
               <div>
@@ -249,7 +259,7 @@ export function Home() {
               <div className="bcDot" />
               <div>
                 <div className="bcPanelH">AI-Coach</div>
-                <div className="bcPanelP">Открыть бота в Telegram.</div>
+                <div className="bcPanelP">Открыть в Telegram.</div>
               </div>
             </div>
           </div>
@@ -259,7 +269,7 @@ export function Home() {
       <section className="bcSection">
         <div className="bcSectionHead">
           <div className="bcSectionTitle">Экосистема</div>
-          <div className="bcSectionSub">Игры + сервисы для игроков: профиль, лобби и AI-помощник в Telegram.</div>
+          <div className="bcSectionSub">Игры + сервисы для игроков: профиль, лобби, магазин и AI-помощник.</div>
         </div>
 
         <div className="bcCards">
@@ -284,12 +294,12 @@ export function Home() {
           />
 
           <FeatureCard
-            title="AI-Coach в Telegram"
-            desc="Помогает с прогрессом, механиками, стратегиями и целями. Быстрый вход в контекст и подсказки по делу."
-            tag="Coach"
-            actionLabel="Открыть бота"
-            onAction={openTelegramBot}
-            href="/about"
+            title="Store"
+            desc="Коллекция предметов для профиля и интерфейса. Покупки сохраняются в коллекции."
+            tag="Store"
+            actionLabel="Открыть магазин"
+            onAction={() => navSite("/store")}
+            href="/store"
             kind="site"
             imageSrc={HeroArt.cardWave}
           />
@@ -311,9 +321,4 @@ export function Home() {
       </section>
     </main>
   );
-}
-
-/** main.tsx импортирует { App } */
-export function App() {
-  return <Router />;
 }
