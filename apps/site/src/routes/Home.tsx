@@ -3,6 +3,7 @@ import { Button } from "@blackcrown/ui";
 import { Icons, HeroArt } from "@blackcrown/assets";
 import { userStorage } from "@blackcrown/core";
 import { openTelegramBot } from "../lib/telegram";
+import { Router } from "./Router";
 
 function navSite(path: string) {
   window.history.pushState(null, "", path);
@@ -310,4 +311,9 @@ export function Home() {
       </section>
     </main>
   );
+}
+
+/** main.tsx импортирует { App } */
+export function App() {
+  return <Router />;
 }
