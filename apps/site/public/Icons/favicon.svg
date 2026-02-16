@@ -1,30 +1,43 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <defs>
-    <radialGradient id="bg" cx="30%" cy="20%" r="90%">
-      <stop offset="0" stop-color="#182B66"/>
-      <stop offset="0.55" stop-color="#0B1022"/>
-      <stop offset="1" stop-color="#070A15"/>
+    <radialGradient id="bg" cx="30%" cy="20%" r="95%">
+      <stop offset="0" stop-color="#1A0B12"/>
+      <stop offset="0.55" stop-color="#0B0F1E"/>
+      <stop offset="1" stop-color="#05060C"/>
     </radialGradient>
 
-    <linearGradient id="crown" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#B9D6FF" stop-opacity="0.95"/>
-      <stop offset="0.45" stop-color="#7AA8FF" stop-opacity="0.92"/>
-      <stop offset="1" stop-color="#39E6D9" stop-opacity="0.80"/>
+    <radialGradient id="ember" cx="70%" cy="25%" r="75%">
+      <stop offset="0" stop-color="#FFB800" stop-opacity="0.28"/>
+      <stop offset="0.35" stop-color="#FF4D2E" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="flame" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFE08A" stop-opacity="0.92"/>
+      <stop offset="0.35" stop-color="#FFB000" stop-opacity="0.90"/>
+      <stop offset="0.7" stop-color="#FF4D2E" stop-opacity="0.88"/>
+      <stop offset="1" stop-color="#B01212" stop-opacity="0.86"/>
     </linearGradient>
 
-    <linearGradient id="edge" x1="0" y1="0" x2="0" y2="1">
+    <linearGradient id="bone" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F3F6FF" stop-opacity="0.95"/>
+      <stop offset="0.45" stop-color="#C9D2EA" stop-opacity="0.90"/>
+      <stop offset="1" stop-color="#8A93AE" stop-opacity="0.88"/>
+    </linearGradient>
+
+    <linearGradient id="steel" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.55"/>
-      <stop offset="0.55" stop-color="#FFFFFF" stop-opacity="0.18"/>
-      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.10"/>
+      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.08"/>
     </linearGradient>
 
-    <filter id="softGlow" x="-35%" y="-35%" width="170%" height="170%">
-      <feGaussianBlur stdDeviation="10" result="b"/>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="12" result="b"/>
       <feColorMatrix in="b" type="matrix"
         values="1 0 0 0 0
                 0 1 0 0 0
                 0 0 1 0 0
-                0 0 0 0.65 0" result="g"/>
+                0 0 0 0.70 0" result="g"/>
       <feMerge>
         <feMergeNode in="g"/>
         <feMergeNode in="SourceGraphic"/>
@@ -32,94 +45,102 @@
     </filter>
 
     <filter id="shadow" x="-25%" y="-25%" width="150%" height="150%">
-      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#000000" flood-opacity="0.45"/>
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000000" flood-opacity="0.55"/>
     </filter>
   </defs>
 
   <!-- Background -->
   <rect width="512" height="512" rx="132" fill="url(#bg)"/>
-  <g opacity="0.85">
-    <circle cx="140" cy="120" r="140" fill="#7AA8FF" opacity="0.10"/>
-    <circle cx="402" cy="92" r="160" fill="#9B7CFF" opacity="0.08"/>
-    <circle cx="372" cy="412" r="190" fill="#39E6D9" opacity="0.06"/>
-  </g>
+  <rect width="512" height="512" rx="132" fill="url(#ember)"/>
 
-  <!-- Crown -->
-  <g filter="url(#shadow)">
+  <!-- Flame -->
+  <g filter="url(#glow)" opacity="0.98">
     <path
-      d="M116 226
-         C110 212,118 196,134 194
-         L168 190
-         C176 172,190 146,214 132
-         C236 120,250 140,256 152
-         C262 140,276 120,298 132
-         C322 146,336 172,344 190
-         L378 194
-         C394 196,402 212,396 226
-         L368 326
-         C365 336,356 344,346 346
-         L166 346
-         C156 344,147 336,144 326
-         Z"
-      fill="url(#crown)"
-      filter="url(#softGlow)"
+      d="M256 74
+         C290 110, 308 142, 308 176
+         C308 194, 302 210, 292 224
+         C306 224, 326 214, 338 198
+         C354 226, 364 254, 364 284
+         C364 360, 316 416, 256 416
+         C196 416, 148 360, 148 284
+         C148 250, 160 220, 178 198
+         C192 216, 210 224, 222 224
+         C212 210, 206 194, 206 176
+         C206 146, 220 116, 256 74 Z"
+      fill="url(#flame)"
     />
-
-    <!-- Crown inner cut (glass depth) -->
     <path
-      d="M160 224
-         L184 222
-         C194 204,206 184,224 174
-         C240 166,248 178,256 194
-         C264 178,272 166,288 174
-         C306 184,318 204,328 222
-         L352 224
-         L334 292
-         C332 300,324 306,316 306
-         L196 306
-         C188 306,180 300,178 292
-         Z"
+      d="M256 120
+         C278 144, 286 162, 286 182
+         C286 208, 270 224, 256 236
+         C242 224, 226 208, 226 182
+         C226 162, 234 144, 256 120 Z"
       fill="#FFFFFF"
       opacity="0.12"
     />
+  </g>
 
-    <!-- Top gems -->
-    <g opacity="0.95">
-      <circle cx="168" cy="188" r="10" fill="#FFFFFF" opacity="0.35"/>
-      <circle cx="256" cy="152" r="11" fill="#FFFFFF" opacity="0.42"/>
-      <circle cx="344" cy="188" r="10" fill="#FFFFFF" opacity="0.35"/>
-    </g>
-
-    <!-- Rim highlight -->
+  <!-- Skull -->
+  <g filter="url(#shadow)">
     <path
-      d="M132 204
-         L170 200
-         C178 182,194 154,216 142
-         C236 132,248 156,256 170
-         C264 156,276 132,296 142
-         C318 154,334 182,342 200
-         L380 204"
-      fill="none"
-      stroke="url(#edge)"
-      stroke-width="10"
-      stroke-linecap="round"
-      opacity="0.85"
+      d="M256 160
+         C312 160, 356 204, 356 260
+         C356 296, 338 330, 310 350
+         C308 372, 292 392, 268 398
+         L268 412
+         C268 424, 258 434, 246 434
+         C234 434, 224 424, 224 412
+         L224 398
+         C200 392, 184 372, 182 350
+         C154 330, 136 296, 136 260
+         C136 204, 200 160, 256 160 Z"
+      fill="url(#bone)"
     />
 
-    <!-- Base plate -->
+    <!-- Brow / aggression -->
     <path
-      d="M164 350
-         C164 334,176 322,192 322
-         L320 322
-         C336 322,348 334,348 350
-         L348 362
-         C348 376,336 388,320 388
-         L192 388
-         C176 388,164 376,164 362
-         Z"
-      fill="rgba(255,255,255,0.14)"
-      stroke="rgba(255,255,255,0.18)"
+      d="M166 246
+         C188 220, 216 208, 256 208
+         C296 208, 324 220, 346 246
+         C332 252, 320 254, 304 254
+         C286 234, 274 228, 256 228
+         C238 228, 226 234, 208 254
+         C192 254, 180 252, 166 246 Z"
+      fill="rgba(0,0,0,0.26)"
+    />
+
+    <!-- Eyes -->
+    <path d="M206 276 C206 254, 226 246, 244 252 C232 266, 224 282, 220 300 C210 296, 206 288, 206 276 Z" fill="rgba(0,0,0,0.78)"/>
+    <path d="M306 276 C306 254, 286 246, 268 252 C280 266, 288 282, 292 300 C302 296, 306 288, 306 276 Z" fill="rgba(0,0,0,0.78)"/>
+
+    <!-- Nose -->
+    <path d="M256 286 C266 300, 266 316, 256 328 C246 316, 246 300, 256 286 Z" fill="rgba(0,0,0,0.62)"/>
+
+    <!-- Teeth -->
+    <path
+      d="M206 346
+         C220 362, 238 370, 256 370
+         C274 370, 292 362, 306 346
+         C302 386, 280 404, 256 404
+         C232 404, 210 386, 206 346 Z"
+      fill="rgba(255,255,255,0.10)"
+      stroke="rgba(0,0,0,0.22)"
       stroke-width="2"
+    />
+    <path d="M230 374 V402" stroke="rgba(0,0,0,0.22)" stroke-width="2" stroke-linecap="round"/>
+    <path d="M256 372 V404" stroke="rgba(0,0,0,0.22)" stroke-width="2" stroke-linecap="round"/>
+    <path d="M282 374 V402" stroke="rgba(0,0,0,0.22)" stroke-width="2" stroke-linecap="round"/>
+
+    <!-- Edge highlights -->
+    <path
+      d="M176 220
+         C204 190, 228 178, 256 178
+         C284 178, 308 190, 336 220"
+      fill="none"
+      stroke="url(#steel)"
+      stroke-width="10"
+      stroke-linecap="round"
+      opacity="0.70"
     />
   </g>
 </svg>
