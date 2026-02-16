@@ -9,8 +9,7 @@ import { registerSW } from "./pwa/registerSW";
 import { ErrorBoundary } from "./ErrorBoundary";
 
 function setAppVh() {
-  const px = window.innerHeight;
-  document.documentElement.style.setProperty("--app-vh", `${px}px`);
+  document.documentElement.style.setProperty("--app-vh", `${window.innerHeight}px`);
 }
 setAppVh();
 window.addEventListener("resize", setAppVh, { passive: true });
