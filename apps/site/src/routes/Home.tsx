@@ -2,6 +2,7 @@ import React from "react";
 import { Button } from "@blackcrown/ui";
 import { Icons, HeroArt } from "@blackcrown/assets";
 import { userStorage } from "@blackcrown/core";
+import { openTelegramBot } from "../lib/telegram";
 
 function navSite(path: string) {
   window.history.pushState(null, "", path);
@@ -199,6 +200,10 @@ export function Home() {
                 Открыть Lobby
               </Button>
 
+              <Button variant="secondary" onClick={openTelegramBot}>
+                AI-Coach в Telegram
+              </Button>
+
               <Button variant="ghost" onClick={() => navSite("/about")}>
                 О платформе
               </Button>
@@ -239,11 +244,11 @@ export function Home() {
               </div>
             </div>
 
-            <div className="bcPanelRow" role="button" tabIndex={0} onClick={() => navSite("/about")}>
+            <div className="bcPanelRow" role="button" tabIndex={0} onClick={openTelegramBot}>
               <div className="bcDot" />
               <div>
                 <div className="bcPanelH">AI-Coach</div>
-                <div className="bcPanelP">Помощник в Telegram.</div>
+                <div className="bcPanelP">Открыть бота в Telegram.</div>
               </div>
             </div>
           </div>
@@ -253,9 +258,7 @@ export function Home() {
       <section className="bcSection">
         <div className="bcSectionHead">
           <div className="bcSectionTitle">Экосистема</div>
-          <div className="bcSectionSub">
-            Игры + сервисы для игроков: профиль, лобби и AI-помощник в Telegram.
-          </div>
+          <div className="bcSectionSub">Игры + сервисы для игроков: профиль, лобби и AI-помощник в Telegram.</div>
         </div>
 
         <div className="bcCards">
@@ -281,10 +284,10 @@ export function Home() {
 
           <FeatureCard
             title="AI-Coach в Telegram"
-            desc="Помогает с прогрессом, механиками, стратегиями и целями. Быстрые ответы и подсказки, когда нужно."
+            desc="Помогает с прогрессом, механиками, стратегиями и целями. Быстрый вход в контекст и подсказки по делу."
             tag="Coach"
-            actionLabel="О сервисе"
-            onAction={() => navSite("/about")}
+            actionLabel="Открыть бота"
+            onAction={openTelegramBot}
             href="/about"
             kind="site"
             imageSrc={HeroArt.cardWave}
