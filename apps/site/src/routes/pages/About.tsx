@@ -1,16 +1,17 @@
 import React from "react";
 import { Button } from "@blackcrown/ui";
-import { Icons, HeroArt } from "@blackcrown/assets";
+import { HeroArt, Icons } from "@blackcrown/assets";
+import { SiteHeader } from "../../components/SiteHeader";
 import { openTelegramBot } from "../../lib/telegram";
 
-function nav(path: string) {
+function navSite(path: string) {
   window.history.pushState(null, "", path);
   window.dispatchEvent(new PopStateEvent("popstate"));
   window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
 }
 
-function openExternal(url: string) {
-  window.location.assign(url);
+function navExternal(path: string) {
+  window.location.assign(path);
 }
 
 function Pill(props: { children: React.ReactNode }) {
@@ -70,42 +71,7 @@ export function About() {
           <div className="bcHeroNoise" style={{ backgroundImage: `url(${HeroArt.noise})` }} />
         </div>
 
-        <header className="bcTop">
-          <button type="button" className="bcBrand" onClick={() => nav("/")} aria-label="BlackCrown Home">
-            <img alt="" src={Icons.crown} width="20" height="20" />
-            <div style={{ fontWeight: 950 }}>BlackCrown</div>
-          </button>
-
-          <nav className="bcNav" aria-label="Навигация">
-            <a className="bcLink" href="/about">
-              О проекте
-            </a>
-            <a className="bcLink" href="/support">
-              Поддержка
-            </a>
-            <a className="bcLink" href="/store">
-              Магазин
-            </a>
-            <a className="bcLink" href="/privacy">
-              Privacy
-            </a>
-            <a className="bcLink" href="/terms">
-              Terms
-            </a>
-          </nav>
-
-          <div className="bcRight">
-            <Button variant="secondary" onClick={() => nav("/account")}>
-              Аккаунт
-            </Button>
-            <Button variant="secondary" onClick={() => nav("/store")}>
-              Магазин
-            </Button>
-            <Button variant="primary" leftIconSrc={Icons.play} onClick={() => openExternal("/game/")}>
-              Играть
-            </Button>
-          </div>
-        </header>
+        <SiteHeader active="about" />
 
         <div style={{ maxWidth: 980, margin: "0 auto", padding: "18px 14px 14px" }}>
           <div className="glassStrong" style={{ borderRadius: 22, padding: 18 }}>
@@ -116,28 +82,28 @@ export function About() {
             </div>
 
             <h1 className="bcH1" style={{ marginTop: 12 }}>
-              BlackCrown — это хаб,
+              BlackCrown — хаб,
               <br />
               где игры и сервисы работают вместе.
             </h1>
 
             <p className="bcLead" style={{ marginTop: 10 }}>
-              Игры запускаются быстро и выглядят премиально на любом устройстве. Сервисы платформы: профиль, лобби, магазин и
-              AI-Coach в Telegram.
+              Мы делаем игры, которые запускаются быстро и выглядят премиально на любом устройстве. Параллельно строим
+              сервисный слой: профиль, лобби, поддержка и AI-помощник для игроков.
             </p>
 
             <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <Button variant="primary" leftIconSrc={Icons.play} onClick={() => openExternal("/game/")}>
+              <Button variant="primary" leftIconSrc={Icons.play} onClick={() => navExternal("/game/")}>
                 Запустить игру
               </Button>
-              <Button variant="secondary" onClick={() => openExternal("/lobby/")}>
+              <Button variant="secondary" onClick={() => navExternal("/lobby/")}>
                 Открыть Lobby
               </Button>
-              <Button variant="secondary" onClick={() => nav("/store")}>
-                Магазин
+              <Button variant="secondary" onClick={openTelegramBot}>
+                AI-Coach в Telegram
               </Button>
-              <Button variant="ghost" onClick={openTelegramBot}>
-                AI-Coach
+              <Button variant="ghost" onClick={() => navSite("/store")}>
+                Магазин
               </Button>
             </div>
           </div>
@@ -149,28 +115,28 @@ export function About() {
           <div style={{ display: "grid", gap: 12 }}>
             <Card
               icon={Icons.crown}
-              title="Единый продукт"
-              desc="Единый стиль, единые настройки и единый профиль. Игра, лобби и магазин ощущаются как одна платформа."
+              title="Игры на одном домене"
+              desc="BlackCrown — витрина и лончер. Каждая игра живёт отдельным приложением, но пользователь ощущает единый продукт: единый стиль, единые настройки и единый профиль."
               right={<Pill>PWA ready</Pill>}
             />
 
             <Card
               icon={Icons.play}
-              title="Игры и релизы"
-              desc="Сегодня доступна EvoFish. Дальше — новые режимы, проекты и события."
+              title="EvoFish и следующие релизы"
+              desc="Сегодня на платформе доступна EvoFish. Дальше — новые проекты, режимы и события. BlackCrown развивается как дом для нескольких игр."
               right={<Pill>Games</Pill>}
             />
 
             <Card
               title="AI-Coach в Telegram"
-              desc="Помогает быстрее вливаться, разбираться в механиках и подбирать стратегии. Это сервис экосистемы BlackCrown."
+              desc="AI-Coach помогает быстрее вливаться, разбираться в механиках, подбирать стратегии и держать прогресс в фокусе. Он открывается в Telegram на телефоне и в веб-версии на ПК/Xbox."
               right={<Pill>Telegram</Pill>}
             />
 
             <Card
-              title="Store и коллекция"
-              desc="Предметы для профиля и интерфейса. Всё сохранится в коллекции и применится в аккаунте."
-              right={<Pill>Store</Pill>}
+              title="Премиум-UX"
+              desc="Стеклянные панели, чистая типографика, плавный motion и аккуратные тач-цели. Интерфейс держится быстрым и стабильным на разных устройствах."
+              right={<Pill>120fps motion</Pill>}
             />
 
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap", opacity: 0.78 }}>
