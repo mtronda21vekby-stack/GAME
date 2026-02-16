@@ -1,264 +1,320 @@
-.bcSiteRoot{
-  min-height: 100%;
-  color: rgba(255,255,255,0.92);
+:root{
+  --bg0:#0B1022;
+  --bg1:#0A0F20;
+  --text:rgba(255,255,255,0.92);
+  --muted:rgba(255,255,255,0.72);
+  --hair:rgba(255,255,255,0.10);
+  --glass:rgba(255,255,255,0.06);
+  --glass2:rgba(255,255,255,0.08);
+  --shadow:0 34px 120px rgba(0,0,0,0.34);
+  --radius:22px;
 }
 
-/* HERO */
+html,body{
+  height:100%;
+  background:var(--bg0);
+}
+
+body{
+  margin:0;
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  overscroll-behavior: none;
+}
+
+#root{
+  min-height:100%;
+}
+
+img{ border:0; outline:0; }
+button{ -webkit-tap-highlight-color: transparent; }
+
+.bcSiteRoot{
+  min-height:100%;
+}
+
+.bc-motion{
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
 .bcHero{
-  position: relative;
+  position:relative;
   min-height: calc(var(--app-vh, 100vh));
   padding: max(14px, env(safe-area-inset-top)) 14px 24px;
-  overflow: hidden;
+  overflow:hidden;
 }
 
-/* КРИТИЧНО: фон никогда не ловит клики и всегда под контентом */
 .bcHeroBg{
-  position: absolute;
-  inset: 0;
-  pointer-events: none !important;
-  z-index: 0 !important;
+  position:absolute;
+  inset:-20px;
+  pointer-events:none;
 }
 
 .bcHeroAurora{
-  position: absolute;
-  inset: -2px;
-  width: calc(100% + 4px);
-  height: calc(100% + 4px);
-  object-fit: cover;
-  opacity: 0.95;
-  pointer-events: none !important;
+  position:absolute;
+  inset:-10%;
+  width:120%;
+  height:120%;
+  object-fit:cover;
+  opacity:0.95;
+  filter: none;
 }
 
 .bcHeroVignette{
-  position: absolute;
-  inset: 0;
+  position:absolute;
+  inset:0;
   background:
-    radial-gradient(900px 520px at 20% 10%, rgba(0,0,0,0.00), rgba(0,0,0,0.45)),
-    radial-gradient(900px 520px at 80% 20%, rgba(0,0,0,0.00), rgba(0,0,0,0.50)),
-    linear-gradient(180deg, rgba(0,0,0,0.22), rgba(0,0,0,0.65));
-  pointer-events: none !important;
+    radial-gradient(1000px 600px at 25% 20%, rgba(122,168,255,0.14), transparent 55%),
+    radial-gradient(900px 520px at 78% 10%, rgba(155,124,255,0.12), transparent 55%),
+    radial-gradient(1000px 700px at 70% 78%, rgba(57,230,217,0.08), transparent 55%),
+    linear-gradient(180deg, rgba(11,16,34,0.18) 0%, rgba(11,16,34,0.62) 65%, rgba(11,16,34,0.92) 100%);
 }
 
 .bcHeroNoise{
-  position: absolute;
-  inset: 0;
+  position:absolute;
+  inset:0;
+  opacity:0.10;
   mix-blend-mode: overlay;
-  opacity: 0.26;
-  background-size: 320px 320px;
-  pointer-events: none !important;
+  background-repeat: repeat;
+  background-size: 220px 220px;
 }
 
-/* КРИТИЧНО: весь интерактивный контент выше фона */
-.bcTop,
-.bcHeroGrid,
-.bcSection{
-  position: relative;
-  z-index: 2;
+@media (prefers-reduced-motion: reduce){
+  .bcHeroNoise{ opacity:0.06; }
 }
 
-/* TOP BAR */
 .bcTop{
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  position:relative;
+  z-index:2;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding: 10px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 20px 80px rgba(0,0,0,0.22);
 }
 
 .bcBrand{
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  background:transparent;
+  border:0;
+  color:var(--text);
+  padding:10px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.10);
-  background: rgba(0,0,0,0.22);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  cursor: pointer;
-  user-select: none;
+  cursor:pointer;
 }
 
 .bcNav{
-  display: flex;
-  gap: 14px;
-  align-items: center;
+  display:none;
+  gap:14px;
+  align-items:center;
+}
+
+@media (min-width: 820px){
+  .bcNav{ display:flex; }
 }
 
 .bcLink{
-  color: rgba(255,255,255,0.78);
-  text-decoration: none;
-  font-weight: 800;
-  padding: 10px 12px;
+  color: rgba(255,255,255,0.84);
+  text-decoration:none;
+  font-weight:850;
+  font-size:13px;
+  padding: 8px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.10);
-  background: rgba(0,0,0,0.18);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  -webkit-tap-highlight-color: transparent;
+  border: 1px solid transparent;
 }
-.bcLink:active{ transform: translateY(1px); }
+
+.bcLink:hover{
+  border-color: rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.05);
+}
 
 .bcRight{
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  display:flex;
+  align-items:center;
+  gap:10px;
 }
 
 .bcAccountPill{
-  padding: 10px 12px;
+  border:1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.88);
+  height: 40px;
+  padding: 0 12px;
   border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.10);
-  background: rgba(0,0,0,0.18);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  font-weight: 850;
-  color: rgba(255,255,255,0.86);
-  cursor: pointer;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
+  font-weight: 900;
+  cursor:pointer;
 }
 
-/* LAYOUT */
 .bcHeroGrid{
-  margin-top: 18px;
-  display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
-  gap: 14px;
-  align-items: start;
+  position:relative;
+  z-index:2;
+  display:grid;
+  gap:14px;
+  margin-top: 16px;
 }
 
-/* Premium glass (без рамок) */
+@media (min-width: 980px){
+  .bcHeroGrid{
+    grid-template-columns: 1.2fr 0.8fr;
+    align-items: start;
+  }
+}
+
 .glassStrong{
-  border: none !important;
-  background: rgba(255,255,255,0.06) !important;
-  box-shadow: 0 34px 120px rgba(0,0,0,0.30);
+  border-radius: var(--radius);
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: var(--shadow);
 }
 
 .bcHeroCopy{
   padding: 18px;
-  border-radius: 24px;
+  overflow:hidden;
 }
 
 .bcKicker{
-  display: inline-flex;
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
   padding: 8px 12px;
   border-radius: 999px;
   border: 1px solid rgba(255,255,255,0.10);
-  background: rgba(0,0,0,0.18);
-  font-weight: 900;
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.82);
+  font-weight: 950;
+  font-size: 12px;
   letter-spacing: 0.02em;
-  opacity: 0.92;
 }
 
 .bcH1{
-  margin: 12px 0 0;
-  font-size: clamp(34px, 5.4vw, 56px);
-  line-height: 1.04;
+  margin: 12px 0 8px;
+  font-size: 40px;
+  line-height: 1.02;
   letter-spacing: -0.03em;
+  font-weight: 980;
+}
+
+@media (min-width: 980px){
+  .bcH1{ font-size: 54px; }
 }
 
 .bcLead{
-  margin-top: 12px;
-  font-size: 16px;
+  margin: 0;
+  color: rgba(255,255,255,0.80);
   line-height: 1.55;
-  opacity: 0.86;
-  max-width: 64ch;
+  font-weight: 750;
+  max-width: 60ch;
 }
 
-/* CTA area — гарантируем клики */
 .bcCtas{
   margin-top: 14px;
-  display: flex;
+  display:flex;
   gap: 10px;
   flex-wrap: wrap;
-  position: relative;
-  z-index: 3;
 }
 
 .bcBadges{
   margin-top: 14px;
-  display: flex;
-  gap: 10px;
+  display:flex;
+  gap:10px;
   flex-wrap: wrap;
-  opacity: 0.96;
+  opacity: 0.95;
 }
 
 .bcHeroPanel{
   padding: 18px;
-  border-radius: 24px;
 }
 
 .bcPanelTitle{
   font-weight: 950;
-  letter-spacing: -0.02em;
-  font-size: 16px;
+  opacity: 0.92;
+  margin-bottom: 10px;
+  letter-spacing: -0.01em;
 }
 
 .bcPanelRow{
-  margin-top: 14px;
-  display: flex;
+  display:flex;
   gap: 12px;
-  align-items: flex-start;
+  padding: 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04);
   cursor: pointer;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
+}
+
+.bcPanelRow + .bcPanelRow{ margin-top: 10px; }
+
+.bcPanelRow:hover{
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.11);
 }
 
 .bcDot{
   width: 10px;
   height: 10px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(120,160,255,0.55), rgba(120,160,255,0.18));
   margin-top: 6px;
+  border-radius: 999px;
+  background: rgba(122,168,255,0.65);
+  box-shadow: 0 0 0 6px rgba(122,168,255,0.10);
 }
 
 .bcPanelH{
-  font-weight: 900;
-}
-.bcPanelP{
-  margin-top: 4px;
-  opacity: 0.84;
-  line-height: 1.45;
+  font-weight: 950;
+  letter-spacing: -0.01em;
 }
 
-/* SECTION */
+.bcPanelP{
+  margin-top: 4px;
+  color: rgba(255,255,255,0.72);
+  font-weight: 750;
+  line-height: 1.4;
+}
+
 .bcSection{
-  padding: 22px 14px 40px;
+  position:relative;
+  padding: 18px 14px 28px;
 }
 
 .bcSectionHead{
   max-width: 980px;
-  margin: 0 auto;
+  margin: 0 auto 12px;
 }
 
 .bcSectionTitle{
-  font-weight: 950;
-  letter-spacing: -0.02em;
   font-size: 18px;
+  font-weight: 950;
+  letter-spacing: -0.01em;
 }
 
 .bcSectionSub{
   margin-top: 6px;
-  opacity: 0.78;
-  line-height: 1.5;
+  color: rgba(255,255,255,0.74);
+  font-weight: 750;
+  line-height: 1.45;
 }
 
 .bcCards{
   max-width: 980px;
-  margin: 14px auto 0;
-  display: grid;
-  gap: 14px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0 auto;
+  display:grid;
+  gap: 12px;
 }
 
-/* Responsive */
-@media (max-width: 960px){
-  .bcHeroGrid{ grid-template-columns: 1fr; }
-  .bcCards{ grid-template-columns: 1fr; }
-  .bcNav{ display: none; }
+@media (min-width: 980px){
+  .bcCards{ grid-template-columns: repeat(3, 1fr); }
 }
 
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce){
-  .bcLink:active{ transform: none; }
-}
+/* важно: чтобы клики не пропадали из-за декоративных слоёв */
+.bcHeroBg, .bcHeroVignette, .bcHeroNoise, .bcHeroAurora { pointer-events: none !important; }
