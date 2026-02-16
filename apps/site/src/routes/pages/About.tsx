@@ -1,6 +1,6 @@
 import React from "react";
 import { Button } from "@blackcrown/ui";
-import { Icons } from "@blackcrown/assets";
+import { Icons, HeroArt } from "@blackcrown/assets";
 
 function nav(path: string) {
   window.history.pushState(null, "", path);
@@ -8,57 +8,53 @@ function nav(path: string) {
   window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
 }
 
-type Item = { title: string; desc: string; tag: string };
+function openExternal(url: string) {
+  window.location.assign(url);
+}
 
-const ROADMAP: Item[] = [
-  { title: "Новые тайтлы", desc: "Платформа для нескольких игр на одном домене и в одном стиле.", tag: "Platform" },
-  { title: "События и сезоны", desc: "Обновления контента, тематические события и активности.", tag: "Live" },
-  { title: "Магазин", desc: "Косметика, темы, витрина — аккуратно и премиально.", tag: "Store" }
-];
+function Pill(props: { children: React.ReactNode }) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "8px 12px",
+        borderRadius: 999,
+        border: "1px solid rgba(255,255,255,0.10)",
+        background: "rgba(255,255,255,0.06)",
+        color: "rgba(255,255,255,0.82)",
+        fontWeight: 850,
+        fontSize: 12,
+        letterSpacing: "0.02em",
+      }}
+    >
+      {props.children}
+    </span>
+  );
+}
 
-const CHANGELOG: Item[] = [
-  { title: "Apple-like UI", desc: "Стекло, воздух, мягкий свет и аккуратная типографика.", tag: "UI" },
-  { title: "Навигация", desc: "Страницы сайта без перезагрузки, приложения — отдельными путями.", tag: "Routing" },
-  { title: "PWA", desc: "Manifest, иконки и корректная база для установки на устройство.", tag: "PWA" }
-];
-
-function Card({ item }: { item: Item }) {
+function Card(props: { title: string; desc: string; icon?: string; right?: React.ReactNode }) {
   return (
     <div
       className="glassStrong bc-motion"
       style={{
         borderRadius: 22,
-        overflow: "hidden",
-        border: "1px solid rgba(255,255,255,0.10)",
+        padding: 16,
+        border: "1px solid rgba(255,255,255,0.08)",
         background: "rgba(255,255,255,0.06)",
-        boxShadow: "0 34px 120px rgba(0,0,0,0.30)"
+        boxShadow: "0 34px 120px rgba(0,0,0,0.30)",
       }}
     >
-      <div style={{ padding: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "baseline" }}>
-          <div style={{ fontWeight: 980, fontSize: 16, letterSpacing: "-0.01em" }}>{item.title}</div>
-          <div style={{ fontWeight: 900, fontSize: 12, opacity: 0.78 }}>{item.tag}</div>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          {props.icon ? <img alt="" src={props.icon} width="18" height="18" style={{ opacity: 0.92 }} /> : null}
+          <div style={{ fontWeight: 980, fontSize: 16, letterSpacing: "-0.01em" }}>{props.title}</div>
         </div>
-
-        <div style={{ marginTop: 8, color: "rgba(255,255,255,0.74)", fontWeight: 750, lineHeight: 1.45 }}>
-          {item.desc}
-        </div>
+        {props.right}
       </div>
 
-      <div style={{ padding: 12, paddingTop: 0 }}>
-        <div
-          aria-hidden="true"
-          style={{
-            height: 150,
-            borderRadius: 16,
-            border: "1px solid rgba(255,255,255,0.08)",
-            background:
-              "radial-gradient(80% 120% at 20% 20%, rgba(124,168,255,0.40), rgba(10,14,30,0) 55%)," +
-              "radial-gradient(70% 100% at 80% 0%, rgba(140,95,255,0.28), rgba(10,14,30,0) 55%)," +
-              "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))"
-          }}
-        />
-      </div>
+      <div style={{ marginTop: 10, opacity: 0.86, lineHeight: 1.55, fontWeight: 850 }}>{props.desc}</div>
     </div>
   );
 }
@@ -66,35 +62,11 @@ function Card({ item }: { item: Item }) {
 export function About() {
   return (
     <main className="bcSiteRoot">
-      <section className="bcHero">
-        {/* Фон — только CSS, без ассетов */}
-        <div
-          className="bcHeroBg"
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            inset: 0,
-            overflow: "hidden"
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              inset: -80,
-              background:
-                "radial-gradient(70% 60% at 15% 20%, rgba(124,168,255,0.42), rgba(11,16,34,0) 60%)," +
-                "radial-gradient(60% 55% at 85% 10%, rgba(162,120,255,0.32), rgba(11,16,34,0) 62%)," +
-                "radial-gradient(70% 70% at 70% 85%, rgba(35,220,255,0.18), rgba(11,16,34,0) 58%)," +
-                "linear-gradient(180deg, rgba(11,16,34,1), rgba(6,10,24,1))"
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              background: "radial-gradient(120% 80% at 50% 0%, rgba(0,0,0,0.25), rgba(0,0,0,0) 55%)"
-            }}
-          />
+      <section className="bcHero" style={{ minHeight: "auto" }}>
+        <div className="bcHeroBg" aria-hidden="true">
+          <img className="bcHeroAurora" alt="" src={HeroArt.aurora} />
+          <div className="bcHeroVignette" />
+          <div className="bcHeroNoise" style={{ backgroundImage: `url(${HeroArt.noise})` }} />
         </div>
 
         <header className="bcTop">
@@ -104,95 +76,127 @@ export function About() {
           </button>
 
           <nav className="bcNav" aria-label="Навигация">
-            <a className="bcLink" href="/">Главная</a>
-            <a className="bcLink" href="/support">Поддержка</a>
-            <a className="bcLink" href="/privacy">Privacy</a>
-            <a className="bcLink" href="/terms">Terms</a>
+            <a className="bcLink" href="/about">
+              О проекте
+            </a>
+            <a className="bcLink" href="/support">
+              Поддержка
+            </a>
+            <a className="bcLink" href="/privacy">
+              Privacy
+            </a>
+            <a className="bcLink" href="/terms">
+              Terms
+            </a>
           </nav>
 
           <div className="bcRight">
-            <Button variant="secondary" onClick={() => nav("/store")}>Магазин</Button>
-            <Button variant="primary" leftIconSrc={Icons.play} onClick={() => window.location.assign("/game/")}>
+            <Button variant="secondary" onClick={() => nav("/account")}>
+              Аккаунт
+            </Button>
+            <Button variant="primary" leftIconSrc={Icons.play} onClick={() => openExternal("/game/")}>
               Играть
             </Button>
           </div>
         </header>
 
-        <div className="bcHeroGrid">
-          <div className="bcHeroCopy glassStrong">
-            <div className="bcKicker">О платформе</div>
+        <div style={{ maxWidth: 980, margin: "0 auto", padding: "18px 14px 14px" }}>
+          <div className="glassStrong" style={{ borderRadius: 22, padding: 18 }}>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+              <Pill>Платформа</Pill>
+              <Pill>Игры + сервисы</Pill>
+              <Pill>iPhone • PC • Xbox</Pill>
+            </div>
 
-            <h1 className="bcH1">BlackCrown</h1>
+            <h1 className="bcH1" style={{ marginTop: 12 }}>
+              BlackCrown — это хаб,
+              <br />
+              где игры и сервисы работают вместе.
+            </h1>
 
-            <p className="bcLead">
-              Премиум-платформа для наших игр: витрина, запуск, настройки и социальные модули. Сегодня — <b>EvoFish</b>,
-              дальше — новые игры и события.
+            <p className="bcLead" style={{ marginTop: 10 }}>
+              Мы делаем игры, которые запускаются быстро и выглядят премиально на любом устройстве. Параллельно мы строим
+              удобный слой сервиса: профиль, лобби, поддержка и помощники для игроков.
             </p>
 
-            <div className="bcCtas">
-              <Button variant="primary" leftIconSrc={Icons.play} onClick={() => window.location.assign("/game/")}>
-                Запустить EvoFish
+            <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <Button variant="primary" leftIconSrc={Icons.play} onClick={() => openExternal("/game/")}>
+                Запустить игру
               </Button>
-              <Button variant="secondary" onClick={() => window.location.assign("/lobby/")}>
+              <Button variant="secondary" onClick={() => openExternal("/lobby/")}>
                 Открыть Lobby
               </Button>
-              <Button variant="ghost" onClick={() => nav("/account")}>
-                Аккаунт
+              <Button variant="ghost" onClick={() => nav("/support")}>
+                Поддержка
               </Button>
             </div>
           </div>
+        </div>
+      </section>
 
-          <div className="bcHeroPanel glassStrong">
-            <div className="bcPanelTitle">Разделы</div>
+      <section className="bcSection" style={{ paddingTop: 10 }}>
+        <div style={{ maxWidth: 980, margin: "0 auto", padding: "0 14px" }}>
+          <div style={{ display: "grid", gap: 12 }}>
+            <Card
+              icon={Icons.crown}
+              title="Игры на одном домене"
+              desc="BlackCrown — витрина и лончер. Каждая игра живёт отдельным приложением, но пользователь ощущает это как единый продукт: единый стиль, единые настройки и единый профиль."
+              right={<Pill>PWA ready</Pill>}
+            />
 
-            <div className="bcPanelRow" role="button" tabIndex={0} onClick={() => nav("/store")}>
-              <div className="bcDot" />
-              <div>
-                <div className="bcPanelH">Store</div>
-                <div className="bcPanelP">Косметика и темы.</div>
+            <Card
+              icon={Icons.play}
+              title="EvoFish и следующие релизы"
+              desc="Сегодня на платформе доступна EvoFish. Дальше — новые проекты, режимы и события. Мы развиваем BlackCrown как дом для нескольких игр, чтобы всё было собрано в одном месте."
+              right={<Pill>Games</Pill>}
+            />
+
+            <Card
+              title="AI-Coach в Telegram"
+              desc="В Telegram у нас есть AI-Coach: помощник, который помогает игрокам быстрее вливаться, разбираться в механиках, подбирать стратегии, напоминать про цели и держать прогресс в фокусе. Это отдельная часть экосистемы BlackCrown — сервис для игроков, а не просто чат."
+              right={<Pill>Telegram</Pill>}
+            />
+
+            <Card
+              title="Премиум-UX"
+              desc="Много воздуха, стеклянные панели, тонкие анимации и аккуратная типографика. Мы держим интерфейс быстрым: анимации на transform/opacity, крупные тач-цели и поддержка safe-area."
+              right={<Pill>120fps motion</Pill>}
+            />
+
+            <div className="glassStrong" style={{ borderRadius: 22, padding: 16 }}>
+              <div style={{ fontWeight: 980, fontSize: 16 }}>Куда дальше</div>
+              <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <Button variant="secondary" onClick={() => nav("/store")}>
+                    Store Preview
+                  </Button>
+                  <Button variant="secondary" onClick={() => nav("/account")}>
+                    Профиль
+                  </Button>
+                  <Button variant="ghost" onClick={() => nav("/support")}>
+                    Поддержка
+                  </Button>
+                </div>
+
+                <div style={{ opacity: 0.82, lineHeight: 1.5, fontWeight: 850 }}>
+                  Если хочешь — добавим отдельный блок “Сервисы” на главную: AI-Coach в Telegram, система задач/квестов, и
+                  будущие интеграции. Всё будет выглядеть как единый премиум продукт.
+                </div>
               </div>
             </div>
 
-            <div className="bcPanelRow" role="button" tabIndex={0} onClick={() => nav("/account")}>
-              <div className="bcDot" />
-              <div>
-                <div className="bcPanelH">Аккаунт</div>
-                <div className="bcPanelP">Ник и профиль.</div>
-              </div>
-            </div>
-
-            <div className="bcPanelRow" role="button" tabIndex={0} onClick={() => nav("/support")}>
-              <div className="bcDot" />
-              <div>
-                <div className="bcPanelH">Поддержка</div>
-                <div className="bcPanelP">Контакты и помощь.</div>
-              </div>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", opacity: 0.78 }}>
+              <a className="bcLink" href="/privacy">
+                Privacy
+              </a>
+              <a className="bcLink" href="/terms">
+                Terms
+              </a>
+              <a className="bcLink" href="/support">
+                Поддержка
+              </a>
             </div>
           </div>
-        </div>
-      </section>
-
-      <section className="bcSection">
-        <div className="bcSectionHead">
-          <div className="bcSectionTitle">Roadmap</div>
-          <div className="bcSectionSub">Куда идём: новые игры, события и модули платформы.</div>
-        </div>
-        <div className="bcCards">
-          <Card item={ROADMAP[0]} />
-          <Card item={ROADMAP[1]} />
-          <Card item={ROADMAP[2]} />
-        </div>
-      </section>
-
-      <section className="bcSection">
-        <div className="bcSectionHead">
-          <div className="bcSectionTitle">Changelog</div>
-          <div className="bcSectionSub">Что уже сделано и зафиксировано в продукте.</div>
-        </div>
-        <div className="bcCards">
-          <Card item={CHANGELOG[0]} />
-          <Card item={CHANGELOG[1]} />
-          <Card item={CHANGELOG[2]} />
         </div>
       </section>
     </main>
