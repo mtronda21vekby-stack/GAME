@@ -2,8 +2,15 @@ import React from "react";
 import { Button, Modal } from "@blackcrown/ui";
 import { Icons, HeroArt } from "@blackcrown/assets";
 import { userStorage } from "@blackcrown/core";
+import { Router } from "./Router";
 
-function nav(path: string) {
+function navSite(path: string) {
+  window.history.pushState(null, "", path);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+  window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+}
+
+function navExternal(path: string) {
   window.location.assign(path);
 }
 
@@ -25,7 +32,7 @@ function Pill(props: { children: React.ReactNode }) {
         color: "rgba(255,255,255,0.82)",
         fontWeight: 850,
         fontSize: 12,
-        letterSpacing: "0.02em"
+        letterSpacing: "0.02em",
       }}
     >
       {props.children}
@@ -40,16 +47,25 @@ function FeatureCard(props: {
   actionLabel: string;
   onAction: () => void;
   href?: string;
+  kind?: "site" | "external";
 }) {
+  const kind = props.kind ?? "site";
+
   return (
     <div
       className="glassStrong bc-motion"
       role={props.href ? "link" : undefined}
       tabIndex={props.href ? 0 : undefined}
-      onClick={() => props.href && nav(props.href)}
+      onClick={() => {
+        if (!props.href) return;
+        if (kind === "external") navExternal(props.href);
+        else navSite(props.href);
+      }}
       onKeyDown={(e) => {
         if (!props.href) return;
-        if (e.key === "Enter" || e.key === " ") nav(props.href);
+        if (e.key !== "Enter" && e.key !== " ") return;
+        if (kind === "external") navExternal(props.href);
+        else navSite(props.href);
       }}
       style={{
         borderRadius: 22,
@@ -57,7 +73,7 @@ function FeatureCard(props: {
         background: "rgba(255,255,255,0.06)",
         boxShadow: "0 34px 120px rgba(0,0,0,0.30)",
         overflow: "hidden",
-        cursor: props.href ? "pointer" : "default"
+        cursor: props.href ? "pointer" : "default",
       }}
     >
       <div style={{ padding: 18 }}>
@@ -84,7 +100,8 @@ function FeatureCard(props: {
               variant="ghost"
               onClick={(e) => {
                 e.stopPropagation();
-                nav(props.href!);
+                if (kind === "external") navExternal(props.href!);
+                else navSite(props.href!);
               }}
             >
               Открыть
@@ -104,7 +121,7 @@ function FeatureCard(props: {
             borderRadius: 18,
             border: "none",
             display: "block",
-            opacity: 0.95
+            opacity: 0.95,
           }}
         />
       </div>
@@ -140,7 +157,7 @@ function AccountModal(props: { open: boolean; onClose: () => void; onSaved: () =
             color: "var(--text)",
             padding: "0 12px",
             outline: "none",
-            fontWeight: 850
+            fontWeight: 850,
           }}
         />
 
@@ -153,9 +170,7 @@ function AccountModal(props: { open: boolean; onClose: () => void; onSaved: () =
             variant="primary"
             onClick={() => {
               const next = value.trim();
-              if (next.length > 0) {
-                userStorage.setString("nickname", next);
-              }
+              if (next.length > 0) userStorage.setString("nickname", next);
               props.onClose();
               props.onSaved();
             }}
@@ -182,13 +197,7 @@ export function Home() {
         </div>
 
         <header className="bcTop">
-          <button
-            type="button"
-            className="bcBrand"
-            onClick={() => nav("/")}
-            aria-label="BlackCrown Home"
-            style={{ cursor: "pointer" }}
-          >
+          <button type="button" className="bcBrand" onClick={() => navSite("/")} aria-label="BlackCrown Home">
             <img alt="" src={Icons.crown} width="20" height="20" />
             <div style={{ fontWeight: 950 }}>BlackCrown</div>
           </button>
@@ -209,17 +218,11 @@ export function Home() {
           </nav>
 
           <div className="bcRight">
-            <button
-              type="button"
-              className="bcAccountPill"
-              onClick={() => setAccountOpen(true)}
-              style={{ cursor: "pointer" }}
-              aria-label="Открыть аккаунт"
-            >
+            <button type="button" className="bcAccountPill" onClick={() => setAccountOpen(true)} aria-label="Аккаунт">
               Аккаунт: {name}
             </button>
 
-            <Button variant="primary" leftIconSrc={Icons.play} onClick={() => nav("/game/")}>
+            <Button variant="primary" leftIconSrc={Icons.play} onClick={() => navExternal("/game/")}>
               Играть
             </Button>
           </div>
@@ -238,20 +241,20 @@ export function Home() {
             </h1>
 
             <p className="bcLead">
-              BlackCrown — это витрина и лончер для наших игр. Сегодня доступна <b>EvoFish</b>, дальше — новые проекты и
-              события. Один домен, один аккаунт, единый премиум UX.
+              BlackCrown — витрина и лончер для наших игр. Сегодня доступна <b>EvoFish</b>, дальше — новые проекты и
+              события.
             </p>
 
             <div className="bcCtas">
-              <Button variant="primary" leftIconSrc={Icons.play} onClick={() => nav("/game/")}>
+              <Button variant="primary" leftIconSrc={Icons.play} onClick={() => navExternal("/game/")}>
                 Запустить EvoFish
               </Button>
 
-              <Button variant="secondary" onClick={() => nav("/lobby/")}>
+              <Button variant="secondary" onClick={() => navExternal("/lobby/")}>
                 Открыть Lobby
               </Button>
 
-              <Button variant="ghost" onClick={() => nav("/store")}>
+              <Button variant="ghost" onClick={() => navSite("/store")}>
                 Магазин
               </Button>
             </div>
@@ -266,7 +269,7 @@ export function Home() {
           <div className="bcHeroPanel glassStrong">
             <div className="bcPanelTitle">Разделы</div>
 
-            <div className="bcPanelRow" role="button" tabIndex={0} onClick={() => nav("/game/")}>
+            <div className="bcPanelRow" role="button" tabIndex={0} onClick={() => navExternal("/game/")}>
               <div className="bcDot" />
               <div>
                 <div className="bcPanelH">Игры</div>
@@ -274,7 +277,7 @@ export function Home() {
               </div>
             </div>
 
-            <div className="bcPanelRow" role="button" tabIndex={0} onClick={() => nav("/lobby/")}>
+            <div className="bcPanelRow" role="button" tabIndex={0} onClick={() => navExternal("/lobby/")}>
               <div className="bcDot" />
               <div>
                 <div className="bcPanelH">Lobby</div>
@@ -282,7 +285,7 @@ export function Home() {
               </div>
             </div>
 
-            <div className="bcPanelRow" role="button" tabIndex={0} onClick={() => nav("/support")}>
+            <div className="bcPanelRow" role="button" tabIndex={0} onClick={() => navSite("/support")}>
               <div className="bcDot" />
               <div>
                 <div className="bcPanelH">Поддержка</div>
@@ -296,33 +299,36 @@ export function Home() {
       <section className="bcSection">
         <div className="bcSectionHead">
           <div className="bcSectionTitle">Платформа</div>
-          <div className="bcSectionSub">Премиум интерфейс, адаптив и быстрые анимации — для телефона, ПК и консоли.</div>
+          <div className="bcSectionSub">Премиум интерфейс и быстрые анимации — для телефона, ПК и консоли.</div>
         </div>
 
         <div className="bcCards">
           <FeatureCard
             title="Единый премиум-стиль"
-            desc="Единые компоненты, токены и motion. Чистая типографика, стекло и воздух — без визуального мусора."
+            desc="Единые компоненты, токены и motion. Чистая типографика и стекло."
             tag="UI"
             actionLabel="О проекте"
-            onAction={() => nav("/about")}
+            onAction={() => navSite("/about")}
             href="/about"
+            kind="site"
           />
           <FeatureCard
-            title="Запуск за секунды"
-            desc="Контейнер для игр: настройки, фуллскрин, управление. EvoFish открывается изолированно, без ломания логики."
+            title="Игры"
+            desc="Единый запуск, настройки и управление. EvoFish открывается в отдельном приложении на этом же домене."
             tag="Play"
             actionLabel="Открыть игру"
-            onAction={() => nav("/game/")}
+            onAction={() => navExternal("/game/")}
             href="/game/"
+            kind="external"
           />
           <FeatureCard
-            title="Lobby и чат"
-            desc="Комната на 8 игроков: список, ready/unready и чат. Быстро и аккуратно."
+            title="Lobby"
+            desc="Комната и чат. Lobby открывается как отдельное приложение на этом же домене."
             tag="Social"
             actionLabel="В Lobby"
-            onAction={() => nav("/lobby/")}
+            onAction={() => navExternal("/lobby/")}
             href="/lobby/"
+            kind="external"
           />
         </div>
 
@@ -352,5 +358,5 @@ export function Home() {
 
 /** main.tsx импортирует { App } */
 export function App() {
-  return <Home />;
+  return <Router />;
 }
