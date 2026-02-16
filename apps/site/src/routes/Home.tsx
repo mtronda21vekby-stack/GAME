@@ -1,8 +1,7 @@
 import React from "react";
-import { Button, Modal } from "@blackcrown/ui";
+import { Button } from "@blackcrown/ui";
 import { Icons, HeroArt } from "@blackcrown/assets";
 import { userStorage } from "@blackcrown/core";
-import { Router } from "./Router";
 
 function navSite(path: string) {
   window.history.pushState(null, "", path);
@@ -48,26 +47,24 @@ function FeatureCard(props: {
   onAction: () => void;
   href?: string;
   kind?: "site" | "external";
-  artSrc: string;
 }) {
   const kind = props.kind ?? "site";
-
-  const open = () => {
-    if (!props.href) return;
-    if (kind === "external") navExternal(props.href);
-    else navSite(props.href);
-  };
 
   return (
     <div
       className="glassStrong bc-motion"
       role={props.href ? "link" : undefined}
       tabIndex={props.href ? 0 : undefined}
-      onClick={open}
+      onClick={() => {
+        if (!props.href) return;
+        if (kind === "external") navExternal(props.href);
+        else navSite(props.href);
+      }}
       onKeyDown={(e) => {
         if (!props.href) return;
         if (e.key !== "Enter" && e.key !== " ") return;
-        open();
+        if (kind === "external") navExternal(props.href);
+        else navSite(props.href);
       }}
       style={{
         borderRadius: 22,
@@ -102,7 +99,8 @@ function FeatureCard(props: {
               variant="ghost"
               onClick={(e) => {
                 e.stopPropagation();
-                open();
+                if (kind === "external") navExternal(props.href!);
+                else navSite(props.href!);
               }}
             >
               Открыть
@@ -114,7 +112,7 @@ function FeatureCard(props: {
       <div style={{ padding: 14, paddingTop: 0 }}>
         <img
           alt=""
-          src={props.artSrc}
+          src={HeroArt.cardWave}
           style={{
             width: "100%",
             height: 160,
@@ -130,63 +128,8 @@ function FeatureCard(props: {
   );
 }
 
-function AccountModal(props: { open: boolean; onClose: () => void; onSaved: () => void }) {
-  const [value, setValue] = React.useState<string>(() => userStorage.getString("nickname", "") || "");
-
-  React.useEffect(() => {
-    if (!props.open) return;
-    setValue(userStorage.getString("nickname", "") || "");
-  }, [props.open]);
-
-  return (
-    <Modal open={props.open} title="Аккаунт" onClose={props.onClose}>
-      <div className="bc-col" style={{ gap: 10 }}>
-        <div style={{ fontWeight: 900 }}>Никнейм</div>
-
-        <input
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder="Введите никнейм"
-          autoComplete="nickname"
-          inputMode="text"
-          style={{
-            width: "100%",
-            height: 44,
-            borderRadius: 14,
-            border: "1px solid rgba(255,255,255,0.12)",
-            background: "rgba(255,255,255,0.06)",
-            color: "var(--text)",
-            padding: "0 12px",
-            outline: "none",
-            fontWeight: 850,
-          }}
-        />
-
-        <div className="bc-row" style={{ justifyContent: "flex-end", gap: 10, marginTop: 6, flexWrap: "wrap" }}>
-          <Button variant="ghost" onClick={props.onClose}>
-            Закрыть
-          </Button>
-
-          <Button
-            variant="primary"
-            onClick={() => {
-              const next = value.trim();
-              if (next.length > 0) userStorage.setString("nickname", next);
-              props.onClose();
-              props.onSaved();
-            }}
-          >
-            Сохранить
-          </Button>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
 export function Home() {
-  const [accountOpen, setAccountOpen] = React.useState(false);
-  const [name, setName] = React.useState(getName());
+  const name = getName();
 
   return (
     <main className="bcSiteRoot">
@@ -219,7 +162,7 @@ export function Home() {
           </nav>
 
           <div className="bcRight">
-            <button type="button" className="bcAccountPill" onClick={() => setAccountOpen(true)} aria-label="Аккаунт">
+            <button type="button" className="bcAccountPill" onClick={() => navSite("/account")} aria-label="Аккаунт">
               Аккаунт: {name}
             </button>
 
@@ -242,7 +185,7 @@ export function Home() {
             </h1>
 
             <p className="bcLead">
-              BlackCrown — витрина и лончер для наших игр. Сегодня доступна <b>EvoFish</b>, дальше — новые тайтлы и события.
+              BlackCrown — витрина и лончер для наших игр. Сегодня доступна <b>EvoFish</b>, дальше — новые проекты и события.
             </p>
 
             <div className="bcCtas">
@@ -281,15 +224,15 @@ export function Home() {
               <div className="bcDot" />
               <div>
                 <div className="bcPanelH">Lobby</div>
-                <div className="bcPanelP">Команда и чат.</div>
+                <div className="bcPanelP">Комната и чат.</div>
               </div>
             </div>
 
-            <div className="bcPanelRow" role="button" tabIndex={0} onClick={() => navSite("/support")}>
+            <div className="bcPanelRow" role="button" tabIndex={0} onClick={() => navSite("/account")}>
               <div className="bcDot" />
               <div>
-                <div className="bcPanelH">Поддержка</div>
-                <div className="bcPanelP">Помощь и контакты.</div>
+                <div className="bcPanelH">Аккаунт</div>
+                <div className="bcPanelP">Профиль, аватар и настройки.</div>
               </div>
             </div>
           </div>
@@ -305,35 +248,30 @@ export function Home() {
         <div className="bcCards">
           <FeatureCard
             title="Единый премиум-стиль"
-            desc="Единые компоненты, токены и motion. Чистая типографика и стекло — без визуального шума."
+            desc="Единые компоненты, токены и motion. Чистая типографика и стекло."
             tag="UI"
             actionLabel="О проекте"
             onAction={() => navSite("/about")}
             href="/about"
             kind="site"
-            artSrc={HeroArt.cardGrid}
           />
-
           <FeatureCard
             title="Игры"
-            desc="Единый запуск, настройки и управление. EvoFish и следующие тайтлы — на одном домене."
+            desc="Единый запуск, настройки и управление. EvoFish открывается как отдельное приложение на этом же домене."
             tag="Play"
             actionLabel="Открыть игру"
             onAction={() => navExternal("/game/")}
             href="/game/"
             kind="external"
-            artSrc={HeroArt.cardNeon}
           />
-
           <FeatureCard
             title="Lobby"
-            desc="Комната и чат. Быстрый вход, список игроков и статусы готовности."
+            desc="Комната и чат. Lobby открывается как отдельное приложение на этом же домене."
             tag="Social"
             actionLabel="В Lobby"
             onAction={() => navExternal("/lobby/")}
             href="/lobby/"
             kind="external"
-            artSrc={HeroArt.cardWave}
           />
         </div>
 
@@ -351,12 +289,6 @@ export function Home() {
           </div>
         </div>
       </section>
-
-      <AccountModal open={accountOpen} onClose={() => setAccountOpen(false)} onSaved={() => setName(getName())} />
     </main>
   );
-}
-
-export function App() {
-  return <Router />;
 }
