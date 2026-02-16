@@ -1,69 +1,30 @@
-html, body { height: 100%; margin: 0; }
-a { color: inherit; text-decoration: none; }
-* { box-sizing: border-box; }
-
-.nav{
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  padding: max(12px, env(safe-area-inset-top)) 0 12px;
-  background: linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0));
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
-.heroGrid{
-  display:grid;
-  grid-template-columns: 1.2fr 0.8fr;
-  gap: 16px;
-}
-@media (max-width: 900px){
-  .heroGrid{ grid-template-columns: 1fr; }
+:root {
+  --app-vh: 100vh;
+
+  --bg0: #05070f;
+  --bg1: #070a12;
+
+  --text: rgba(255,255,255,0.92);
+  --muted: rgba(255,255,255,0.76);
+  --hair: rgba(255,255,255,0.10);
+
+  color-scheme: dark;
 }
 
-.kpi{
-  display:grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
-@media (max-width: 720px){
-  .kpi{ grid-template-columns: 1fr; }
+body {
+  background: var(--bg1);
+  color: var(--text);
+  overflow-x: hidden;
 }
 
-/* =========================
-   Echo an AI premium motion
-   (transform/opacity only)
-   ========================= */
-
-.echo-orb{
-  position:absolute;
-  inset:auto;
-  width: 420px;
-  height: 420px;
-  border-radius: 999px;
-  background:
-    radial-gradient(circle at 30% 30%, rgba(255,255,255,0.10), transparent 55%),
-    radial-gradient(circle at 55% 45%, var(--echo-a), transparent 60%),
-    radial-gradient(circle at 65% 70%, var(--echo-b), transparent 62%);
-  opacity: 0.42;
-  transform: translateZ(0);
-  will-change: transform, opacity;
-  pointer-events:none;
+#root {
+  min-height: 100%;
 }
 
-@media (prefers-reduced-motion: no-preference){
-  .echo-orb{ animation: echoFloat 10s ease-in-out infinite; }
-}
-
-@keyframes echoFloat{
-  0%{ transform: translate3d(0,0,0) scale(1); }
-  50%{ transform: translate3d(0,-10px,0) scale(1.02); }
-  100%{ transform: translate3d(0,0,0) scale(1); }
-}
-
-.echo-line{
-  height: 1px;
-  background: var(--line2);
-  border-radius: 999px;
-  opacity: 0.55;
-}
+a { color: inherit; }
