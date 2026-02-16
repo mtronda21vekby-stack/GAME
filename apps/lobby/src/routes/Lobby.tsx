@@ -1,61 +1,185 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { userStorage } from "@blackcrown/core";
+import React from "react";
 import { Button } from "@blackcrown/ui";
-import { createLobbyModel, LobbyState } from "../features/lobby/lobbyModel";
-import { PlayersPanel } from "../features/lobby/PlayersPanel";
-import { ChatPanel } from "../features/lobby/ChatPanel";
+import { userStorage } from "@blackcrown/core";
+import { createLobbyClient, LobbyChatMsg, LobbyPlayer } from "@blackcrown/core";
 
-const PATHS = {
-  site: "/",
-  game: "/game/"
-} as const;
+function nav(path: string) {
+  window.location.assign(path);
+}
+
+function getNick() {
+  return userStorage.getString("nickname", "") || "Игрок";
+}
+
+function fmtTime(ts: number) {
+  const d = new Date(ts);
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
 
 export function Lobby() {
-  const nickname = userStorage.getString("nickname", "");
-  const me = nickname || "Игрок";
-  const lobbyId = "main";
+  const [room] = React.useState("main");
+  const [status, setStatus] = React.useState<"connecting" | "online" | "offline">("connecting");
+  const [players, setPlayers] = React.useState<LobbyPlayer[]>([]);
+  const [history, setHistory] = React.useState<LobbyChatMsg[]>([]);
+  const [ready, setReady] = React.useState(false);
+  const [text, setText] = React.useState("");
+  const listRef = React.useRef<HTMLDivElement | null>(null);
 
-  const model = useMemo(() => createLobbyModel({ lobbyId, me }), [lobbyId, me]);
-  const [state, setState] = useState<LobbyState>({
-    lobbyId, me, players: [{ name: me, ready: false }], chat: []
-  });
+  React.useEffect(() => {
+    const nick = getNick();
 
-  useEffect(() => {
-    const unsub = model.subscribe(setState);
-    model.connect();
-    return () => { unsub(); model.dispose(); };
-  }, [model]);
+    const client = createLobbyClient(room, {
+      onOpen: () => setStatus("online"),
+      onClose: () => setStatus("offline"),
+      onHello: (m) => {
+        setPlayers(m.players);
+        setHistory(m.history);
+        setReady(m.you.ready);
+        client.join(nick);
+      },
+      onPlayers: (m) => setPlayers(m.players),
+      onChat: (m) => setHistory((prev) => [...prev, m.msg].slice(-40)),
+    });
+
+    return () => client.close();
+  }, [room]);
+
+  React.useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [history.length]);
+
+  const onlineCount = players.length;
+  const canReady = onlineCount <= 8;
 
   return (
-    <main className="apple-bg" style={{ minHeight: "100%" }}>
-      <div className="bc-container" style={{ padding: "max(12px, env(safe-area-inset-top)) 0 18px" }}>
-        <div className="bc-row" style={{ justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
-          <div className="bc-col" style={{ gap: 2 }}>
-            <div className="bc-h2">Лобби</div>
-            <div className="bc-p">Пока локальный mock-транспорт. Открой 2 вкладки — увидишь “8 игроков”.</div>
+    <main className="bcSiteRoot">
+      <section className="bcSection" style={{ paddingTop: 14 }}>
+        <div style={{ maxWidth: 980, margin: "0 auto" }}>
+          <div className="glassStrong" style={{ borderRadius: 22, padding: 14, display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+              <div style={{ fontWeight: 980 }}>Lobby</div>
+              <div style={{ opacity: 0.75, fontWeight: 850 }}>Комната: {room}</div>
+              <div style={{ opacity: 0.75, fontWeight: 850 }}>Игроки: {onlineCount}/8</div>
+              <div style={{ opacity: 0.75, fontWeight: 850 }}>
+                Статус: {status === "online" ? "онлайн" : status === "connecting" ? "подключение" : "офлайн"}
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <Button variant="secondary" onClick={() => nav("/game/")}>Игры</Button>
+              <Button variant="ghost" onClick={() => nav("/")}>Главная</Button>
+            </div>
           </div>
-          <div className="bc-row" style={{ flexWrap: "wrap" }}>
-            <Button variant="secondary" onClick={() => (window.location.href = PATHS.site)}>На сайт</Button>
-            <Button variant="primary" onClick={() => (window.location.href = PATHS.game)}>В игру</Button>
+
+          <div style={{ height: 12 }} />
+
+          <div style={{ display: "grid", gap: 12 }}>
+            <div className="glassStrong" style={{ borderRadius: 22, padding: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                <div style={{ fontWeight: 950 }}>Игроки</div>
+                <Button
+                  variant={ready ? "primary" : "secondary"}
+                  onClick={() => {
+                    if (!canReady) return;
+                    const next = !ready;
+                    setReady(next);
+                    // отправка через новый клиент: создадим быстрый connect для действия
+                    const c = createLobbyClient(room, {});
+                    c.setReady(next);
+                    setTimeout(() => c.close(), 50);
+                  }}
+                >
+                  {ready ? "Готов" : "Не готов"}
+                </Button>
+              </div>
+
+              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                {players.slice(0, 8).map((p) => (
+                  <div
+                    key={p.id}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 10,
+                      padding: 10,
+                      borderRadius: 16,
+                      border: "1px solid rgba(255,255,255,0.10)",
+                      background: "rgba(255,255,255,0.04)",
+                      alignItems: "center",
+                    }}
+                  >
+                    <div style={{ fontWeight: 900 }}>{p.name}</div>
+                    <div style={{ opacity: 0.78, fontWeight: 900 }}>{p.ready ? "ready" : "…"}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="glassStrong" style={{ borderRadius: 22, padding: 14 }}>
+              <div style={{ fontWeight: 950 }}>Чат</div>
+
+              <div
+                ref={listRef}
+                style={{
+                  marginTop: 10,
+                  height: 260,
+                  overflow: "auto",
+                  borderRadius: 16,
+                  border: "1px solid rgba(255,255,255,0.10)",
+                  background: "rgba(0,0,0,0.16)",
+                  padding: 10,
+                }}
+              >
+                {history.map((m) => (
+                  <div key={m.id} style={{ padding: "6px 0", display: "grid", gap: 4 }}>
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "baseline" }}>
+                      <div style={{ fontWeight: 950 }}>{m.fromName}</div>
+                      <div style={{ opacity: 0.68, fontWeight: 850, fontSize: 12 }}>{fmtTime(m.at)}</div>
+                    </div>
+                    <div style={{ opacity: 0.88, lineHeight: 1.4 }}>{m.text}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <input
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  placeholder="Написать сообщение"
+                  style={{
+                    flex: "1 1 240px",
+                    height: 44,
+                    borderRadius: 14,
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    background: "rgba(255,255,255,0.06)",
+                    color: "var(--text)",
+                    padding: "0 12px",
+                    outline: "none",
+                    fontWeight: 850,
+                  }}
+                />
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    const msg = text.trim();
+                    if (!msg) return;
+                    setText("");
+                    const c = createLobbyClient(room, {});
+                    c.chat(msg);
+                    setTimeout(() => c.close(), 50);
+                  }}
+                >
+                  Отправить
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
-
-        <div style={{ height: 14 }} />
-
-        <div style={{ display: "grid", gridTemplateColumns: "0.9fr 1.1fr", gap: 12, minHeight: "calc(100vh - 160px)" }}>
-          <PlayersPanel me={state.me} players={state.players} onToggleReady={(v) => model.ready(v)} />
-          <ChatPanel me={state.me} chat={state.chat} onSend={(m) => model.chat(m)} />
-        </div>
-
-        <style>{`
-          @media (max-width: 900px){
-            div[style*="gridTemplateColumns: 0.9fr"]{
-              grid-template-columns: 1fr !important;
-              min-height: auto !important;
-            }
-          }
-        `}</style>
-      </div>
+      </section>
     </main>
   );
 }
