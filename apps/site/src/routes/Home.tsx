@@ -2,6 +2,7 @@ import React from "react";
 import { Button, Modal } from "@blackcrown/ui";
 import { Icons, HeroArt } from "@blackcrown/assets";
 import { userStorage } from "@blackcrown/core";
+import { Router } from "./Router";
 
 function navSite(path: string) {
   window.history.pushState(null, "", path);
@@ -47,24 +48,26 @@ function FeatureCard(props: {
   onAction: () => void;
   href?: string;
   kind?: "site" | "external";
+  artSrc: string;
 }) {
   const kind = props.kind ?? "site";
+
+  const open = () => {
+    if (!props.href) return;
+    if (kind === "external") navExternal(props.href);
+    else navSite(props.href);
+  };
 
   return (
     <div
       className="glassStrong bc-motion"
       role={props.href ? "link" : undefined}
       tabIndex={props.href ? 0 : undefined}
-      onClick={() => {
-        if (!props.href) return;
-        if (kind === "external") navExternal(props.href);
-        else navSite(props.href);
-      }}
+      onClick={open}
       onKeyDown={(e) => {
         if (!props.href) return;
         if (e.key !== "Enter" && e.key !== " ") return;
-        if (kind === "external") navExternal(props.href);
-        else navSite(props.href);
+        open();
       }}
       style={{
         borderRadius: 22,
@@ -99,8 +102,7 @@ function FeatureCard(props: {
               variant="ghost"
               onClick={(e) => {
                 e.stopPropagation();
-                if (kind === "external") navExternal(props.href!);
-                else navSite(props.href!);
+                open();
               }}
             >
               Открыть
@@ -112,7 +114,7 @@ function FeatureCard(props: {
       <div style={{ padding: 14, paddingTop: 0 }}>
         <img
           alt=""
-          src={HeroArt.cardWave}
+          src={props.artSrc}
           style={{
             width: "100%",
             height: 160,
@@ -202,10 +204,18 @@ export function Home() {
           </button>
 
           <nav className="bcNav" aria-label="Навигация">
-            <a className="bcLink" href="/about">О проекте</a>
-            <a className="bcLink" href="/support">Поддержка</a>
-            <a className="bcLink" href="/privacy">Privacy</a>
-            <a className="bcLink" href="/terms">Terms</a>
+            <a className="bcLink" href="/about">
+              О проекте
+            </a>
+            <a className="bcLink" href="/support">
+              Поддержка
+            </a>
+            <a className="bcLink" href="/privacy">
+              Privacy
+            </a>
+            <a className="bcLink" href="/terms">
+              Terms
+            </a>
           </nav>
 
           <div className="bcRight">
@@ -232,7 +242,7 @@ export function Home() {
             </h1>
 
             <p className="bcLead">
-              BlackCrown — витрина и лончер для наших игр. Сегодня доступна <b>EvoFish</b>, дальше — новые проекты и события.
+              BlackCrown — витрина и лончер для наших игр. Сегодня доступна <b>EvoFish</b>, дальше — новые тайтлы и события.
             </p>
 
             <div className="bcCtas">
@@ -295,38 +305,49 @@ export function Home() {
         <div className="bcCards">
           <FeatureCard
             title="Единый премиум-стиль"
-            desc="Единые компоненты, токены и motion. Чистая типографика и стекло."
+            desc="Единые компоненты, токены и motion. Чистая типографика и стекло — без визуального шума."
             tag="UI"
             actionLabel="О проекте"
             onAction={() => navSite("/about")}
             href="/about"
             kind="site"
+            artSrc={HeroArt.cardGrid}
           />
+
           <FeatureCard
             title="Игры"
-            desc="Единый запуск, настройки и управление. EvoFish открывается в отдельном приложении на этом же домене."
+            desc="Единый запуск, настройки и управление. EvoFish и следующие тайтлы — на одном домене."
             tag="Play"
             actionLabel="Открыть игру"
             onAction={() => navExternal("/game/")}
             href="/game/"
             kind="external"
+            artSrc={HeroArt.cardNeon}
           />
+
           <FeatureCard
             title="Lobby"
-            desc="Комната и чат. Lobby открывается как отдельное приложение на этом же домене."
+            desc="Комната и чат. Быстрый вход, список игроков и статусы готовности."
             tag="Social"
             actionLabel="В Lobby"
             onAction={() => navExternal("/lobby/")}
             href="/lobby/"
             kind="external"
+            artSrc={HeroArt.cardWave}
           />
         </div>
 
         <div style={{ maxWidth: 980, margin: "16px auto 0", opacity: 0.78 }}>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <a className="bcLink" href="/privacy">Privacy</a>
-            <a className="bcLink" href="/terms">Terms</a>
-            <a className="bcLink" href="/support">Поддержка</a>
+            <a className="bcLink" href="/privacy">
+              Privacy
+            </a>
+            <a className="bcLink" href="/terms">
+              Terms
+            </a>
+            <a className="bcLink" href="/support">
+              Поддержка
+            </a>
           </div>
         </div>
       </section>
@@ -334,4 +355,8 @@ export function Home() {
       <AccountModal open={accountOpen} onClose={() => setAccountOpen(false)} onSaved={() => setName(getName())} />
     </main>
   );
+}
+
+export function App() {
+  return <Router />;
 }
