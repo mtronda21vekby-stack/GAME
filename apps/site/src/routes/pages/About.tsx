@@ -47,15 +47,7 @@ function Card(props: { title: string; desc: string; icon?: string; right?: React
         boxShadow: "0 34px 120px rgba(0,0,0,0.30)",
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 12,
-          alignItems: "flex-start",
-          flexWrap: "wrap",
-        }}
-      >
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           {props.icon ? <img alt="" src={props.icon} width="18" height="18" style={{ opacity: 0.92 }} /> : null}
           <div style={{ fontWeight: 980, fontSize: 16, letterSpacing: "-0.01em" }}>{props.title}</div>
@@ -91,6 +83,9 @@ export function About() {
             <a className="bcLink" href="/support">
               Поддержка
             </a>
+            <a className="bcLink" href="/store">
+              Магазин
+            </a>
             <a className="bcLink" href="/privacy">
               Privacy
             </a>
@@ -102,6 +97,9 @@ export function About() {
           <div className="bcRight">
             <Button variant="secondary" onClick={() => nav("/account")}>
               Аккаунт
+            </Button>
+            <Button variant="secondary" onClick={() => nav("/store")}>
+              Магазин
             </Button>
             <Button variant="primary" leftIconSrc={Icons.play} onClick={() => openExternal("/game/")}>
               Играть
@@ -124,8 +122,8 @@ export function About() {
             </h1>
 
             <p className="bcLead" style={{ marginTop: 10 }}>
-              Мы делаем игры, которые запускаются быстро и выглядят премиально на любом устройстве. Параллельно мы строим
-              слой сервиса: профиль, лобби, поддержка и помощники для игроков.
+              Игры запускаются быстро и выглядят премиально на любом устройстве. Сервисы платформы: профиль, лобби, магазин и
+              AI-Coach в Telegram.
             </p>
 
             <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -135,11 +133,11 @@ export function About() {
               <Button variant="secondary" onClick={() => openExternal("/lobby/")}>
                 Открыть Lobby
               </Button>
-              <Button variant="secondary" onClick={openTelegramBot}>
-                AI-Coach в Telegram
+              <Button variant="secondary" onClick={() => nav("/store")}>
+                Магазин
               </Button>
-              <Button variant="ghost" onClick={() => nav("/support")}>
-                Поддержка
+              <Button variant="ghost" onClick={openTelegramBot}>
+                AI-Coach
               </Button>
             </div>
           </div>
@@ -151,58 +149,29 @@ export function About() {
           <div style={{ display: "grid", gap: 12 }}>
             <Card
               icon={Icons.crown}
-              title="Игры на одном домене"
-              desc="BlackCrown — витрина и лончер. Каждая игра живёт отдельным приложением, но пользователь ощущает это как единый продукт: единый стиль, единые настройки и единый профиль."
+              title="Единый продукт"
+              desc="Единый стиль, единые настройки и единый профиль. Игра, лобби и магазин ощущаются как одна платформа."
               right={<Pill>PWA ready</Pill>}
             />
 
             <Card
               icon={Icons.play}
-              title="EvoFish и следующие релизы"
-              desc="Сегодня на платформе доступна EvoFish. Дальше — новые проекты, режимы и события. BlackCrown — дом для нескольких игр и сервисов."
+              title="Игры и релизы"
+              desc="Сегодня доступна EvoFish. Дальше — новые режимы, проекты и события."
               right={<Pill>Games</Pill>}
             />
 
             <Card
               title="AI-Coach в Telegram"
-              desc="AI-Coach помогает быстрее вливаться, разбираться в механиках, подбирать стратегии, напоминать про цели и держать прогресс в фокусе. Это часть экосистемы BlackCrown."
-              right={
-                <Button variant="ghost" onClick={openTelegramBot}>
-                  Открыть
-                </Button>
-              }
+              desc="Помогает быстрее вливаться, разбираться в механиках и подбирать стратегии. Это сервис экосистемы BlackCrown."
+              right={<Pill>Telegram</Pill>}
             />
 
             <Card
-              title="Премиум-UX"
-              desc="Много воздуха, стеклянные панели, тонкие анимации и аккуратная типографика. Быстро: анимации на transform/opacity, крупные тач-цели и поддержка safe-area."
-              right={<Pill>120fps motion</Pill>}
+              title="Store и коллекция"
+              desc="Предметы для профиля и интерфейса. Всё сохранится в коллекции и применится в аккаунте."
+              right={<Pill>Store</Pill>}
             />
-
-            <div className="glassStrong" style={{ borderRadius: 22, padding: 16 }}>
-              <div style={{ fontWeight: 980, fontSize: 16 }}>Куда дальше</div>
-
-              <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <Button variant="secondary" onClick={() => nav("/store")}>
-                    Store Preview
-                  </Button>
-                  <Button variant="secondary" onClick={() => nav("/account")}>
-                    Профиль
-                  </Button>
-                  <Button variant="secondary" onClick={openTelegramBot}>
-                    AI-Coach в Telegram
-                  </Button>
-                  <Button variant="ghost" onClick={() => nav("/support")}>
-                    Поддержка
-                  </Button>
-                </div>
-
-                <div style={{ opacity: 0.82, lineHeight: 1.5, fontWeight: 850 }}>
-                  Мы развиваем BlackCrown как единую платформу: игры, лобби и сервисы для игроков — в одном премиум UX.
-                </div>
-              </div>
-            </div>
 
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap", opacity: 0.78 }}>
               <a className="bcLink" href="/privacy">
