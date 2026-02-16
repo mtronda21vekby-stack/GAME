@@ -1,7 +1,9 @@
 import React from "react";
 import { Button } from "@blackcrown/ui";
-import { Icons } from "@blackcrown/assets";
-import { getProfile, setProfile, clearAvatar, clearProfile, validateAvatarDataUrl } from "@blackcrown/core";
+import { Icons, HeroArt } from "@blackcrown/assets";
+import { userStorage } from "@blackcrown/core";
+import { openTelegramBot } from "../../lib/telegram";
+import { getReducedMotion, setReducedMotion } from "../../lib/prefs";
 
 function nav(path: string) {
   window.history.pushState(null, "", path);
@@ -9,44 +11,48 @@ function nav(path: string) {
   window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
 }
 
-function readFileAsText(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const fr = new FileReader();
-    fr.onerror = () => reject(new Error("read_failed"));
-    fr.onload = () => resolve(String(fr.result || ""));
-    fr.readAsText(file);
-  });
+function navExternal(path: string) {
+  window.location.assign(path);
 }
 
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const fr = new FileReader();
-    fr.onerror = () => reject(new Error("read_failed"));
-    fr.onload = () => resolve(String(fr.result || ""));
-    fr.readAsDataURL(file);
-  });
+const KEY_NICK = "nickname";
+const KEY_STATUS = "profile.status";
+const KEY_AVATAR = "profile.avatar";
+const KEY_GAME_FPS = "game.fps";
+const KEY_GAME_QUALITY = "game.quality";
+const KEY_GAME_INPUT = "game.inputMode";
+
+const AVATARS: { id: string; label: string; bg: string }[] = [
+  { id: "0", label: "Aurora", bg: "linear-gradient(135deg, rgba(94,234,212,0.95), rgba(99,102,241,0.95))" },
+  { id: "1", label: "Neon", bg: "linear-gradient(135deg, rgba(251,113,133,0.95), rgba(147,51,234,0.95))" },
+  { id: "2", label: "Ocean", bg: "linear-gradient(135deg, rgba(56,189,248,0.95), rgba(34,197,94,0.95))" },
+  { id: "3", label: "Solar", bg: "linear-gradient(135deg, rgba(245,158,11,0.95), rgba(239,68,68,0.95))" },
+  { id: "4", label: "Steel", bg: "linear-gradient(135deg, rgba(148,163,184,0.95), rgba(71,85,105,0.95))" },
+  { id: "5", label: "Royal", bg: "linear-gradient(135deg, rgba(99,102,241,0.95), rgba(236,72,153,0.95))" },
+  { id: "6", label: "Mint", bg: "linear-gradient(135deg, rgba(16,185,129,0.95), rgba(59,130,246,0.95))" },
+  { id: "7", label: "Night", bg: "linear-gradient(135deg, rgba(2,6,23,0.95), rgba(30,64,175,0.95))" },
+];
+
+function getString(key: string, fallback = "") {
+  return userStorage.getString(key, fallback) || fallback;
 }
 
-function downloadJson(filename: string, obj: any) {
-  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+function setString(key: string, value: string) {
+  userStorage.setString(key, value);
 }
 
-function formatUpdatedAt(ts: number) {
-  const d = new Date(ts);
-  const dd = String(d.getDate()).padStart(2, "0");
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const yyyy = d.getFullYear();
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mi = String(d.getMinutes()).padStart(2, "0");
-  return `${dd}.${mm}.${yyyy} ${hh}:${mi}`;
+function getBool(key: string, fallback: boolean) {
+  const v = getString(key, fallback ? "1" : "0");
+  return v === "1";
+}
+
+function setBool(key: string, v: boolean) {
+  setString(key, v ? "1" : "0");
+}
+
+function clampStr(s: string, max: number) {
+  const t = s.replace(/\s+/g, " ").trim();
+  return t.length > max ? t.slice(0, max) : t;
 }
 
 function Pill(props: { children: React.ReactNode }) {
@@ -71,350 +77,429 @@ function Pill(props: { children: React.ReactNode }) {
   );
 }
 
-function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
+function Card(props: { title: string; right?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <input
-      {...props}
+    <div
+      className="glassStrong bc-motion"
       style={{
-        width: "100%",
-        height: 46,
-        borderRadius: 14,
-        border: "1px solid rgba(255,255,255,0.12)",
+        borderRadius: 22,
+        padding: 16,
+        border: "1px solid rgba(255,255,255,0.08)",
         background: "rgba(255,255,255,0.06)",
-        color: "var(--text)",
-        padding: "0 12px",
-        outline: "none",
-        fontWeight: 850,
-        ...(props.style || {}),
+        boxShadow: "0 34px 120px rgba(0,0,0,0.30)",
       }}
-    />
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+        <div style={{ fontWeight: 980, fontSize: 16, letterSpacing: "-0.01em" }}>{props.title}</div>
+        {props.right}
+      </div>
+      <div style={{ marginTop: 12 }}>{props.children}</div>
+    </div>
   );
 }
 
-function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+function LabelRow(props: { label: string; hint?: string; children: React.ReactNode }) {
   return (
-    <textarea
-      {...props}
+    <div style={{ display: "grid", gap: 8 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "baseline" }}>
+        <div style={{ fontWeight: 950 }}>{props.label}</div>
+        {props.hint ? <div style={{ opacity: 0.72, fontWeight: 850, fontSize: 12 }}>{props.hint}</div> : null}
+      </div>
+      {props.children}
+    </div>
+  );
+}
+
+function Segmented(props: { value: string; options: { value: string; label: string }[]; onChange: (v: string) => void }) {
+  return (
+    <div
       style={{
-        width: "100%",
-        minHeight: 90,
-        resize: "vertical",
-        borderRadius: 14,
-        border: "1px solid rgba(255,255,255,0.12)",
-        background: "rgba(255,255,255,0.06)",
-        color: "var(--text)",
-        padding: "10px 12px",
-        outline: "none",
-        fontWeight: 850,
-        lineHeight: 1.4,
-        ...(props.style || {}),
+        display: "flex",
+        gap: 8,
+        flexWrap: "wrap",
+        borderRadius: 16,
+        padding: 8,
+        border: "1px solid rgba(255,255,255,0.10)",
+        background: "rgba(0,0,0,0.16)",
       }}
-    />
+    >
+      {props.options.map((o) => {
+        const active = o.value === props.value;
+        return (
+          <button
+            key={o.value}
+            type="button"
+            onClick={() => props.onChange(o.value)}
+            style={{
+              height: 40,
+              padding: "0 12px",
+              borderRadius: 12,
+              border: active ? "1px solid rgba(255,255,255,0.16)" : "1px solid rgba(255,255,255,0.08)",
+              background: active ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.06)",
+              color: "var(--text)",
+              fontWeight: 950,
+              cursor: "pointer",
+              outline: "none",
+            }}
+            aria-pressed={active}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
 export function Account() {
-  const [profile, setProfileState] = React.useState(() => getProfile());
-  const [nickname, setNickname] = React.useState(profile.nickname);
-  const [status, setStatus] = React.useState(profile.status);
-  const [busy, setBusy] = React.useState(false);
-  const [toast, setToast] = React.useState<string>("");
+  const [nick, setNick] = React.useState(() => getString(KEY_NICK, ""));
+  const [status, setStatus] = React.useState(() => getString(KEY_STATUS, ""));
+  const [avatarId, setAvatarId] = React.useState(() => getString(KEY_AVATAR, "0"));
 
-  const avatar = profile.avatarDataUrl;
+  const [reducedMotion, setReducedMotionUI] = React.useState(() => getReducedMotion());
+  const [fps, setFps] = React.useState(() => getBool(KEY_GAME_FPS, false));
+  const [quality, setQuality] = React.useState(() => getString(KEY_GAME_QUALITY, "high"));
+  const [inputMode, setInputMode] = React.useState(() => getString(KEY_GAME_INPUT, "auto"));
 
-  const hasChanges =
-    nickname.trim() !== profile.nickname ||
-    status.trim() !== profile.status;
+  const [savedPulse, setSavedPulse] = React.useState(0);
 
-  React.useEffect(() => {
-    const t = toast ? setTimeout(() => setToast(""), 2200) : undefined;
-    return () => {
-      if (t) clearTimeout(t);
-    };
-  }, [toast]);
+  const avatar = AVATARS.find((a) => a.id === avatarId) ?? AVATARS[0];
+  const initials = clampStr(nick || "Игрок", 2).toUpperCase();
 
-  function applySave() {
-    const next = setProfile({ nickname, status });
-    setProfileState(next);
-    setToast("Сохранено");
+  function pulseSaved() {
+    setSavedPulse((x) => x + 1);
   }
 
-  async function onPickAvatar(file?: File | null) {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setToast("Нужен PNG/JPG/WebP");
-      return;
-    }
-
-    setBusy(true);
-    try {
-      const dataUrl = await readFileAsDataUrl(file);
-      const v = validateAvatarDataUrl(dataUrl);
-      if (!v.ok) {
-        setToast(v.reason);
-        return;
-      }
-      const next = setProfile({ avatarDataUrl: dataUrl });
-      setProfileState(next);
-      setToast("Аватар обновлён");
-    } catch {
-      setToast("Не удалось загрузить файл");
-    } finally {
-      setBusy(false);
-    }
+  function saveProfile() {
+    const n = clampStr(nick, 18);
+    const s = clampStr(status, 64);
+    setNick(n);
+    setStatus(s);
+    setString(KEY_NICK, n);
+    setString(KEY_STATUS, s);
+    setString(KEY_AVATAR, avatarId);
+    pulseSaved();
   }
 
-  async function onImportProfile(file?: File | null) {
-    if (!file) return;
-    if (!file.name.toLowerCase().endsWith(".json")) {
-      setToast("Нужен JSON файл");
-      return;
+  function resetProfile() {
+    setNick("");
+    setStatus("");
+    setAvatarId("0");
+    setString(KEY_NICK, "");
+    setString(KEY_STATUS, "");
+    setString(KEY_AVATAR, "0");
+    pulseSaved();
+  }
+
+  function savePrefs(next: {
+    reducedMotion?: boolean;
+    fps?: boolean;
+    quality?: string;
+    inputMode?: string;
+  }) {
+    if (typeof next.reducedMotion === "boolean") {
+      setReducedMotion(next.reducedMotion);
+      setReducedMotionUI(next.reducedMotion);
     }
-
-    setBusy(true);
-    try {
-      const raw = await readFileAsText(file);
-      const parsed = JSON.parse(raw);
-
-      const nextNick = typeof parsed.nickname === "string" ? parsed.nickname : profile.nickname;
-      const nextStatus = typeof parsed.status === "string" ? parsed.status : profile.status;
-      const nextAvatar = typeof parsed.avatarDataUrl === "string" ? parsed.avatarDataUrl : profile.avatarDataUrl;
-
-      const v = validateAvatarDataUrl(nextAvatar || "");
-      if (!v.ok) {
-        setToast(v.reason);
-        return;
-      }
-
-      const next = setProfile({ nickname: nextNick, status: nextStatus, avatarDataUrl: nextAvatar || "" });
-      setProfileState(next);
-      setNickname(next.nickname);
-      setStatus(next.status);
-      setToast("Профиль импортирован");
-    } catch {
-      setToast("Не удалось импортировать");
-    } finally {
-      setBusy(false);
+    if (typeof next.fps === "boolean") {
+      setBool(KEY_GAME_FPS, next.fps);
+      setFps(next.fps);
     }
+    if (typeof next.quality === "string") {
+      setString(KEY_GAME_QUALITY, next.quality);
+      setQuality(next.quality);
+    }
+    if (typeof next.inputMode === "string") {
+      setString(KEY_GAME_INPUT, next.inputMode);
+      setInputMode(next.inputMode);
+    }
+    pulseSaved();
   }
 
   return (
     <main className="bcSiteRoot">
-      <section className="bcSection" style={{ paddingTop: 18 }}>
-        <div style={{ maxWidth: 980, margin: "0 auto" }}>
-          <div
-            className="glassStrong"
-            style={{
-              borderRadius: 22,
-              padding: 14,
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 10,
-              flexWrap: "wrap",
-              alignItems: "center",
-            }}
-          >
-            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-              <img alt="" src={Icons.crown} width="20" height="20" />
-              <div style={{ fontWeight: 980, fontSize: 16 }}>Аккаунт</div>
-              <Pill>Обновлено: {formatUpdatedAt(profile.updatedAt)}</Pill>
+      <section className="bcHero" style={{ minHeight: "auto" }}>
+        <div className="bcHeroBg" aria-hidden="true">
+          <img className="bcHeroAurora" alt="" src={HeroArt.aurora} />
+          <div className="bcHeroVignette" />
+          <div className="bcHeroNoise" style={{ backgroundImage: `url(${HeroArt.noise})` }} />
+        </div>
+
+        <header className="bcTop">
+          <button type="button" className="bcBrand" onClick={() => nav("/")} aria-label="BlackCrown Home">
+            <img alt="" src={Icons.crown} width="20" height="20" />
+            <div style={{ fontWeight: 950 }}>BlackCrown</div>
+          </button>
+
+          <nav className="bcNav" aria-label="Навигация">
+            <a className="bcLink" href="/about">
+              О проекте
+            </a>
+            <a className="bcLink" href="/support">
+              Поддержка
+            </a>
+            <a className="bcLink" href="/privacy">
+              Privacy
+            </a>
+            <a className="bcLink" href="/terms">
+              Terms
+            </a>
+          </nav>
+
+          <div className="bcRight">
+            <Button variant="secondary" onClick={() => navExternal("/lobby/")}>
+              Lobby
+            </Button>
+            <Button variant="primary" leftIconSrc={Icons.play} onClick={() => navExternal("/game/")}>
+              Играть
+            </Button>
+          </div>
+        </header>
+
+        <div style={{ maxWidth: 980, margin: "0 auto", padding: "18px 14px 14px" }}>
+          <div className="glassStrong" style={{ borderRadius: 22, padding: 18 }}>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+              <Pill>Профиль</Pill>
+              <Pill>Настройки</Pill>
+              <Pill>Сервисы</Pill>
             </div>
 
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <Button variant="ghost" onClick={() => nav("/")}>Главная</Button>
-              <Button variant="secondary" onClick={() => nav("/store")}>Магазин</Button>
-              <Button variant="secondary" onClick={() => nav("/support")}>Поддержка</Button>
+            <h1 className="bcH1" style={{ marginTop: 12 }}>
+              Аккаунт
+              <br />
+              BlackCrown
+            </h1>
+
+            <p className="bcLead" style={{ marginTop: 10 }}>
+              Ник, аватар, статус и настройки. Всё хранится локально и работает на всех страницах платформы.
+            </p>
+
+            <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <Button variant="primary" onClick={saveProfile}>
+                Сохранить
+              </Button>
+              <Button variant="secondary" onClick={openTelegramBot}>
+                AI-Coach в Telegram
+              </Button>
+              <Button variant="ghost" onClick={() => nav("/support")}>
+                Поддержка
+              </Button>
+            </div>
+
+            <div
+              aria-live="polite"
+              style={{
+                marginTop: 10,
+                opacity: 0.72,
+                fontWeight: 850,
+                fontSize: 12,
+              }}
+              key={savedPulse}
+            >
+              {savedPulse > 0 ? "Сохранено" : ""}
             </div>
           </div>
+        </div>
+      </section>
 
-          <div style={{ height: 12 }} />
-
+      <section className="bcSection" style={{ paddingTop: 10 }}>
+        <div style={{ maxWidth: 980, margin: "0 auto", padding: "0 14px" }}>
           <div style={{ display: "grid", gap: 12 }}>
-            <div className="glassStrong" style={{ borderRadius: 22, padding: 16 }}>
-              <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "center" }}>
-                <div
-                  style={{
-                    width: 84,
-                    height: 84,
-                    borderRadius: 22,
-                    overflow: "hidden",
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    background: "rgba(255,255,255,0.06)",
-                    display: "grid",
-                    placeItems: "center",
-                  }}
-                  aria-label="Аватар"
-                >
-                  {avatar ? (
-                    <img alt="" src={avatar} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                  ) : (
-                    <div style={{ opacity: 0.7, fontWeight: 950 }}>BC</div>
-                  )}
-                </div>
-
-                <div style={{ flex: "1 1 260px", minWidth: 240 }}>
-                  <div style={{ fontWeight: 980, fontSize: 18, letterSpacing: "-0.01em" }}>{profile.nickname}</div>
-                  <div style={{ marginTop: 4, opacity: 0.75, fontWeight: 850 }}>
-                    {profile.status ? profile.status : "Статус не задан"}
-                  </div>
-
-                  <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    <label style={{ display: "inline-flex" }}>
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp"
-                        style={{ display: "none" }}
-                        onChange={(e) => onPickAvatar(e.target.files?.[0])}
-                        disabled={busy}
-                      />
-                      <span>
-                        <Button variant="secondary" disabled={busy}>
-                          Загрузить аватар
-                        </Button>
-                      </span>
-                    </label>
-
-                    <Button
-                      variant="ghost"
-                      onClick={() => {
-                        const next = clearAvatar();
-                        setProfileState(next);
-                        setToast("Аватар удалён");
-                      }}
-                      disabled={busy || !avatar}
-                    >
-                      Удалить аватар
-                    </Button>
-                  </div>
-                </div>
-
-                <div style={{ display: "grid", gap: 8, justifyItems: "end" }}>
-                  <Pill>Хранилище: device</Pill>
-                  <Pill>Профиль: v1</Pill>
-                </div>
-              </div>
-            </div>
-
-            <div className="glassStrong" style={{ borderRadius: 22, padding: 16 }}>
-              <div style={{ fontWeight: 980, fontSize: 16 }}>Профиль</div>
-
-              <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-                <div>
-                  <div style={{ fontWeight: 900, marginBottom: 6 }}>Никнейм</div>
-                  <Input value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="Введите никнейм" autoComplete="nickname" />
-                  <div style={{ marginTop: 6, opacity: 0.70, fontWeight: 850, fontSize: 12 }}>До 18 символов</div>
-                </div>
-
-                <div>
-                  <div style={{ fontWeight: 900, marginBottom: 6 }}>Статус</div>
-                  <TextArea value={status} onChange={(e) => setStatus(e.target.value)} placeholder="Например: ищу команду / готов играть / на связи" />
-                  <div style={{ marginTop: 6, opacity: 0.70, fontWeight: 850, fontSize: 12 }}>До 42 символов</div>
-                </div>
-
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    <Button variant="primary" onClick={applySave} disabled={!hasChanges || busy}>
-                      Сохранить
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      onClick={() => {
-                        setNickname(profile.nickname);
-                        setStatus(profile.status);
-                        setToast("Сброшено");
-                      }}
-                      disabled={busy}
-                    >
-                      Отменить
-                    </Button>
-                  </div>
-
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      clearProfile();
-                      const p = getProfile();
-                      setProfileState(p);
-                      setNickname(p.nickname);
-                      setStatus(p.status);
-                      setToast("Профиль очищен");
-                    }}
-                    disabled={busy}
-                  >
-                    Очистить профиль
+            <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1.05fr 0.95fr" as any }}>
+              <Card
+                title="Профиль"
+                right={
+                  <Button variant="ghost" onClick={resetProfile}>
+                    Очистить
                   </Button>
-                </div>
-
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <Button variant="ghost" onClick={() => setStatus("Ищу команду")} disabled={busy}>
-                    Ищу команду
-                  </Button>
-                  <Button variant="ghost" onClick={() => setStatus("Готов играть")} disabled={busy}>
-                    Готов играть
-                  </Button>
-                  <Button variant="ghost" onClick={() => setStatus("На связи")} disabled={busy}>
-                    На связи
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            <div className="glassStrong" style={{ borderRadius: 22, padding: 16 }}>
-              <div style={{ fontWeight: 980, fontSize: 16 }}>Перенос профиля</div>
-              <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    const p = getProfile();
-                    downloadJson(`blackcrown-profile.json`, p);
-                    setToast("Файл создан");
-                  }}
-                  disabled={busy}
-                >
-                  Экспорт JSON
-                </Button>
-
-                <label style={{ display: "inline-flex" }}>
-                  <input
-                    type="file"
-                    accept="application/json"
-                    style={{ display: "none" }}
-                    onChange={(e) => onImportProfile(e.target.files?.[0])}
-                    disabled={busy}
-                  />
-                  <span>
-                    <Button variant="secondary" disabled={busy}>
-                      Импорт JSON
-                    </Button>
-                  </span>
-                </label>
-              </div>
-
-              <div style={{ marginTop: 10, opacity: 0.75, fontWeight: 850, lineHeight: 1.4 }}>
-                Экспорт/импорт работает на одном устройстве и между устройствами — через файл.
-              </div>
-            </div>
-          </div>
-
-          {toast ? (
-            <div style={{ position: "fixed", left: 0, right: 0, bottom: 18, display: "grid", placeItems: "center", pointerEvents: "none" }}>
-              <div
-                style={{
-                  pointerEvents: "none",
-                  padding: "10px 12px",
-                  borderRadius: 999,
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  background: "rgba(20,20,30,0.55)",
-                  backdropFilter: "blur(18px)",
-                  WebkitBackdropFilter: "blur(18px)",
-                  color: "rgba(255,255,255,0.88)",
-                  fontWeight: 950,
-                }}
+                }
               >
-                {toast}
-              </div>
+                <div style={{ display: "grid", gap: 14 }}>
+                  <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
+                    <div
+                      aria-label="Аватар"
+                      style={{
+                        width: 66,
+                        height: 66,
+                        borderRadius: 20,
+                        background: avatar.bg,
+                        border: "1px solid rgba(255,255,255,0.12)",
+                        boxShadow: "0 18px 60px rgba(0,0,0,0.35)",
+                        display: "grid",
+                        placeItems: "center",
+                        color: "rgba(255,255,255,0.92)",
+                        fontWeight: 980,
+                        letterSpacing: "0.02em",
+                      }}
+                    >
+                      {initials.slice(0, 2)}
+                    </div>
+
+                    <div style={{ display: "grid", gap: 6, minWidth: 220, flex: "1 1 260px" }}>
+                      <LabelRow label="Никнейм" hint="до 18 символов">
+                        <input
+                          value={nick}
+                          onChange={(e) => setNick(clampStr(e.target.value, 18))}
+                          placeholder="Введите никнейм"
+                          autoComplete="nickname"
+                          inputMode="text"
+                          style={{
+                            width: "100%",
+                            height: 46,
+                            borderRadius: 14,
+                            border: "1px solid rgba(255,255,255,0.12)",
+                            background: "rgba(255,255,255,0.06)",
+                            color: "var(--text)",
+                            padding: "0 12px",
+                            outline: "none",
+                            fontWeight: 900,
+                          }}
+                        />
+                      </LabelRow>
+
+                      <LabelRow label="Статус" hint="до 64 символов">
+                        <input
+                          value={status}
+                          onChange={(e) => setStatus(clampStr(e.target.value, 64))}
+                          placeholder="Короткая подпись"
+                          inputMode="text"
+                          style={{
+                            width: "100%",
+                            height: 46,
+                            borderRadius: 14,
+                            border: "1px solid rgba(255,255,255,0.12)",
+                            background: "rgba(255,255,255,0.06)",
+                            color: "var(--text)",
+                            padding: "0 12px",
+                            outline: "none",
+                            fontWeight: 900,
+                          }}
+                        />
+                      </LabelRow>
+                    </div>
+                  </div>
+
+                  <LabelRow label="Аватар" hint="выбери стиль">
+                    <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }}>
+                      {AVATARS.map((a) => {
+                        const active = a.id === avatarId;
+                        return (
+                          <button
+                            key={a.id}
+                            type="button"
+                            onClick={() => {
+                              setAvatarId(a.id);
+                              setString(KEY_AVATAR, a.id);
+                              pulseSaved();
+                            }}
+                            aria-label={`Аватар ${a.label}`}
+                            style={{
+                              height: 46,
+                              borderRadius: 14,
+                              border: active ? "1px solid rgba(255,255,255,0.22)" : "1px solid rgba(255,255,255,0.10)",
+                              background: a.bg,
+                              cursor: "pointer",
+                              boxShadow: active ? "0 16px 44px rgba(0,0,0,0.38)" : "none",
+                              outline: "none",
+                            }}
+                          />
+                        );
+                      })}
+                    </div>
+                  </LabelRow>
+
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <Button variant="primary" onClick={saveProfile}>
+                      Сохранить профиль
+                    </Button>
+                    <Button variant="secondary" onClick={() => navExternal("/game/")}>
+                      В игру
+                    </Button>
+                    <Button variant="ghost" onClick={() => navExternal("/lobby/")}>
+                      В Lobby
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+
+              <Card title="Настройки">
+                <div style={{ display: "grid", gap: 14 }}>
+                  <LabelRow label="Анимации" hint="комфортный режим">
+                    <Segmented
+                      value={reducedMotion ? "reduce" : "full"}
+                      options={[
+                        { value: "full", label: "Полные" },
+                        { value: "reduce", label: "Мягкие" },
+                      ]}
+                      onChange={(v) => savePrefs({ reducedMotion: v === "reduce" })}
+                    />
+                  </LabelRow>
+
+                  <LabelRow label="FPS counter в игре" hint="по умолчанию выключен">
+                    <Segmented
+                      value={fps ? "on" : "off"}
+                      options={[
+                        { value: "off", label: "Off" },
+                        { value: "on", label: "On" },
+                      ]}
+                      onChange={(v) => savePrefs({ fps: v === "on" })}
+                    />
+                  </LabelRow>
+
+                  <LabelRow label="Качество" hint="для контейнера игры">
+                    <Segmented
+                      value={quality}
+                      options={[
+                        { value: "low", label: "Low" },
+                        { value: "med", label: "Med" },
+                        { value: "high", label: "High" },
+                      ]}
+                      onChange={(v) => savePrefs({ quality: v })}
+                    />
+                  </LabelRow>
+
+                  <LabelRow label="Input mode" hint="для игры">
+                    <Segmented
+                      value={inputMode}
+                      options={[
+                        { value: "auto", label: "Auto" },
+                        { value: "touch", label: "Touch" },
+                        { value: "gamepad", label: "Gamepad" },
+                      ]}
+                      onChange={(v) => savePrefs({ inputMode: v })}
+                    />
+                  </LabelRow>
+                </div>
+              </Card>
             </div>
-          ) : null}
+
+            <Card title="Сервисы">
+              <div style={{ display: "grid", gap: 10 }}>
+                <div style={{ opacity: 0.86, lineHeight: 1.55, fontWeight: 850 }}>
+                  AI-Coach в Telegram помогает с прогрессом, механиками и стратегиями. Открывается в приложении Telegram на
+                  телефоне или в веб-версии на ПК/Xbox.
+                </div>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <Button variant="primary" onClick={openTelegramBot}>
+                    Открыть AI-Coach
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      const url = "https://t.me/GGBF6_WARZON_BOT";
+                      navigator.clipboard?.writeText?.(url);
+                      pulseSaved();
+                    }}
+                  >
+                    Скопировать ссылку
+                  </Button>
+                  <Button variant="ghost" onClick={() => nav("/about")}>
+                    О платформе
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </div>
         </div>
       </section>
     </main>
