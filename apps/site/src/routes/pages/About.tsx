@@ -1,6 +1,7 @@
 import React from "react";
 import { Button } from "@blackcrown/ui";
 import { Icons, HeroArt } from "@blackcrown/assets";
+import { openTelegramBot } from "../../lib/telegram";
 
 function nav(path: string) {
   window.history.pushState(null, "", path);
@@ -46,7 +47,15 @@ function Card(props: { title: string; desc: string; icon?: string; right?: React
         boxShadow: "0 34px 120px rgba(0,0,0,0.30)",
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 12,
+          alignItems: "flex-start",
+          flexWrap: "wrap",
+        }}
+      >
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           {props.icon ? <img alt="" src={props.icon} width="18" height="18" style={{ opacity: 0.92 }} /> : null}
           <div style={{ fontWeight: 980, fontSize: 16, letterSpacing: "-0.01em" }}>{props.title}</div>
@@ -116,7 +125,7 @@ export function About() {
 
             <p className="bcLead" style={{ marginTop: 10 }}>
               Мы делаем игры, которые запускаются быстро и выглядят премиально на любом устройстве. Параллельно мы строим
-              удобный слой сервиса: профиль, лобби, поддержка и помощники для игроков.
+              слой сервиса: профиль, лобби, поддержка и помощники для игроков.
             </p>
 
             <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -125,6 +134,9 @@ export function About() {
               </Button>
               <Button variant="secondary" onClick={() => openExternal("/lobby/")}>
                 Открыть Lobby
+              </Button>
+              <Button variant="secondary" onClick={openTelegramBot}>
+                AI-Coach в Telegram
               </Button>
               <Button variant="ghost" onClick={() => nav("/support")}>
                 Поддержка
@@ -147,24 +159,29 @@ export function About() {
             <Card
               icon={Icons.play}
               title="EvoFish и следующие релизы"
-              desc="Сегодня на платформе доступна EvoFish. Дальше — новые проекты, режимы и события. Мы развиваем BlackCrown как дом для нескольких игр, чтобы всё было собрано в одном месте."
+              desc="Сегодня на платформе доступна EvoFish. Дальше — новые проекты, режимы и события. BlackCrown — дом для нескольких игр и сервисов."
               right={<Pill>Games</Pill>}
             />
 
             <Card
               title="AI-Coach в Telegram"
-              desc="В Telegram у нас есть AI-Coach: помощник, который помогает игрокам быстрее вливаться, разбираться в механиках, подбирать стратегии, напоминать про цели и держать прогресс в фокусе. Это отдельная часть экосистемы BlackCrown — сервис для игроков, а не просто чат."
-              right={<Pill>Telegram</Pill>}
+              desc="AI-Coach помогает быстрее вливаться, разбираться в механиках, подбирать стратегии, напоминать про цели и держать прогресс в фокусе. Это часть экосистемы BlackCrown."
+              right={
+                <Button variant="ghost" onClick={openTelegramBot}>
+                  Открыть
+                </Button>
+              }
             />
 
             <Card
               title="Премиум-UX"
-              desc="Много воздуха, стеклянные панели, тонкие анимации и аккуратная типографика. Мы держим интерфейс быстрым: анимации на transform/opacity, крупные тач-цели и поддержка safe-area."
+              desc="Много воздуха, стеклянные панели, тонкие анимации и аккуратная типографика. Быстро: анимации на transform/opacity, крупные тач-цели и поддержка safe-area."
               right={<Pill>120fps motion</Pill>}
             />
 
             <div className="glassStrong" style={{ borderRadius: 22, padding: 16 }}>
               <div style={{ fontWeight: 980, fontSize: 16 }}>Куда дальше</div>
+
               <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                   <Button variant="secondary" onClick={() => nav("/store")}>
@@ -173,14 +190,16 @@ export function About() {
                   <Button variant="secondary" onClick={() => nav("/account")}>
                     Профиль
                   </Button>
+                  <Button variant="secondary" onClick={openTelegramBot}>
+                    AI-Coach в Telegram
+                  </Button>
                   <Button variant="ghost" onClick={() => nav("/support")}>
                     Поддержка
                   </Button>
                 </div>
 
                 <div style={{ opacity: 0.82, lineHeight: 1.5, fontWeight: 850 }}>
-                  Если хочешь — добавим отдельный блок “Сервисы” на главную: AI-Coach в Telegram, система задач/квестов, и
-                  будущие интеграции. Всё будет выглядеть как единый премиум продукт.
+                  Мы развиваем BlackCrown как единую платформу: игры, лобби и сервисы для игроков — в одном премиум UX.
                 </div>
               </div>
             </div>
