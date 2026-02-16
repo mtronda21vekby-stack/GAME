@@ -2,7 +2,6 @@ import React from "react";
 import { Button, Modal } from "@blackcrown/ui";
 import { Icons, HeroArt } from "@blackcrown/assets";
 import { userStorage } from "@blackcrown/core";
-import { Router } from "./Router";
 
 function navSite(path: string) {
   window.history.pushState(null, "", path);
@@ -203,18 +202,10 @@ export function Home() {
           </button>
 
           <nav className="bcNav" aria-label="Навигация">
-            <a className="bcLink" href="/about">
-              О проекте
-            </a>
-            <a className="bcLink" href="/support">
-              Поддержка
-            </a>
-            <a className="bcLink" href="/privacy">
-              Privacy
-            </a>
-            <a className="bcLink" href="/terms">
-              Terms
-            </a>
+            <a className="bcLink" href="/about">О проекте</a>
+            <a className="bcLink" href="/support">Поддержка</a>
+            <a className="bcLink" href="/privacy">Privacy</a>
+            <a className="bcLink" href="/terms">Terms</a>
           </nav>
 
           <div className="bcRight">
@@ -241,8 +232,7 @@ export function Home() {
             </h1>
 
             <p className="bcLead">
-              BlackCrown — витрина и лончер для наших игр. Сегодня доступна <b>EvoFish</b>, дальше — новые проекты и
-              события.
+              BlackCrown — витрина и лончер для наших игр. Сегодня доступна <b>EvoFish</b>, дальше — новые проекты и события.
             </p>
 
             <div className="bcCtas">
@@ -334,29 +324,14 @@ export function Home() {
 
         <div style={{ maxWidth: 980, margin: "16px auto 0", opacity: 0.78 }}>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <a className="bcLink" href="/privacy">
-              Privacy
-            </a>
-            <a className="bcLink" href="/terms">
-              Terms
-            </a>
-            <a className="bcLink" href="/support">
-              Поддержка
-            </a>
+            <a className="bcLink" href="/privacy">Privacy</a>
+            <a className="bcLink" href="/terms">Terms</a>
+            <a className="bcLink" href="/support">Поддержка</a>
           </div>
         </div>
       </section>
 
-      <AccountModal
-        open={accountOpen}
-        onClose={() => setAccountOpen(false)}
-        onSaved={() => setName(getName())}
-      />
+      <AccountModal open={accountOpen} onClose={() => setAccountOpen(false)} onSaved={() => setName(getName())} />
     </main>
   );
-}
-
-/** main.tsx импортирует { App } */
-export function App() {
-  return <Router />;
 }
