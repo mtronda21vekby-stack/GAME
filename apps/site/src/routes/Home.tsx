@@ -47,6 +47,7 @@ function FeatureCard(props: {
   onAction: () => void;
   href?: string;
   kind?: "site" | "external";
+  imageSrc?: string;
 }) {
   const kind = props.kind ?? "site";
 
@@ -68,7 +69,7 @@ function FeatureCard(props: {
       }}
       style={{
         borderRadius: 22,
-        border: "none",
+        border: "1px solid rgba(255,255,255,0.08)",
         background: "rgba(255,255,255,0.06)",
         boxShadow: "0 34px 120px rgba(0,0,0,0.30)",
         overflow: "hidden",
@@ -112,7 +113,7 @@ function FeatureCard(props: {
       <div style={{ padding: 14, paddingTop: 0 }}>
         <img
           alt=""
-          src={HeroArt.cardWave}
+          src={props.imageSrc ?? HeroArt.cardWave}
           style={{
             width: "100%",
             height: 160,
@@ -179,13 +180,14 @@ export function Home() {
             <h1 className="bcH1">
               Хаб для игр.
               <br />
-              Единый стиль.
+              Премиум-UX.
               <br />
-              Быстрый запуск.
+              Сервисы для игроков.
             </h1>
 
             <p className="bcLead">
-              BlackCrown — витрина и лончер для наших игр. Сегодня доступна <b>EvoFish</b>, дальше — новые проекты и события.
+              BlackCrown — витрина и лончер для наших игр. Сегодня доступна <b>EvoFish</b>, дальше — новые проекты и
+              события. В экосистему входит <b>AI-Coach в Telegram</b>, который помогает с прогрессом и стратегиями.
             </p>
 
             <div className="bcCtas">
@@ -197,8 +199,8 @@ export function Home() {
                 Открыть Lobby
               </Button>
 
-              <Button variant="ghost" onClick={() => navSite("/store")}>
-                Магазин
+              <Button variant="ghost" onClick={() => navSite("/about")}>
+                О платформе
               </Button>
             </div>
 
@@ -206,6 +208,7 @@ export function Home() {
               <Pill>iPhone → Xbox</Pill>
               <Pill>120fps motion</Pill>
               <Pill>PWA ready</Pill>
+              <Pill>AI-Coach • Telegram</Pill>
             </div>
           </div>
 
@@ -232,7 +235,15 @@ export function Home() {
               <div className="bcDot" />
               <div>
                 <div className="bcPanelH">Аккаунт</div>
-                <div className="bcPanelP">Профиль, аватар и настройки.</div>
+                <div className="bcPanelP">Профиль, аватар и статус.</div>
+              </div>
+            </div>
+
+            <div className="bcPanelRow" role="button" tabIndex={0} onClick={() => navSite("/about")}>
+              <div className="bcDot" />
+              <div>
+                <div className="bcPanelH">AI-Coach</div>
+                <div className="bcPanelP">Помощник в Telegram.</div>
               </div>
             </div>
           </div>
@@ -241,37 +252,42 @@ export function Home() {
 
       <section className="bcSection">
         <div className="bcSectionHead">
-          <div className="bcSectionTitle">Платформа</div>
-          <div className="bcSectionSub">Премиум интерфейс и быстрые анимации — для телефона, ПК и консоли.</div>
+          <div className="bcSectionTitle">Экосистема</div>
+          <div className="bcSectionSub">
+            Игры + сервисы для игроков: профиль, лобби и AI-помощник в Telegram.
+          </div>
         </div>
 
         <div className="bcCards">
           <FeatureCard
-            title="Единый премиум-стиль"
-            desc="Единые компоненты, токены и motion. Чистая типографика и стекло."
-            tag="UI"
-            actionLabel="О проекте"
-            onAction={() => navSite("/about")}
-            href="/about"
-            kind="site"
-          />
-          <FeatureCard
             title="Игры"
-            desc="Единый запуск, настройки и управление. EvoFish открывается как отдельное приложение на этом же домене."
+            desc="Единый запуск, настройки и управление. Игры открываются как отдельные приложения на этом же домене."
             tag="Play"
             actionLabel="Открыть игру"
             onAction={() => navExternal("/game/")}
             href="/game/"
             kind="external"
           />
+
           <FeatureCard
             title="Lobby"
-            desc="Комната и чат. Lobby открывается как отдельное приложение на этом же домене."
+            desc="Комната на 8 игроков: список участников, ready/unready и прозрачный чат."
             tag="Social"
             actionLabel="В Lobby"
             onAction={() => navExternal("/lobby/")}
             href="/lobby/"
             kind="external"
+          />
+
+          <FeatureCard
+            title="AI-Coach в Telegram"
+            desc="Помогает с прогрессом, механиками, стратегиями и целями. Быстрые ответы и подсказки, когда нужно."
+            tag="Coach"
+            actionLabel="О сервисе"
+            onAction={() => navSite("/about")}
+            href="/about"
+            kind="site"
+            imageSrc={HeroArt.cardWave}
           />
         </div>
 
