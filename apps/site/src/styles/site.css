@@ -318,3 +318,152 @@ button{ -webkit-tap-highlight-color: transparent; }
 
 /* важно: чтобы клики не пропадали из-за декоративных слоёв */
 .bcHeroBg, .bcHeroVignette, .bcHeroNoise, .bcHeroAurora { pointer-events: none !important; }
+/* ===== Premium micro-motion (Echo-like) ===== */
+@media (prefers-reduced-motion: no-preference){
+  .glassStrong.bc-motion{
+    transition: transform 220ms cubic-bezier(.2,.8,.2,1), box-shadow 220ms cubic-bezier(.2,.8,.2,1), background 220ms ease, border-color 220ms ease;
+  }
+  .glassStrong.bc-motion:hover{
+    transform: translateY(-2px) translateZ(0);
+    box-shadow: 0 44px 140px rgba(0,0,0,0.38);
+    background: rgba(255,255,255,0.075);
+    border-color: rgba(255,255,255,0.13);
+  }
+  .bcPanelRow{
+    transition: transform 180ms cubic-bezier(.2,.8,.2,1), background 180ms ease, border-color 180ms ease;
+  }
+  .bcPanelRow:hover{
+    transform: translateY(-1px) translateZ(0);
+  }
+  .bcBrand{
+    transition: background 180ms ease, border-color 180ms ease, transform 180ms cubic-bezier(.2,.8,.2,1);
+  }
+  .bcBrand:hover{
+    background: rgba(255,255,255,0.05);
+    transform: translateY(-1px);
+  }
+  .bcAccountPill{
+    transition: background 180ms ease, border-color 180ms ease, transform 180ms cubic-bezier(.2,.8,.2,1);
+  }
+  .bcAccountPill:hover{
+    background: rgba(255,255,255,0.07);
+    border-color: rgba(255,255,255,0.16);
+    transform: translateY(-1px);
+  }
+  .bcLink{
+    transition: background 180ms ease, border-color 180ms ease, transform 180ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease;
+  }
+  .bcLink:hover{
+    transform: translateY(-1px);
+  }
+}
+
+/* ===== Premium section separators ===== */
+.bcSection{
+  position: relative;
+}
+.bcSection::before{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:0;
+  transform: translateX(-50%);
+  width:min(980px, calc(100% - 28px));
+  height:1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
+  opacity:0.7;
+}
+
+/* ===== Store layout polish ===== */
+.bcStoreGrid{
+  display:grid;
+  gap:12px;
+}
+@media (min-width: 980px){
+  .bcStoreGrid{ grid-template-columns: repeat(3, 1fr); }
+}
+
+.bcStoreCard{
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 34px 120px rgba(0,0,0,0.30);
+}
+@media (prefers-reduced-motion: no-preference){
+  .bcStoreCard{
+    transition: transform 220ms cubic-bezier(.2,.8,.2,1), box-shadow 220ms cubic-bezier(.2,.8,.2,1), background 220ms ease, border-color 220ms ease;
+  }
+  .bcStoreCard:hover{
+    transform: translateY(-2px);
+    box-shadow: 0 44px 140px rgba(0,0,0,0.38);
+    background: rgba(255,255,255,0.075);
+    border-color: rgba(255,255,255,0.13);
+  }
+}
+
+.bcStoreMedia{
+  width:100%;
+  height: 180px;
+  object-fit: cover;
+  display:block;
+  border:0;
+}
+
+.bcStoreBody{
+  padding: 14px 16px 16px;
+}
+
+.bcStoreTop{
+  display:flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.bcStoreTitle{
+  font-weight: 980;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+
+.bcStoreTag{
+  font-weight: 900;
+  font-size: 12px;
+  opacity: 0.78;
+}
+
+.bcStoreDesc{
+  margin-top: 8px;
+  line-height: 1.45;
+  color: rgba(255,255,255,0.74);
+  font-weight: 750;
+}
+
+.bcStoreBar{
+  margin-top: 12px;
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.bcPricePill{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.86);
+  font-weight: 950;
+  font-size: 12px;
+}
+
+/* ===== Ensure no “white frame” anywhere ===== */
+*{ box-sizing:border-box; }
+canvas, iframe{ border:0 !important; outline:0 !important; }
