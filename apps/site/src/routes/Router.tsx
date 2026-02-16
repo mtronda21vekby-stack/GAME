@@ -13,7 +13,6 @@ function normPath(p: string) {
 }
 
 function isSiteRoute(path: string) {
-  // site SPA routes only
   return (
     path === "/" ||
     path === "/about" ||
@@ -26,7 +25,6 @@ function isSiteRoute(path: string) {
 }
 
 function isExternalApp(path: string) {
-  // other apps on same domain
   return path === "/game" || path.startsWith("/game/") || path === "/lobby" || path.startsWith("/lobby/");
 }
 
@@ -50,10 +48,10 @@ export function Router() {
 
       const target = normPath(href);
 
-      // game/lobby пусть грузятся как отдельные приложения
+      // game/lobby — отдельные приложения, не перехватываем
       if (isExternalApp(target)) return;
 
-      // перехватываем только наши site-роуты
+      // перехватываем только наши site-страницы
       if (!isSiteRoute(target)) return;
 
       e.preventDefault();
