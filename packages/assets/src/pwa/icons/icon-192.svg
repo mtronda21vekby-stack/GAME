@@ -1,34 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#121B3F"/>
-      <stop offset="1" stop-color="#070A16"/>
-    </linearGradient>
-    <radialGradient id="glow" cx="50%" cy="35%" r="70%">
-      <stop offset="0" stop-color="#FF6A00" stop-opacity="0.55"/>
-      <stop offset="1" stop-color="#FF6A00" stop-opacity="0"/>
-    </radialGradient>
-    <filter id="s" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000" flood-opacity="0.45"/>
-    </filter>
-  </defs>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <g fill="rgba(255,255,255,0.92)">
+    <!-- Верхние зубцы -->
+    <path d="M60 260 L140 110 L210 200 L256 90 L302 200 L372 110 L452 260 Z"/>
+    
+    <!-- Верхняя дуга основания -->
+    <ellipse cx="256" cy="300" rx="170" ry="50"/>
 
-  <rect x="10" y="10" width="172" height="172" rx="44" fill="url(#bg)"/>
-  <rect x="10" y="10" width="172" height="172" rx="44" fill="url(#glow)"/>
+    <!-- Нижняя дуга основания -->
+    <ellipse cx="256" cy="340" rx="190" ry="55"/>
 
-  <g filter="url(#s)">
-    <path
-      d="M52 128 L64 70 L96 94 L128 70 L140 128 Z"
-      fill="rgba(255,255,255,0.92)"
-    />
-    <path
-      d="M56 128 H136 C136 137 128 144 118 144 H74 C64 144 56 137 56 128 Z"
-      fill="rgba(255,255,255,0.92)"
-    />
-    <circle cx="64" cy="66" r="6" fill="rgba(255,255,255,0.92)"/>
-    <circle cx="96" cy="86" r="6" fill="rgba(255,255,255,0.92)"/>
-    <circle cx="128" cy="66" r="6" fill="rgba(255,255,255,0.92)"/>
+    <!-- Отверстия -->
+    <circle cx="200" cy="300" r="14"/>
+    <circle cx="256" cy="290" r="16"/>
+    <circle cx="312" cy="300" r="14"/>
   </g>
-
-  <rect x="10" y="10" width="172" height="172" rx="44" fill="none" stroke="rgba(255,255,255,0.10)"/>
 </svg>
