@@ -8,6 +8,14 @@ import { App } from "./routes/Home";
 import { registerSW } from "./pwa/registerSW";
 import { ErrorBoundary } from "./ErrorBoundary";
 
+function setAppVh() {
+  const px = window.innerHeight;
+  document.documentElement.style.setProperty("--app-vh", `${px}px`);
+}
+setAppVh();
+window.addEventListener("resize", setAppVh, { passive: true });
+window.addEventListener("orientationchange", setAppVh, { passive: true });
+
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <ErrorBoundary>
