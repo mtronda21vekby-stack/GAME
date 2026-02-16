@@ -1,1 +1,7 @@
-<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='white' fill-opacity='.9' d='M3 7l4 4 5-7 5 7 4-4v13H3z'/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <path d="M4 18.5h16" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M6 18.5 7.7 8.2 12 12l4.3-3.8L18 18.5" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>
+  <path d="M7.8 8.2a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4Z" fill="white"/>
+  <path d="M12 12.2a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4Z" fill="white"/>
+  <path d="M16.2 8.2a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4Z" fill="white"/>
+</svg>
