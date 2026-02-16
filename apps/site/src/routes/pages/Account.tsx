@@ -1,9 +1,11 @@
 import React from "react";
 import { Button } from "@blackcrown/ui";
-import { Icons, HeroArt } from "@blackcrown/assets";
+import { HeroArt } from "@blackcrown/assets";
 import { userStorage } from "@blackcrown/core";
 import { openTelegramBot } from "../../lib/telegram";
 import { getReducedMotion, setReducedMotion } from "../../lib/prefs";
+import { nav, navExternal } from "../../lib/nav";
+import { SiteHeader } from "../../components/SiteHeader";
 import {
   StoreItem,
   ensureStoreInit,
@@ -13,16 +15,6 @@ import {
   rarityAccent,
   rarityLabel,
 } from "../../lib/store";
-
-function nav(path: string) {
-  window.history.pushState(null, "", path);
-  window.dispatchEvent(new PopStateEvent("popstate"));
-  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-}
-
-function navExternal(path: string) {
-  window.location.assign(path);
-}
 
 const KEY_NICK = "nickname";
 const KEY_STATUS = "profile.status";
@@ -322,39 +314,7 @@ export function Account() {
           <div className="bcHeroNoise" style={{ backgroundImage: `url(${HeroArt.noise})` }} />
         </div>
 
-        <header className="bcTop">
-          <button type="button" className="bcBrand" onClick={() => nav("/")} aria-label="BlackCrown Home">
-            <img alt="" src={Icons.crown} width="20" height="20" />
-            <div style={{ fontWeight: 950 }}>BlackCrown</div>
-          </button>
-
-          <nav className="bcNav" aria-label="Навигация">
-            <a className="bcLink" href="/about">
-              О проекте
-            </a>
-            <a className="bcLink" href="/support">
-              Поддержка
-            </a>
-            <a className="bcLink" href="/store">
-              Магазин
-            </a>
-            <a className="bcLink" href="/privacy">
-              Privacy
-            </a>
-            <a className="bcLink" href="/terms">
-              Terms
-            </a>
-          </nav>
-
-          <div className="bcRight">
-            <Button variant="secondary" onClick={() => navExternal("/lobby/")}>
-              Lobby
-            </Button>
-            <Button variant="primary" leftIconSrc={Icons.play} onClick={() => navExternal("/game/")}>
-              Играть
-            </Button>
-          </div>
-        </header>
+        <SiteHeader showLobby={true} showStoreButton={false} showAccountPill={true} />
 
         <div style={{ maxWidth: 980, margin: "0 auto", padding: "18px 14px 14px" }}>
           <div className="glassStrong" style={{ borderRadius: 22, padding: 18 }}>
@@ -365,8 +325,18 @@ export function Account() {
               <Pill>
                 <span style={{ opacity: 0.82 }}>Баланс:</span> {formatCoins(store.balance)}
               </Pill>
-              {equippedSkinItem ? <Pill>Skin: {equippedSkinItem.title}</Pill> : null}
-              {equippedBadgeItem ? <Pill>Badge: {equippedBadgeItem.title}</Pill> : null}
+
+              {equippedSkinItem ? (
+                <Pill tone="accent">
+                  Skin: <span style={{ opacity: 0.9 }}>{equippedSkinItem.title}</span>
+                </Pill>
+              ) : null}
+
+              {equippedBadgeItem ? (
+                <Pill tone="accent">
+                  Badge: <span style={{ opacity: 0.9 }}>{equippedBadgeItem.title}</span>
+                </Pill>
+              ) : null}
             </div>
 
             <h1 className="bcH1" style={{ marginTop: 12 }}>
@@ -394,11 +364,7 @@ export function Account() {
               </Button>
             </div>
 
-            <div
-              aria-live="polite"
-              style={{ marginTop: 10, opacity: 0.72, fontWeight: 850, fontSize: 12 }}
-              key={savedPulse}
-            >
+            <div aria-live="polite" style={{ marginTop: 10, opacity: 0.72, fontWeight: 850, fontSize: 12 }} key={savedPulse}>
               {savedPulse > 0 ? "Сохранено" : ""}
             </div>
           </div>
@@ -616,6 +582,7 @@ export function Account() {
                       return (
                         <div
                           key={it.id}
+                          className="bc-motion"
                           style={{
                             display: "flex",
                             justifyContent: "space-between",
@@ -644,12 +611,8 @@ export function Account() {
                               <div style={{ fontWeight: 980 }}>{it.title}</div>
 
                               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                                <span style={{ fontWeight: 900, color: rarityAccent(it.rarity) }}>
-                                  {rarityLabel(it.rarity)}
-                                </span>
-                                <span style={{ opacity: 0.78, fontWeight: 850 }}>
-                                  {isSkin ? "Skin" : isBadge ? "Badge" : "Bundle"}
-                                </span>
+                                <span style={{ fontWeight: 900, color: rarityAccent(it.rarity) }}>{rarityLabel(it.rarity)}</span>
+                                <span style={{ opacity: 0.78, fontWeight: 850 }}>{isSkin ? "Skin" : isBadge ? "Badge" : "Bundle"}</span>
                                 {isActive ? <Pill tone="accent">Активно</Pill> : null}
                               </div>
                             </div>
@@ -698,9 +661,23 @@ export function Account() {
                 </div>
               </div>
             </Card>
+
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", opacity: 0.78 }}>
+              <a className="bcLink" href="/privacy">
+                Privacy
+              </a>
+              <a className="bcLink" href="/terms">
+                Terms
+              </a>
+              <a className="bcLink" href="/support">
+                Поддержка
+              </a>
+            </div>
           </div>
         </div>
       </section>
     </main>
   );
 }
+
+export default Account;
