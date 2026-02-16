@@ -3,22 +3,26 @@ import { Button } from "@blackcrown/ui";
 import { Icons } from "@blackcrown/assets";
 import { userStorage } from "@blackcrown/core";
 
-function nav(path: string) {
+function navSite(path: string) {
   window.history.pushState(null, "", path);
   window.dispatchEvent(new PopStateEvent("popstate"));
   window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+}
+
+function navExternal(path: string) {
+  window.location.assign(path);
 }
 
 function getName() {
   return userStorage.getString("nickname", "") || "Игрок";
 }
 
-export function TopBar() {
+export function TopBar(props: { onAccount?: () => void }) {
   const name = getName();
 
   return (
-    <header className="bcTop" style={{ position: "sticky", top: 0, zIndex: 10 }}>
-      <button type="button" className="bcBrand" onClick={() => nav("/")} aria-label="BlackCrown">
+    <header className="bcTop">
+      <button type="button" className="bcBrand" onClick={() => navSite("/")} aria-label="BlackCrown">
         <img alt="" src={Icons.crown} width="20" height="20" />
         <div style={{ fontWeight: 950 }}>BlackCrown</div>
       </button>
@@ -31,11 +35,16 @@ export function TopBar() {
       </nav>
 
       <div className="bcRight">
-        <button type="button" className="bcAccountPill" onClick={() => nav("/account")} aria-label="Аккаунт">
+        <button
+          type="button"
+          className="bcAccountPill"
+          onClick={() => (props.onAccount ? props.onAccount() : navSite("/account"))}
+          aria-label="Аккаунт"
+        >
           Аккаунт: {name}
         </button>
 
-        <Button variant="primary" leftIconSrc={Icons.play} onClick={() => nav("/game/")}>
+        <Button variant="primary" leftIconSrc={Icons.play} onClick={() => navExternal("/game/")}>
           Играть
         </Button>
       </div>
