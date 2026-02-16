@@ -8,8 +8,17 @@
   --glass2:rgba(255,255,255,0.08);
   --shadow:0 34px 120px rgba(0,0,0,0.34);
   --radius:22px;
+
+  /* Accent (Orange) */
+  --bc-accent-rgb: 255, 106, 0;
+  --bc-accent: rgb(var(--bc-accent-rgb));
+  --bc-accent-10: rgba(255,106,0,0.10);
+  --bc-accent-14: rgba(255,106,0,0.14);
+  --bc-accent-18: rgba(255,106,0,0.18);
+  --bc-accent-26: rgba(255,106,0,0.26);
 }
 
+*{ box-sizing:border-box; }
 html,body{
   height:100%;
   background:var(--bg0);
@@ -23,16 +32,15 @@ body{
   overscroll-behavior: none;
 }
 
-#root{
-  min-height:100%;
-}
+#root{ min-height:100%; }
 
 img{ border:0; outline:0; }
 button{ -webkit-tap-highlight-color: transparent; }
 
-.bcSiteRoot{
-  min-height:100%;
-}
+/* Ensure no “white frame” anywhere */
+canvas, iframe{ border:0 !important; outline:0 !important; }
+
+.bcSiteRoot{ min-height:100%; }
 
 .bc-motion{
   will-change: transform, opacity;
@@ -287,6 +295,19 @@ button{ -webkit-tap-highlight-color: transparent; }
   padding: 18px 14px 28px;
 }
 
+/* Premium section separators */
+.bcSection::before{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:0;
+  transform: translateX(-50%);
+  width:min(980px, calc(100% - 28px));
+  height:1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
+  opacity:0.7;
+}
+
 .bcSectionHead{
   max-width: 980px;
   margin: 0 auto 12px;
@@ -318,10 +339,15 @@ button{ -webkit-tap-highlight-color: transparent; }
 
 /* важно: чтобы клики не пропадали из-за декоративных слоёв */
 .bcHeroBg, .bcHeroVignette, .bcHeroNoise, .bcHeroAurora { pointer-events: none !important; }
+
 /* ===== Premium micro-motion (Echo-like) ===== */
 @media (prefers-reduced-motion: no-preference){
   .glassStrong.bc-motion{
-    transition: transform 220ms cubic-bezier(.2,.8,.2,1), box-shadow 220ms cubic-bezier(.2,.8,.2,1), background 220ms ease, border-color 220ms ease;
+    transition:
+      transform 220ms cubic-bezier(.2,.8,.2,1),
+      box-shadow 220ms cubic-bezier(.2,.8,.2,1),
+      background 220ms ease,
+      border-color 220ms ease;
   }
   .glassStrong.bc-motion:hover{
     transform: translateY(-2px) translateZ(0);
@@ -329,49 +355,54 @@ button{ -webkit-tap-highlight-color: transparent; }
     background: rgba(255,255,255,0.075);
     border-color: rgba(255,255,255,0.13);
   }
+
   .bcPanelRow{
-    transition: transform 180ms cubic-bezier(.2,.8,.2,1), background 180ms ease, border-color 180ms ease;
+    transition:
+      transform 180ms cubic-bezier(.2,.8,.2,1),
+      background 180ms ease,
+      border-color 180ms ease,
+      box-shadow 180ms ease;
   }
   .bcPanelRow:hover{
     transform: translateY(-1px) translateZ(0);
   }
+
   .bcBrand{
-    transition: background 180ms ease, border-color 180ms ease, transform 180ms cubic-bezier(.2,.8,.2,1);
+    transition:
+      background 180ms ease,
+      border-color 180ms ease,
+      transform 180ms cubic-bezier(.2,.8,.2,1),
+      box-shadow 180ms ease;
   }
   .bcBrand:hover{
     background: rgba(255,255,255,0.05);
     transform: translateY(-1px);
   }
+
   .bcAccountPill{
-    transition: background 180ms ease, border-color 180ms ease, transform 180ms cubic-bezier(.2,.8,.2,1);
+    transition:
+      background 180ms ease,
+      border-color 180ms ease,
+      transform 180ms cubic-bezier(.2,.8,.2,1),
+      box-shadow 180ms ease;
   }
   .bcAccountPill:hover{
     background: rgba(255,255,255,0.07);
     border-color: rgba(255,255,255,0.16);
     transform: translateY(-1px);
   }
+
   .bcLink{
-    transition: background 180ms ease, border-color 180ms ease, transform 180ms cubic-bezier(.2,.8,.2,1), opacity 180ms ease;
+    transition:
+      background 180ms ease,
+      border-color 180ms ease,
+      transform 180ms cubic-bezier(.2,.8,.2,1),
+      opacity 180ms ease,
+      color 180ms ease;
   }
   .bcLink:hover{
     transform: translateY(-1px);
   }
-}
-
-/* ===== Premium section separators ===== */
-.bcSection{
-  position: relative;
-}
-.bcSection::before{
-  content:"";
-  position:absolute;
-  left:50%;
-  top:0;
-  transform: translateX(-50%);
-  width:min(980px, calc(100% - 28px));
-  height:1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
-  opacity:0.7;
 }
 
 /* ===== Store layout polish ===== */
@@ -392,9 +423,14 @@ button{ -webkit-tap-highlight-color: transparent; }
   -webkit-backdrop-filter: blur(18px);
   box-shadow: 0 34px 120px rgba(0,0,0,0.30);
 }
+
 @media (prefers-reduced-motion: no-preference){
   .bcStoreCard{
-    transition: transform 220ms cubic-bezier(.2,.8,.2,1), box-shadow 220ms cubic-bezier(.2,.8,.2,1), background 220ms ease, border-color 220ms ease;
+    transition:
+      transform 220ms cubic-bezier(.2,.8,.2,1),
+      box-shadow 220ms cubic-bezier(.2,.8,.2,1),
+      background 220ms ease,
+      border-color 220ms ease;
   }
   .bcStoreCard:hover{
     transform: translateY(-2px);
@@ -412,9 +448,7 @@ button{ -webkit-tap-highlight-color: transparent; }
   border:0;
 }
 
-.bcStoreBody{
-  padding: 14px 16px 16px;
-}
+.bcStoreBody{ padding: 14px 16px 16px; }
 
 .bcStoreTop{
   display:flex;
@@ -464,47 +498,22 @@ button{ -webkit-tap-highlight-color: transparent; }
   font-size: 12px;
 }
 
-/* ===== Ensure no “white frame” anywhere ===== */
-*{ box-sizing:border-box; }
-canvas, iframe{ border:0 !important; outline:0 !important; }
 /* =========================
-   BlackCrown Accent (Orange)
-   Hover / Press / Focus
-   Safe: no layout shift, only shadows/overlays
+   Orange Accent Interactions
+   (clean + safe)
    ========================= */
 
-:root{
-  --bc-accent-rgb: 255 106 0;     /* ярко-оранжевый */
-  --bc-accent: rgb(var(--bc-accent-rgb));
-  --bc-accent-10: rgba(255,106,0,0.10);
-  --bc-accent-14: rgba(255,106,0,0.14);
-  --bc-accent-18: rgba(255,106,0,0.18);
-  --bc-accent-26: rgba(255,106,0,0.26);
-  --bc-accent-38: rgba(255,106,0,0.38);
-}
-
-/* Убираем стандартный синий tap-highlight на мобилках */
-.bcSiteRoot a,
-.bcSiteRoot button,
-.bcSiteRoot [role="button"]{
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* Универсальный фокус (клавиатура) */
-.bcSiteRoot a:focus-visible,
-.bcSiteRoot button:focus-visible,
-.bcSiteRoot [role="button"]:focus-visible{
+/* Focus ring (keyboard only) */
+.bcSiteRoot :where(a, button, [role="button"]):focus-visible{
   outline: none;
   box-shadow:
     0 0 0 3px var(--bc-accent-26),
     0 18px 80px var(--bc-accent-10);
 }
 
-/* Навигационные ссылки */
+/* Nav links: orange highlight */
 .bcNav .bcLink{
   position: relative;
-  border-radius: 999px;
-  transition: color .18s ease, opacity .18s ease, transform .18s ease;
 }
 
 .bcNav .bcLink::after{
@@ -512,29 +521,31 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
   position:absolute;
   inset:-8px -12px;
   border-radius: 999px;
-  background:
-    radial-gradient(60% 120% at 50% 120%, var(--bc-accent-18) 0%, rgba(255,106,0,0.00) 70%);
+  background: radial-gradient(60% 120% at 50% 120%, var(--bc-accent-18) 0%, rgba(255,106,0,0.00) 70%);
   opacity: 0;
   transform: translateY(2px);
-  transition: opacity .18s ease, transform .18s ease;
+  transition: opacity 180ms ease, transform 180ms ease;
   pointer-events: none;
 }
 
 @media (hover:hover){
   .bcNav .bcLink:hover{
     color: var(--bc-accent);
+    border-color: rgba(255,255,255,0.10);
+    background: rgba(255,255,255,0.05);
   }
   .bcNav .bcLink:hover::after{
     opacity: 1;
     transform: translateY(0);
   }
 }
+
 .bcNav .bcLink:active{
   color: var(--bc-accent);
   transform: translateY(1px);
 }
 
-/* Активная страница в меню */
+/* Optional: if you set aria-current="page" on current link */
 .bcNav .bcLink[aria-current="page"]{
   color: var(--bc-accent);
 }
@@ -543,13 +554,7 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
   transform: translateY(0);
 }
 
-/* Хедер: бренд и pill аккаунта */
-.bcBrand,
-.bcAccountPill{
-  border-radius: 999px;
-  transition: transform .18s ease, box-shadow .18s ease, color .18s ease;
-}
-
+/* Header brand + account pill */
 @media (hover:hover){
   .bcBrand:hover,
   .bcAccountPill:hover{
@@ -558,65 +563,68 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
       0 18px 90px var(--bc-accent-10);
   }
 }
+
 .bcBrand:active,
 .bcAccountPill:active{
   transform: translateY(1px);
 }
 
-/* Карточки/панели: оранжевый premium glow */
-.glassStrong.bc-motion{
-  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+/* Panels */
+@media (hover:hover){
+  .bcPanelRow:hover{
+    background: linear-gradient(180deg, var(--bc-accent-10) 0%, rgba(255,255,255,0.04) 100%);
+    box-shadow:
+      0 0 0 1px var(--bc-accent-18) inset,
+      0 18px 90px var(--bc-accent-10);
+    border-color: rgba(255,255,255,0.11);
+  }
 }
 
+.bcPanelRow:active{
+  transform: translateY(1px);
+}
+
+/* Cards (glassStrong + motion): keep your transform/bg, add orange glow */
 @media (hover:hover){
   .glassStrong.bc-motion:hover{
     box-shadow:
-      0 34px 120px rgba(0,0,0,0.30),
+      0 44px 140px rgba(0,0,0,0.38),
       0 0 0 1px var(--bc-accent-18) inset,
       0 28px 110px var(--bc-accent-10);
   }
 }
+
 .glassStrong.bc-motion:active{
-  transform: translateY(1px);
   box-shadow:
     0 34px 120px rgba(0,0,0,0.30),
     0 0 0 1px var(--bc-accent-26) inset,
     0 28px 110px var(--bc-accent-14);
 }
 
-/* Панельные строки (Hero panel rows) */
-.bcPanelRow{
-  border-radius: 18px;
-  transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+/* Buttons: glow on hover/press (doesn't change button logic) */
+.bcSiteRoot :where(button, .bcBtn){
+  transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
 }
 
 @media (hover:hover){
-  .bcPanelRow:hover{
-    background: var(--bc-accent-10);
+  .bcSiteRoot :where(button, .bcBtn):hover{
     box-shadow:
       0 0 0 1px var(--bc-accent-18) inset,
       0 18px 90px var(--bc-accent-10);
   }
 }
-.bcPanelRow:active{
-  transform: translateY(1px);
-}
 
-/* Кнопки: делаем "новый сайт" — мягкий оранжевый glow на hover/press */
-.bcSiteRoot button{
-  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
-}
-
-@media (hover:hover){
-  .bcSiteRoot button:hover{
-    box-shadow:
-      0 0 0 1px var(--bc-accent-18) inset,
-      0 18px 90px var(--bc-accent-10);
-  }
-}
-.bcSiteRoot button:active{
+.bcSiteRoot :where(button, .bcBtn):active{
   transform: translateY(1px);
   box-shadow:
     0 0 0 1px var(--bc-accent-26) inset,
     0 18px 90px var(--bc-accent-14);
+}
+
+/* Reduce motion safety */
+@media (prefers-reduced-motion: reduce){
+  .bcSiteRoot :where(a, button, [role="button"], .glassStrong.bc-motion, .bcPanelRow){
+    transition: none !important;
+    transform: none !important;
+  }
 }
