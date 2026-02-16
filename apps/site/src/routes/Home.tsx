@@ -1,17 +1,22 @@
 import React from "react";
 import { Button } from "@blackcrown/ui";
 import { Icons, HeroArt } from "@blackcrown/assets";
+import { userStorage } from "@blackcrown/core";
 import { openTelegramBot } from "../lib/telegram";
-import { SiteHeader } from "../components/SiteHeader";
+import { Router } from "./Router";
 
 function navSite(path: string) {
   window.history.pushState(null, "", path);
   window.dispatchEvent(new PopStateEvent("popstate"));
-  window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
 }
 
 function navExternal(path: string) {
   window.location.assign(path);
+}
+
+function getName() {
+  return userStorage.getString("nickname", "") || "Игрок";
 }
 
 function Pill(props: { children: React.ReactNode }) {
@@ -60,6 +65,7 @@ function FeatureCard(props: {
       }}
       onKeyDown={(e) => {
         if (!props.href) return;
+        if (e.key === " ") e.preventDefault();
         if (e.key !== "Enter" && e.key !== " ") return;
         if (kind === "external") navExternal(props.href);
         else navSite(props.href);
@@ -127,6 +133,8 @@ function FeatureCard(props: {
 }
 
 export function Home() {
+  const name = getName();
+
   return (
     <main className="bcSiteRoot">
       <section className="bcHero">
@@ -136,7 +144,40 @@ export function Home() {
           <div className="bcHeroNoise" style={{ backgroundImage: `url(${HeroArt.noise})` }} />
         </div>
 
-        <SiteHeader active="home" />
+        <header className="bcTop">
+          <button type="button" className="bcBrand" onClick={() => navSite("/")} aria-label="BlackCrown Home">
+            <img alt="" src={Icons.crown} width="20" height="20" />
+            <div style={{ fontWeight: 950 }}>BlackCrown</div>
+          </button>
+
+          <nav className="bcNav" aria-label="Навигация">
+            <a className="bcLink" href="/about">
+              О проекте
+            </a>
+            <a className="bcLink" href="/support">
+              Поддержка
+            </a>
+            <a className="bcLink" href="/store">
+              Магазин
+            </a>
+            <a className="bcLink" href="/privacy">
+              Privacy
+            </a>
+            <a className="bcLink" href="/terms">
+              Terms
+            </a>
+          </nav>
+
+          <div className="bcRight">
+            <button type="button" className="bcAccountPill" onClick={() => navSite("/account")} aria-label="Аккаунт">
+              Аккаунт: {name}
+            </button>
+
+            <Button variant="primary" leftIconSrc={Icons.play} onClick={() => navExternal("/game/")}>
+              Играть
+            </Button>
+          </div>
+        </header>
 
         <div className="bcHeroGrid">
           <div className="bcHeroCopy glassStrong">
@@ -200,19 +241,19 @@ export function Home() {
               </div>
             </div>
 
+            <div className="bcPanelRow" role="button" tabIndex={0} onClick={() => navSite("/store")}>
+              <div className="bcDot" />
+              <div>
+                <div className="bcPanelH">Магазин</div>
+                <div className="bcPanelP">Коллекция, баланс, предметы.</div>
+              </div>
+            </div>
+
             <div className="bcPanelRow" role="button" tabIndex={0} onClick={() => navSite("/account")}>
               <div className="bcDot" />
               <div>
                 <div className="bcPanelH">Аккаунт</div>
                 <div className="bcPanelP">Профиль, аватар и статус.</div>
-              </div>
-            </div>
-
-            <div className="bcPanelRow" role="button" tabIndex={0} onClick={() => navSite("/store")}>
-              <div className="bcDot" />
-              <div>
-                <div className="bcPanelH">Магазин</div>
-                <div className="bcPanelP">Каталог игр и сервисов.</div>
               </div>
             </div>
 
@@ -230,7 +271,7 @@ export function Home() {
       <section className="bcSection">
         <div className="bcSectionHead">
           <div className="bcSectionTitle">Экосистема</div>
-          <div className="bcSectionSub">Игры + сервисы для игроков: профиль, лобби и AI-помощник в Telegram.</div>
+          <div className="bcSectionSub">Игры + сервисы: профиль, лобби, магазин и AI-помощник в Telegram.</div>
         </div>
 
         <div className="bcCards">
@@ -255,12 +296,22 @@ export function Home() {
           />
 
           <FeatureCard
-            title="Магазин"
-            desc="Каталог игр и сервисов BlackCrown: быстрый доступ к запуску, профилю и подпискам."
+            title="Store"
+            desc="Витрина предметов, избранное, покупки и история. Всё сохраняется локально и ощущается как реальный продукт."
             tag="Store"
-            actionLabel="Открыть"
+            actionLabel="Открыть магазин"
             onAction={() => navSite("/store")}
             href="/store"
+            kind="site"
+          />
+
+          <FeatureCard
+            title="AI-Coach в Telegram"
+            desc="Помогает с прогрессом, механиками, стратегиями и целями. Быстрый вход в контекст и подсказки по делу."
+            tag="Coach"
+            actionLabel="Открыть бота"
+            onAction={openTelegramBot}
+            href="/about"
             kind="site"
             imageSrc={HeroArt.cardWave}
           />
@@ -282,4 +333,8 @@ export function Home() {
       </section>
     </main>
   );
+}
+
+export function App() {
+  return <Router />;
 }
