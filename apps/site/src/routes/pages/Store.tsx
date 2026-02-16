@@ -16,10 +16,12 @@ import {
   rarityLabel,
 } from "../../lib/store";
 
+const TG_URL = "https://t.me/GGBF6_WARZON_BOT";
+
 function nav(path: string) {
   window.history.pushState(null, "", path);
   window.dispatchEvent(new PopStateEvent("popstate"));
-  window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
 }
 
 function navExternal(path: string) {
@@ -70,11 +72,7 @@ function Card(props: { title: string; right?: React.ReactNode; children: React.R
   );
 }
 
-function Segmented(props: {
-  value: string;
-  options: { value: string; label: string }[];
-  onChange: (v: string) => void;
-}) {
+function Segmented(props: { value: string; options: { value: string; label: string }[]; onChange: (v: string) => void }) {
   return (
     <div
       style={{
@@ -152,6 +150,7 @@ function ProductCard(props: {
       tabIndex={0}
       onClick={props.onOpen}
       onKeyDown={(e) => {
+        if (e.key === " ") e.preventDefault();
         if (e.key === "Enter" || e.key === " ") props.onOpen();
       }}
       style={{
@@ -184,6 +183,7 @@ function ProductCard(props: {
           </Pill>
           <Pill>{categoryLabel(item.category)}</Pill>
           {wish ? <Pill>Избранное</Pill> : null}
+          {owned ? <Pill tone="accent">В коллекции</Pill> : null}
         </div>
 
         <div style={{ position: "absolute", left: 14, bottom: 12, right: 14 }}>
@@ -233,45 +233,55 @@ function ProductCard(props: {
 }
 
 export function Store() {
-  const [items] = React.useState<StoreItem[]>(() => getStoreItems());
-
-  const [state, setState] = React.useState<StoreState>(() => {
+  const [items, setItems] = React.useState<StoreItem[]>(() => {
     ensureStoreInit();
-    return getStoreState();
+    return getStoreItems();
   });
+
+  const [state, setState] = React.useState<StoreState>(() => getStoreState());
 
   const [query, setQuery] = React.useState("");
   const [filter, setFilter] = React.useState<StoreCategory | "all">("all");
+  const [view, setView] = React.useState<"all" | "wishlist" | "owned">("all");
 
   const [active, setActive] = React.useState<StoreItem | null>(null);
   const [info, setInfo] = React.useState<{ title: string; desc: string; tone: "ok" | "warn" } | null>(null);
 
+  const ownedSet = React.useMemo(() => new Set(state.owned), [state.owned]);
+  const wishSet = React.useMemo(() => new Set(state.wishlist), [state.wishlist]);
+
   function refresh() {
+    ensureStoreInit();
+    setItems(getStoreItems());
     setState(getStoreState());
   }
 
   const visible = React.useMemo(() => {
     const q = query.trim().toLowerCase();
+
     return items.filter((it) => {
       if (filter !== "all" && it.category !== filter) return false;
+      if (view === "wishlist" && !wishSet.has(it.id)) return false;
+      if (view === "owned" && !ownedSet.has(it.id)) return false;
+
       if (!q) return true;
       const hay = `${it.title} ${it.desc} ${it.tags.join(" ")} ${it.category} ${it.rarity}`.toLowerCase();
       return hay.includes(q);
     });
-  }, [items, query, filter]);
+  }, [items, query, filter, view, wishSet, ownedSet]);
 
-  const ownedSet = React.useMemo(() => new Set(state.owned), [state.owned]);
-  const wishSet = React.useMemo(() => new Set(state.wishlist), [state.wishlist]);
+  const ownedItems = React.useMemo(() => items.filter((x) => ownedSet.has(x.id)), [items, ownedSet]);
+  const wishItems = React.useMemo(() => items.filter((x) => wishSet.has(x.id)), [items, wishSet]);
 
   function doBuy(item: StoreItem) {
     const res = buyItem(item);
+
+    setState(res.state);
+
     if (res.ok) {
-      setState(res.state);
       setInfo({ title: "Добавлено в коллекцию", desc: item.title, tone: "ok" });
       return;
     }
-
-    setState(res.state);
 
     if (res.reason === "owned") {
       setInfo({ title: "Уже в коллекции", desc: item.title, tone: "ok" });
@@ -289,8 +299,6 @@ export function Store() {
     const next = toggleWishlist(itemId);
     setState(next);
   }
-
-  const ownedItems = React.useMemo(() => items.filter((x) => ownedSet.has(x.id)), [items, ownedSet]);
 
   return (
     <main className="bcSiteRoot">
@@ -342,8 +350,9 @@ export function Store() {
           <div className="glassStrong" style={{ borderRadius: 22, padding: 18 }}>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
               <Pill tone="accent">Магазин</Pill>
+              <Pill>Витрина</Pill>
               <Pill>Коллекция</Pill>
-              <Pill>Баланс</Pill>
+              <Pill>Избранное</Pill>
             </div>
 
             <h1 className="bcH1" style={{ marginTop: 12 }}>
@@ -353,7 +362,7 @@ export function Store() {
             </h1>
 
             <p className="bcLead" style={{ marginTop: 10 }}>
-              Выбирай предметы для профиля и интерфейса. Полученные предметы сохраняются в коллекции.
+              Предметы для профиля и интерфейса. Покупки сохраняются в коллекции, избранное — для быстрого доступа.
             </p>
 
             <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
@@ -382,9 +391,14 @@ export function Store() {
                 onClick={() => {
                   setQuery("");
                   setFilter("all");
+                  setView("all");
                 }}
               >
-                Сбросить фильтры
+                Сбросить
+              </Button>
+
+              <Button variant="ghost" onClick={refresh}>
+                Обновить
               </Button>
             </div>
           </div>
@@ -394,18 +408,24 @@ export function Store() {
       <section className="bcSection" style={{ paddingTop: 10 }}>
         <div style={{ maxWidth: 980, margin: "0 auto", padding: "0 14px" }}>
           <div style={{ display: "grid", gap: 12 }}>
-            <div
-              style={{
-                display: "grid",
-                gap: 12,
-                gridTemplateColumns: "1.2fr 0.8fr" as any,
-                alignItems: "start",
-              }}
-            >
+            <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1.2fr 0.8fr", alignItems: "start" }}>
               <div style={{ display: "grid", gap: 12 }}>
                 <Card title="Витрина" right={<Pill>{visible.length} шт.</Pill>}>
                   <div style={{ display: "grid", gap: 12 }}>
                     <div style={{ display: "grid", gap: 10 }}>
+                      <div style={{ display: "grid", gap: 8 }}>
+                        <div style={{ fontWeight: 950 }}>Режим</div>
+                        <Segmented
+                          value={view}
+                          options={[
+                            { value: "all", label: "Все" },
+                            { value: "wishlist", label: "Избранное" },
+                            { value: "owned", label: "Коллекция" },
+                          ]}
+                          onChange={(v) => setView(v as any)}
+                        />
+                      </div>
+
                       <div style={{ display: "grid", gap: 8 }}>
                         <div style={{ fontWeight: 950 }}>Категория</div>
                         <Segmented
@@ -442,13 +462,7 @@ export function Store() {
                       </div>
                     </div>
 
-                    <div
-                      style={{
-                        display: "grid",
-                        gap: 12,
-                        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                      }}
-                    >
+                    <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
                       {visible.map((item) => (
                         <ProductCard
                           key={item.id}
@@ -466,10 +480,52 @@ export function Store() {
               </div>
 
               <div style={{ display: "grid", gap: 12 }}>
-                <Card
-                  title="Коллекция"
-                  right={<Pill>{ownedItems.length}</Pill>}
-                >
+                <Card title="Избранное" right={<Pill>{wishItems.length}</Pill>}>
+                  {wishItems.length === 0 ? (
+                    <div style={{ opacity: 0.82, fontWeight: 850, lineHeight: 1.5 }}>
+                      Добавь предметы в избранное — они появятся здесь для быстрого доступа.
+                    </div>
+                  ) : (
+                    <div style={{ display: "grid", gap: 10 }}>
+                      {wishItems.slice(0, 8).map((it) => (
+                        <button
+                          key={it.id}
+                          type="button"
+                          onClick={() => setActive(it)}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            gap: 10,
+                            padding: 12,
+                            borderRadius: 16,
+                            border: "1px solid rgba(255,255,255,0.10)",
+                            background: "rgba(0,0,0,0.16)",
+                            cursor: "pointer",
+                            textAlign: "left",
+                            color: "var(--text)",
+                          }}
+                        >
+                          <div style={{ display: "grid", gap: 4 }}>
+                            <div style={{ fontWeight: 980 }}>{it.title}</div>
+                            <div style={{ opacity: 0.78, fontWeight: 850, fontSize: 12 }}>{rarityLabel(it.rarity)}</div>
+                          </div>
+                          <div
+                            style={{
+                              width: 42,
+                              height: 42,
+                              borderRadius: 14,
+                              backgroundImage: `${it.art.glow}, ${it.art.gradient}`,
+                              border: "1px solid rgba(255,255,255,0.12)",
+                              boxShadow: "0 18px 50px rgba(0,0,0,0.35)",
+                            }}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+
+                <Card title="Коллекция" right={<Pill>{ownedItems.length}</Pill>}>
                   {ownedItems.length === 0 ? (
                     <div style={{ opacity: 0.82, fontWeight: 850, lineHeight: 1.5 }}>
                       Коллекция пока пустая. Выбери предмет во витрине и нажми «Получить».
@@ -515,8 +571,8 @@ export function Store() {
                         <Button variant="secondary" onClick={() => nav("/account")}>
                           В аккаунт
                         </Button>
-                        <Button variant="ghost" onClick={refresh}>
-                          Обновить
+                        <Button variant="ghost" onClick={() => setView("owned")}>
+                          Показать в витрине
                         </Button>
                       </div>
                     </div>
@@ -537,8 +593,7 @@ export function Store() {
                         .map((t) => {
                           const sign = t.type === "buy" ? "" : t.type === "credit" ? "+" : "";
                           const amount = typeof t.amount === "number" ? `${sign}${formatCoins(t.amount)}` : "";
-                          const title =
-                            t.type === "buy" ? "Покупка" : t.type === "credit" ? "Пополнение" : "Избранное";
+                          const title = t.type === "buy" ? "Покупка" : t.type === "credit" ? "Пополнение" : "Избранное";
 
                           return (
                             <div
@@ -585,11 +640,7 @@ export function Store() {
         </div>
       </section>
 
-      <Modal
-        open={!!active}
-        title={active ? active.title : ""}
-        onClose={() => setActive(null)}
-      >
+      <Modal open={!!active} title={active ? active.title : ""} onClose={() => setActive(null)}>
         {active ? (
           <div className="bc-col" style={{ gap: 12 }}>
             <div
@@ -631,10 +682,7 @@ export function Store() {
                 {ownedSet.has(active.id) ? "В коллекции" : "Получить"}
               </Button>
 
-              <Button
-                variant="ghost"
-                onClick={() => doWish(active.id)}
-              >
+              <Button variant="ghost" onClick={() => doWish(active.id)}>
                 {wishSet.has(active.id) ? "Убрать" : "В избранное"}
               </Button>
             </div>
@@ -642,20 +690,36 @@ export function Store() {
         ) : null}
       </Modal>
 
-      <Modal
-        open={!!info}
-        title={info?.title ?? ""}
-        onClose={() => setInfo(null)}
-      >
+      <Modal open={!!info} title={info?.title ?? ""} onClose={() => setInfo(null)}>
         <div className="bc-col" style={{ gap: 12 }}>
           <div style={{ opacity: 0.88, fontWeight: 850, lineHeight: 1.55 }}>{info?.desc ?? ""}</div>
 
+          {info?.tone === "warn" ? (
+            <div className="glassStrong" style={{ borderRadius: 16, padding: 12, border: "1px solid rgba(255,255,255,0.10)", background: "rgba(0,0,0,0.16)" }}>
+              <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", justifyContent: "space-between" }}>
+                <div style={{ display: "grid", gap: 4 }}>
+                  <div style={{ fontWeight: 980 }}>Пополнение</div>
+                  <div style={{ opacity: 0.78, fontWeight: 850, fontSize: 12 }}>Через AI-Coach в Telegram</div>
+                </div>
+
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <Button variant="secondary" onClick={openTelegramBot}>
+                    Открыть Telegram
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      navigator.clipboard?.writeText?.(TG_URL);
+                    }}
+                  >
+                    Скопировать ссылку
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
-            {info?.tone === "warn" ? (
-              <Button variant="secondary" onClick={openTelegramBot}>
-                Открыть Telegram
-              </Button>
-            ) : null}
             <Button variant="primary" onClick={() => setInfo(null)}>
               Закрыть
             </Button>
