@@ -17,7 +17,7 @@ import {
 function nav(path: string) {
   window.history.pushState(null, "", path);
   window.dispatchEvent(new PopStateEvent("popstate"));
-  window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
 }
 
 function navExternal(path: string) {
@@ -165,42 +165,35 @@ function Segmented(props: { value: string; options: { value: string; label: stri
 }
 
 export function Account() {
+  // --- profile ---
   const [nick, setNick] = React.useState(() => getString(KEY_NICK, ""));
   const [status, setStatus] = React.useState(() => getString(KEY_STATUS, ""));
   const [avatarId, setAvatarId] = React.useState(() => getString(KEY_AVATAR, "0"));
 
+  // --- prefs ---
   const [reducedMotion, setReducedMotionUI] = React.useState(() => getReducedMotion());
   const [fps, setFps] = React.useState(() => getBool(KEY_GAME_FPS, false));
   const [quality, setQuality] = React.useState(() => getString(KEY_GAME_QUALITY, "high"));
   const [inputMode, setInputMode] = React.useState(() => getString(KEY_GAME_INPUT, "auto"));
 
+  // --- equipment ---
   const [equipSkin, setEquipSkin] = React.useState(() => getString(KEY_EQUIP_SKIN, ""));
   const [equipBadge, setEquipBadge] = React.useState(() => getString(KEY_EQUIP_BADGE, ""));
 
-  const [savedPulse, setSavedPulse] = React.useState(0);
-
+  // --- store ---
   const [items] = React.useState<StoreItem[]>(() => getStoreItems());
   const [store, setStore] = React.useState(() => {
     ensureStoreInit();
     return getStoreState();
   });
 
+  const [savedPulse, setSavedPulse] = React.useState(0);
+
   const ownedSet = React.useMemo(() => new Set(store.owned), [store.owned]);
-
-  React.useEffect(() => {
-    const refresh = () => setStore(getStoreState());
-    window.addEventListener("focus", refresh);
-    window.addEventListener("popstate", refresh);
-    return () => {
-      window.removeEventListener("focus", refresh);
-      window.removeEventListener("popstate", refresh);
-    };
-  }, []);
-
   const ownedItems = React.useMemo(() => items.filter((x) => ownedSet.has(x.id)), [items, ownedSet]);
 
-  const avatar = AVATARS.find((a) => a.id === avatarId) ?? AVATARS[0];
-  const initials = clampStr(nick || "Игрок", 2).toUpperCase();
+  const avatar = React.useMemo(() => AVATARS.find((a) => a.id === avatarId) ?? AVATARS[0], [avatarId]);
+  const initials = React.useMemo(() => clampStr(nick || "Игрок", 2).toUpperCase(), [nick]);
 
   const equippedSkinItem = React.useMemo(() => {
     if (!equipSkin) return null;
@@ -221,11 +214,22 @@ export function Account() {
     return avatar.bg;
   }, [equippedSkinItem, avatar.bg]);
 
-  function pulseSaved() {
-    setSavedPulse((x) => x + 1);
-  }
+  const pulseSaved = React.useCallback(() => setSavedPulse((x) => x + 1), []);
 
-  function saveProfile() {
+  const refreshStore = React.useCallback(() => {
+    setStore(getStoreState());
+  }, []);
+
+  React.useEffect(() => {
+    window.addEventListener("focus", refreshStore);
+    window.addEventListener("popstate", refreshStore);
+    return () => {
+      window.removeEventListener("focus", refreshStore);
+      window.removeEventListener("popstate", refreshStore);
+    };
+  }, [refreshStore]);
+
+  const saveProfile = React.useCallback(() => {
     const n = clampStr(nick, 18);
     const s = clampStr(status, 64);
     setNick(n);
@@ -234,9 +238,9 @@ export function Account() {
     setString(KEY_STATUS, s);
     setString(KEY_AVATAR, avatarId);
     pulseSaved();
-  }
+  }, [nick, status, avatarId, pulseSaved]);
 
-  function resetProfile() {
+  const resetProfile = React.useCallback(() => {
     setNick("");
     setStatus("");
     setAvatarId("0");
@@ -248,57 +252,66 @@ export function Account() {
     setString(KEY_EQUIP_SKIN, "");
     setString(KEY_EQUIP_BADGE, "");
     pulseSaved();
-  }
+  }, [pulseSaved]);
 
-  function savePrefs(next: { reducedMotion?: boolean; fps?: boolean; quality?: string; inputMode?: string }) {
-    if (typeof next.reducedMotion === "boolean") {
-      setReducedMotion(next.reducedMotion);
-      setReducedMotionUI(next.reducedMotion);
-    }
-    if (typeof next.fps === "boolean") {
-      setBool(KEY_GAME_FPS, next.fps);
-      setFps(next.fps);
-    }
-    if (typeof next.quality === "string") {
-      setString(KEY_GAME_QUALITY, next.quality);
-      setQuality(next.quality);
-    }
-    if (typeof next.inputMode === "string") {
-      setString(KEY_GAME_INPUT, next.inputMode);
-      setInputMode(next.inputMode);
-    }
-    pulseSaved();
-  }
-
-  function equip(item: StoreItem) {
-    if (!ownedSet.has(item.id)) return;
-
-    if (item.category === "skins") {
-      setEquipSkin(item.id);
-      setString(KEY_EQUIP_SKIN, item.id);
+  const savePrefs = React.useCallback(
+    (next: { reducedMotion?: boolean; fps?: boolean; quality?: string; inputMode?: string }) => {
+      if (typeof next.reducedMotion === "boolean") {
+        setReducedMotion(next.reducedMotion);
+        setReducedMotionUI(next.reducedMotion);
+      }
+      if (typeof next.fps === "boolean") {
+        setBool(KEY_GAME_FPS, next.fps);
+        setFps(next.fps);
+      }
+      if (typeof next.quality === "string") {
+        setString(KEY_GAME_QUALITY, next.quality);
+        setQuality(next.quality);
+      }
+      if (typeof next.inputMode === "string") {
+        setString(KEY_GAME_INPUT, next.inputMode);
+        setInputMode(next.inputMode);
+      }
       pulseSaved();
-      return;
-    }
+    },
+    [pulseSaved]
+  );
 
-    if (item.category === "badges") {
-      setEquipBadge(item.id);
-      setString(KEY_EQUIP_BADGE, item.id);
-      pulseSaved();
-      return;
-    }
-  }
+  const equip = React.useCallback(
+    (item: StoreItem) => {
+      if (!ownedSet.has(item.id)) return;
 
-  function unequip(kind: "skin" | "badge") {
-    if (kind === "skin") {
-      setEquipSkin("");
-      setString(KEY_EQUIP_SKIN, "");
+      if (item.category === "skins") {
+        setEquipSkin(item.id);
+        setString(KEY_EQUIP_SKIN, item.id);
+        pulseSaved();
+        return;
+      }
+
+      if (item.category === "badges") {
+        setEquipBadge(item.id);
+        setString(KEY_EQUIP_BADGE, item.id);
+        pulseSaved();
+        return;
+      }
+    },
+    [ownedSet, pulseSaved]
+  );
+
+  const unequip = React.useCallback(
+    (kind: "skin" | "badge") => {
+      if (kind === "skin") {
+        setEquipSkin("");
+        setString(KEY_EQUIP_SKIN, "");
+        pulseSaved();
+        return;
+      }
+      setEquipBadge("");
+      setString(KEY_EQUIP_BADGE, "");
       pulseSaved();
-      return;
-    }
-    setEquipBadge("");
-    setString(KEY_EQUIP_BADGE, "");
-    pulseSaved();
-  }
+    },
+    [pulseSaved]
+  );
 
   return (
     <main className="bcSiteRoot">
@@ -383,12 +396,7 @@ export function Account() {
 
             <div
               aria-live="polite"
-              style={{
-                marginTop: 10,
-                opacity: 0.72,
-                fontWeight: 850,
-                fontSize: 12,
-              }}
+              style={{ marginTop: 10, opacity: 0.72, fontWeight: 850, fontSize: 12 }}
               key={savedPulse}
             >
               {savedPulse > 0 ? "Сохранено" : ""}
@@ -575,7 +583,7 @@ export function Account() {
                   <Button variant="secondary" onClick={() => nav("/store")}>
                     В магазин
                   </Button>
-                  <Button variant="ghost" onClick={() => setStore(getStoreState())}>
+                  <Button variant="ghost" onClick={refreshStore}>
                     Обновить
                   </Button>
                 </div>
@@ -603,7 +611,7 @@ export function Account() {
                     {ownedItems.slice(0, 24).map((it) => {
                       const isSkin = it.category === "skins";
                       const isBadge = it.category === "badges";
-                      const active = (isSkin && it.id === equipSkin) || (isBadge && it.id === equipBadge);
+                      const isActive = (isSkin && it.id === equipSkin) || (isBadge && it.id === equipBadge);
 
                       return (
                         <div
@@ -631,14 +639,18 @@ export function Account() {
                                 boxShadow: "0 18px 52px rgba(0,0,0,0.35)",
                               }}
                             />
+
                             <div style={{ display: "grid", gap: 4 }}>
                               <div style={{ fontWeight: 980 }}>{it.title}</div>
+
                               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                                <span style={{ fontWeight: 900, color: rarityAccent(it.rarity) }}>{rarityLabel(it.rarity)}</span>
+                                <span style={{ fontWeight: 900, color: rarityAccent(it.rarity) }}>
+                                  {rarityLabel(it.rarity)}
+                                </span>
                                 <span style={{ opacity: 0.78, fontWeight: 850 }}>
                                   {isSkin ? "Skin" : isBadge ? "Badge" : "Bundle"}
                                 </span>
-                                {active ? <Pill tone="accent">Активно</Pill> : null}
+                                {isActive ? <Pill tone="accent">Активно</Pill> : null}
                               </div>
                             </div>
                           </div>
@@ -646,12 +658,12 @@ export function Account() {
                           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                             {isSkin || isBadge ? (
                               <Button
-                                variant={active ? "secondary" : "primary"}
+                                variant={isActive ? "secondary" : "primary"}
                                 onClick={() => {
-                                  if (!active) equip(it);
+                                  if (!isActive) equip(it);
                                 }}
                               >
-                                {active ? "Активно" : "Применить"}
+                                {isActive ? "Активно" : "Применить"}
                               </Button>
                             ) : (
                               <Button variant="secondary" onClick={() => nav("/store")}>
@@ -672,6 +684,7 @@ export function Account() {
                 <div style={{ opacity: 0.86, lineHeight: 1.55, fontWeight: 850 }}>
                   AI-Coach в Telegram помогает с прогрессом, механиками и стратегиями.
                 </div>
+
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                   <Button variant="primary" onClick={openTelegramBot}>
                     Открыть AI-Coach
