@@ -1,7 +1,6 @@
 import React from "react";
 import { Button } from "@blackcrown/ui";
-import { userStorage } from "@blackcrown/core";
-import { createLobbyClient, LobbyChatMsg, LobbyPlayer } from "@blackcrown/core";
+import { userStorage, createLobbyClient, LobbyChatMsg, LobbyPlayer } from "@blackcrown/core";
 
 function nav(path: string) {
   window.location.assign(path);
@@ -59,7 +58,17 @@ export function Lobby() {
     <main className="bcSiteRoot">
       <section className="bcSection" style={{ paddingTop: 14 }}>
         <div style={{ maxWidth: 980, margin: "0 auto" }}>
-          <div className="glassStrong" style={{ borderRadius: 22, padding: 14, display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+          <div
+            className="glassStrong"
+            style={{
+              borderRadius: 22,
+              padding: 14,
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
             <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
               <div style={{ fontWeight: 980 }}>Lobby</div>
               <div style={{ opacity: 0.75, fontWeight: 850 }}>Комната: {room}</div>
@@ -70,8 +79,12 @@ export function Lobby() {
             </div>
 
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <Button variant="secondary" onClick={() => nav("/game/")}>Игры</Button>
-              <Button variant="ghost" onClick={() => nav("/")}>Главная</Button>
+              <Button variant="secondary" onClick={() => nav("/game/")}>
+                Игры
+              </Button>
+              <Button variant="ghost" onClick={() => nav("/")}>
+                Главная
+              </Button>
             </div>
           </div>
 
@@ -79,7 +92,15 @@ export function Lobby() {
 
           <div style={{ display: "grid", gap: 12 }}>
             <div className="glassStrong" style={{ borderRadius: 22, padding: 14 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 10,
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                }}
+              >
                 <div style={{ fontWeight: 950 }}>Игроки</div>
                 <Button
                   variant={ready ? "primary" : "secondary"}
@@ -87,7 +108,7 @@ export function Lobby() {
                     if (!canReady) return;
                     const next = !ready;
                     setReady(next);
-                    // отправка через новый клиент: создадим быстрый connect для действия
+
                     const c = createLobbyClient(room, {});
                     c.setReady(next);
                     setTimeout(() => c.close(), 50);
@@ -168,6 +189,7 @@ export function Lobby() {
                     const msg = text.trim();
                     if (!msg) return;
                     setText("");
+
                     const c = createLobbyClient(room, {});
                     c.chat(msg);
                     setTimeout(() => c.close(), 50);
