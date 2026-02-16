@@ -1,5 +1,50 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-<defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#8cb4ff"/><stop offset="1" stop-color="#6e96ff"/></linearGradient></defs>
-<rect x="32" y="32" width="448" height="448" rx="96" fill="url(#g)" opacity="0.9"/>
-<text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-family="system-ui, -apple-system" font-weight="800" font-size="56" fill="rgba(10,12,18,0.86)">BC</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="BlackCrown maskable icon">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="45%" r="75%">
+      <stop offset="0%" stop-color="#121827"/>
+      <stop offset="60%" stop-color="#0B0F18"/>
+      <stop offset="100%" stop-color="#05060B"/>
+    </radialGradient>
+
+    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#1E2432"/>
+      <stop offset="45%" stop-color="#0B0F18"/>
+      <stop offset="100%" stop-color="#04060B"/>
+    </linearGradient>
+
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.50"/>
+      <stop offset="30%" stop-color="#FFFFFF" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </linearGradient>
+
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000000" flood-opacity="0.65"/>
+    </filter>
+  </defs>
+
+  <rect x="0" y="0" width="256" height="256" fill="url(#bg)"/>
+
+  <g filter="url(#shadow)">
+    <path fill="url(#metal)" d="
+      M64 104
+      L92 156
+      L128 122
+      L164 156
+      L192 104
+      L192 168
+      C192 186 178 200 160 200
+      H96
+      C78 200 64 186 64 168
+      Z"/>
+
+    <path fill="none" stroke="url(#edge)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"
+      d="M64 104 L92 156 L128 120 L164 156 L192 104"/>
+
+    <path fill="none" stroke="url(#edge)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.32"
+      d="M78 122 L100 160 L128 138 L156 160 L178 122"/>
+
+    <path fill="none" stroke="#FFFFFF" stroke-opacity="0.10" stroke-width="6" stroke-linejoin="round"
+      d="M82 168 C82 182 94 194 108 194 H148 C162 194 174 182 174 168"/>
+  </g>
 </svg>
