@@ -1,36 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <!-- Background -->
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#05070F"/>
-      <stop offset="100%" stop-color="#0B1022"/>
+    <linearGradient id="blueFire" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8DFBFF"/>
+      <stop offset="40%" stop-color="#00D4FF"/>
+      <stop offset="70%" stop-color="#0066FF"/>
+      <stop offset="100%" stop-color="#001A66"/>
     </linearGradient>
 
-    <!-- Blue Fire -->
-    <linearGradient id="fire" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#B6F6FF"/>
-      <stop offset="40%" stop-color="#2FE3FF"/>
-      <stop offset="75%" stop-color="#0E7CFF"/>
-      <stop offset="100%" stop-color="#0019FF"/>
-    </linearGradient>
-
-    <!-- Metallic Skull -->
     <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#FFFFFF"/>
-      <stop offset="40%" stop-color="#B7D7FF"/>
-      <stop offset="70%" stop-color="#4FA3FF"/>
-      <stop offset="100%" stop-color="#0C3CFF"/>
+      <stop offset="0%" stop-color="#E6F4FF"/>
+      <stop offset="40%" stop-color="#7BC2FF"/>
+      <stop offset="70%" stop-color="#2F7BFF"/>
+      <stop offset="100%" stop-color="#001F66"/>
     </linearGradient>
 
-    <!-- Crown Gold Accent -->
-    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#FFF2C2"/>
-      <stop offset="50%" stop-color="#FFD35A"/>
-      <stop offset="100%" stop-color="#B88300"/>
-    </linearGradient>
-
-    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
-      <feGaussianBlur stdDeviation="6" result="blur"/>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
       <feMerge>
         <feMergeNode in="blur"/>
         <feMergeNode in="SourceGraphic"/>
@@ -38,51 +23,67 @@
     </filter>
   </defs>
 
-  <!-- Rounded background -->
-  <rect x="16" y="16" width="224" height="224" rx="48" fill="url(#bg)"/>
+  <!-- Background -->
+  <rect width="512" height="512" rx="90" fill="#0B1022"/>
 
-  <!-- Blue flame -->
-  <path fill="url(#fire)" filter="url(#glow)" d="
-    M128 30
-    C110 55 120 75 105 95
-    C90 115 80 140 95 170
-    C108 195 125 210 128 215
-    C131 210 148 195 161 170
-    C176 140 166 115 151 95
-    C136 75 146 55 128 30 Z
-  "/>
+  <!-- Blue flame crown -->
+  <path d="
+    M256 60
+    C230 110 270 120 230 160
+    C200 190 180 230 210 260
+    C195 220 230 210 245 180
+    C260 150 240 130 256 110
+    C272 130 252 150 267 180
+    C282 210 317 220 302 260
+    C332 230 312 190 282 160
+    C242 120 282 110 256 60 Z"
+    fill="url(#blueFire)"
+    filter="url(#glow)"
+  />
 
-  <!-- Crown -->
-  <path fill="url(#gold)" d="
-    M90 90 L105 70 L128 85 L151 70 L166 90
-    L156 100 L128 95 L100 100 Z
-  "/>
+  <!-- Crown base -->
+  <path d="M180 160 L210 210 L256 170 L302 210 L332 160 Z"
+        fill="url(#metal)"
+        stroke="#0A1E40"
+        stroke-width="6"/>
 
   <!-- Skull -->
-  <g fill="url(#metal)">
-    <!-- Head -->
+  <g fill="url(#metal)" stroke="#001A40" stroke-width="6">
     <path d="
-      M128 95
-      C95 95 80 120 80 145
-      C80 170 95 190 128 190
-      C161 190 176 170 176 145
-      C176 120 161 95 128 95 Z
-    "/>
+      M256 190
+      C200 190 180 240 180 280
+      C180 330 210 370 256 380
+      C302 370 332 330 332 280
+      C332 240 312 190 256 190 Z"/>
 
     <!-- Jaw -->
-    <rect x="108" y="175" width="40" height="20" rx="6"/>
+    <rect x="220" y="330" width="72" height="50" rx="20"/>
 
     <!-- Teeth lines -->
-    <line x1="118" y1="178" x2="118" y2="195" stroke="#0B1022" stroke-width="3"/>
-    <line x1="128" y1="178" x2="128" y2="195" stroke="#0B1022" stroke-width="3"/>
-    <line x1="138" y1="178" x2="138" y2="195" stroke="#0B1022" stroke-width="3"/>
-
-    <!-- Eyes -->
-    <polygon points="102,135 118,125 118,145" fill="#0B1022"/>
-    <polygon points="154,135 138,125 138,145" fill="#0B1022"/>
-
-    <!-- Nose -->
-    <polygon points="128,145 120,160 136,160" fill="#0B1022"/>
+    <line x1="230" y1="330" x2="230" y2="380"/>
+    <line x1="250" y1="330" x2="250" y2="380"/>
+    <line x1="270" y1="330" x2="270" y2="380"/>
   </g>
+
+  <!-- Eyes -->
+  <g fill="#0B1022">
+    <path d="M210 260 C230 240 250 240 260 260 C240 270 220 270 210 260 Z"/>
+    <path d="M302 260 C282 240 262 240 252 260 C272 270 292 270 302 260 Z"/>
+  </g>
+
+  <!-- Nose -->
+  <polygon points="256,285 240,310 272,310" fill="#0B1022"/>
+
+  <!-- Wings -->
+  <g fill="url(#metal)" stroke="#001A40" stroke-width="5">
+    <path d="M150 250 C100 260 100 320 160 330 L180 300 C150 290 150 270 150 250 Z"/>
+    <path d="M362 250 C412 260 412 320 352 330 L332 300 C362 290 362 270 362 250 Z"/>
+  </g>
+
+  <!-- Shield base -->
+  <path d="M220 380 L292 380 L280 430 L232 430 Z"
+        fill="url(#metal)"
+        stroke="#001A40"
+        stroke-width="6"/>
 
 </svg>
