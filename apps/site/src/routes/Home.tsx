@@ -1,7 +1,5 @@
-// apps/site/src/routes/Home.tsx  — ЗАМЕНИ ЦЕЛИКОМ (убраны “пасхалки”, все кнопки/ссылки связаны)
-
 import React from "react";
-import { Button } from "@blackcrown/ui";
+import { Button, Modal } from "@blackcrown/ui";
 import { Icons, HeroArt } from "@blackcrown/assets";
 import { userStorage } from "@blackcrown/core";
 
@@ -114,8 +112,65 @@ function FeatureCard(props: {
   );
 }
 
+function AccountModal(props: { open: boolean; onClose: () => void; onSaved: () => void }) {
+  const [value, setValue] = React.useState<string>(() => userStorage.getString("nickname", "") || "");
+
+  React.useEffect(() => {
+    if (!props.open) return;
+    setValue(userStorage.getString("nickname", "") || "");
+  }, [props.open]);
+
+  return (
+    <Modal open={props.open} title="Аккаунт" onClose={props.onClose}>
+      <div className="bc-col" style={{ gap: 10 }}>
+        <div style={{ fontWeight: 900 }}>Никнейм</div>
+
+        <input
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="Введите никнейм"
+          autoComplete="nickname"
+          inputMode="text"
+          style={{
+            width: "100%",
+            height: 44,
+            borderRadius: 14,
+            border: "1px solid rgba(255,255,255,0.12)",
+            background: "rgba(255,255,255,0.06)",
+            color: "var(--text)",
+            padding: "0 12px",
+            outline: "none",
+            fontWeight: 850
+          }}
+        />
+
+        <div className="bc-row" style={{ justifyContent: "flex-end", gap: 10, marginTop: 6, flexWrap: "wrap" }}>
+          <Button variant="ghost" onClick={props.onClose}>
+            Закрыть
+          </Button>
+
+          <Button
+            variant="primary"
+            onClick={() => {
+              const next = value.trim();
+              if (next.length > 0) {
+                userStorage.setString("nickname", next);
+              }
+              props.onClose();
+              props.onSaved();
+            }}
+          >
+            Сохранить
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 export function Home() {
-  const name = getName();
+  const [accountOpen, setAccountOpen] = React.useState(false);
+  const [name, setName] = React.useState(getName());
 
   return (
     <main className="bcSiteRoot">
@@ -157,7 +212,7 @@ export function Home() {
             <button
               type="button"
               className="bcAccountPill"
-              onClick={() => nav("/account")}
+              onClick={() => setAccountOpen(true)}
               style={{ cursor: "pointer" }}
               aria-label="Открыть аккаунт"
             >
@@ -285,6 +340,12 @@ export function Home() {
           </div>
         </div>
       </section>
+
+      <AccountModal
+        open={accountOpen}
+        onClose={() => setAccountOpen(false)}
+        onSaved={() => setName(getName())}
+      />
     </main>
   );
 }
