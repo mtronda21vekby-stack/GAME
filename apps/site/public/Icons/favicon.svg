@@ -1,175 +1,166 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none">
   <defs>
-    <radialGradient id="bgGlow" cx="50%" cy="45%" r="70%">
-      <stop offset="0%" stop-color="#2FE7FF" stop-opacity="0.25"/>
-      <stop offset="55%" stop-color="#0AA7FF" stop-opacity="0.16"/>
-      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    <radialGradient id="bg" cx="50%" cy="38%" r="80%">
+      <stop offset="0" stop-color="#0FE3FF" stop-opacity="0.18"/>
+      <stop offset="0.55" stop-color="#0A7BFF" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
     </radialGradient>
 
-    <linearGradient id="flameA" x1="64" y1="30" x2="192" y2="236" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#7CFFFD"/>
-      <stop offset="0.35" stop-color="#16D6FF"/>
-      <stop offset="0.7" stop-color="#0A7BFF"/>
-      <stop offset="1" stop-color="#0033A6"/>
+    <linearGradient id="flame" x1="72" y1="24" x2="184" y2="238" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#B9FFFF"/>
+      <stop offset="0.28" stop-color="#34F0FF"/>
+      <stop offset="0.62" stop-color="#0FA8FF"/>
+      <stop offset="1" stop-color="#0032B8"/>
     </linearGradient>
 
-    <linearGradient id="flameB" x1="52" y1="48" x2="204" y2="236" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#E9FFFF"/>
-      <stop offset="0.25" stop-color="#4EFBFF"/>
-      <stop offset="0.62" stop-color="#10B9FF"/>
-      <stop offset="1" stop-color="#004CFF"/>
-    </linearGradient>
-
-    <linearGradient id="metal" x1="72" y1="72" x2="184" y2="196" gradientUnits="userSpaceOnUse">
+    <linearGradient id="ice" x1="86" y1="74" x2="182" y2="202" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#F6FBFF"/>
-      <stop offset="0.22" stop-color="#D7E4EF"/>
-      <stop offset="0.5" stop-color="#A9B7C4"/>
+      <stop offset="0.22" stop-color="#D8E6F2"/>
+      <stop offset="0.5" stop-color="#97A9BA"/>
       <stop offset="0.78" stop-color="#EEF6FF"/>
-      <stop offset="1" stop-color="#8EA0B2"/>
+      <stop offset="1" stop-color="#7F93A7"/>
     </linearGradient>
 
-    <linearGradient id="shadow" x1="92" y1="86" x2="172" y2="206" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#0A1420" stop-opacity="0.88"/>
-      <stop offset="1" stop-color="#04080F" stop-opacity="0.95"/>
+    <linearGradient id="gold" x1="54" y1="74" x2="210" y2="214" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF1B8"/>
+      <stop offset="0.28" stop-color="#FFC44D"/>
+      <stop offset="0.55" stop-color="#F5A623"/>
+      <stop offset="1" stop-color="#B96B00"/>
     </linearGradient>
 
-    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
       <feGaussianBlur stdDeviation="6" result="b"/>
       <feColorMatrix in="b" type="matrix"
         values="1 0 0 0 0
                 0 1 0 0 0
                 0 0 1 0 0
-                0 0 0 0.9 0" result="c"/>
+                0 0 0 0.85 0" result="c"/>
       <feMerge>
         <feMergeNode in="c"/>
         <feMergeNode in="SourceGraphic"/>
       </feMerge>
     </filter>
 
-    <filter id="hardShadow" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#000000" flood-opacity="0.55"/>
-    </filter>
-
-    <filter id="rimLight" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="0" stdDeviation="3.5" flood-color="#2FE7FF" flood-opacity="0.65"/>
+    <filter id="rim" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#24E8FF" flood-opacity="0.55"/>
     </filter>
   </defs>
 
-  <rect x="0" y="0" width="256" height="256" rx="56" fill="url(#bgGlow)"/>
+  <rect width="256" height="256" rx="56" fill="url(#bg)"/>
 
-  <g filter="url(#softGlow)">
-    <path d="M128 18
-      C104 34, 104 58, 118 74
-      C92 86, 78 114, 86 142
-      C68 154, 66 178, 84 194
-      C92 220, 112 236, 128 238
-      C144 236, 164 220, 172 194
-      C190 178, 188 154, 170 142
-      C178 114, 164 86, 138 74
-      C152 58, 152 34, 128 18Z"
-      fill="url(#flameA)" opacity="0.92"/>
-
-    <path d="M128 34
-      C112 48, 114 62, 126 76
-      C102 88, 92 112, 98 134
-      C84 146, 84 166, 98 178
-      C104 204, 118 218, 128 220
-      C138 218, 152 204, 158 178
-      C172 166, 172 146, 158 134
-      C164 112, 154 88, 130 76
-      C142 62, 144 48, 128 34Z"
-      fill="url(#flameB)" opacity="0.82"/>
+  <!-- blue flames -->
+  <g filter="url(#glow)" opacity="0.95">
+    <path d="M128 16
+      C98 36, 102 62, 118 78
+      C90 92, 74 122, 84 152
+      C66 166, 66 190, 86 206
+      C98 232, 116 244, 128 246
+      C140 244, 158 232, 170 206
+      C190 190, 190 166, 172 152
+      C182 122, 166 92, 138 78
+      C154 62, 158 36, 128 16Z"
+      fill="url(#flame)"/>
   </g>
 
-  <g filter="url(#hardShadow)">
-    <path d="M128 56
-      C156 56, 176 74, 176 104
-      C176 124, 168 136, 160 146
-      C156 152, 156 162, 156 168
-      C156 192, 146 206, 128 206
-      C110 206, 100 192, 100 168
-      C100 162, 100 152, 96 146
-      C88 136, 80 124, 80 104
-      C80 74, 100 56, 128 56Z"
-      fill="url(#shadow)" stroke="#0B1420" stroke-opacity="0.7" stroke-width="3"/>
+  <!-- badge shield -->
+  <g filter="url(#shadow)">
+    <path d="M128 52
+      C158 52, 188 68, 198 96
+      C206 118, 202 154, 184 176
+      C172 190, 160 204, 128 224
+      C96 204, 84 190, 72 176
+      C54 154, 50 118, 58 96
+      C68 68, 98 52, 128 52Z"
+      fill="#0A0F18" opacity="0.96" stroke="#0B1420" stroke-opacity="0.75" stroke-width="3"/>
+    <path d="M128 62
+      C154 62, 178 76, 186 98
+      C192 116, 190 146, 176 164
+      C166 176, 156 188, 128 206
+      C100 188, 90 176, 80 164
+      C66 146, 64 116, 70 98
+      C78 76, 102 62, 128 62Z"
+      fill="none" stroke="#1BE7FF" stroke-opacity="0.28" stroke-width="4" filter="url(#rim)"/>
+  </g>
 
-    <path d="M104 92
-      C110 82, 120 78, 128 78
-      C136 78, 146 82, 152 92
-      C156 98, 156 108, 150 112
-      C144 116, 136 114, 128 108
-      C120 114, 112 116, 106 112
-      C100 108, 100 98, 104 92Z"
-      fill="#07101A" opacity="0.95"/>
+  <!-- wings -->
+  <g filter="url(#shadow)">
+    <path d="M54 138
+      C70 124, 88 120, 102 124
+      C92 136, 84 144, 74 150
+      C68 154, 62 160, 54 168
+      C50 156, 48 146, 54 138Z"
+      fill="url(#gold)" opacity="0.92"/>
+    <path d="M202 138
+      C186 124, 168 120, 154 124
+      C164 136, 172 144, 182 150
+      C188 154, 194 160, 202 168
+      C206 156, 208 146, 202 138Z"
+      fill="url(#gold)" opacity="0.92"/>
+  </g>
 
-    <path d="M108 100
-      C112 94, 120 92, 128 92
-      C136 92, 144 94, 148 100
-      C142 106, 136 106, 128 102
-      C120 106, 114 106, 108 100Z"
-      fill="#0B1C2C" opacity="0.75"/>
-
-    <path d="M104 144
-      C112 140, 120 138, 128 138
-      C136 138, 144 140, 152 144
-      C150 156, 144 166, 128 166
-      C112 166, 106 156, 104 144Z"
-      fill="#07101A" opacity="0.9"/>
-
-    <path d="M116 150
-      H140
-      C138 154, 134 158, 128 158
-      C122 158, 118 154, 116 150Z"
-      fill="#0A2237" opacity="0.85"/>
-
+  <!-- skull -->
+  <g filter="url(#shadow)">
+    <path d="M128 86
+      C152 86, 166 102, 166 124
+      C166 142, 156 152, 148 160
+      C146 162, 146 168, 146 172
+      C146 188, 138 196, 128 196
+      C118 196, 110 188, 110 172
+      C110 168, 110 162, 108 160
+      C100 152, 90 142, 90 124
+      C90 102, 104 86, 128 86Z"
+      fill="url(#ice)" stroke="#0B1420" stroke-opacity="0.65" stroke-width="3"/>
+    <!-- eyes -->
+    <path d="M106 126
+      C110 114, 120 110, 128 110
+      C136 110, 146 114, 150 126
+      C150 134, 146 140, 138 140
+      C132 140, 130 136, 128 134
+      C126 136, 124 140, 118 140
+      C110 140, 106 134, 106 126Z"
+      fill="#06111C" opacity="0.98"/>
+    <!-- nose -->
+    <path d="M124 150
+      C124 146, 126 142, 128 142
+      C130 142, 132 146, 132 150
+      C132 156, 130 160, 128 160
+      C126 160, 124 156, 124 150Z"
+      fill="#06111C" opacity="0.95"/>
+    <!-- teeth -->
     <path d="M112 170
-      C116 176, 122 180, 128 180
-      C134 180, 140 176, 144 170
-      C140 168, 134 166, 128 166
-      C122 166, 116 168, 112 170Z"
-      fill="#0B1622" opacity="0.95"/>
+      C116 164, 122 162, 128 162
+      C134 162, 140 164, 144 170
+      C142 182, 136 188, 128 188
+      C120 188, 114 182, 112 170Z"
+      fill="#0A1420" opacity="0.92"/>
+    <path d="M118 172H138" stroke="#EAF4FF" stroke-opacity="0.25" stroke-width="3" stroke-linecap="round"/>
+    <path d="M122 172V186M128 172V188M134 172V186" stroke="#EAF4FF" stroke-opacity="0.22" stroke-width="2" stroke-linecap="round"/>
   </g>
 
-  <g filter="url(#rimLight)">
-    <path d="M88 112
-      C90 92, 104 76, 128 76
-      C152 76, 166 92, 168 112
-      C168 132, 160 144, 152 152
-      C146 158, 144 164, 144 174
-      C144 188, 138 196, 128 196
-      C118 196, 112 188, 112 174
-      C112 164, 110 158, 104 152
-      C96 144, 88 132, 88 112Z"
-      fill="none" stroke="#2FE7FF" stroke-opacity="0.45" stroke-width="4"/>
+  <!-- crown -->
+  <g filter="url(#shadow)">
+    <path d="M128 76
+      L138 92 L160 96
+      L146 110 L150 132
+      L128 120 L106 132
+      L110 110 L96 96
+      L118 92 Z"
+      fill="url(#gold)" opacity="0.95" stroke="#3A1C00" stroke-opacity="0.35" stroke-width="2"/>
+    <path d="M106 100
+      C112 92, 120 86, 128 82
+      C136 86, 144 92, 150 100
+      C144 104, 136 104, 128 100
+      C120 104, 112 104, 106 100Z"
+      fill="#0B1420" opacity="0.45"/>
   </g>
 
-  <g filter="url(#hardShadow)">
-    <path d="M128 54
-      C114 54, 104 46, 100 36
-      C108 40, 118 38, 128 30
-      C138 38, 148 40, 156 36
-      C152 46, 142 54, 128 54Z"
-      fill="#0B1420" opacity="0.7"/>
-
-    <path d="M104 44
-      C112 34, 118 30, 128 22
-      C138 30, 144 34, 152 44
-      L144 46
-      C140 40, 134 36, 128 32
-      C122 36, 116 40, 112 46Z"
-      fill="url(#metal)" opacity="0.95"/>
-
-    <path d="M128 18
-      L134 30 L148 32
-      L138 42 L141 56
-      L128 48 L115 56
-      L118 42 L108 32
-      L122 30 Z"
-      fill="url(#metal)" opacity="0.9"/>
-  </g>
-
-  <g opacity="0.08">
-    <path d="M36 176 C56 156, 84 160, 92 184 C72 196, 54 202, 36 176Z" fill="#FFFFFF"/>
-    <path d="M220 176 C200 156, 172 160, 164 184 C184 196, 202 202, 220 176Z" fill="#FFFFFF"/>
+  <!-- aggressive cuts -->
+  <g opacity="0.14">
+    <path d="M40 210 C78 186, 98 188, 112 216 C86 228, 62 234, 40 210Z" fill="#FFFFFF"/>
+    <path d="M216 210 C178 186, 158 188, 144 216 C170 228, 194 234, 216 210Z" fill="#FFFFFF"/>
   </g>
 </svg>
