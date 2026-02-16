@@ -1,4 +1,4 @@
-import { userStorage } from "./storage/userStorage";
+import { userStorage } from "./storage";
 
 export type UserProfile = {
   nickname: string;
@@ -8,7 +8,7 @@ export type UserProfile = {
 };
 
 const KEY = "profile.v1";
-const MAX_AVATAR_BYTES = 420_000; // ~420KB base64/dataURL, норм для localStorage
+const MAX_AVATAR_BYTES = 420_000;
 
 function clamp(s: string, n: number) {
   return (s || "").trim().slice(0, n);
@@ -63,14 +63,12 @@ export function clearAvatar() {
 
 export function clearProfile() {
   userStorage.setString(KEY, "");
-  // legacy ник оставляем? — чистим тоже, чтобы не путать
   userStorage.setString("nickname", "");
 }
 
 export function validateAvatarDataUrl(dataUrl: string) {
   if (!dataUrl) return { ok: true as const };
   if (!dataUrl.startsWith("data:image/")) return { ok: false as const, reason: "Неверный формат изображения" };
-  // грубо по длине строки как по байтам
   if (dataUrl.length > MAX_AVATAR_BYTES) return { ok: false as const, reason: "Файл слишком большой" };
   return { ok: true as const };
 }
