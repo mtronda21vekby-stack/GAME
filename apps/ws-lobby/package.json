@@ -1,0 +1,13 @@
+{
+  "name": "@blackcrown/ws-lobby",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^3.114.0",
+    "typescript": "^5.9.3"
+  }
+}
