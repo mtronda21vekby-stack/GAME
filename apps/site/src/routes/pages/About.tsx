@@ -1,6 +1,6 @@
 import React from "react";
 import { Button } from "@blackcrown/ui";
-import { Icons, HeroArt } from "@blackcrown/assets";
+import { Icons } from "@blackcrown/assets";
 
 function nav(path: string) {
   window.history.pushState(null, "", path);
@@ -11,43 +11,51 @@ function nav(path: string) {
 type Item = { title: string; desc: string; tag: string };
 
 const ROADMAP: Item[] = [
-  { title: "Новые игры", desc: "Следующие тайтлы в общем лаунчере на одном домене.", tag: "Платформа" },
-  { title: "Онлайн функции", desc: "Комнаты, статусы, события и синхронизация прогресса.", tag: "Social" },
-  { title: "Магазин", desc: "Косметика, темы и витрина контента.", tag: "Store" }
+  { title: "Новые тайтлы", desc: "Платформа для нескольких игр на одном домене и в одном стиле.", tag: "Platform" },
+  { title: "События и сезоны", desc: "Обновления контента, тематические события и активности.", tag: "Live" },
+  { title: "Магазин", desc: "Косметика, темы, витрина — аккуратно и премиально.", tag: "Store" }
 ];
 
 const CHANGELOG: Item[] = [
-  { title: "Премиум UI", desc: "Стеклянные панели, адаптив и быстрые анимации.", tag: "UI" },
-  { title: "Навигация", desc: "Страницы сайта без перезагрузки, приложения — отдельно.", tag: "Routing" },
-  { title: "PWA", desc: "Manifest и иконки, корректные meta для iOS.", tag: "PWA" }
+  { title: "Apple-like UI", desc: "Стекло, воздух, мягкий свет и аккуратная типографика.", tag: "UI" },
+  { title: "Навигация", desc: "Страницы сайта без перезагрузки, приложения — отдельными путями.", tag: "Routing" },
+  { title: "PWA", desc: "Manifest, иконки и корректная база для установки на устройство.", tag: "PWA" }
 ];
 
-function Card(props: { item: Item }) {
-  const it = props.item;
-
+function Card({ item }: { item: Item }) {
   return (
-    <div className="glassStrong bc-motion" style={{ borderRadius: 22, overflow: "hidden" }}>
+    <div
+      className="glassStrong bc-motion"
+      style={{
+        borderRadius: 22,
+        overflow: "hidden",
+        border: "1px solid rgba(255,255,255,0.10)",
+        background: "rgba(255,255,255,0.06)",
+        boxShadow: "0 34px 120px rgba(0,0,0,0.30)"
+      }}
+    >
       <div style={{ padding: 16 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "baseline" }}>
-          <div style={{ fontWeight: 980, fontSize: 16, letterSpacing: "-0.01em" }}>{it.title}</div>
-          <div style={{ fontWeight: 900, fontSize: 12, opacity: 0.78 }}>{it.tag}</div>
+          <div style={{ fontWeight: 980, fontSize: 16, letterSpacing: "-0.01em" }}>{item.title}</div>
+          <div style={{ fontWeight: 900, fontSize: 12, opacity: 0.78 }}>{item.tag}</div>
         </div>
+
         <div style={{ marginTop: 8, color: "rgba(255,255,255,0.74)", fontWeight: 750, lineHeight: 1.45 }}>
-          {it.desc}
+          {item.desc}
         </div>
       </div>
 
       <div style={{ padding: 12, paddingTop: 0 }}>
-        <img
-          alt=""
-          src={HeroArt.cardWave}
+        <div
+          aria-hidden="true"
           style={{
-            width: "100%",
             height: 150,
-            objectFit: "cover",
             borderRadius: 16,
-            display: "block",
-            opacity: 0.95
+            border: "1px solid rgba(255,255,255,0.08)",
+            background:
+              "radial-gradient(80% 120% at 20% 20%, rgba(124,168,255,0.40), rgba(10,14,30,0) 55%)," +
+              "radial-gradient(70% 100% at 80% 0%, rgba(140,95,255,0.28), rgba(10,14,30,0) 55%)," +
+              "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))"
           }}
         />
       </div>
@@ -59,10 +67,34 @@ export function About() {
   return (
     <main className="bcSiteRoot">
       <section className="bcHero">
-        <div className="bcHeroBg" aria-hidden="true">
-          <img className="bcHeroAurora" alt="" src={HeroArt.aurora} />
-          <div className="bcHeroVignette" />
-          <div className="bcHeroNoise" style={{ backgroundImage: `url(${HeroArt.noise})` }} />
+        {/* Фон — только CSS, без ассетов */}
+        <div
+          className="bcHeroBg"
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            overflow: "hidden"
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: -80,
+              background:
+                "radial-gradient(70% 60% at 15% 20%, rgba(124,168,255,0.42), rgba(11,16,34,0) 60%)," +
+                "radial-gradient(60% 55% at 85% 10%, rgba(162,120,255,0.32), rgba(11,16,34,0) 62%)," +
+                "radial-gradient(70% 70% at 70% 85%, rgba(35,220,255,0.18), rgba(11,16,34,0) 58%)," +
+                "linear-gradient(180deg, rgba(11,16,34,1), rgba(6,10,24,1))"
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "radial-gradient(120% 80% at 50% 0%, rgba(0,0,0,0.25), rgba(0,0,0,0) 55%)"
+            }}
+          />
         </div>
 
         <header className="bcTop">
@@ -89,14 +121,24 @@ export function About() {
         <div className="bcHeroGrid">
           <div className="bcHeroCopy glassStrong">
             <div className="bcKicker">О платформе</div>
+
             <h1 className="bcH1">BlackCrown</h1>
+
             <p className="bcLead">
-              Единый хаб для наших игр: витрина, запуск, настройки и социальные функции. Один домен, один стиль, быстрый UX.
+              Премиум-платформа для наших игр: витрина, запуск, настройки и социальные модули. Сегодня — <b>EvoFish</b>,
+              дальше — новые игры и события.
             </p>
 
             <div className="bcCtas">
-              <Button variant="secondary" onClick={() => nav("/account")}>Аккаунт</Button>
-              <Button variant="ghost" onClick={() => nav("/support")}>Поддержка</Button>
+              <Button variant="primary" leftIconSrc={Icons.play} onClick={() => window.location.assign("/game/")}>
+                Запустить EvoFish
+              </Button>
+              <Button variant="secondary" onClick={() => window.location.assign("/lobby/")}>
+                Открыть Lobby
+              </Button>
+              <Button variant="ghost" onClick={() => nav("/account")}>
+                Аккаунт
+              </Button>
             </div>
           </div>
 
@@ -133,7 +175,7 @@ export function About() {
       <section className="bcSection">
         <div className="bcSectionHead">
           <div className="bcSectionTitle">Roadmap</div>
-          <div className="bcSectionSub">Направление развития платформы и ключевые модули.</div>
+          <div className="bcSectionSub">Куда идём: новые игры, события и модули платформы.</div>
         </div>
         <div className="bcCards">
           <Card item={ROADMAP[0]} />
@@ -145,7 +187,7 @@ export function About() {
       <section className="bcSection">
         <div className="bcSectionHead">
           <div className="bcSectionTitle">Changelog</div>
-          <div className="bcSectionSub">Обновления и улучшения, которые уже сделаны.</div>
+          <div className="bcSectionSub">Что уже сделано и зафиксировано в продукте.</div>
         </div>
         <div className="bcCards">
           <Card item={CHANGELOG[0]} />
