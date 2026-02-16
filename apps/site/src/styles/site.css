@@ -13,10 +13,17 @@
   --bc-accent-rgb: 255, 106, 0;
   --bc-accent: rgb(var(--bc-accent-rgb));
   --bc-accent-glow: rgba(255,106,0,0.55);
+
+  --bc-accent-08: rgba(255,106,0,0.08);
   --bc-accent-10: rgba(255,106,0,0.10);
   --bc-accent-14: rgba(255,106,0,0.14);
   --bc-accent-18: rgba(255,106,0,0.18);
   --bc-accent-26: rgba(255,106,0,0.26);
+  --bc-accent-34: rgba(255,106,0,0.34);
+  --bc-accent-50: rgba(255,106,0,0.50);
+
+  --bc-ring: 0 0 0 3px var(--bc-accent-26);
+  --bc-ring-soft: 0 0 0 2px var(--bc-accent-18);
 
   color-scheme: dark;
 }
@@ -46,11 +53,33 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
 
 .bcSiteRoot{ min-height:100%; }
 
+/* ---- motion base ---- */
 .bc-motion{
   will-change: transform, opacity;
   transform: translateZ(0);
 }
 
+@media (prefers-reduced-motion: no-preference){
+  .bc-motion{
+    transition:
+      transform 200ms cubic-bezier(.2,.8,.2,1),
+      box-shadow 200ms cubic-bezier(.2,.8,.2,1),
+      background-color 200ms ease,
+      border-color 200ms ease,
+      color 200ms ease,
+      filter 200ms ease,
+      opacity 200ms ease;
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .bc-motion{
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+/* ---- layout ---- */
 .bcHero{
   position:relative;
   min-height: calc(var(--app-vh, 100vh));
@@ -336,13 +365,6 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
 
 /* ===== Premium micro-motion (Echo-like) ===== */
 @media (prefers-reduced-motion: no-preference){
-  .glassStrong.bc-motion{
-    transition:
-      transform 220ms cubic-bezier(.2,.8,.2,1),
-      box-shadow 220ms cubic-bezier(.2,.8,.2,1),
-      background 220ms ease,
-      border-color 220ms ease;
-  }
   .glassStrong.bc-motion:hover{
     transform: translateY(-2px) translateZ(0);
     box-shadow: 0 44px 140px rgba(0,0,0,0.38);
@@ -355,7 +377,8 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
       transform 180ms cubic-bezier(.2,.8,.2,1),
       background 180ms ease,
       border-color 180ms ease,
-      box-shadow 180ms ease;
+      box-shadow 180ms ease,
+      filter 180ms ease;
   }
   .bcPanelRow:hover{
     transform: translateY(-1px) translateZ(0);
@@ -366,7 +389,8 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
       background 180ms ease,
       border-color 180ms ease,
       transform 180ms cubic-bezier(.2,.8,.2,1),
-      box-shadow 180ms ease;
+      box-shadow 180ms ease,
+      filter 180ms ease;
   }
   .bcBrand:hover{
     background: rgba(255,255,255,0.05);
@@ -378,7 +402,8 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
       background 180ms ease,
       border-color 180ms ease,
       transform 180ms cubic-bezier(.2,.8,.2,1),
-      box-shadow 180ms ease;
+      box-shadow 180ms ease,
+      filter 180ms ease;
   }
   .bcAccountPill:hover{
     background: rgba(255,255,255,0.07);
@@ -425,7 +450,8 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
       transform 220ms cubic-bezier(.2,.8,.2,1),
       box-shadow 220ms cubic-bezier(.2,.8,.2,1),
       background 220ms ease,
-      border-color 220ms ease;
+      border-color 220ms ease,
+      filter 220ms ease;
   }
   .bcStoreCard:hover{
     transform: translateY(-2px);
@@ -494,41 +520,62 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
 }
 
 /* =========================
-   Orange Accent Interactions
-   (clean + safe)
+   ORANGE INTERACTIONS (MAX)
    ========================= */
 
-/* Focus ring (keyboard only) */
-.bcSiteRoot :where(a, button, [role="button"]):focus-visible{
+/* Safe focus ring (keyboard only) */
+.bcSiteRoot :where(a, button, [role="button"], input, textarea, select):focus-visible{
   outline: none;
-  box-shadow:
-    0 0 0 3px var(--bc-accent-26),
-    0 18px 80px var(--bc-accent-10);
+  box-shadow: var(--bc-ring), 0 18px 90px var(--bc-accent-10);
+  border-color: rgba(255,255,255,0.14);
 }
 
-/* Nav links: orange highlight */
+/* Global clickable polish (no logic impact) */
+.bcSiteRoot :where(a, button, [role="button"], .bcBrand, .bcAccountPill, .bcPanelRow){
+  transform: translateZ(0);
+}
+
+@media (prefers-reduced-motion: no-preference){
+  .bcSiteRoot :where(a, button, [role="button"], .bcBrand, .bcAccountPill, .bcPanelRow){
+    transition:
+      transform 160ms cubic-bezier(.2,.8,.2,1),
+      box-shadow 180ms ease,
+      border-color 180ms ease,
+      background-color 180ms ease,
+      color 180ms ease,
+      text-shadow 180ms ease,
+      filter 180ms ease,
+      opacity 180ms ease;
+  }
+}
+
+/* NAV LINKS: orange text + soft glow */
 .bcNav .bcLink{
   position: relative;
 }
 
+/* “halo” under link (Echo-ish) */
 .bcNav .bcLink::after{
   content:"";
   position:absolute;
-  inset:-8px -12px;
+  inset:-10px -14px;
   border-radius: 999px;
-  background: radial-gradient(60% 120% at 50% 120%, var(--bc-accent-18) 0%, rgba(255,106,0,0.00) 70%);
+  background:
+    radial-gradient(60% 120% at 50% 120%, var(--bc-accent-26) 0%, rgba(255,106,0,0.00) 70%);
   opacity: 0;
   transform: translateY(2px);
   transition: opacity 180ms ease, transform 180ms ease;
   pointer-events: none;
 }
 
-@media (hover:hover){
+/* hover only when real hover exists */
+@media (hover:hover) and (pointer:fine){
   .bcNav .bcLink:hover{
     color: var(--bc-accent);
-    text-shadow: 0 0 16px var(--bc-accent-glow);
-    border-color: rgba(255,255,255,0.10);
+    text-shadow: 0 0 18px var(--bc-accent-glow);
     background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.10);
+    filter: saturate(1.06);
   }
   .bcNav .bcLink:hover::after{
     opacity: 1;
@@ -536,54 +583,64 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
   }
 }
 
+/* pressed */
 .bcNav .bcLink:active{
   color: var(--bc-accent);
-  text-shadow: 0 0 18px var(--bc-accent-glow);
+  text-shadow: 0 0 22px var(--bc-accent-glow);
   transform: translateY(1px);
 }
 
-/* Current page (aria-current="page") */
+/* active page (optional if Router sets it) */
 .bcNav .bcLink[aria-current="page"]{
   color: var(--bc-accent);
   text-shadow: 0 0 18px var(--bc-accent-glow);
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.10);
 }
 .bcNav .bcLink[aria-current="page"]::after{
   opacity: 1;
   transform: translateY(0);
 }
 
-/* Header brand + account pill */
-@media (hover:hover){
+/* BRAND + ACCOUNT PILL: orange rim */
+@media (hover:hover) and (pointer:fine){
   .bcBrand:hover,
   .bcAccountPill:hover{
     box-shadow:
       0 0 0 1px var(--bc-accent-18) inset,
       0 18px 90px var(--bc-accent-10);
+    filter: saturate(1.06);
   }
 }
-
 .bcBrand:active,
 .bcAccountPill:active{
   transform: translateY(1px);
+  box-shadow:
+    0 0 0 1px var(--bc-accent-26) inset,
+    0 18px 90px var(--bc-accent-14);
 }
 
-/* Panels */
-@media (hover:hover){
+/* PANEL ROWS: orange glass wash */
+@media (hover:hover) and (pointer:fine){
   .bcPanelRow:hover{
-    background: linear-gradient(180deg, var(--bc-accent-10) 0%, rgba(255,255,255,0.04) 100%);
+    background:
+      linear-gradient(180deg, var(--bc-accent-10) 0%, rgba(255,255,255,0.04) 100%);
     box-shadow:
       0 0 0 1px var(--bc-accent-18) inset,
       0 18px 90px var(--bc-accent-10);
     border-color: rgba(255,255,255,0.11);
+    filter: saturate(1.06);
   }
 }
-
 .bcPanelRow:active{
   transform: translateY(1px);
+  box-shadow:
+    0 0 0 1px var(--bc-accent-26) inset,
+    0 18px 90px var(--bc-accent-14);
 }
 
-/* Cards (glassStrong + motion): keep your transform/bg, add orange glow */
-@media (hover:hover){
+/* GLASS CARDS: add orange rim/glow but keep your original hover motion */
+@media (hover:hover) and (pointer:fine){
   .glassStrong.bc-motion:hover{
     box-shadow:
       0 44px 140px rgba(0,0,0,0.38),
@@ -591,76 +648,44 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
       0 28px 110px var(--bc-accent-10);
   }
 }
-
 .glassStrong.bc-motion:active{
+  transform: translateY(1px) translateZ(0);
   box-shadow:
     0 34px 120px rgba(0,0,0,0.30),
-    0 0 0 1px var(--bc-accent-26) inset,
+    0 0 0 1px var(--bc-accent-34) inset,
     0 28px 110px var(--bc-accent-14);
 }
 
-/* Buttons: glow on hover/press (doesn't change button logic) */
-.bcSiteRoot :where(button, .bcBtn){
-  transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
-}
-
-@media (hover:hover){
-  .bcSiteRoot :where(button, .bcBtn):hover{
+/* BUTTONS (any): glow only, no layout changes */
+@media (hover:hover) and (pointer:fine){
+  .bcSiteRoot :where(button):hover{
     box-shadow:
       0 0 0 1px var(--bc-accent-18) inset,
       0 18px 90px var(--bc-accent-10);
+    filter: saturate(1.06);
   }
 }
-
-.bcSiteRoot :where(button, .bcBtn):active{
+.bcSiteRoot :where(button):active{
   transform: translateY(1px);
   box-shadow:
-    0 0 0 1px var(--bc-accent-26) inset,
+    0 0 0 1px var(--bc-accent-34) inset,
     0 18px 90px var(--bc-accent-14);
+}
+
+/* INPUTS: orange ring (subtle) */
+@media (hover:hover) and (pointer:fine){
+  .bcSiteRoot :where(input, textarea, select):hover{
+    border-color: rgba(255,255,255,0.14);
+    box-shadow:
+      0 0 0 1px var(--bc-accent-08) inset,
+      0 12px 60px var(--bc-accent-10);
+  }
 }
 
 /* Reduce motion safety */
 @media (prefers-reduced-motion: reduce){
-  .bcSiteRoot :where(a, button, [role="button"], .glassStrong.bc-motion, .bcPanelRow){
+  .bcSiteRoot :where(a, button, [role="button"], .glassStrong.bc-motion, .bcPanelRow, .bcBrand, .bcAccountPill){
     transition: none !important;
     transform: none !important;
   }
-}
-/* Orange hover/press without breaking layout */
-.bcNav .bcLink {
-  transition: color 180ms ease, text-shadow 180ms ease, opacity 180ms ease;
-}
-
-.bcNav .bcLink:hover {
-  color: var(--bc-accent);
-  text-shadow: 0 0 18px var(--bc-accent-glow);
-  opacity: 1;
-}
-
-.bcNav .bcLink:active {
-  color: var(--bc-accent);
-  text-shadow: 0 0 22px var(--bc-accent-glow);
-}
-
-.bcNav .bcLink:focus-visible {
-  outline: 2px solid rgba(255, 122, 24, 0.35);
-  outline-offset: 6px;
-  border-radius: 12px;
-}
-
-/* Cards / rows glow on hover */
-.bc-motion {
-  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease, background 160ms ease;
-}
-
-.bc-motion:hover {
-  border-color: rgba(255, 122, 24, 0.24);
-  box-shadow:
-    0 34px 120px rgba(0,0,0,0.30),
-    0 0 0 1px rgba(255,122,24,0.14),
-    0 0 34px rgba(255,122,24,0.14);
-}
-
-.bc-motion:active {
-  transform: translateY(1px) scale(0.995);
 }
