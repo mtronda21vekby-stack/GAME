@@ -19,6 +19,9 @@
     "dev:game": "pnpm --filter @blackcrown/game dev",
     "dev:lobby": "pnpm --filter @blackcrown/lobby dev",
 
+    "dev:ws": "pnpm --dir apps/ws-lobby dev",
+    "deploy:ws": "pnpm --dir apps/ws-lobby deploy",
+
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "pnpm -r --if-present lint"
   },
