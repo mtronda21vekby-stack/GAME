@@ -626,3 +626,41 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
     transform: none !important;
   }
 }
+/* Orange hover/press without breaking layout */
+.bcNav .bcLink {
+  transition: color 180ms ease, text-shadow 180ms ease, opacity 180ms ease;
+}
+
+.bcNav .bcLink:hover {
+  color: var(--bc-accent);
+  text-shadow: 0 0 18px var(--bc-accent-glow);
+  opacity: 1;
+}
+
+.bcNav .bcLink:active {
+  color: var(--bc-accent);
+  text-shadow: 0 0 22px var(--bc-accent-glow);
+}
+
+.bcNav .bcLink:focus-visible {
+  outline: 2px solid rgba(255, 122, 24, 0.35);
+  outline-offset: 6px;
+  border-radius: 12px;
+}
+
+/* Cards / rows glow on hover */
+.bc-motion {
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.bc-motion:hover {
+  border-color: rgba(255, 122, 24, 0.24);
+  box-shadow:
+    0 34px 120px rgba(0,0,0,0.30),
+    0 0 0 1px rgba(255,122,24,0.14),
+    0 0 34px rgba(255,122,24,0.14);
+}
+
+.bc-motion:active {
+  transform: translateY(1px) scale(0.995);
+}
