@@ -28,8 +28,12 @@ function isExternalApp(path: string) {
   return path === "/game" || path.startsWith("/game/") || path === "/lobby" || path.startsWith("/lobby/");
 }
 
+function sameOrigin(url: URL) {
+  return url.origin === window.location.origin;
+}
+
 export function Router() {
-  const [path, setPath] = React.useState(normPath(window.location.pathname));
+  const [path, setPath] = React.useState(() => normPath(window.location.pathname));
 
   React.useEffect(() => {
     const onPop = () => setPath(normPath(window.location.pathname));
@@ -39,19 +43,39 @@ export function Router() {
 
   React.useEffect(() => {
     const onClick = (e: MouseEvent) => {
+      if (e.defaultPrevented) return;
+      if (e.button !== 0) return; // only left click
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+
       const el = e.target as HTMLElement | null;
       const a = el?.closest?.("a[href]") as HTMLAnchorElement | null;
       if (!a) return;
+      if (a.target && a.target !== "_self") return;
+      if (a.hasAttribute("download")) return;
 
       const href = a.getAttribute("href") || "";
+      if (!href) return;
+      if (href.startsWith("mailto:") || href.startsWith("tel:")) return;
+
+      // absolute URL
+      if (href.startsWith("http://") || href.startsWith("https://")) {
+        const u = new URL(href);
+        if (!sameOrigin(u)) return; // внешние не трогаем
+        const target = normPath(u.pathname);
+        if (isExternalApp(target)) return;
+        if (!isSiteRoute(target)) return;
+        e.preventDefault();
+        window.history.pushState(null, "", u.pathname + u.search + u.hash);
+        setPath(normPath(window.location.pathname));
+        window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+        return;
+      }
+
+      // relative absolute path
       if (!href.startsWith("/")) return;
 
       const target = normPath(href);
-
-      // game/lobby — отдельные приложения, не перехватываем
       if (isExternalApp(target)) return;
-
-      // перехватываем только наши site-страницы
       if (!isSiteRoute(target)) return;
 
       e.preventDefault();
@@ -64,6 +88,7 @@ export function Router() {
     return () => document.removeEventListener("click", onClick);
   }, []);
 
+  // если пользователь попал на неизвестный /... — показываем Home, но без редиректа (не ломаем)
   if (!isSiteRoute(path)) return <Home />;
 
   switch (path) {
