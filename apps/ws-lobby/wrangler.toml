@@ -1,0 +1,12 @@
+name = "blackcrown-lobby-ws"
+main = "src/index.ts"
+compatibility_date = "2026-02-15"
+
+[durable_objects]
+bindings = [
+  { name = "LOBBY_ROOM", class_name = "LobbyRoom" }
+]
+
+[[migrations]]
+tag = "v1"
+new_classes = ["LobbyRoom"]
