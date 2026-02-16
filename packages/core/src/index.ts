@@ -5,3 +5,4 @@ export { track, onAnalytics, attachConsoleAnalytics } from "./analytics";
 export { createWS } from "./ws/index";
 export type { WSClient, WSMessage } from "./ws/types";
 export * from "./ws/lobbyClient";
+export * from "./profile";
