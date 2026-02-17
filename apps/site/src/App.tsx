@@ -6,17 +6,15 @@ export function App() {
   return (
     <>
       <MatrixBackground
-        opacity={0.075}
-        speed={0.26}
-        density={1.38}
-        fontSize={15}
+        opacity={0.045}
+        speed={0.20}
+        density={1.55}
+        fontSize={14}
         color="rgba(90, 190, 255, 0.92)"
         glow
       />
-      <div className="bcScroll">
-        <div className="bc-app-layer">
-          <Router />
-        </div>
+      <div className="bc-app-layer">
+        <Router />
       </div>
     </>
   );
