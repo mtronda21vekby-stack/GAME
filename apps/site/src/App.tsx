@@ -2,38 +2,28 @@ import React from "react";
 import MatrixBackground from "./components/MatrixBackground";
 import { Router } from "./routes/Router";
 
-function syncAppVhNow() {
+function syncAppVh() {
   const h = window.visualViewport?.height ?? window.innerHeight;
   document.documentElement.style.setProperty("--app-vh", `${Math.round(h)}px`);
 }
 
 export function App() {
   React.useEffect(() => {
-    let raf: number | null = null;
+    syncAppVh();
 
-    const schedule = () => {
-      if (raf != null) return;
-      raf = window.requestAnimationFrame(() => {
-        raf = null;
-        syncAppVhNow();
-      });
-    };
-
-    schedule();
-
+    const onResize = () => syncAppVh();
     const vv = window.visualViewport;
 
-    window.addEventListener("resize", schedule);
-    window.addEventListener("orientationchange", schedule);
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
 
-    // iOS: реагируем на resize (адресная строка/панели)
-    vv?.addEventListener("resize", schedule);
+    // iOS Safari: высота меняется при показе/скрытии баров — resize хватает.
+    vv?.addEventListener("resize", onResize);
 
     return () => {
-      if (raf != null) window.cancelAnimationFrame(raf);
-      window.removeEventListener("resize", schedule);
-      window.removeEventListener("orientationchange", schedule);
-      vv?.removeEventListener("resize", schedule);
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+      vv?.removeEventListener("resize", onResize);
     };
   }, []);
 
