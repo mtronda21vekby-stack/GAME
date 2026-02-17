@@ -6,6 +6,7 @@ import { Privacy } from "./pages/Privacy";
 import { Terms } from "./pages/Terms";
 import { Store } from "./pages/Store";
 import { Account } from "./pages/Account";
+import { MatrixBackground } from "../components/MatrixBackground";
 
 function normPath(p: string) {
   const path = p.split("?")[0].split("#")[0];
@@ -89,24 +90,43 @@ export function Router() {
   }, []);
 
   // если пользователь попал на неизвестный /... — показываем Home, но без редиректа (не ломаем)
-  if (!isSiteRoute(path)) return <Home />;
-
-  switch (path) {
-    case "/":
-      return <Home />;
-    case "/about":
-      return <About />;
-    case "/support":
-      return <Support />;
-    case "/privacy":
-      return <Privacy />;
-    case "/terms":
-      return <Terms />;
-    case "/store":
-      return <Store />;
-    case "/account":
-      return <Account />;
-    default:
-      return <Home />;
+  let page: React.ReactNode;
+  if (!isSiteRoute(path)) {
+    page = <Home />;
+  } else {
+    switch (path) {
+      case "/":
+        page = <Home />;
+        break;
+      case "/about":
+        page = <About />;
+        break;
+      case "/support":
+        page = <Support />;
+        break;
+      case "/privacy":
+        page = <Privacy />;
+        break;
+      case "/terms":
+        page = <Terms />;
+        break;
+      case "/store":
+        page = <Store />;
+        break;
+      case "/account":
+        page = <Account />;
+        break;
+      default:
+        page = <Home />;
+        break;
+    }
   }
+
+  // ВАЖНО: логика роутинга не меняется — только обёртка для общего фона
+  return (
+    <div className="bcAppShell">
+      <MatrixBackground />
+      <div className="bcAppContent">{page}</div>
+    </div>
+  );
 }
