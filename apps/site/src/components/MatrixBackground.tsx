@@ -1,20 +1,22 @@
 import React from "react";
 
 export type MatrixBackgroundProps = {
+  /** если хочешь переопределить стиль/класс — необязательно */
   className?: string;
   style?: React.CSSProperties;
   /** 0.5..2 — плотность/скорость (по умолчанию 1) */
   intensity?: number;
 };
 
+/**
+ * Named export — чтобы работал:
+ *   import { MatrixBackground } from "../components/MatrixBackground";
+ */
 export function MatrixBackground(props: MatrixBackgroundProps) {
   const { className, style, intensity = 1 } = props;
 
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
-
   const rafRef = React.useRef<number | null>(null);
-  const runningRef = React.useRef(false);
-  const lastFrameAtRef = React.useRef(0);
 
   React.useEffect(() => {
     const canvas = canvasRef.current;
@@ -23,8 +25,7 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
     const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
 
-    const host = (canvas.parentElement as HTMLElement | null) ?? document.body;
-
+    // prefers-reduced-motion: reduce => делаем статичный фон без анимации
     const mql = window.matchMedia?.("(prefers-reduced-motion: reduce)");
     let reduced = !!mql?.matches;
 
@@ -33,6 +34,7 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
     const FG_DIM = "rgba(90, 180, 255, 0.55)";
     const FADE = "rgba(0, 0, 0, 0.12)";
 
+    // Набор символов (читаемо и “богато”)
     const glyphs =
       "アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズヅブプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%&*+<>";
 
@@ -43,27 +45,23 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
       fontSize: 16,
       cols: 0,
       drops: [] as number[],
+      tick: 0,
     };
+
+    function getRect() {
+      // ВАЖНО: берем реальный размер элемента (CSS задаёт overscan/inset)
+      return canvas.getBoundingClientRect();
+    }
 
     function randChar() {
       const i = (Math.random() * glyphs.length) | 0;
       return glyphs[i] || "0";
     }
 
-    function stop() {
-      runningRef.current = false;
-      if (rafRef.current != null) {
-        window.cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-    }
-
     function drawStatic() {
-      if (state.w <= 0 || state.h <= 0) return;
-
       ctx.clearRect(0, 0, state.w, state.h);
 
-      // лёгкая дымка
+      // лёгкая дымка под символами (чтоб было “премиум”, но без грязи)
       ctx.fillStyle = "rgba(0,0,0,0.35)";
       ctx.fillRect(0, 0, state.w, state.h);
 
@@ -76,9 +74,52 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
       }
     }
 
-    function frame(ts: number) {
-      lastFrameAtRef.current = ts;
+    function resizeNow() {
+      const r = getRect();
+      const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
 
+      state.w = Math.max(1, Math.floor(r.width));
+      state.h = Math.max(1, Math.floor(r.height));
+      state.dpr = dpr;
+
+      canvas.width = Math.floor(state.w * dpr);
+      canvas.height = Math.floor(state.h * dpr);
+
+      // рисуем в CSS-пикселях
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      // динамический fontSize: чуть крупнее на больших экранах
+      const base = state.w >= 980 ? 18 : 16;
+      state.fontSize = Math.max(14, Math.min(22, Math.floor(base * (0.95 + 0.18 * intensity))));
+
+      ctx.font = `700 ${state.fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace`;
+      ctx.textBaseline = "top";
+
+      state.cols = Math.max(10, Math.floor(state.w / state.fontSize));
+      state.drops = new Array(state.cols).fill(0).map(() => Math.random() * state.h);
+
+      ctx.clearRect(0, 0, state.w, state.h);
+      drawStatic();
+    }
+
+    // --- THROTTLE resize events (iOS visualViewport scroll может стрелять очень часто)
+    let resizeRaf: number | null = null;
+    function scheduleResize() {
+      if (resizeRaf != null) return;
+      resizeRaf = window.requestAnimationFrame(() => {
+        resizeRaf = null;
+        resizeNow();
+      });
+    }
+
+    function stop() {
+      if (rafRef.current != null) {
+        window.cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    }
+
+    function frame() {
       // fade слой
       ctx.fillStyle = FADE;
       ctx.fillRect(0, 0, state.w, state.h);
@@ -90,168 +131,76 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
         const x = i * state.fontSize;
         const y = state.drops[i];
 
+        // яркий “головной” символ
         ctx.fillStyle = FG;
         ctx.fillText(randChar(), x, y);
 
+        // следующий бледнее
         ctx.fillStyle = FG_DIM;
         ctx.fillText(randChar(), x, y + state.fontSize);
 
         state.drops[i] = y + step * speed;
 
+        // сброс вниз с рандомом
         if (state.drops[i] > state.h + state.fontSize * 2) {
           if (Math.random() > 0.975) state.drops[i] = -Math.random() * 200;
         }
       }
 
+      state.tick++;
       rafRef.current = window.requestAnimationFrame(frame);
     }
 
     function start() {
       stop();
-      if (reduced) return;
-      if (document.visibilityState !== "visible") return;
-
-      runningRef.current = true;
-      lastFrameAtRef.current = performance.now();
       rafRef.current = window.requestAnimationFrame(frame);
     }
 
-    // ===== Resize (через очередь, чтобы iOS/RO не клинил) =====
-    let resizeQueued = false;
-
-    function resizeNow() {
-      const r = host.getBoundingClientRect();
-      const w = Math.max(1, Math.floor(r.width));
-      const h = Math.max(1, Math.floor(r.height));
-
-      // не дергаем если реально то же самое
-      if (w === state.w && h === state.h) return;
-
-      const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
-
-      state.w = w;
-      state.h = h;
-      state.dpr = dpr;
-
-      canvas.width = Math.floor(w * dpr);
-      canvas.height = Math.floor(h * dpr);
-
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-      const base = w >= 980 ? 18 : 16;
-      state.fontSize = Math.max(14, Math.min(22, Math.floor(base * (0.95 + 0.18 * intensity))));
-
-      ctx.font = `700 ${state.fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace`;
-      ctx.textBaseline = "top";
-
-      state.cols = Math.max(10, Math.floor(w / state.fontSize));
-      state.drops = new Array(state.cols).fill(0).map(() => Math.random() * h);
-
-      drawStatic();
-    }
-
-    function queueResize() {
-      if (resizeQueued) return;
-      resizeQueued = true;
-      window.requestAnimationFrame(() => {
-        resizeQueued = false;
-        resizeNow();
-      });
-    }
-
-    // ===== Watchdog (фикс "завис кадр") =====
-    const watchdog = window.setInterval(() => {
-      if (reduced) return;
-      if (document.visibilityState !== "visible") return;
-
-      const now = performance.now();
-      const dt = now - (lastFrameAtRef.current || 0);
-
-      // если rAF "уснул" — перезапускаем
-      if (runningRef.current && dt > 1500) {
-        start();
-      }
-
-      // если почему-то не running — тоже пинаем
-      if (!runningRef.current && dt > 1500) {
-        start();
-      }
-    }, 900);
-
-    // "пинок" после событий Safari/iOS
-    const poke = () => {
-      if (reduced) return;
-      if (document.visibilityState !== "visible") return;
-      if (!runningRef.current) start();
-    };
-
-    const onVis = () => {
-      if (document.visibilityState === "hidden") stop();
-      else {
-        queueResize();
-        start();
-      }
-    };
-
-    const onFocus = () => {
-      queueResize();
-      poke();
-    };
-
-    const onPageShow = (e: PageTransitionEvent) => {
-      // после bfcache Safari часто отдаёт "застывший" кадр
-      if (e.persisted) {
-        queueResize();
-        start();
-      } else {
-        queueResize();
-        poke();
-      }
-    };
-
-    const onPageHide = () => stop();
-
     const onMql = () => {
       reduced = !!mql?.matches;
-      queueResize();
+      scheduleResize();
       if (reduced) stop();
       else start();
     };
 
     mql?.addEventListener?.("change", onMql);
 
+    // visibility + BFCache (иногда iOS “забывает” оживить RAF)
+    const onVis = () => {
+      if (document.visibilityState === "hidden") stop();
+      else if (!reduced) start();
+    };
+
+    const onPageShow = () => {
+      scheduleResize();
+      if (!reduced) start();
+    };
+
+    window.addEventListener("resize", scheduleResize);
+    window.addEventListener("orientationchange", scheduleResize);
     window.addEventListener("visibilitychange", onVis);
-    window.addEventListener("focus", onFocus);
     window.addEventListener("pageshow", onPageShow);
-    window.addEventListener("pagehide", onPageHide);
 
-    // На iOS во время/после скролла rAF иногда “засыпает”
-    window.addEventListener("scroll", poke, { passive: true });
-    window.addEventListener("touchend", poke, { passive: true });
-    window.addEventListener("resize", queueResize);
-    window.addEventListener("orientationchange", queueResize);
+    // visualViewport — must-have на iOS
+    const vv = window.visualViewport;
+    vv?.addEventListener?.("resize", scheduleResize);
+    vv?.addEventListener?.("scroll", scheduleResize);
 
-    const ro = new ResizeObserver(queueResize);
-    ro.observe(host);
-
-    // первичная инициализация
-    queueResize();
-    start();
+    // init
+    resizeNow();
+    if (!reduced) start();
 
     return () => {
       stop();
-      window.clearInterval(watchdog);
-      ro.disconnect();
+      if (resizeRaf != null) window.cancelAnimationFrame(resizeRaf);
 
+      window.removeEventListener("resize", scheduleResize);
+      window.removeEventListener("orientationchange", scheduleResize);
       window.removeEventListener("visibilitychange", onVis);
-      window.removeEventListener("focus", onFocus);
       window.removeEventListener("pageshow", onPageShow);
-      window.removeEventListener("pagehide", onPageHide);
 
-      window.removeEventListener("scroll", poke as any);
-      window.removeEventListener("touchend", poke as any);
-      window.removeEventListener("resize", queueResize);
-      window.removeEventListener("orientationchange", queueResize);
+      vv?.removeEventListener?.("resize", scheduleResize);
+      vv?.removeEventListener?.("scroll", scheduleResize);
 
       mql?.removeEventListener?.("change", onMql);
     };
@@ -261,11 +210,8 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
     <canvas
       ref={canvasRef}
       className={["bcMatrixBg", className].filter(Boolean).join(" ")}
+      // ВАЖНО: НЕ задаём height/width инлайном — иначе убиваем 100dvh/100lvh в CSS.
       style={{
-        position: "absolute",
-        inset: 0,
-        width: "100%",
-        height: "100%",
         display: "block",
         pointerEvents: "none",
         ...style,
@@ -275,4 +221,8 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
   );
 }
 
+/**
+ * Default export — чтобы работал:
+ *   import MatrixBackground from "./components/MatrixBackground";
+ */
 export default MatrixBackground;
