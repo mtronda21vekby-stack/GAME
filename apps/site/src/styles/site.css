@@ -33,12 +33,8 @@ html,body{
   margin:0;
   padding:0;
   min-height:100%;
-  background: transparent !important; /* важно для “Apple-like” баров */
+  background:#000 !important; /* ФОЛБЭК: даже если канвас не успел */
   overflow-x:hidden !important;
-}
-
-html{
-  background:#000 !important; /* фолбэк: если канвас не успел */
 }
 
 body{
@@ -46,16 +42,15 @@ body{
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
   overscroll-behavior-y:none;
-  overflow-y:auto;
+  overflow-y:auto !important; /* скролл как в чате */
   touch-action: pan-y;
-  background: transparent !important;
 }
 
 #root{
   min-height:100svh;
-  background: transparent !important;
-  position: relative;
-  isolation: isolate; /* КЛЮЧ: фиксирует слои (матрица под UI) */
+  background:transparent !important;
+  position:relative;
+  isolation:isolate; /* КЛЮЧ: слои всегда стабильные */
 }
 
 img{ border:0; outline:0; }
@@ -77,12 +72,12 @@ body::before, body::after,
   left: 0 !important;
   right: 0 !important;
 
-  /* overscan: чтобы при прятании/появлении адресной строки iOS не было “полей” */
-  top: -25vh !important;
-  bottom: -25vh !important;
+  /* OVERSCAN: чтобы при прятании/появлении адресной строки не вылезали “поля” */
+  top: calc(-25vh - env(safe-area-inset-top)) !important;
+  bottom: calc(-25vh - env(safe-area-inset-bottom)) !important;
 
   width: 100vw !important;
-  z-index: -1 !important;           /* КЛЮЧ: всегда под контентом */
+  z-index: 0 !important;               /* КЛЮЧ: НЕ -1, иначе iOS “прячет” через раз */
   pointer-events: none !important;
   background:#000 !important;
   transform: translateZ(0);
@@ -95,10 +90,10 @@ body::before, body::after,
   display:block !important;
 }
 
-/* ===== app layer above bg ===== */
+/* ===== app layer always above bg ===== */
 .bc-app-layer{
   position: relative !important;
-  z-index: 0 !important;
+  z-index: 1 !important;
   min-height: 100svh;
   background: transparent !important;
 }
@@ -141,7 +136,7 @@ body::before, body::after,
   background: transparent !important;
 }
 
-/* жёстко вырубаем старый hero-bg */
+/* жёстко вырубаем старый hero-bg, чтобы не было синего “поля” */
 .bcHeroBg,
 .bcHeroAurora,
 .bcHeroVignette,
