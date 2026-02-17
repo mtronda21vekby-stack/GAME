@@ -35,13 +35,17 @@ html,body{
   background:#000;
 }
 
+/* === КАК В ЭТОМ ЧАТЕ: BODY НЕ СКРОЛЛИТСЯ === */
 body{
   margin:0;
   color:var(--text);
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
-  overscroll-behavior: none;
   background:#000;
+
+  overflow: hidden !important;            /* ключ: убираем black fields при overscroll */
+  overscroll-behavior: none;
+  touch-action: pan-y;
 }
 
 #root{
@@ -49,14 +53,57 @@ body{
   background:#000;
 }
 
+/* safety: no pseudo-bg */
+html::before, html::after,
+body::before, body::after,
+#root::before, #root::after{
+  content:none !important;
+  display:none !important;
+}
+
 img{ border:0; outline:0; }
 button{ -webkit-tap-highlight-color: transparent; }
 a{ -webkit-tap-highlight-color: transparent; }
 
-/* Ensure no “white frame” anywhere */
 canvas, iframe{ border:0 !important; outline:0 !important; }
 
 .bcSiteRoot{ min-height:100%; }
+
+/* =========================
+   MATRIX LAYER (MAIN BG)
+   ========================= */
+.bc-matrix-bg{
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  height: 100vh;
+  z-index: 1;
+  pointer-events: none;
+  background: transparent;
+}
+
+/* =========================
+   CHAT-LIKE SCROLL (NO BLACK FIELDS)
+   ========================= */
+.bcScroll{
+  height: 100dvh;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: none;
+  background: transparent;
+
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.bc-app-layer{
+  position: relative;
+  z-index: 2;
+  min-height: 100%;
+}
 
 /* ---- motion base ---- */
 .bc-motion{
@@ -441,10 +488,7 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
 }
 
 /* ===== Store layout polish ===== */
-.bcStoreGrid{
-  display:grid;
-  gap:12px;
-}
+.bcStoreGrid{ display:grid; gap:12px; }
 @media (min-width: 980px){
   .bcStoreGrid{ grid-template-columns: repeat(3, 1fr); }
 }
@@ -537,7 +581,6 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
 /* =========================
    ORANGE INTERACTIONS (MAX)
    ========================= */
-
 .bcSiteRoot :where(a, button, [role="button"], input, textarea, select):focus-visible{
   outline: none;
   box-shadow: var(--bc-ring), 0 18px 90px var(--bc-accent-10);
@@ -562,17 +605,14 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
   }
 }
 
-.bcNav .bcLink{
-  position: relative;
-}
+.bcNav .bcLink{ position: relative; }
 
 .bcNav .bcLink::after{
   content:"";
   position:absolute;
   inset:-10px -14px;
   border-radius: 999px;
-  background:
-    radial-gradient(60% 120% at 50% 120%, var(--bc-accent-26) 0%, rgba(255,106,0,0.00) 70%);
+  background: radial-gradient(60% 120% at 50% 120%, var(--bc-accent-26) 0%, rgba(255,106,0,0.00) 70%);
   opacity: 0;
   transform: translateY(2px);
   transition: opacity 180ms ease, transform 180ms ease;
@@ -629,8 +669,7 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
 
 @media (hover:hover) and (pointer:fine){
   .bcPanelRow:hover{
-    background:
-      linear-gradient(180deg, var(--bc-accent-10) 0%, rgba(255,255,255,0.04) 100%);
+    background: linear-gradient(180deg, var(--bc-accent-10) 0%, rgba(255,255,255,0.04) 100%);
     box-shadow:
       0 0 0 1px var(--bc-accent-18) inset,
       0 18px 90px var(--bc-accent-10);
@@ -690,32 +729,4 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
     transition: none !important;
     transform: none !important;
   }
-}
-
-/* =========================
-   MATRIX LAYER (MAIN BG)
-   ========================= */
-.bc-matrix-bg{
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100dvh;
-  height: 100vh;
-  z-index: 1;
-  pointer-events: none;
-  background: transparent;
-}
-
-.bc-app-layer{
-  position: relative;
-  z-index: 2;
-  min-height: 100vh;
-}
-
-/* safety: no pseudo-bg */
-html::before, html::after,
-body::before, body::after,
-#root::before, #root::after{
-  content:none !important;
-  display:none !important;
 }
