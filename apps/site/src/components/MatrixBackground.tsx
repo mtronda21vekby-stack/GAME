@@ -149,3 +149,5 @@ export function MatrixBackground() {
 
   return <canvas ref={ref} className="bcMatrixBg" aria-hidden="true" />;
 }
+
+export default MatrixBackground;
