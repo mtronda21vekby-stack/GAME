@@ -7,10 +7,10 @@ export function App() {
     <>
       <MatrixBackground
         opacity={0.10}
-        speed={0.42}            // ещё медленнее + кино
+        speed={0.42}
         density={1.05}
         fontSize={16}
-        color="rgba(90, 190, 255, 0.92)" // премиум-blue
+        color="rgba(90, 190, 255, 0.92)"
         glow
       />
       <div className="bc-app-layer">
