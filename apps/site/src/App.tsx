@@ -17,7 +17,7 @@ export function App() {
     window.addEventListener("resize", onResize);
     window.addEventListener("orientationchange", onResize);
 
-    // iOS Safari: высота viewport реально меняется во время скролла — слушаем visualViewport
+    // iOS Safari: высота viewport реально меняется во время скролла
     vv?.addEventListener("resize", onResize);
     vv?.addEventListener("scroll", onResize);
 
@@ -31,11 +31,24 @@ export function App() {
 
   return (
     <div className="bcAppShell">
-      <div className="bcMatrixLayer" aria-hidden="true">
+      {/* Фон ВСЕГДА фиксированный и на всю высоту текущего visual viewport */}
+      <div
+        className="bcMatrixLayer"
+        aria-hidden="true"
+        style={{
+          position: "fixed",
+          inset: 0,
+          width: "100vw",
+          height: "calc(var(--app-vh, 100vh))",
+          zIndex: 0,
+          pointerEvents: "none",
+          background: "#000",
+        }}
+      >
         <MatrixBackground />
       </div>
 
-      <div className="bcAppContent">
+      <div className="bcAppContent" style={{ position: "relative", zIndex: 1, minHeight: "100%" }}>
         <Router />
       </div>
     </div>
