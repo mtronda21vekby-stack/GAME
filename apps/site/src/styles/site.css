@@ -41,8 +41,11 @@ body{
   color:var(--text);
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
-  overscroll-behavior-y:none;
+
+  /* СКРОЛЛ КАК НА APPLE/В ЧАТЕ: скроллит body */
   overflow-y:auto !important;
+  overscroll-behavior-y:none;
+  -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
 }
 
@@ -56,7 +59,7 @@ button{ -webkit-tap-highlight-color: transparent; }
 a{ -webkit-tap-highlight-color: transparent; }
 canvas, iframe{ border:0 !important; outline:0 !important; }
 
-/* убираем любые псевдо-фоны, которые могли появиться */
+/* убираем любые псевдо-фоны */
 html::before, html::after,
 body::before, body::after,
 #root::before, #root::after{
@@ -64,12 +67,16 @@ body::before, body::after,
   display:none !important;
 }
 
-/* ===== MATRIX BG (fixed under all content) ===== */
+/* если где-то остался bcScroll — он не ломает прокрутку */
+.bcScroll{ display: contents; }
+@supports not (display: contents){
+  .bcScroll{ display:block; }
+}
+
+/* ===== MATRIX BG (fixed under all content, всегда чёрный) ===== */
 .bc-matrix-bg{
   position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100svh !important;
+  inset: 0 !important;         /* ключ: без height:100vh чтобы не было “полос” на iOS */
   z-index: 0 !important;
   pointer-events: none !important;
   background:#000 !important;
@@ -86,19 +93,9 @@ body::before, body::after,
 /* ===== app layer always above bg ===== */
 .bc-app-layer{
   position: relative !important;
-  z-index: 2 !important;
+  z-index: 1 !important;
   min-height: 100svh;
   background: transparent !important;
-}
-
-/* если в App.tsx остался <div className="bcScroll"> — не даём ему ломать Apple-scroll */
-.bcScroll{
-  display: contents;
-}
-@supports not (display: contents){
-  .bcScroll{
-    display:block;
-  }
 }
 
 .bcSiteRoot{
@@ -139,7 +136,7 @@ body::before, body::after,
   background: transparent !important;
 }
 
-/* жёстко вырубаем старый hero-bg, чтобы не было синего “поля” */
+/* ЖЁСТКО вырубаем старые hero-фоны, чтобы не было “синего поля” */
 .bcHeroBg,
 .bcHeroAurora,
 .bcHeroVignette,
@@ -287,9 +284,7 @@ body::before, body::after,
   opacity: 0.95;
 }
 
-.bcHeroPanel{
-  padding: 18px;
-}
+.bcHeroPanel{ padding: 18px; }
 
 .bcPanelTitle{
   font-weight: 950;
@@ -335,7 +330,6 @@ body::before, body::after,
   padding: 18px 14px 28px;
   background: transparent !important;
 }
-
 .bcSection::before{
   content:"";
   position:absolute;
@@ -374,61 +368,6 @@ body::before, body::after,
 }
 @media (min-width: 980px){
   .bcCards{ grid-template-columns: repeat(3, 1fr); }
-}
-
-/* ===== Premium micro-motion ===== */
-@media (prefers-reduced-motion: no-preference){
-  .glassStrong.bc-motion:hover{
-    transform: translateY(-2px) translateZ(0);
-    box-shadow: 0 44px 140px rgba(0,0,0,0.38);
-    background: rgba(255,255,255,0.075);
-    border-color: rgba(255,255,255,0.13);
-  }
-
-  .bcPanelRow{
-    transition:
-      transform 180ms cubic-bezier(.2,.8,.2,1),
-      background 180ms ease,
-      border-color 180ms ease,
-      box-shadow 180ms ease,
-      filter 180ms ease;
-  }
-  .bcPanelRow:hover{ transform: translateY(-1px) translateZ(0); }
-
-  .bcBrand{
-    transition:
-      background 180ms ease,
-      border-color 180ms ease,
-      transform 180ms cubic-bezier(.2,.8,.2,1),
-      box-shadow 180ms ease,
-      filter 180ms ease;
-  }
-  .bcBrand:hover{ background: rgba(255,255,255,0.05); transform: translateY(-1px); }
-
-  .bcAccountPill{
-    transition:
-      background 180ms ease,
-      border-color 180ms ease,
-      transform 180ms cubic-bezier(.2,.8,.2,1),
-      box-shadow 180ms ease,
-      filter 180ms ease;
-  }
-  .bcAccountPill:hover{
-    background: rgba(255,255,255,0.07);
-    border-color: rgba(255,255,255,0.16);
-    transform: translateY(-1px);
-  }
-
-  .bcLink{
-    transition:
-      background 180ms ease,
-      border-color 180ms ease,
-      transform 180ms cubic-bezier(.2,.8,.2,1),
-      opacity 180ms ease,
-      color 180ms ease,
-      text-shadow 180ms ease;
-  }
-  .bcLink:hover{ transform: translateY(-1px); }
 }
 
 /* ===== Store ===== */
@@ -543,129 +482,6 @@ body::before, body::after,
       text-shadow 180ms ease,
       filter 180ms ease,
       opacity 180ms ease;
-  }
-}
-
-.bcNav .bcLink{ position: relative; }
-
-.bcNav .bcLink::after{
-  content:"";
-  position:absolute;
-  inset:-10px -14px;
-  border-radius: 999px;
-  background: radial-gradient(60% 120% at 50% 120%, var(--bc-accent-26) 0%, rgba(255,106,0,0.00) 70%);
-  opacity: 0;
-  transform: translateY(2px);
-  transition: opacity 180ms ease, transform 180ms ease;
-  pointer-events: none;
-}
-
-@media (hover:hover) and (pointer:fine){
-  .bcNav .bcLink:hover{
-    color: var(--bc-accent);
-    text-shadow: 0 0 18px var(--bc-accent-glow);
-    background: rgba(255,255,255,0.05);
-    border-color: rgba(255,255,255,0.10);
-    filter: saturate(1.06);
-  }
-  .bcNav .bcLink:hover::after{
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.bcNav .bcLink:active{
-  color: var(--bc-accent);
-  text-shadow: 0 0 22px var(--bc-accent-glow);
-  transform: translateY(1px);
-}
-
-.bcNav .bcLink[aria-current="page"]{
-  color: var(--bc-accent);
-  text-shadow: 0 0 18px var(--bc-accent-glow);
-  background: rgba(255,255,255,0.05);
-  border-color: rgba(255,255,255,0.10);
-}
-.bcNav .bcLink[aria-current="page"]::after{
-  opacity: 1;
-  transform: translateY(0);
-}
-
-@media (hover:hover) and (pointer:fine){
-  .bcBrand:hover,
-  .bcAccountPill:hover{
-    box-shadow:
-      0 0 0 1px var(--bc-accent-18) inset,
-      0 18px 90px var(--bc-accent-10);
-    filter: saturate(1.06);
-  }
-}
-
-.bcBrand:active,
-.bcAccountPill:active{
-  transform: translateY(1px);
-  box-shadow:
-    0 0 0 1px var(--bc-accent-26) inset,
-    0 18px 90px var(--bc-accent-14);
-}
-
-@media (hover:hover) and (pointer:fine){
-  .bcPanelRow:hover{
-    background: linear-gradient(180deg, var(--bc-accent-10) 0%, rgba(255,255,255,0.04) 100%);
-    box-shadow:
-      0 0 0 1px var(--bc-accent-18) inset,
-      0 18px 90px var(--bc-accent-10);
-    border-color: rgba(255,255,255,0.11);
-    filter: saturate(1.06);
-  }
-}
-
-.bcPanelRow:active{
-  transform: translateY(1px);
-  box-shadow:
-    0 0 0 1px var(--bc-accent-26) inset,
-    0 18px 90px var(--bc-accent-14);
-}
-
-@media (hover:hover) and (pointer:fine){
-  .glassStrong.bc-motion:hover{
-    box-shadow:
-      0 44px 140px rgba(0,0,0,0.38),
-      0 0 0 1px var(--bc-accent-18) inset,
-      0 28px 110px var(--bc-accent-10);
-  }
-}
-
-.glassStrong.bc-motion:active{
-  transform: translateY(1px) translateZ(0);
-  box-shadow:
-    0 34px 120px rgba(0,0,0,0.30),
-    0 0 0 1px var(--bc-accent-34) inset,
-    0 28px 110px var(--bc-accent-14);
-}
-
-@media (hover:hover) and (pointer:fine){
-  .bcSiteRoot :where(button):hover{
-    box-shadow:
-      0 0 0 1px var(--bc-accent-18) inset,
-      0 18px 90px var(--bc-accent-10);
-    filter: saturate(1.06);
-  }
-}
-
-.bcSiteRoot :where(button):active{
-  transform: translateY(1px);
-  box-shadow:
-    0 0 0 1px var(--bc-accent-34) inset,
-    0 18px 90px var(--bc-accent-14);
-}
-
-@media (hover:hover) and (pointer:fine){
-  .bcSiteRoot :where(input, textarea, select):hover{
-    border-color: rgba(255,255,255,0.14);
-    box-shadow:
-      0 0 0 1px var(--bc-accent-08) inset,
-      0 12px 60px var(--bc-accent-10);
   }
 }
 
