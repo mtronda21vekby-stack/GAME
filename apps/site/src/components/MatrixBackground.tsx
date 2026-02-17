@@ -3,7 +3,6 @@ import React from "react";
 export type MatrixBackgroundProps = {
   className?: string;
   style?: React.CSSProperties;
-  /** 0.5..2 — плотность/скорость */
   intensity?: number;
 };
 
@@ -16,7 +15,8 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
 
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const rafRef = React.useRef<number | null>(null);
-  const resizeRafRef = React.useRef<number | null>(null);
+  const lastFrameTsRef = React.useRef<number>(0);
+  const watchdogRef = React.useRef<number | null>(null);
 
   React.useEffect(() => {
     const canvas = canvasRef.current;
@@ -25,11 +25,10 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
     const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
 
-    // prefers-reduced-motion
+    // prefers-reduced-motion: reduce => без анимации
     const mql = window.matchMedia?.("(prefers-reduced-motion: reduce)");
     let reduced = !!mql?.matches;
 
-    // Цвета "blue matrix"
     const FG = "rgba(90, 180, 255, 0.92)";
     const FG_DIM = "rgba(90, 180, 255, 0.55)";
     const FADE = "rgba(0, 0, 0, 0.12)";
@@ -44,22 +43,21 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
       fontSize: 16,
       cols: 0,
       drops: [] as number[],
-      tick: 0,
     };
 
-    const randChar = () => glyphs[(Math.random() * glyphs.length) | 0] || "0";
+    function getRect() {
+      // canvas растянут через CSS на 100% wrapper'а
+      return canvas.getBoundingClientRect();
+    }
 
-    const stop = () => {
-      if (rafRef.current != null) {
-        window.cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-    };
+    function randChar() {
+      const i = (Math.random() * glyphs.length) | 0;
+      return glyphs[i] || "0";
+    }
 
-    const drawStatic = () => {
+    function drawStatic() {
       ctx.clearRect(0, 0, state.w, state.h);
 
-      // лёгкая дымка (но без “шторок” от масштабирования)
       ctx.fillStyle = "rgba(0,0,0,0.35)";
       ctx.fillRect(0, 0, state.w, state.h);
 
@@ -70,9 +68,50 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
         ctx.fillStyle = Math.random() > 0.82 ? FG : FG_DIM;
         ctx.fillText(randChar(), x, y);
       }
-    };
+    }
 
-    const frame = () => {
+    function resize() {
+      const r = getRect();
+
+      // ВАЖНО: на iPhone 3х DPR слишком жирно для canvas — ограничим до 2 (меньше лагов)
+      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+
+      state.w = Math.max(1, Math.floor(r.width));
+      state.h = Math.max(1, Math.floor(r.height));
+      state.dpr = dpr;
+
+      canvas.width = Math.floor(state.w * dpr);
+      canvas.height = Math.floor(state.h * dpr);
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const base = state.w >= 980 ? 18 : 16;
+      state.fontSize = Math.max(
+        14,
+        Math.min(22, Math.floor(base * (0.95 + 0.18 * intensity)))
+      );
+
+      ctx.font = `700 ${state.fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace`;
+      ctx.textBaseline = "top";
+      ctx.imageSmoothingEnabled = false;
+
+      state.cols = Math.max(10, Math.floor(state.w / state.fontSize));
+      state.drops = new Array(state.cols).fill(0).map(() => Math.random() * state.h);
+
+      ctx.clearRect(0, 0, state.w, state.h);
+      drawStatic();
+    }
+
+    function stop() {
+      if (rafRef.current != null) {
+        window.cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    }
+
+    function frame(ts: number) {
+      lastFrameTsRef.current = ts;
+
       ctx.fillStyle = FADE;
       ctx.fillRect(0, 0, state.w, state.h);
 
@@ -96,92 +135,69 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
         }
       }
 
-      state.tick++;
       rafRef.current = window.requestAnimationFrame(frame);
-    };
+    }
 
-    const start = () => {
+    function start() {
       stop();
       rafRef.current = window.requestAnimationFrame(frame);
-    };
+    }
 
-    const resizeNow = () => {
-      const r = canvas.getBoundingClientRect();
-
-      // ВАЖНО: ceil, чтобы не было микромасштабирования Safari (полос/линий)
-      const cssW = Math.max(1, Math.ceil(r.width));
-      const cssH = Math.max(1, Math.ceil(r.height));
-
-      const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
-      state.w = cssW;
-      state.h = cssH;
-      state.dpr = dpr;
-
-      canvas.width = Math.floor(cssW * dpr);
-      canvas.height = Math.floor(cssH * dpr);
-
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-      const base = cssW >= 980 ? 18 : 16;
-      state.fontSize = Math.max(14, Math.min(22, Math.floor(base * (0.95 + 0.18 * intensity))));
-
-      ctx.font = `700 ${state.fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace`;
-      ctx.textBaseline = "top";
-
-      state.cols = Math.max(10, Math.floor(cssW / state.fontSize));
-      state.drops = new Array(state.cols).fill(0).map(() => Math.random() * cssH);
-
-      ctx.clearRect(0, 0, state.w, state.h);
+    const onMql = () => {
+      reduced = !!mql?.matches;
       drawStatic();
+      if (reduced) stop();
+      else start();
     };
-
-    const scheduleResize = () => {
-      if (resizeRafRef.current != null) return;
-      resizeRafRef.current = window.requestAnimationFrame(() => {
-        resizeRafRef.current = null;
-        resizeNow();
-      });
-    };
+    mql?.addEventListener?.("change", onMql);
 
     const onVis = () => {
       if (document.visibilityState === "hidden") stop();
       else if (!reduced) start();
     };
 
-    const onMql = () => {
-      reduced = !!mql?.matches;
-      scheduleResize();
-      if (reduced) stop();
-      else start();
-    };
+    const onResize = () => resize();
 
-    mql?.addEventListener?.("change", onMql);
-    window.addEventListener("resize", scheduleResize);
-    window.addEventListener("orientationchange", scheduleResize);
+    // ВАЖНО: НЕ слушаем visualViewport.scroll — он спамит во время обычного скролла и рвёт FPS.
+    const vv = window.visualViewport;
+
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
     window.addEventListener("visibilitychange", onVis);
 
-    // iOS: важно слушать resize, но НЕ scroll
-    const vv = window.visualViewport;
-    vv?.addEventListener?.("resize", scheduleResize);
+    vv?.addEventListener?.("resize", onResize);
 
-    // Самый стабильный способ: следим за реальным размером canvas
-    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(scheduleResize) : null;
-    ro?.observe(canvas);
+    // Watchdog: если iOS “подвесил” rAF — мягко перезапускаем
+    watchdogRef.current = window.setInterval(() => {
+      if (reduced) return;
+      if (document.visibilityState !== "visible") return;
 
-    // init
-    resizeNow();
+      const now = performance.now();
+      const last = lastFrameTsRef.current || 0;
+
+      // если кадров не было давно — стартуем заново
+      if (rafRef.current == null || (last > 0 && now - last > 1500)) {
+        start();
+      }
+    }, 1200) as unknown as number;
+
+    // старт
+    resize();
     if (!reduced) start();
 
     return () => {
       stop();
-      if (resizeRafRef.current != null) window.cancelAnimationFrame(resizeRafRef.current);
 
-      ro?.disconnect();
-      vv?.removeEventListener?.("resize", scheduleResize);
+      if (watchdogRef.current != null) {
+        window.clearInterval(watchdogRef.current);
+        watchdogRef.current = null;
+      }
 
-      window.removeEventListener("resize", scheduleResize);
-      window.removeEventListener("orientationchange", scheduleResize);
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
       window.removeEventListener("visibilitychange", onVis);
+
+      vv?.removeEventListener?.("resize", onResize);
       mql?.removeEventListener?.("change", onMql);
     };
   }, [intensity]);
@@ -192,7 +208,7 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
       className={["bcMatrixBg", className].filter(Boolean).join(" ")}
       style={{
         display: "block",
-        width: "100%",
+        width: "100vw",
         height: "100%",
         pointerEvents: "none",
         ...style,
