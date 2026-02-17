@@ -8,29 +8,12 @@ html, body, #root {
   overflow-x: hidden !important;
 }
 
-body {
-  overflow-y: auto !important;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: none;
-}
-
-/* убираем возможные псевдо-фоны */
-.bc-matrix-on html::before,
-.bc-matrix-on html::after,
-.bc-matrix-on body::before,
-.bc-matrix-on body::after,
-.bc-matrix-on #root::before,
-.bc-matrix-on #root::after {
-  content: none !important;
-  display: none !important;
-}
-
 .bc-matrix-bg {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
   width: 100vw;
-  height: 100vh;
-  height: 100dvh;        /* важно: чтобы не было “окон” при динамическом тулбаре */
+  height: calc(var(--app-vh, 1vh) * 100);
   z-index: 10;
   pointer-events: none;
   background: #000;
@@ -42,15 +25,10 @@ body {
   min-height: 100vh;
 }
 
-/* ПК: если стекло мылит матрицу — отключаем blur только в режиме матрицы */
-@media (pointer: fine) {
-  .bc-matrix-on .glass,
-  .bc-matrix-on .glassPanel,
-  .bc-matrix-on .glass-panel,
-  .bc-matrix-on .panel,
-  .bc-matrix-on .card,
-  .bc-matrix-on [data-glass] {
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
-  }
+/* если где-то есть псевдо-фон на root/body/html — вырубаем */
+html::before, html::after,
+body::before, body::after,
+#root::before, #root::after {
+  content: none !important;
+  display: none !important;
 }
