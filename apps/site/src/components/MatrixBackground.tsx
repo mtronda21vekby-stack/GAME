@@ -18,23 +18,23 @@ const DEFAULT_CHARS =
 
 export default function MatrixBackground({
   className,
-  opacity = 0.085,
-  speed = 0.36,
-  density = 1.0,
-  fontSize = 16,
+  opacity = 0.075,                // кино: менее ярко
+  speed = 0.26,                   // кино: медленнее
+  density = 1.38,                 // плотнее
+  fontSize = 15,                  // чуть мельче → плотнее визуально
   color = "rgba(90, 190, 255, 0.92)",
   glow = true,
 }: MatrixBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number | null>(null);
-
   const chars = useMemo(() => DEFAULT_CHARS.split(""), []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext("2d", { alpha: false, desynchronized: true });
+    // alpha:true + прозрачный фон (чёрный задаём базой страницы в CSS)
+    const ctx = canvas.getContext("2d", { alpha: true, desynchronized: true });
     if (!ctx) return;
 
     const prefersReduced =
@@ -66,13 +66,11 @@ export default function MatrixBackground({
 
       for (let i = 0; i < columns; i++) {
         drops[i] = rand(-h / fontSize, 0);
-        speeds[i] = rand(0.42, 1.0) * speed;
+        speeds[i] = rand(0.40, 0.92) * speed;
       }
 
-      ctx.globalAlpha = 1;
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = "#000";
-      ctx.fillRect(0, 0, w, h);
+      // Сразу “прогреваем” — чтобы не было ощущения пустого экрана при старте
+      ctx.clearRect(0, 0, w, h);
       firstPaint = true;
     };
 
@@ -87,10 +85,19 @@ export default function MatrixBackground({
       const dt = Math.min(40, t - last);
       last = t;
 
+      // Прозрачный “fade” (чёрный уже в body). Это убирает “чёрную плашку”.
       ctx.globalAlpha = 1;
       ctx.shadowBlur = 0;
-      ctx.fillStyle = firstPaint || prefersReduced ? "#000" : "rgba(0,0,0,0.09)";
-      ctx.fillRect(0, 0, w, h);
+
+      if (firstPaint || prefersReduced) {
+        ctx.clearRect(0, 0, w, h);
+      } else {
+        // Киношный длинный шлейф: рисуем прозрачный чёрный на canvas
+        // (чтобы символы не копились бесконечно)
+        ctx.fillStyle = "rgba(0,0,0,0.08)";
+        ctx.fillRect(0, 0, w, h);
+      }
+
       firstPaint = false;
 
       ctx.globalAlpha = Math.max(0, Math.min(1, opacity));
@@ -114,9 +121,9 @@ export default function MatrixBackground({
 
         drops[i] += speeds[i] * step;
 
-        if (y > h && Math.random() > 0.988) {
-          drops[i] = rand(-28, 0);
-          speeds[i] = rand(0.42, 1.0) * speed;
+        if (y > h && Math.random() > 0.990) {
+          drops[i] = rand(-34, 0);
+          speeds[i] = rand(0.40, 0.92) * speed;
         }
       }
 
