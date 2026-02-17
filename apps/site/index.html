@@ -2,18 +2,27 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
+    <!-- viewport-fit=cover обязателен для edge-to-edge на iOS -->
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
-    <!-- ВАЖНО: НЕ задаём theme-color, иначе Safari красит верх/низ в “поля”. -->
+    <!-- Safari/ iOS: держим тёмную схему, без навязчивой раскраски UI -->
     <meta name="color-scheme" content="dark" />
 
+    <!-- iOS PWA / fullscreen -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
+    <!-- ВАЖНО:
+         theme-color не ставим, чтобы Safari не рисовал “поля”.
+         (Если когда-то понадобится — ставим через manifest для PWA отдельно.)
+    -->
+
+    <!-- Icons -->
     <link rel="icon" href="/Icons/favicon.svg" type="image/svg+xml" />
     <link rel="alternate icon" href="/Icons/favicon.ico" />
-
     <link rel="apple-touch-icon" sizes="180x180" href="/pwa/icons/apple-touch-icon.png" />
+
+    <!-- PWA -->
     <link rel="manifest" href="/manifest.webmanifest" />
 
     <title>BlackCrown</title>
