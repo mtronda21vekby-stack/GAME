@@ -3,7 +3,7 @@ import React from "react";
 export type MatrixBackgroundProps = {
   className?: string;
   style?: React.CSSProperties;
-  /** 0.5..2 — плотность/скорость (по умолчанию 1) */
+  /** 0.5..2 — плотность/скорость */
   intensity?: number;
 };
 
@@ -16,7 +16,7 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
 
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const rafRef = React.useRef<number | null>(null);
-  const runningRef = React.useRef(false);
+  const resizeRafRef = React.useRef<number | null>(null);
 
   React.useEffect(() => {
     const canvas = canvasRef.current;
@@ -25,6 +25,7 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
     const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
 
+    // prefers-reduced-motion
     const mql = window.matchMedia?.("(prefers-reduced-motion: reduce)");
     let reduced = !!mql?.matches;
 
@@ -43,17 +44,22 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
       fontSize: 16,
       cols: 0,
       drops: [] as number[],
+      tick: 0,
     };
 
-    function randChar() {
-      const i = (Math.random() * glyphs.length) | 0;
-      return glyphs[i] || "0";
-    }
+    const randChar = () => glyphs[(Math.random() * glyphs.length) | 0] || "0";
 
-    function drawStatic() {
-      if (state.w <= 1 || state.h <= 1) return;
+    const stop = () => {
+      if (rafRef.current != null) {
+        window.cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
+
+    const drawStatic = () => {
       ctx.clearRect(0, 0, state.w, state.h);
 
+      // лёгкая дымка (но без “шторок” от масштабирования)
       ctx.fillStyle = "rgba(0,0,0,0.35)";
       ctx.fillRect(0, 0, state.w, state.h);
 
@@ -64,47 +70,9 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
         ctx.fillStyle = Math.random() > 0.82 ? FG : FG_DIM;
         ctx.fillText(randChar(), x, y);
       }
-    }
+    };
 
-    function resizeTo(cssW: number, cssH: number) {
-      const w = Math.max(1, Math.floor(cssW));
-      const h = Math.max(1, Math.floor(cssH));
-
-      // dpr режем до 2 — iOS меньше лагает
-      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-
-      // если размер не изменился — ничего не делаем
-      if (w === state.w && h === state.h && dpr === state.dpr) return;
-
-      state.w = w;
-      state.h = h;
-      state.dpr = dpr;
-
-      canvas.width = Math.floor(w * dpr);
-      canvas.height = Math.floor(h * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-      const base = w >= 980 ? 18 : 16;
-      state.fontSize = Math.max(14, Math.min(22, Math.floor(base * (0.95 + 0.18 * intensity))));
-
-      ctx.font = `700 ${state.fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace`;
-      ctx.textBaseline = "top";
-
-      state.cols = Math.max(10, Math.floor(w / state.fontSize));
-      state.drops = new Array(state.cols).fill(0).map(() => Math.random() * h);
-
-      drawStatic();
-    }
-
-    function frame() {
-      if (!runningRef.current) return;
-
-      // если внезапно ушли в нулевой размер — стопаем
-      if (state.w <= 1 || state.h <= 1) {
-        rafRef.current = window.requestAnimationFrame(frame);
-        return;
-      }
-
+    const frame = () => {
       ctx.fillStyle = FADE;
       ctx.fillRect(0, 0, state.w, state.h);
 
@@ -128,89 +96,92 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
         }
       }
 
+      state.tick++;
       rafRef.current = window.requestAnimationFrame(frame);
-    }
-
-    function stop() {
-      runningRef.current = false;
-      if (rafRef.current != null) {
-        window.cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-    }
-
-    function start() {
-      if (reduced) {
-        stop();
-        drawStatic();
-        return;
-      }
-      if (runningRef.current) return;
-      runningRef.current = true;
-      rafRef.current = window.requestAnimationFrame(frame);
-    }
-
-    const onMql = () => {
-      reduced = !!mql?.matches;
-      if (reduced) {
-        stop();
-        drawStatic();
-      } else {
-        start();
-      }
-    };
-    mql?.addEventListener?.("change", onMql);
-
-    const onVis = () => {
-      if (document.visibilityState === "hidden") stop();
-      else start();
     };
 
-    // iOS/ Safari: иногда rAF “застывает” после сна — форсим рестарт
-    const onPageShow = () => start();
-    const onFocus = () => start();
-    const onPointer = () => start();
+    const start = () => {
+      stop();
+      rafRef.current = window.requestAnimationFrame(frame);
+    };
 
-    window.addEventListener("visibilitychange", onVis);
-    window.addEventListener("pageshow", onPageShow);
-    window.addEventListener("focus", onFocus);
-    window.addEventListener("pointerdown", onPointer, { passive: true });
+    const resizeNow = () => {
+      const r = canvas.getBoundingClientRect();
 
-    // ResizeObserver — главное: НЕ vv.scroll
-    let ro: ResizeObserver | null = null;
-    let roRaf = 0;
+      // ВАЖНО: ceil, чтобы не было микромасштабирования Safari (полос/линий)
+      const cssW = Math.max(1, Math.ceil(r.width));
+      const cssH = Math.max(1, Math.ceil(r.height));
 
-    const scheduleResize = (w: number, h: number) => {
-      if (roRaf) return;
-      roRaf = window.requestAnimationFrame(() => {
-        roRaf = 0;
-        resizeTo(w, h);
+      const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+      state.w = cssW;
+      state.h = cssH;
+      state.dpr = dpr;
+
+      canvas.width = Math.floor(cssW * dpr);
+      canvas.height = Math.floor(cssH * dpr);
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const base = cssW >= 980 ? 18 : 16;
+      state.fontSize = Math.max(14, Math.min(22, Math.floor(base * (0.95 + 0.18 * intensity))));
+
+      ctx.font = `700 ${state.fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace`;
+      ctx.textBaseline = "top";
+
+      state.cols = Math.max(10, Math.floor(cssW / state.fontSize));
+      state.drops = new Array(state.cols).fill(0).map(() => Math.random() * cssH);
+
+      ctx.clearRect(0, 0, state.w, state.h);
+      drawStatic();
+    };
+
+    const scheduleResize = () => {
+      if (resizeRafRef.current != null) return;
+      resizeRafRef.current = window.requestAnimationFrame(() => {
+        resizeRafRef.current = null;
+        resizeNow();
       });
     };
 
-    ro = new ResizeObserver((entries) => {
-      const e = entries[0];
-      if (!e) return;
-      const cr = e.contentRect;
-      scheduleResize(cr.width, cr.height);
-    });
+    const onVis = () => {
+      if (document.visibilityState === "hidden") stop();
+      else if (!reduced) start();
+    };
 
-    // наблюдаем за самим canvas (он растянут CSS-ом под родителя)
-    ro.observe(canvas);
+    const onMql = () => {
+      reduced = !!mql?.matches;
+      scheduleResize();
+      if (reduced) stop();
+      else start();
+    };
 
-    // первичная инициализация
-    const r = canvas.getBoundingClientRect();
-    resizeTo(r.width, r.height);
-    start();
+    mql?.addEventListener?.("change", onMql);
+    window.addEventListener("resize", scheduleResize);
+    window.addEventListener("orientationchange", scheduleResize);
+    window.addEventListener("visibilitychange", onVis);
+
+    // iOS: важно слушать resize, но НЕ scroll
+    const vv = window.visualViewport;
+    vv?.addEventListener?.("resize", scheduleResize);
+
+    // Самый стабильный способ: следим за реальным размером canvas
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(scheduleResize) : null;
+    ro?.observe(canvas);
+
+    // init
+    resizeNow();
+    if (!reduced) start();
 
     return () => {
       stop();
-      if (roRaf) window.cancelAnimationFrame(roRaf);
+      if (resizeRafRef.current != null) window.cancelAnimationFrame(resizeRafRef.current);
+
       ro?.disconnect();
+      vv?.removeEventListener?.("resize", scheduleResize);
+
+      window.removeEventListener("resize", scheduleResize);
+      window.removeEventListener("orientationchange", scheduleResize);
       window.removeEventListener("visibilitychange", onVis);
-      window.removeEventListener("pageshow", onPageShow);
-      window.removeEventListener("focus", onFocus);
-      window.removeEventListener("pointerdown", onPointer as any);
       mql?.removeEventListener?.("change", onMql);
     };
   }, [intensity]);
