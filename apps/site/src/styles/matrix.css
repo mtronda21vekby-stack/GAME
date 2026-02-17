@@ -1,8 +1,8 @@
 /* =========================================
-   MATRIX LAYER
+   MATRIX LAYER (MONOLITH / NO DARK LINES)
    - fixed, всегда под контентом
    - закрывает full viewport (включая iOS safe areas)
-   - без тяжёлых пересчётов на scroll
+   - без градиентных "шторок" сверху/снизу
    ========================================= */
 
 .bcMatrixLayer{
@@ -33,54 +33,9 @@
   outline: 0;
 }
 
-/* =========================================
-   EDGE FADE (как у “новых сайтов”)
-   Это НЕ чёрные блоки — это полупрозрачный
-   градиент, чтобы Safari UI визуально “растворялся”.
-   ========================================= */
-
-:root{
-  --bc-edge-fade: 72px;   /* можно 56..96 */
-  --bc-edge-alpha: 0.85;  /* насколько затемнять края */
-}
-
+/* ВАЖНО: никаких затемняющих оверлеев */
 .bcMatrixLayer::before,
 .bcMatrixLayer::after{
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: var(--bc-edge-fade);
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* верх */
-.bcMatrixLayer::before{
-  top: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(0,0,0,var(--bc-edge-alpha)) 0%,
-    rgba(0,0,0,0.35) 45%,
-    rgba(0,0,0,0.0) 100%
-  );
-}
-
-/* низ */
-.bcMatrixLayer::after{
-  bottom: 0;
-  background: linear-gradient(
-    0deg,
-    rgba(0,0,0,var(--bc-edge-alpha)) 0%,
-    rgba(0,0,0,0.35) 45%,
-    rgba(0,0,0,0.0) 100%
-  );
-}
-
-/* reduced motion: без лишних эффектов */
-@media (prefers-reduced-motion: reduce){
-  .bcMatrixLayer::before,
-  .bcMatrixLayer::after{
-    display: none;
-  }
+  display: none !important;
+  content: none !important;
 }
