@@ -32,9 +32,8 @@ a{ -webkit-tap-highlight-color: transparent; }
 
 /* ===== iOS edge-to-edge / no black bars ===== */
 html, body{
-  height:100%;
   min-height:100%;
-  background:var(--bg0);
+  background: var(--bg0);
 }
 
 body{
@@ -42,15 +41,14 @@ body{
   color:var(--text);
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
-  overscroll-behavior: none;
 
-  /* помогает iOS не показывать "голые" края при bounce */
+  /* iOS bounce: не показываем "голый" фон */
+  overscroll-behavior: none;
   padding-bottom: env(safe-area-inset-bottom);
 }
 
 #root{
   min-height:100%;
-  height:100%;
   background: transparent;
 }
 
@@ -59,44 +57,41 @@ body{
 
 /* Shell for global background */
 .bcAppShell{
-  position:relative;
-  min-height:100%;
-  height:100%;
+  position: relative;
+  min-height: 100%;
   background: transparent;
 }
 
+/* Content above background */
 .bcAppContent{
-  position:relative;
-  z-index:1;
-  min-height:100%;
+  position: relative;
+  z-index: 1;
+  min-height: 100%;
   background: transparent;
 }
 
 /* ==================================================
-   Matrix canvas (global) — FIX iOS black bars
-   ВАЖНО: НЕ используем --app-vh для фона.
-   Фон должен закрывать large/dynamic viewport.
+   Matrix layer (global) — FIX iOS black bars
+   ВАЖНО: фон закрываем через inset:0 (layout viewport),
+   НЕ через --app-vh / visualViewport.
    ================================================== */
-.bcMatrixBg{
+.bcMatrixLayer{
   position: fixed;
-  left: 0;
-  top: 0;
-  width: 100vw;
-
-  /* ключ: покрываем всё, включая зоны под iOS панелями */
-  height: 100vh;
-  height: 100dvh;
-  height: 100lvh;
-
+  inset: 0;
   z-index: 0;
   pointer-events: none;
-
-  /* fallback если canvas не успел отрендериться */
-  background: #000;
-
-  display:block;
+  background: #000;         /* fallback если canvas не успел */
   transform: translateZ(0);
   will-change: transform;
+}
+
+/* Canvas / root внутри MatrixBackground должен растягиваться на весь слой */
+.bcMatrixLayer .bcMatrixBg{
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 /* Motion baseline */
@@ -109,7 +104,7 @@ body{
 .bcHero{
   position:relative;
 
-  /* для контента можно оставлять --app-vh, чтобы не прыгало */
+  /* контенту можно --app-vh, чтобы не прыгало */
   min-height: calc(var(--app-vh, 100vh));
 
   padding: max(14px, env(safe-area-inset-top)) 14px 24px;
@@ -131,7 +126,6 @@ body{
 .bcHeroVignette{
   position:absolute;
   inset:0;
-  /* Чистый чёрный + мягкая виньетка под Matrix */
   background:
     radial-gradient(900px 520px at 78% 10%, rgba(70,140,255,0.10), transparent 60%),
     radial-gradient(900px 700px at 30% 80%, rgba(40,210,255,0.06), transparent 60%),
