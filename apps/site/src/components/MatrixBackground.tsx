@@ -10,12 +10,12 @@ type Props = {
 };
 
 export default function MatrixBackground({
-  opacity = 0.035,
-  speed = 0.09,
-  density = 1.45,
-  fontSize = 13,
-  color = "rgba(90, 190, 255, 0.86)",
-  glow = false,
+  opacity = 0.055,
+  speed = 0.14,
+  density = 1.35,
+  fontSize = 14,
+  color = "rgba(90, 190, 255, 0.92)",
+  glow = true,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -29,7 +29,7 @@ export default function MatrixBackground({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext("2d", { alpha: false });
+    const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
 
     const DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
@@ -40,17 +40,10 @@ export default function MatrixBackground({
     let h = 0;
     let cols = 0;
     let drops: number[] = [];
-    let lastT = performance.now();
-
-    const getViewport = () => {
-      const vv = window.visualViewport;
-      const W = Math.floor(vv?.width ?? window.innerWidth);
-      const H = Math.floor(vv?.height ?? window.innerHeight);
-      return { W, H };
-    };
 
     const resize = () => {
-      const { W, H } = getViewport();
+      const W = window.innerWidth;
+      const H = window.innerHeight;
 
       w = Math.floor(W * DPR);
       h = Math.floor(H * DPR);
@@ -65,26 +58,22 @@ export default function MatrixBackground({
       ctx.font = `${cfg.fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`;
 
       cols = Math.max(18, Math.floor((W / cfg.fontSize) * cfg.density));
-      drops = new Array(cols).fill(0).map(() => Math.random() * H - H);
-      ctx.globalAlpha = 1;
-      ctx.globalCompositeOperation = "source-over";
-      ctx.fillStyle = "#000";
-      ctx.fillRect(0, 0, W, H);
+      drops = new Array(cols).fill(0).map(() => Math.random() * H);
     };
 
-    const draw = () => {
-      const now = performance.now();
-      const dt = Math.min(40, now - lastT);
-      lastT = now;
+    let last = performance.now();
+
+    const draw = (t: number) => {
+      const dt = Math.min(32, t - last); // стабилизируем
+      last = t;
 
       const W = w / DPR;
       const H = h / DPR;
 
-      const fade = Math.max(0.05, Math.min(0.16, 0.085 + cfg.speed * 0.35));
-
+      // держим фон чёрным, но мягко (чтобы матрица не убивала контент)
       ctx.globalCompositeOperation = "source-over";
       ctx.globalAlpha = 1;
-      ctx.fillStyle = `rgba(0,0,0,${fade})`;
+      ctx.fillStyle = "rgba(0,0,0,0.10)";
       ctx.fillRect(0, 0, W, H);
 
       ctx.fillStyle = cfg.color;
@@ -92,19 +81,24 @@ export default function MatrixBackground({
       ctx.shadowColor = cfg.color;
 
       const stepX = W / cols;
-      const dy = cfg.fontSize * (0.22 + cfg.speed * 0.9) * (dt / 16.67);
+
+      // скорость через dt: кинематографично и одинаково на 60/120fps
+      const dy = cfg.fontSize * (0.55 + cfg.speed) * (dt / 16.67);
 
       for (let i = 0; i < cols; i++) {
         const x = i * stepX;
         const y = drops[i];
 
-        ctx.globalAlpha = cfg.opacity;
+        // немного вариации альфы “плотнее”
+        const a = cfg.opacity * (0.75 + Math.random() * 0.5);
+        ctx.globalAlpha = a;
+
         ctx.fillText(chars[(Math.random() * chars.length) | 0], x, y);
 
         drops[i] = y + dy;
 
-        if (drops[i] > H + cfg.fontSize * 12 && Math.random() > 0.975) {
-          drops[i] = -cfg.fontSize * (12 + Math.random() * 40);
+        if (drops[i] > H + cfg.fontSize * 10 && Math.random() > 0.985) {
+          drops[i] = -cfg.fontSize * (10 + Math.random() * 30);
         }
       }
 
@@ -113,17 +107,17 @@ export default function MatrixBackground({
     };
 
     resize();
-    const vv = window.visualViewport;
     window.addEventListener("resize", resize, { passive: true });
-    vv?.addEventListener("resize", resize, { passive: true });
-    vv?.addEventListener("scroll", resize, { passive: true });
+
+    // стартовый чёрный
+    ctx.clearRect(0, 0, w / DPR, h / DPR);
+    ctx.fillStyle = "rgba(0,0,0,1)";
+    ctx.fillRect(0, 0, w / DPR, h / DPR);
 
     rafRef.current = requestAnimationFrame(draw);
 
     return () => {
       window.removeEventListener("resize", resize);
-      vv?.removeEventListener("resize", resize as any);
-      vv?.removeEventListener("scroll", resize as any);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, [cfg]);
