@@ -1,41 +1,25 @@
-/* =========================================
-   MATRIX LAYER (MONOLITH / NO DARK LINES)
-   - fixed, всегда под контентом
-   - закрывает full viewport (включая iOS safe areas)
-   - без градиентных "шторок" сверху/снизу
-   ========================================= */
+/* apps/site/src/styles/matrix.css */
 
+/* Глобальный слой фона: всегда закрывает экран, без паддингов, без “полос” */
 .bcMatrixLayer{
   position: fixed;
   inset: 0;
-  width: 100vw;
-
-  /* покрываем разные viewport-режимы */
-  height: 100vh;
-  height: 100dvh;
-  height: 100lvh;
-
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
 
-  /* fallback если canvas не успел */
+  /* fallback если canvas ещё не отрисовался */
   background: #000;
-  transform: translateZ(0);
 }
 
-/* canvas растягиваем на весь слой */
-.bcMatrixBg{
+/* Canvas должен занимать 100% контейнера (не 100vw) — так Safari меньше масштабирует */
+.bcMatrixLayer .bcMatrixBg{
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   display: block;
-  border: 0;
-  outline: 0;
-}
 
-/* ВАЖНО: никаких затемняющих оверлеев */
-.bcMatrixLayer::before,
-.bcMatrixLayer::after{
-  display: none !important;
-  content: none !important;
+  /* лишнее сглаживание Safari иногда даёт “шторки” */
+  image-rendering: auto;
 }
