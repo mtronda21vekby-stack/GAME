@@ -1,24 +1,96 @@
 // packages/assets/src/icons/index.ts
-const u = (rel: string) => new URL(rel, import.meta.url).href;
+const toDataUrl = (svg: string) =>
+  `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg.trim())}`;
 
+// === твоё лого (crown) ===
+const crownSvg = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Black crown favicon">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="45%" r="75%">
+      <stop offset="0%" stop-color="#121827"/>
+      <stop offset="60%" stop-color="#0B0F18"/>
+      <stop offset="100%" stop-color="#05060B"/>
+    </radialGradient>
+
+    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#1E2432"/>
+      <stop offset="45%" stop-color="#0B0F18"/>
+      <stop offset="100%" stop-color="#04060B"/>
+    </linearGradient>
+
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.50"/>
+      <stop offset="30%" stop-color="#FFFFFF" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </linearGradient>
+
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000000" flood-opacity="0.65"/>
+    </filter>
+
+    <clipPath id="r">
+      <rect x="18" y="18" width="220" height="220" rx="56"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#r)">
+    <rect x="18" y="18" width="220" height="220" rx="56" fill="url(#bg)"/>
+
+    <g filter="url(#shadow)">
+      <path fill="url(#metal)" d="
+        M64 104
+        L92 156
+        L128 122
+        L164 156
+        L192 104
+        L192 168
+        C192 186 178 200 160 200
+        H96
+        C78 200 64 186 64 168
+        Z"/>
+
+      <path fill="none" stroke="url(#edge)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"
+        d="M64 104 L92 156 L128 120 L164 156 L192 104"/>
+
+      <path fill="none" stroke="url(#edge)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.32"
+        d="M78 122 L100 160 L128 138 L156 160 L178 122"/>
+
+      <path fill="none" stroke="#FFFFFF" stroke-opacity="0.10" stroke-width="6" stroke-linejoin="round"
+        d="M82 168 C82 182 94 194 108 194 H148 C162 194 174 182 174 168"/>
+    </g>
+
+    <rect x="18" y="18" width="220" height="220" rx="56"
+      fill="none" stroke="#FFFFFF" stroke-opacity="0.08" stroke-width="2"/>
+  </g>
+</svg>
+`;
+
+// === play (простая читаемая иконка) ===
+const playSvg = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+  <path d="M9 7.2v9.6L18 12 9 7.2z" fill="#FFFFFF" fill-opacity="0.92"/>
+</svg>
+`;
+
+const crown = toDataUrl(crownSvg);
+const play = toDataUrl(playSvg);
+
+// Важно: даже если UI попросит “user/cart/…” — ничего не сломается, будет crown вместо “?”.
+// Потом спокойно заменим на отдельные SVG, когда закончим с фоном.
 export const Icons = {
-  // Brand
-  crown: u("./brand/crown.svg"),
+  crown,
+  play,
 
-  // UI
-  play: u("./ui/play.svg"),
-  arrowLeft: u("./ui/arrowLeft.svg"),
-  arrowRight: u("./ui/arrowRight.svg"),
-  user: u("./ui/user.svg"),
-  cart: u("./ui/cart.svg"),
-  heart: u("./ui/heart.svg"),
-  chat: u("./ui/chat.svg"),
-  settings: u("./ui/settings.svg"),
-  soundOff: u("./ui/soundOff.svg"),
-  soundOn: u("./ui/soundOn.svg"),
-  close: u("./ui/close.svg"),
-  chevronDown: u("./ui/chevronDown.svg"),
+  // safe fallbacks
+  user: crown,
+  cart: crown,
+  chat: crown,
+  settings: crown,
+  heart: crown,
+  close: crown,
+  chevronDown: crown,
+  arrowLeft: crown,
+  arrowRight: crown,
 
-  // Fallback (на случай если где-то нужно)
-  fallback: u("./ui/fallback.svg"),
+  fallback: crown,
 } as const;
