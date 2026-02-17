@@ -2,19 +2,19 @@ import React, { useEffect, useMemo, useRef } from "react";
 
 type Props = {
   opacity?: number;
-  speed?: number;      // 0.15..0.35
-  density?: number;    // 0.8..1.8
-  fontSize?: number;   // 12..18
-  color?: string;      // rgba(...)
+  speed?: number;
+  density?: number;
+  fontSize?: number;
+  color?: string;
   glow?: boolean;
 };
 
 export default function MatrixBackground({
-  opacity = 0.06,
-  speed = 0.20,
-  density = 1.45,
+  opacity = 0.028,
+  speed = 0.18,
+  density = 1.12,
   fontSize = 14,
-  color = "rgba(90, 190, 255, 0.92)",
+  color = "rgba(90, 190, 255, 0.90)",
   glow = true,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -50,30 +50,40 @@ export default function MatrixBackground({
       canvas.style.width = `${w}px`;
       canvas.style.height = `${h}px`;
 
-      cols = Math.max(16, Math.floor((w / cfg.fontSize) * cfg.density));
+      cols = Math.max(18, Math.floor((w / cfg.fontSize) * cfg.density));
       drops = new Array(cols).fill(0).map(() => Math.random() * h);
+
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
       ctx.textBaseline = "top";
       ctx.font = `${cfg.fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`;
     };
 
     const draw = () => {
-      // прозрачный fade, чтобы “киношно” тянулось
-      ctx.globalCompositeOperation = "source-over";
-      ctx.fillStyle = `rgba(0,0,0,${0.12})`;
-      ctx.fillRect(0, 0, width / DPR, height / DPR);
+      const W = width / DPR;
+      const H = height / DPR;
 
+      // 1) “black-lock” — держим фон реально чёрным (важнее, чем хвосты)
       ctx.globalCompositeOperation = "source-over";
+      ctx.fillStyle = "rgba(0,0,0,0.22)";
+      ctx.fillRect(0, 0, W, H);
+
+      // 2) лёгкая виньетка, чтобы края были глубже/киношнее
+      const g = ctx.createRadialGradient(W * 0.5, H * 0.45, 0, W * 0.5, H * 0.45, Math.max(W, H) * 0.75);
+      g.addColorStop(0, "rgba(0,0,0,0.00)");
+      g.addColorStop(1, "rgba(0,0,0,0.35)");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+
+      // 3) символы
       ctx.fillStyle = cfg.color;
-
       if (cfg.glow) {
         ctx.shadowColor = cfg.color;
-        ctx.shadowBlur = 10;
+        ctx.shadowBlur = 8;
       } else {
         ctx.shadowBlur = 0;
       }
 
-      const stepX = (width / DPR) / cols;
+      const stepX = W / cols;
       for (let i = 0; i < cols; i++) {
         const x = i * stepX;
         const y = drops[i];
@@ -82,8 +92,8 @@ export default function MatrixBackground({
         ctx.globalAlpha = cfg.opacity;
         ctx.fillText(c, x, y);
 
-        drops[i] = y + (cfg.fontSize * (0.75 + cfg.speed));
-        if (drops[i] > (height / DPR) + cfg.fontSize * 10 && Math.random() > 0.975) {
+        drops[i] = y + (cfg.fontSize * (0.72 + cfg.speed));
+        if (drops[i] > H + cfg.fontSize * 10 && Math.random() > 0.975) {
           drops[i] = -cfg.fontSize * (10 + Math.random() * 30);
         }
       }
@@ -95,7 +105,6 @@ export default function MatrixBackground({
     resize();
     window.addEventListener("resize", resize, { passive: true });
 
-    // старт с чистого чёрного
     ctx.clearRect(0, 0, width / DPR, height / DPR);
     ctx.fillStyle = "rgba(0,0,0,1)";
     ctx.fillRect(0, 0, width / DPR, height / DPR);
@@ -112,22 +121,9 @@ export default function MatrixBackground({
     <div
       className="bc-matrix-bg"
       aria-hidden="true"
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 0,          // КЛЮЧ: фон
-        pointerEvents: "none",
-      }}
+      style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none" }}
     >
-      <canvas
-        ref={canvasRef}
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "block",
-          opacity: 1,
-        }}
-      />
+      <canvas ref={canvasRef} style={{ width: "100%", height: "100%", display: "block" }} />
     </div>
   );
 }
