@@ -1,34 +1,45 @@
-html, body, #root {
-  margin: 0 !important;
-  padding: 0 !important;
-  width: 100% !important;
-  min-height: 100% !important;
-  background: #000 !important;
-  background-image: none !important;
-  overflow-x: hidden !important;
+:root{
+  --bg0:#000 !important;
+  --bg1:#000 !important;
 }
 
-.bc-matrix-bg {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: calc(var(--app-vh, 1vh) * 100);
-  z-index: 10;
-  pointer-events: none;
-  background: #000;
+html,body,#root{
+  height:100%;
+  background:#000 !important;
+  background-image:none !important;
+  margin:0 !important;
+  padding:0 !important;
+  overflow-x:hidden !important;
 }
 
-.bc-app-layer {
-  position: relative;
-  z-index: 20;
-  min-height: 100vh;
+/* MATRIX = ОСНОВНОЙ ФОН */
+.bc-matrix-bg{
+  position:fixed;
+  inset:0;
+  width:100vw;
+  height:calc(var(--app-vh, 1vh) * 100);
+  z-index:1;
+  pointer-events:none;
+  background:#000;
 }
 
-/* если где-то есть псевдо-фон на root/body/html — вырубаем */
-html::before, html::after,
-body::before, body::after,
-#root::before, #root::after {
-  content: none !important;
-  display: none !important;
+/* UI выше матрицы */
+.bc-app-layer{
+  position:relative;
+  z-index:2;
+  min-height:100vh;
+}
+
+/* УБИВАЕМ СТАРЫЙ ФОН (AURORA/VIGNETTE/NOISE) */
+.bcHeroBg,
+.bcHeroAurora,
+.bcHeroVignette,
+.bcHeroNoise{
+  display:none !important;
+}
+
+/* На всякий: чтобы секции не подменяли фон */
+.bcHero,
+.bcSection{
+  background:transparent !important;
 }
