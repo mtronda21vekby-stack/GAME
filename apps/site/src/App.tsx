@@ -6,11 +6,11 @@ export function App() {
   return (
     <>
       <MatrixBackground
-        opacity={0.13}
-        speed={0.55}          // в 2 раза медленнее
+        opacity={0.10}
+        speed={0.42}            // ещё медленнее + кино
         density={1.05}
         fontSize={16}
-        color="rgba(0, 255, 170, 0.95)"
+        color="rgba(90, 190, 255, 0.92)" // премиум-blue
         glow
       />
       <div className="bc-app-layer">
