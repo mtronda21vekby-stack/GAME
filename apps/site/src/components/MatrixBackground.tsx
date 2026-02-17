@@ -43,8 +43,8 @@ export default function MatrixBackground({
 
     const resize = () => {
       const vv = window.visualViewport;
-      const W = Math.floor((vv?.width ?? window.innerWidth));
-      const H = Math.floor((vv?.height ?? window.innerHeight));
+      const W = Math.floor(vv?.width ?? window.innerWidth);
+      const H = Math.floor(vv?.height ?? window.innerHeight);
 
       w = Math.floor(W * DPR);
       h = Math.floor(H * DPR);
@@ -66,11 +66,10 @@ export default function MatrixBackground({
       const W = w / DPR;
       const H = h / DPR;
 
-      // ДЕРЖИМ ФОН ЧЁРНЫМ (чтобы не было синего “поля”)
       ctx.globalCompositeOperation = "source-over";
       ctx.globalAlpha = 1;
 
-      // Чем БОЛЬШЕ alpha — тем быстрее “смазывание” уходит в чёрный
+      // держим фон реально чёрным, чтобы не “синело”
       const fade = 0.55;
       ctx.fillStyle = `rgba(0,0,0,${fade})`;
       ctx.fillRect(0, 0, W, H);
@@ -85,7 +84,6 @@ export default function MatrixBackground({
         const x = i * stepX;
         const y = drops[i];
 
-        // маленький хвост (киношнее и плотнее визуально)
         const c0 = chars[(Math.random() * chars.length) | 0];
         const c1 = chars[(Math.random() * chars.length) | 0];
         const c2 = chars[(Math.random() * chars.length) | 0];
@@ -99,11 +97,9 @@ export default function MatrixBackground({
         ctx.globalAlpha = Math.max(0, cfg.opacity);
         ctx.fillText(c2, x, y);
 
-        // скорость падения: меньше = медленнее (как в кино)
         const v = cfg.fontSize * (0.55 + cfg.speed * 2.2);
         drops[i] = y + v;
 
-        // перезапуск колонки
         if (drops[i] > H + cfg.fontSize * 12 && Math.random() > 0.975) {
           drops[i] = -cfg.fontSize * (12 + Math.random() * 40);
         }
@@ -120,7 +116,6 @@ export default function MatrixBackground({
     vv?.addEventListener("resize", resize, { passive: true });
     vv?.addEventListener("scroll", resize, { passive: true });
 
-    // старт — чистый чёрный
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     ctx.globalAlpha = 1;
     ctx.fillStyle = "rgba(0,0,0,1)";
