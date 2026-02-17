@@ -20,10 +20,6 @@
   --bc-accent-26: rgba(255,106,0,0.26);
   --bc-accent-34: rgba(255,106,0,0.34);
 
-  /* Safari edge smoke (очень мягко, без “рамок”) */
-  --bc-smoke-a0: 0.14; /* у самой границы */
-  --bc-smoke-a1: 0.08; /* середина */
-  --bc-smoke-a2: 0.03; /* глубже */
   color-scheme: dark;
 }
 
@@ -34,9 +30,7 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
 button{ -webkit-tap-highlight-color: transparent; }
 a{ -webkit-tap-highlight-color: transparent; }
 
-/* ===== iOS/Safari baseline =====
-   ВАЖНО: html/body НЕ должны быть “фоном” (иначе Safari красит бары).
-   Фон — это fixed .bcMatrixLayer. */
+/* ===== baseline ===== */
 html, body{
   min-height:100%;
   height:auto;
@@ -50,12 +44,14 @@ body{
   -moz-osx-font-smoothing:grayscale;
   overscroll-behavior: none;
 
-  /* safe-area (не ломаем твою геометрию) */
+  /* safe-area */
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Root must stay transparent so the fixed Matrix layer is the real background */
 #root{
   min-height:100%;
+  height:auto;
   background: transparent !important;
 }
 
@@ -74,74 +70,6 @@ body{
   z-index:1;
   min-height:100%;
   background: transparent !important;
-}
-
-/* ==================================================
-   Global Matrix layer — МОНОЛИТ без “границ” сверху/снизу
-   Ключ: overscan по Y, чтобы Safari не показывал “горизонт”.
-   ================================================== */
-.bcMatrixLayer{
-  position: fixed !important;
-  left: 0 !important;
-  right: 0 !important;
-
-  /* overscan: перекрываем bounce и зоны под барами */
-  top: calc(-1 * (max(env(safe-area-inset-top), 0px) + 160px)) !important;
-  bottom: calc(-1 * (max(env(safe-area-inset-bottom), 0px) + 220px)) !important;
-
-  width: 100vw !important;
-  z-index: 0 !important;
-  pointer-events: none !important;
-
-  /* fallback */
-  background: #000 !important;
-
-  transform: translateZ(0);
-}
-
-/* Canvas itself */
-.bcMatrixBg{
-  position:absolute !important;
-  inset:0 !important;
-  width:100vw !important;
-  height:100% !important;
-  pointer-events:none !important;
-  display:block !important;
-  background: transparent !important;
-}
-
-/* ===== Лёгкая дымка сверху/снизу (без резкой границы) ===== */
-.bcMatrixLayer::before,
-.bcMatrixLayer::after{
-  content:"";
-  position:absolute;
-  left:0;
-  width:100%;
-  pointer-events:none;
-}
-
-.bcMatrixLayer::before{
-  top:0;
-  height: clamp(140px, 22vh, 320px);
-  background: linear-gradient(
-    180deg,
-    rgba(0,0,0,var(--bc-smoke-a0)) 0%,
-    rgba(0,0,0,var(--bc-smoke-a1)) 28%,
-    rgba(0,0,0,var(--bc-smoke-a2)) 58%,
-    rgba(0,0,0,0.00) 100%
-  );
-}
-
-.bcMatrixLayer::after{
-  bottom:0;
-  height: clamp(170px, 24vh, 360px);
-  background: linear-gradient(
-    0deg,
-    rgba(0,0,0,var(--bc-smoke-a0)) 0%,
-    rgba(0,0,0,var(--bc-smoke-a1)) 28%,
-    rgba(0,0,0,var(--bc-smoke-a2)) 58%,
-    rgba(0,0,0,0.00) 100%
-  );
 }
 
 /* Motion baseline */
@@ -170,7 +98,6 @@ body{
 .bcHeroAurora{ display:none !important; }
 .bcHeroNoise{ display:none !important; }
 
-/* Чуть мягче внизу, чтобы не было “полосы/горизонта” */
 .bcHeroVignette{
   position:absolute;
   inset:0;
