@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useRef } from "react";
 
 type Props = {
   opacity?: number;
-  speed?: number;
-  density?: number;
+  speed?: number;   // теперь это множитель скорости (0.06..0.14 киношно)
+  density?: number; // 1.3..1.8 плотнее
   fontSize?: number;
   color?: string;
   glow?: boolean;
@@ -11,10 +11,10 @@ type Props = {
 
 export default function MatrixBackground({
   opacity = 0.055,
-  speed = 0.14,
-  density = 1.35,
+  speed = 0.095,
+  density = 1.6,
   fontSize = 14,
-  color = "rgba(90, 190, 255, 0.92)",
+  color = "rgba(90, 190, 255, 0.95)",
   glow = true,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -29,27 +29,33 @@ export default function MatrixBackground({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext("2d", { alpha: true });
+    const ctx = canvas.getContext("2d", { alpha: true, desynchronized: true });
     if (!ctx) return;
 
-    const DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
     const chars =
       "アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-    let w = 0;
-    let h = 0;
+    const DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+
+    let W = 0;
+    let H = 0;
     let cols = 0;
     let drops: number[] = [];
 
+    const getViewport = () => {
+      const vv = window.visualViewport;
+      const w = Math.floor(vv?.width ?? window.innerWidth);
+      const h = Math.floor(vv?.height ?? window.innerHeight);
+      return { w, h };
+    };
+
     const resize = () => {
-      const W = window.innerWidth;
-      const H = window.innerHeight;
+      const vp = getViewport();
+      W = vp.w;
+      H = vp.h;
 
-      w = Math.floor(W * DPR);
-      h = Math.floor(H * DPR);
-
-      canvas.width = w;
-      canvas.height = h;
+      canvas.width = Math.floor(W * DPR);
+      canvas.height = Math.floor(H * DPR);
       canvas.style.width = `${W}px`;
       canvas.style.height = `${H}px`;
 
@@ -57,48 +63,38 @@ export default function MatrixBackground({
       ctx.textBaseline = "top";
       ctx.font = `${cfg.fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`;
 
-      cols = Math.max(18, Math.floor((W / cfg.fontSize) * cfg.density));
+      cols = Math.max(22, Math.floor((W / cfg.fontSize) * cfg.density));
       drops = new Array(cols).fill(0).map(() => Math.random() * H);
     };
 
-    let last = performance.now();
-
-    const draw = (t: number) => {
-      const dt = Math.min(32, t - last); // стабилизируем
-      last = t;
-
-      const W = w / DPR;
-      const H = h / DPR;
-
-      // держим фон чёрным, но мягко (чтобы матрица не убивала контент)
+    const draw = () => {
+      // Киношный шлейф без “затемнения страницы”
       ctx.globalCompositeOperation = "source-over";
       ctx.globalAlpha = 1;
       ctx.fillStyle = "rgba(0,0,0,0.10)";
       ctx.fillRect(0, 0, W, H);
 
       ctx.fillStyle = cfg.color;
-      ctx.shadowBlur = cfg.glow ? 6 : 0;
+      ctx.shadowBlur = cfg.glow ? 8 : 0;
       ctx.shadowColor = cfg.color;
 
       const stepX = W / cols;
 
-      // скорость через dt: кинематографично и одинаково на 60/120fps
-      const dy = cfg.fontSize * (0.55 + cfg.speed) * (dt / 16.67);
-
       for (let i = 0; i < cols; i++) {
-        const x = i * stepX;
+        const x = (i * stepX) | 0;
         const y = drops[i];
 
-        // немного вариации альфы “плотнее”
-        const a = cfg.opacity * (0.75 + Math.random() * 0.5);
-        ctx.globalAlpha = a;
-
+        // “голова” ярче
+        ctx.globalAlpha = Math.min(1, cfg.opacity * 1.6);
         ctx.fillText(chars[(Math.random() * chars.length) | 0], x, y);
 
-        drops[i] = y + dy;
+        // хвост (чуть видимый) — создаёт плотность, но не убивает UI
+        ctx.globalAlpha = cfg.opacity * 0.35;
+        ctx.fillText(chars[(Math.random() * chars.length) | 0], x, y - cfg.fontSize);
 
-        if (drops[i] > H + cfg.fontSize * 10 && Math.random() > 0.985) {
-          drops[i] = -cfg.fontSize * (10 + Math.random() * 30);
+        drops[i] = y + cfg.fontSize * cfg.speed * 6.2;
+        if (drops[i] > H + cfg.fontSize * 24) {
+          drops[i] = -cfg.fontSize * (8 + Math.random() * 22);
         }
       }
 
@@ -107,17 +103,24 @@ export default function MatrixBackground({
     };
 
     resize();
-    window.addEventListener("resize", resize, { passive: true });
 
-    // стартовый чёрный
-    ctx.clearRect(0, 0, w / DPR, h / DPR);
+    const onResize = () => resize();
+    window.addEventListener("resize", onResize, { passive: true });
+    window.visualViewport?.addEventListener("resize", onResize, { passive: true });
+    window.visualViewport?.addEventListener("scroll", onResize, { passive: true });
+
+    // старт: чистый чёрный кадр
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.globalAlpha = 1;
     ctx.fillStyle = "rgba(0,0,0,1)";
-    ctx.fillRect(0, 0, w / DPR, h / DPR);
+    ctx.fillRect(0, 0, W, H);
 
     rafRef.current = requestAnimationFrame(draw);
 
     return () => {
-      window.removeEventListener("resize", resize);
+      window.removeEventListener("resize", onResize);
+      window.visualViewport?.removeEventListener("resize", onResize);
+      window.visualViewport?.removeEventListener("scroll", onResize);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, [cfg]);
