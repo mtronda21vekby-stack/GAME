@@ -4,6 +4,7 @@ import "@blackcrown/assets";
 import "@blackcrown/ui";
 import "./app.css";
 import "./styles/site.css";
+import "./styles/matrix.css";
 import { App } from "./App";
 import { registerSW } from "./pwa/registerSW";
 import { ErrorBoundary } from "./ErrorBoundary";
