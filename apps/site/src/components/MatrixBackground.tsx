@@ -1,144 +1,133 @@
 import React, { useEffect, useMemo, useRef } from "react";
 
-type MatrixBackgroundProps = {
-  className?: string;
+type Props = {
   opacity?: number;
-  speed?: number;
-  density?: number;
-  fontSize?: number;
-  color?: string;
+  speed?: number;      // 0.15..0.35
+  density?: number;    // 0.8..1.8
+  fontSize?: number;   // 12..18
+  color?: string;      // rgba(...)
   glow?: boolean;
 };
 
-const DEFAULT_CHARS =
-  "アイウエオカキクケコサシスセソタチツテトナニヌネノ" +
-  "ハヒフヘホマミムメモヤユヨラリルレロワヲン" +
-  "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-  "ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜｦﾝ";
-
 export default function MatrixBackground({
-  className,
-  opacity = 0.075,                // кино: менее ярко
-  speed = 0.26,                   // кино: медленнее
-  density = 1.38,                 // плотнее
-  fontSize = 15,                  // чуть мельче → плотнее визуально
+  opacity = 0.06,
+  speed = 0.20,
+  density = 1.45,
+  fontSize = 14,
   color = "rgba(90, 190, 255, 0.92)",
   glow = true,
-}: MatrixBackgroundProps) {
+}: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number | null>(null);
-  const chars = useMemo(() => DEFAULT_CHARS.split(""), []);
+
+  const cfg = useMemo(
+    () => ({ opacity, speed, density, fontSize, color, glow }),
+    [opacity, speed, density, fontSize, color, glow]
+  );
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // alpha:true + прозрачный фон (чёрный задаём базой страницы в CSS)
-    const ctx = canvas.getContext("2d", { alpha: true, desynchronized: true });
+    const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
 
-    const prefersReduced =
-      window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
-
-    let w = 0;
-    let h = 0;
-    let dpr = 1;
-
-    let columns = 0;
-    let drops = new Float32Array(0);
-    let speeds = new Float32Array(0);
-    let firstPaint = true;
-
-    const rand = (min: number, max: number) => min + Math.random() * (max - min);
+    const DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    const chars =
+      "アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    let width = 0;
+    let height = 0;
+    let cols = 0;
+    let drops: number[] = [];
 
     const resize = () => {
-      dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-      w = Math.max(1, Math.floor(window.innerWidth));
-      h = Math.max(1, Math.floor(window.innerHeight));
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      width = Math.floor(w * DPR);
+      height = Math.floor(h * DPR);
+      canvas.width = width;
+      canvas.height = height;
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
 
-      canvas.width = Math.floor(w * dpr);
-      canvas.height = Math.floor(h * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-      columns = Math.max(1, Math.floor((w / fontSize) * density));
-      drops = new Float32Array(columns);
-      speeds = new Float32Array(columns);
-
-      for (let i = 0; i < columns; i++) {
-        drops[i] = rand(-h / fontSize, 0);
-        speeds[i] = rand(0.40, 0.92) * speed;
-      }
-
-      // Сразу “прогреваем” — чтобы не было ощущения пустого экрана при старте
-      ctx.clearRect(0, 0, w, h);
-      firstPaint = true;
+      cols = Math.max(16, Math.floor((w / cfg.fontSize) * cfg.density));
+      drops = new Array(cols).fill(0).map(() => Math.random() * h);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      ctx.textBaseline = "top";
+      ctx.font = `${cfg.fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`;
     };
 
-    const onResize = () => resize();
-    window.addEventListener("resize", onResize, { passive: true });
-    window.addEventListener("orientationchange", onResize, { passive: true });
-    resize();
+    const draw = () => {
+      // прозрачный fade, чтобы “киношно” тянулось
+      ctx.globalCompositeOperation = "source-over";
+      ctx.fillStyle = `rgba(0,0,0,${0.12})`;
+      ctx.fillRect(0, 0, width / DPR, height / DPR);
 
-    let last = performance.now();
+      ctx.globalCompositeOperation = "source-over";
+      ctx.fillStyle = cfg.color;
 
-    const tick = (t: number) => {
-      const dt = Math.min(40, t - last);
-      last = t;
-
-      // Прозрачный “fade” (чёрный уже в body). Это убирает “чёрную плашку”.
-      ctx.globalAlpha = 1;
-      ctx.shadowBlur = 0;
-
-      if (firstPaint || prefersReduced) {
-        ctx.clearRect(0, 0, w, h);
-      } else {
-        // Киношный длинный шлейф: рисуем прозрачный чёрный на canvas
-        // (чтобы символы не копились бесконечно)
-        ctx.fillStyle = "rgba(0,0,0,0.08)";
-        ctx.fillRect(0, 0, w, h);
-      }
-
-      firstPaint = false;
-
-      ctx.globalAlpha = Math.max(0, Math.min(1, opacity));
-      ctx.font = `${fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace`;
-
-      if (glow) {
-        ctx.shadowColor = "rgba(70, 170, 255, 0.55)";
-        ctx.shadowBlur = 12;
+      if (cfg.glow) {
+        ctx.shadowColor = cfg.color;
+        ctx.shadowBlur = 10;
       } else {
         ctx.shadowBlur = 0;
       }
 
-      const step = dt / 16.6667;
+      const stepX = (width / DPR) / cols;
+      for (let i = 0; i < cols; i++) {
+        const x = i * stepX;
+        const y = drops[i];
 
-      for (let i = 0; i < columns; i++) {
-        const x = i * fontSize;
-        const y = drops[i] * fontSize;
+        const c = chars[(Math.random() * chars.length) | 0];
+        ctx.globalAlpha = cfg.opacity;
+        ctx.fillText(c, x, y);
 
-        ctx.fillStyle = color;
-        ctx.fillText(chars[(Math.random() * chars.length) | 0], x, y);
-
-        drops[i] += speeds[i] * step;
-
-        if (y > h && Math.random() > 0.990) {
-          drops[i] = rand(-34, 0);
-          speeds[i] = rand(0.40, 0.92) * speed;
+        drops[i] = y + (cfg.fontSize * (0.75 + cfg.speed));
+        if (drops[i] > (height / DPR) + cfg.fontSize * 10 && Math.random() > 0.975) {
+          drops[i] = -cfg.fontSize * (10 + Math.random() * 30);
         }
       }
 
       ctx.globalAlpha = 1;
-      rafRef.current = requestAnimationFrame(tick);
+      rafRef.current = requestAnimationFrame(draw);
     };
 
-    rafRef.current = requestAnimationFrame(tick);
+    resize();
+    window.addEventListener("resize", resize, { passive: true });
+
+    // старт с чистого чёрного
+    ctx.clearRect(0, 0, width / DPR, height / DPR);
+    ctx.fillStyle = "rgba(0,0,0,1)";
+    ctx.fillRect(0, 0, width / DPR, height / DPR);
+
+    rafRef.current = requestAnimationFrame(draw);
 
     return () => {
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("orientationchange", onResize);
+      window.removeEventListener("resize", resize);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [chars, opacity, speed, density, fontSize, color, glow]);
+  }, [cfg]);
 
-  return <canvas ref={canvasRef} className={className ?? "bc-matrix-bg"} aria-hidden="true" />;
+  return (
+    <div
+      className="bc-matrix-bg"
+      aria-hidden="true"
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 0,          // КЛЮЧ: фон
+        pointerEvents: "none",
+      }}
+    >
+      <canvas
+        ref={canvasRef}
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "block",
+          opacity: 1,
+        }}
+      />
+    </div>
+  );
 }
