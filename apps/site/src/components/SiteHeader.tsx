@@ -5,10 +5,19 @@ import { userStorage } from "@blackcrown/core";
 
 type ActiveKey = "home" | "about" | "store" | "support" | "privacy" | "terms" | "account";
 
+function scrollToTop() {
+  const scroller = document.querySelector(".bcScroll") as HTMLElement | null;
+  if (scroller) {
+    scroller.scrollTo({ top: 0, behavior: "auto" });
+    return;
+  }
+  window.scrollTo({ top: 0, behavior: "auto" });
+}
+
 function navSite(path: string) {
   window.history.pushState(null, "", path);
   window.dispatchEvent(new PopStateEvent("popstate"));
-  window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+  scrollToTop();
 }
 
 function navExternal(path: string) {
