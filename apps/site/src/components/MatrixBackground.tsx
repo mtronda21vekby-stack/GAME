@@ -2,11 +2,11 @@ import React, { useEffect, useMemo, useRef } from "react";
 
 type MatrixBackgroundProps = {
   className?: string;
-  opacity?: number;   // 0..1
-  speed?: number;     // 0.2..2
-  density?: number;   // 0.6..1.6
-  fontSize?: number;  // px
-  color?: string;     // CSS color
+  opacity?: number;
+  speed?: number;
+  density?: number;
+  fontSize?: number;
+  color?: string;
   glow?: boolean;
 };
 
@@ -18,11 +18,11 @@ const DEFAULT_CHARS =
 
 export default function MatrixBackground({
   className,
-  opacity = 0.11,
-  speed = 0.45, // киношно: медленно
-  density = 1.0,
+  opacity = 0.10,
+  speed = 0.42,
+  density = 1.05,
   fontSize = 16,
-  color = "rgba(90, 190, 255, 0.92)", // премиум-blue
+  color = "rgba(90, 190, 255, 0.92)",
   glow = true,
 }: MatrixBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -31,6 +31,9 @@ export default function MatrixBackground({
   const chars = useMemo(() => DEFAULT_CHARS.split(""), []);
 
   useEffect(() => {
+    const root = document.documentElement;
+    root.classList.add("bc-matrix-on");
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -38,17 +41,15 @@ export default function MatrixBackground({
     if (!ctx) return;
 
     const prefersReduced =
-      typeof window !== "undefined" &&
-      window.matchMedia &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
 
     let w = 0;
     let h = 0;
     let dpr = 1;
 
     let columns = 0;
-    let drops: Float32Array = new Float32Array(0);
-    let speeds: Float32Array = new Float32Array(0);
+    let drops = new Float32Array(0);
+    let speeds = new Float32Array(0);
     let firstPaint = true;
 
     const rand = (min: number, max: number) => min + Math.random() * (max - min);
@@ -69,7 +70,7 @@ export default function MatrixBackground({
 
       for (let i = 0; i < columns; i++) {
         drops[i] = rand(-h / fontSize, 0);
-        speeds[i] = rand(0.45, 1.05) * speed; // кино: спокойнее
+        speeds[i] = rand(0.45, 1.05) * speed;
       }
 
       ctx.globalAlpha = 1;
@@ -95,7 +96,6 @@ export default function MatrixBackground({
       const dt = Math.min(40, t - last);
       last = t;
 
-      // ЧЁРНЫЙ ФОН всегда. Киношный длинный шлейф:
       ctx.globalAlpha = 1;
       ctx.shadowBlur = 0;
       ctx.fillStyle = firstPaint || prefersReduced ? "#000" : "rgba(0,0,0,0.10)";
@@ -106,7 +106,7 @@ export default function MatrixBackground({
       ctx.font = `${fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace`;
 
       if (glow) {
-        ctx.shadowColor = "rgba(70, 170, 255, 0.55)"; // СИНИЙ glow
+        ctx.shadowColor = "rgba(70, 170, 255, 0.55)";
         ctx.shadowBlur = 12;
       } else {
         ctx.shadowBlur = 0;
@@ -138,6 +138,7 @@ export default function MatrixBackground({
     return () => {
       ro.disconnect();
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      root.classList.remove("bc-matrix-on");
     };
   }, [chars, opacity, speed, density, fontSize, color, glow]);
 
