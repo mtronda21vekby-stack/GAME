@@ -1,7 +1,6 @@
 import React from "react";
 
 export type MatrixBackgroundProps = {
-  /** если хочешь переопределить стиль/класс — необязательно */
   className?: string;
   style?: React.CSSProperties;
   /** 0.5..2 — плотность/скорость (по умолчанию 1) */
@@ -25,16 +24,15 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
     const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
 
-    // prefers-reduced-motion: reduce => делаем статичный фон без анимации
+    // prefers-reduced-motion: reduce => статичный фон без анимации
     const mql = window.matchMedia?.("(prefers-reduced-motion: reduce)");
     let reduced = !!mql?.matches;
 
-    // Цвета "blue matrix"
+    // Blue matrix colors
     const FG = "rgba(90, 180, 255, 0.92)";
     const FG_DIM = "rgba(90, 180, 255, 0.55)";
     const FADE = "rgba(0, 0, 0, 0.12)";
 
-    // Набор символов (читаемо и “богато”)
     const glyphs =
       "アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズヅブプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%&*+<>";
 
@@ -45,13 +43,7 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
       fontSize: 16,
       cols: 0,
       drops: [] as number[],
-      tick: 0,
     };
-
-    function getRect() {
-      // ВАЖНО: берем реальный размер элемента (CSS задаёт overscan/inset)
-      return canvas.getBoundingClientRect();
-    }
 
     function randChar() {
       const i = (Math.random() * glyphs.length) | 0;
@@ -61,7 +53,7 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
     function drawStatic() {
       ctx.clearRect(0, 0, state.w, state.h);
 
-      // лёгкая дымка под символами (чтоб было “премиум”, но без грязи)
+      // мягкая “дымка”
       ctx.fillStyle = "rgba(0,0,0,0.35)";
       ctx.fillRect(0, 0, state.w, state.h);
 
@@ -74,42 +66,40 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
       }
     }
 
+    function measureViewport() {
+      // ВАЖНО: берём реальные размеры viewport без подписки на scroll
+      const vv = window.visualViewport;
+      const w = Math.floor(vv?.width ?? window.innerWidth);
+      const h = Math.floor(vv?.height ?? window.innerHeight);
+      return { w: Math.max(1, w), h: Math.max(1, h) };
+    }
+
     function resizeNow() {
-      const r = getRect();
+      const { w, h } = measureViewport();
       const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
 
-      state.w = Math.max(1, Math.floor(r.width));
-      state.h = Math.max(1, Math.floor(r.height));
+      // если размер не изменился — ничего не делаем (чтобы не лагало)
+      if (w === state.w && h === state.h && dpr === state.dpr) return;
+
+      state.w = w;
+      state.h = h;
       state.dpr = dpr;
 
-      canvas.width = Math.floor(state.w * dpr);
-      canvas.height = Math.floor(state.h * dpr);
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
 
-      // рисуем в CSS-пикселях
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      // динамический fontSize: чуть крупнее на больших экранах
-      const base = state.w >= 980 ? 18 : 16;
+      const base = w >= 980 ? 18 : 16;
       state.fontSize = Math.max(14, Math.min(22, Math.floor(base * (0.95 + 0.18 * intensity))));
 
       ctx.font = `700 ${state.fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace`;
       ctx.textBaseline = "top";
 
-      state.cols = Math.max(10, Math.floor(state.w / state.fontSize));
-      state.drops = new Array(state.cols).fill(0).map(() => Math.random() * state.h);
+      state.cols = Math.max(10, Math.floor(w / state.fontSize));
+      state.drops = new Array(state.cols).fill(0).map(() => Math.random() * h);
 
-      ctx.clearRect(0, 0, state.w, state.h);
       drawStatic();
-    }
-
-    // --- THROTTLE resize events (iOS visualViewport scroll может стрелять очень часто)
-    let resizeRaf: number | null = null;
-    function scheduleResize() {
-      if (resizeRaf != null) return;
-      resizeRaf = window.requestAnimationFrame(() => {
-        resizeRaf = null;
-        resizeNow();
-      });
     }
 
     function stop() {
@@ -120,7 +110,7 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
     }
 
     function frame() {
-      // fade слой
+      // fade
       ctx.fillStyle = FADE;
       ctx.fillRect(0, 0, state.w, state.h);
 
@@ -131,23 +121,19 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
         const x = i * state.fontSize;
         const y = state.drops[i];
 
-        // яркий “головной” символ
         ctx.fillStyle = FG;
         ctx.fillText(randChar(), x, y);
 
-        // следующий бледнее
         ctx.fillStyle = FG_DIM;
         ctx.fillText(randChar(), x, y + state.fontSize);
 
         state.drops[i] = y + step * speed;
 
-        // сброс вниз с рандомом
         if (state.drops[i] > state.h + state.fontSize * 2) {
           if (Math.random() > 0.975) state.drops[i] = -Math.random() * 200;
         }
       }
 
-      state.tick++;
       rafRef.current = window.requestAnimationFrame(frame);
     }
 
@@ -158,50 +144,47 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
 
     const onMql = () => {
       reduced = !!mql?.matches;
-      scheduleResize();
+      resizeNow();
       if (reduced) stop();
       else start();
     };
 
     mql?.addEventListener?.("change", onMql);
 
-    // visibility + BFCache (иногда iOS “забывает” оживить RAF)
+    // Экономия батареи + iOS иногда “замораживает” анимацию
     const onVis = () => {
       if (document.visibilityState === "hidden") stop();
       else if (!reduced) start();
     };
 
+    // BFCache / возврат на вкладку
     const onPageShow = () => {
-      scheduleResize();
+      resizeNow();
       if (!reduced) start();
     };
 
-    window.addEventListener("resize", scheduleResize);
-    window.addEventListener("orientationchange", scheduleResize);
+    // resize события (НЕ scroll!)
+    const onResize = () => resizeNow();
+
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
     window.addEventListener("visibilitychange", onVis);
     window.addEventListener("pageshow", onPageShow);
 
-    // visualViewport — must-have на iOS
+    // на iOS изменение панелей даёт именно resize у visualViewport
     const vv = window.visualViewport;
-    vv?.addEventListener?.("resize", scheduleResize);
-    vv?.addEventListener?.("scroll", scheduleResize);
+    vv?.addEventListener?.("resize", onResize);
 
-    // init
     resizeNow();
     if (!reduced) start();
 
     return () => {
       stop();
-      if (resizeRaf != null) window.cancelAnimationFrame(resizeRaf);
-
-      window.removeEventListener("resize", scheduleResize);
-      window.removeEventListener("orientationchange", scheduleResize);
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
       window.removeEventListener("visibilitychange", onVis);
       window.removeEventListener("pageshow", onPageShow);
-
-      vv?.removeEventListener?.("resize", scheduleResize);
-      vv?.removeEventListener?.("scroll", scheduleResize);
-
+      vv?.removeEventListener?.("resize", onResize);
       mql?.removeEventListener?.("change", onMql);
     };
   }, [intensity]);
@@ -210,7 +193,7 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
     <canvas
       ref={canvasRef}
       className={["bcMatrixBg", className].filter(Boolean).join(" ")}
-      // ВАЖНО: НЕ задаём height/width инлайном — иначе убиваем 100dvh/100lvh в CSS.
+      // ВАЖНО: не задаём height/width инлайном — только CSS рулит
       style={{
         display: "block",
         pointerEvents: "none",
