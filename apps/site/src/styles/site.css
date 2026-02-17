@@ -35,7 +35,7 @@ html,body{
   background:#000;
 }
 
-/* === КАК В ЭТОМ ЧАТЕ: BODY НЕ СКРОЛЛИТСЯ === */
+/* === BODY НЕ СКРОЛЛИТСЯ (как чат) === */
 body{
   margin:0;
   color:var(--text);
@@ -43,13 +43,14 @@ body{
   -moz-osx-font-smoothing:grayscale;
   background:#000;
 
-  overflow: hidden !important;            /* ключ: убираем black fields при overscroll */
+  overflow: hidden !important;
   overscroll-behavior: none;
   touch-action: pan-y;
 }
 
 #root{
   min-height:100%;
+  height:100%;
   background:#000;
 }
 
@@ -67,7 +68,10 @@ a{ -webkit-tap-highlight-color: transparent; }
 
 canvas, iframe{ border:0 !important; outline:0 !important; }
 
-.bcSiteRoot{ min-height:100%; }
+.bcSiteRoot{
+  min-height:100%;
+  background: transparent !important;
+}
 
 /* =========================
    MATRIX LAYER (MAIN BG)
@@ -76,25 +80,42 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
   position: fixed;
   inset: 0;
   width: 100vw;
+  height: 100svh;
   height: 100dvh;
   height: 100vh;
-  z-index: 1;
+  z-index: 0;                 /* КЛЮЧ: фон всегда под контентом */
   pointer-events: none;
-  background: transparent;
+  background: #000;
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+.bc-matrix-bg canvas{
+  width:100% !important;
+  height:100% !important;
+  display:block;
 }
 
 /* =========================
    CHAT-LIKE SCROLL (NO BLACK FIELDS)
    ========================= */
 .bcScroll{
+  position: relative;
+  z-index: 2;
+
+  height: 100svh;
   height: 100dvh;
   height: 100vh;
+
   overflow-y: auto;
   overflow-x: hidden;
+
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: none;
+
   background: transparent;
 
+  /* safe-area без “пустых полос”: фон под ним = матрица */
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
 }
@@ -103,6 +124,7 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
   position: relative;
   z-index: 2;
   min-height: 100%;
+  background: transparent !important;
 }
 
 /* ---- motion base ---- */
@@ -140,7 +162,7 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
   background: transparent !important;
 }
 
-/* === ВАЖНО: убираем старый фон Hero полностью === */
+/* === убираем старый фон Hero полностью === */
 .bcHeroBg,
 .bcHeroAurora,
 .bcHeroVignette,
