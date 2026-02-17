@@ -2,23 +2,60 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
-    <!-- ВАЖНО: чтобы “полосы” вокруг UI Safari были чёрные -->
+    <!-- Viewport (ВАЖНО для iOS + 100svh) -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+
+    <!-- Safari UI цвет (убирает серые/белые полосы) -->
     <meta name="theme-color" content="#000000" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="color-scheme" content="dark only" />
 
+    <!-- PWA fullscreen -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
 
+    <!-- Icons -->
     <link rel="icon" href="/Icons/favicon.svg" type="image/svg+xml" />
     <link rel="alternate icon" href="/Icons/favicon.ico" />
 
-    <link rel="apple-touch-icon" sizes="180x180" href="/pwa/icons/apple-touch-icon.png" />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/pwa/icons/apple-touch-icon.png"
+    />
     <link rel="manifest" href="/manifest.webmanifest" />
 
     <title>BlackCrown</title>
+
+    <style>
+      /* УБИВАЕМ любые дефолтные отступы и фоны */
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #000;
+        min-height: 100%;
+      }
+
+      body {
+        min-height: 100svh;
+        overscroll-behavior-y: none;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      #root {
+        min-height: 100svh;
+        background: transparent;
+      }
+    </style>
   </head>
+
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
