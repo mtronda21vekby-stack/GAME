@@ -8,6 +8,13 @@ html, body, #root {
   overflow-x: hidden !important;
 }
 
+body {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: none;
+}
+
+/* убираем возможные псевдо-фоны */
 .bc-matrix-on html::before,
 .bc-matrix-on html::after,
 .bc-matrix-on body::before,
@@ -23,18 +30,19 @@ html, body, #root {
   inset: 0;
   width: 100vw;
   height: 100vh;
-  z-index: 10;          /* поверх старых фонов */
+  height: 100dvh;        /* важно: чтобы не было “окон” при динамическом тулбаре */
+  z-index: 10;
   pointer-events: none;
   background: #000;
 }
 
 .bc-app-layer {
   position: relative;
-  z-index: 20;          /* весь UI выше матрицы */
+  z-index: 20;
   min-height: 100vh;
 }
 
-/* На ПК матрицу обычно “мылит” backdrop-filter у стекла */
+/* ПК: если стекло мылит матрицу — отключаем blur только в режиме матрицы */
 @media (pointer: fine) {
   .bc-matrix-on .glass,
   .bc-matrix-on .glassPanel,
