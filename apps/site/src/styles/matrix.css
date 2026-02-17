@@ -1,53 +1,86 @@
+/* =========================================
+   MATRIX LAYER
+   - fixed, всегда под контентом
+   - закрывает full viewport (включая iOS safe areas)
+   - без тяжёлых пересчётов на scroll
+   ========================================= */
+
+.bcMatrixLayer{
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+
+  /* покрываем разные viewport-режимы */
+  height: 100vh;
+  height: 100dvh;
+  height: 100lvh;
+
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+
+  /* fallback если canvas не успел */
+  background: #000;
+  transform: translateZ(0);
+}
+
+/* canvas растягиваем на весь слой */
+.bcMatrixBg{
+  width: 100%;
+  height: 100%;
+  display: block;
+  border: 0;
+  outline: 0;
+}
+
+/* =========================================
+   EDGE FADE (как у “новых сайтов”)
+   Это НЕ чёрные блоки — это полупрозрачный
+   градиент, чтобы Safari UI визуально “растворялся”.
+   ========================================= */
+
 :root{
-  --bg0:#000 !important;
-  --bg1:#000 !important;
+  --bc-edge-fade: 72px;   /* можно 56..96 */
+  --bc-edge-alpha: 0.85;  /* насколько затемнять края */
 }
 
-html,body,#root{
-  height:100%;
-  margin:0 !important;
-  padding:0 !important;
-  overflow-x:hidden !important;
-  background:#000 !important;
-  background-image:none !important;
+.bcMatrixLayer::before,
+.bcMatrixLayer::after{
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: var(--bc-edge-fade);
+  pointer-events: none;
+  z-index: 1;
 }
 
-/* УБИВАЕМ СТАРЫЙ HERO ФОН */
-.bcHeroBg,
-.bcHeroAurora,
-.bcHeroVignette,
-.bcHeroNoise{
-  display:none !important;
+/* верх */
+.bcMatrixLayer::before{
+  top: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0,0,0,var(--bc-edge-alpha)) 0%,
+    rgba(0,0,0,0.35) 45%,
+    rgba(0,0,0,0.0) 100%
+  );
 }
 
-.bcHero,
-.bcSection{
-  background:transparent !important;
+/* низ */
+.bcMatrixLayer::after{
+  bottom: 0;
+  background: linear-gradient(
+    0deg,
+    rgba(0,0,0,var(--bc-edge-alpha)) 0%,
+    rgba(0,0,0,0.35) 45%,
+    rgba(0,0,0,0.0) 100%
+  );
 }
 
-/* MATRIX: прозрачный canvas поверх чёрной базы */
-.bc-matrix-bg{
-  position:fixed;
-  inset:0;
-  width:100vw;
-  height:100dvh;                 /* ключ: убирает “рамки” при открытии/тулбаре */
-  height:100vh;                  /* fallback */
-  z-index:1;
-  pointer-events:none;
-  background:transparent;        /* важно: canvas не “плашка” */
-}
-
-/* UI выше матрицы */
-.bc-app-layer{
-  position:relative;
-  z-index:2;
-  min-height:100vh;
-}
-
-/* на всякий: псевдо-фоны */
-html::before, html::after,
-body::before, body::after,
-#root::before, #root::after{
-  content:none !important;
-  display:none !important;
+/* reduced motion: без лишних эффектов */
+@media (prefers-reduced-motion: reduce){
+  .bcMatrixLayer::before,
+  .bcMatrixLayer::after{
+    display: none;
+  }
 }
