@@ -2,22 +2,42 @@ import React from "react";
 import MatrixBackground from "./components/MatrixBackground";
 import { Router } from "./routes/Router";
 
-export function App() {
-  return (
-    <>
-      <MatrixBackground
-        opacity={0.06}
-        speed={0.11}
-        density={1.55}
-        fontSize={14}
-        color="rgba(90, 190, 255, 0.90)"
-        glow={false}
-      />
-      <div className="bc-app-layer">
-        <Router />
-      </div>
-    </>
-  );
+function syncAppVh() {
+  const h = window.visualViewport?.height ?? window.innerHeight;
+  document.documentElement.style.setProperty("--app-vh", `${Math.round(h)}px`);
 }
 
-export default App;
+export function App() {
+  React.useEffect(() => {
+    syncAppVh();
+
+    const onResize = () => syncAppVh();
+    const vv = window.visualViewport;
+
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+
+    // iOS Safari: высота viewport реально меняется во время скролла — слушаем visualViewport
+    vv?.addEventListener("resize", onResize);
+    vv?.addEventListener("scroll", onResize);
+
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+      vv?.removeEventListener("resize", onResize);
+      vv?.removeEventListener("scroll", onResize);
+    };
+  }, []);
+
+  return (
+    <div className="bcAppShell">
+      <div className="bcMatrixLayer" aria-hidden="true">
+        <MatrixBackground />
+      </div>
+
+      <div className="bcAppContent">
+        <Router />
+      </div>
+    </div>
+  );
+}
