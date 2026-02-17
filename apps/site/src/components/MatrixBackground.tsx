@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useRef } from "react";
 type MatrixBackgroundProps = {
   className?: string;
   opacity?: number;   // 0..1
-  speed?: number;     // 0.25..3
+  speed?: number;     // 0.2..2
   density?: number;   // 0.6..1.6
   fontSize?: number;  // px
   color?: string;     // CSS color
@@ -18,11 +18,11 @@ const DEFAULT_CHARS =
 
 export default function MatrixBackground({
   className,
-  opacity = 0.14,
-  speed = 0.55,          // в 2 раза медленнее по умолчанию
+  opacity = 0.11,
+  speed = 0.45, // киношно: медленно
   density = 1.0,
   fontSize = 16,
-  color = "rgba(0, 255, 170, 0.95)",
+  color = "rgba(90, 190, 255, 0.92)", // премиум-blue
   glow = true,
 }: MatrixBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -69,10 +69,9 @@ export default function MatrixBackground({
 
       for (let i = 0; i < columns; i++) {
         drops[i] = rand(-h / fontSize, 0);
-        speeds[i] = rand(0.55, 1.35) * speed;
+        speeds[i] = rand(0.45, 1.05) * speed; // кино: спокойнее
       }
 
-      // Жёстко заливаем чёрным, чтобы ничего снизу не светилось
       ctx.globalAlpha = 1;
       ctx.shadowBlur = 0;
       ctx.fillStyle = "#000";
@@ -96,10 +95,10 @@ export default function MatrixBackground({
       const dt = Math.min(40, t - last);
       last = t;
 
-      // ФОН: всегда чёрный. Первый кадр — полностью, дальше — “шлейф”.
+      // ЧЁРНЫЙ ФОН всегда. Киношный длинный шлейф:
       ctx.globalAlpha = 1;
       ctx.shadowBlur = 0;
-      ctx.fillStyle = firstPaint || prefersReduced ? "#000" : "rgba(0,0,0,0.22)";
+      ctx.fillStyle = firstPaint || prefersReduced ? "#000" : "rgba(0,0,0,0.10)";
       ctx.fillRect(0, 0, w, h);
       firstPaint = false;
 
@@ -107,8 +106,8 @@ export default function MatrixBackground({
       ctx.font = `${fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace`;
 
       if (glow) {
-        ctx.shadowColor = "rgba(0, 255, 170, 0.50)";
-        ctx.shadowBlur = 10;
+        ctx.shadowColor = "rgba(70, 170, 255, 0.55)"; // СИНИЙ glow
+        ctx.shadowBlur = 12;
       } else {
         ctx.shadowBlur = 0;
       }
@@ -124,9 +123,9 @@ export default function MatrixBackground({
 
         drops[i] += speeds[i] * step;
 
-        if (y > h && Math.random() > 0.985) {
-          drops[i] = rand(-24, 0);
-          speeds[i] = rand(0.55, 1.35) * speed;
+        if (y > h && Math.random() > 0.987) {
+          drops[i] = rand(-28, 0);
+          speeds[i] = rand(0.45, 1.05) * speed;
         }
       }
 
