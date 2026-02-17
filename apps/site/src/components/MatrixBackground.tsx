@@ -29,10 +29,11 @@ export default function MatrixBackground({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext("2d", { alpha: true });
+    const ctx = canvas.getContext("2d", { alpha: false }); // КЛЮЧ: без прозрачности
     if (!ctx) return;
 
     const DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+
     const chars =
       "アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -50,6 +51,7 @@ export default function MatrixBackground({
 
       canvas.width = w;
       canvas.height = h;
+
       canvas.style.width = `${W}px`;
       canvas.style.height = `${H}px`;
 
@@ -65,12 +67,11 @@ export default function MatrixBackground({
       const W = w / DPR;
       const H = h / DPR;
 
-      // BLACK-LOCK: держим фон реально чёрным (иначе blur красит UI)
+      // ЖЕСТКАЯ ЗАЛИВКА ЧЕРНЫМ КАЖДЫЙ КАДР
       ctx.globalCompositeOperation = "source-over";
-      ctx.fillStyle = "rgba(0,0,0,0.30)";
+      ctx.fillStyle = "#000000";
       ctx.fillRect(0, 0, W, H);
 
-      // символы
       ctx.fillStyle = cfg.color;
       ctx.shadowBlur = cfg.glow ? 7 : 0;
       ctx.shadowColor = cfg.color;
@@ -85,6 +86,7 @@ export default function MatrixBackground({
         ctx.fillText(chars[(Math.random() * chars.length) | 0], x, y);
 
         drops[i] = y + cfg.fontSize * (0.75 + cfg.speed);
+
         if (drops[i] > H + cfg.fontSize * 10 && Math.random() > 0.975) {
           drops[i] = -cfg.fontSize * (10 + Math.random() * 30);
         }
@@ -95,11 +97,7 @@ export default function MatrixBackground({
     };
 
     resize();
-    window.addEventListener("resize", resize, { passive: true });
-
-    ctx.clearRect(0, 0, w / DPR, h / DPR);
-    ctx.fillStyle = "rgba(0,0,0,1)";
-    ctx.fillRect(0, 0, w / DPR, h / DPR);
+    window.addEventListener("resize", resize);
 
     rafRef.current = requestAnimationFrame(draw);
 
@@ -110,7 +108,17 @@ export default function MatrixBackground({
   }, [cfg]);
 
   return (
-    <div className="bc-matrix-bg" aria-hidden="true">
+    <div
+      className="bc-matrix-bg"
+      aria-hidden="true"
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 0,
+        pointerEvents: "none",
+        background: "#000000", // гарантируем черный
+      }}
+    >
       <canvas ref={canvasRef} />
     </div>
   );
