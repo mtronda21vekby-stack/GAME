@@ -1,52 +1,15 @@
-/* =========================================================
-   matrix.css (подключён ПОСЛЕ site.css)
-   Цель: убрать “чёрные рамки/горизонты” сверху/снизу.
-   Решение: никаких overlay-псевдоэлементов (fade), только
-   fixed Matrix-слой, который закрывает экран.
-   ========================================================= */
+/* ============================
+   MATRIX GLOBAL BACKGROUND
+   ============================ */
 
-/* фон страницы должен быть прозрачным, фон рисует Matrix layer */
-html, body, #root{
-  background: transparent !important;
-}
-
-body{
-  margin: 0;
-}
-
-/* если где-то остались fade-оверлеи — убиваем их в ноль */
-body::before,
-body::after,
-.bcMatrixLayer::before,
-.bcMatrixLayer::after{
-  content: none !important;
-  display: none !important;
-}
-
-/* (по желанию) убрать разделители секций — если хочешь монолит */
-.bcSection::before{
-  content: none !important;
-  display: none !important;
-}
-
-/* оболочка приложения прозрачная */
-.bcAppShell,
-.bcAppContent{
-  background: transparent !important;
-}
-
-/* ==================================================
-   ГЛОБАЛЬНЫЙ Matrix слой
-   - fixed
-   - реально закрывает весь экран (large/dynamic viewport)
-   - без “рамок” (потому что нет fade поверх)
-   ================================================== */
+/* Фиксированный слой фона */
 .bcMatrixLayer{
   position: fixed;
   inset: 0;
   width: 100vw;
 
-  /* prefer large viewport, then dynamic, then classic */
+  /* IMPORTANT:
+     предпочитаем самый "большой" viewport (lvh), потом динамический (dvh), потом fallback (vh) */
   height: 100vh;
   height: 100dvh;
   height: 100lvh;
@@ -54,15 +17,14 @@ body::after,
   z-index: 0;
   pointer-events: none;
 
-  /* fallback пока canvas не успел нарисоваться */
+  /* чтобы не было белых вспышек */
   background: #000;
 
   transform: translateZ(0);
   will-change: transform;
-  overflow: hidden;
 }
 
-/* сам canvas */
+/* Canvas внутри слоя занимает всю высоту слоя */
 .bcMatrixBg{
   position: absolute;
   inset: 0;
@@ -70,10 +32,12 @@ body::after,
   height: 100%;
   display: block;
   pointer-events: none;
+
+  /* canvas сам рисует, фон не нужен */
   background: transparent;
 }
 
-/* контент поверх */
+/* Контент всегда выше матрицы */
 .bcAppContent{
   position: relative;
   z-index: 1;
