@@ -20,6 +20,10 @@
   --bc-accent-26: rgba(255,106,0,0.26);
   --bc-accent-34: rgba(255,106,0,0.34);
 
+  /* Edge fade (top/bottom) — чтобы "поля" выглядели прозрачными под фон */
+  --bc-edge-strong: 0.78;
+  --bc-edge-mid: 0.40;
+
   color-scheme: dark;
 }
 
@@ -32,8 +36,9 @@ a{ -webkit-tap-highlight-color: transparent; }
 
 /* ===== iOS edge-to-edge baseline ===== */
 html, body{
+  height: 100%;
   min-height:100%;
-  background:var(--bg0);
+  background: var(--bg0);
 }
 
 body{
@@ -47,8 +52,10 @@ body{
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Root must stay transparent so the fixed Matrix layer is the real background */
 #root{
   min-height:100%;
+  height: 100%;
   background: transparent;
 }
 
@@ -59,6 +66,7 @@ body{
 .bcAppShell{
   position:relative;
   min-height:100%;
+  height: 100%;
   background: transparent;
 }
 
@@ -70,23 +78,78 @@ body{
 }
 
 /* ==================================================
-   Matrix canvas (global) — NO LAG VERSION
-   - закрывает экран
-   - НЕ использует overscan
-   - высота подстраивается через --app-vh (у тебя она синкается в App)
+   Global Matrix layer (wrapper) — FIX black bars
+   ВАЖНО: именно слой (div) фиксируем на 100vh/100dvh,
+   а canvas внутри просто занимает 100% высоты.
+   Это НЕ ломает логику и НЕ грузит iOS как dvh+JS-resize.
    ================================================== */
-.bcMatrixBg{
+.bcMatrixLayer{
   position: fixed;
-  left: 0;
-  top: 0;
+  inset: 0;
   width: 100vw;
-  height: calc(var(--app-vh, 100vh));
+
+  /* покрываем экран полностью */
+  height: 100vh;
+  height: 100dvh;
+  height: 100lvh;
+
   z-index: 0;
   pointer-events: none;
   background: #000; /* fallback */
-  display:block;
   transform: translateZ(0);
   will-change: transform;
+}
+
+/* Canvas itself (MatrixBackground) */
+.bcMatrixBg{
+  position: absolute;
+  inset: 0;
+  width: 100vw;
+  height: 100%;
+  pointer-events: none;
+  display:block;
+  background: transparent;
+}
+
+/* ===== Top/Bottom edge fade (без blur, чтобы не лагало) ===== */
+body::before,
+body::after{
+  content:"";
+  position: fixed;
+  left: 0;
+  width: 100vw;
+  pointer-events: none;
+  z-index: 2; /* над Matrix, но ниже UI (UI у тебя z-index:2+) */
+  transform: translateZ(0);
+}
+
+/* TOP */
+body::before{
+  top: 0;
+  height: calc(env(safe-area-inset-top) + 14px);
+  background: linear-gradient(
+    180deg,
+    rgba(0,0,0,var(--bc-edge-strong)) 0%,
+    rgba(0,0,0,var(--bc-edge-mid)) 55%,
+    rgba(0,0,0,0) 100%
+  );
+}
+
+/* BOTTOM */
+body::after{
+  bottom: 0;
+  height: calc(env(safe-area-inset-bottom) + 18px);
+  background: linear-gradient(
+    0deg,
+    rgba(0,0,0,var(--bc-edge-strong)) 0%,
+    rgba(0,0,0,var(--bc-edge-mid)) 55%,
+    rgba(0,0,0,0) 100%
+  );
+}
+
+@supports not (padding: env(safe-area-inset-top)){
+  body::before{ height: 18px; }
+  body::after{ height: 22px; }
 }
 
 /* Motion baseline */
@@ -127,7 +190,7 @@ body{
 /* Top bar */
 .bcTop{
   position:relative;
-  z-index:2;
+  z-index:3; /* выше edge-fade */
   display:flex;
   align-items:center;
   justify-content:space-between;
