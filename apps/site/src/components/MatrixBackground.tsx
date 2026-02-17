@@ -2,11 +2,11 @@ import React, { useEffect, useMemo, useRef } from "react";
 
 type MatrixBackgroundProps = {
   className?: string;
-  opacity?: number;          // 0..1
-  speed?: number;            // 0.5..3
-  density?: number;          // 0.6..1.6
-  fontSize?: number;         // px
-  color?: string;            // CSS color
+  opacity?: number;   // 0..1
+  speed?: number;     // 0.25..3
+  density?: number;   // 0.6..1.6
+  fontSize?: number;  // px
+  color?: string;     // CSS color
   glow?: boolean;
 };
 
@@ -19,10 +19,10 @@ const DEFAULT_CHARS =
 export default function MatrixBackground({
   className,
   opacity = 0.14,
-  speed = 1.0,
+  speed = 0.55,          // в 2 раза медленнее по умолчанию
   density = 1.0,
   fontSize = 16,
-  color = "rgba(0, 255, 150, 0.95)",
+  color = "rgba(0, 255, 170, 0.95)",
   glow = true,
 }: MatrixBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -34,7 +34,7 @@ export default function MatrixBackground({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext("2d", { alpha: true, desynchronized: true });
+    const ctx = canvas.getContext("2d", { alpha: false, desynchronized: true });
     if (!ctx) return;
 
     const prefersReduced =
@@ -49,6 +49,7 @@ export default function MatrixBackground({
     let columns = 0;
     let drops: Float32Array = new Float32Array(0);
     let speeds: Float32Array = new Float32Array(0);
+    let firstPaint = true;
 
     const rand = (min: number, max: number) => min + Math.random() * (max - min);
 
@@ -68,13 +69,19 @@ export default function MatrixBackground({
 
       for (let i = 0; i < columns; i++) {
         drops[i] = rand(-h / fontSize, 0);
-        speeds[i] = rand(0.6, 1.8) * speed;
+        speeds[i] = rand(0.55, 1.35) * speed;
       }
+
+      // Жёстко заливаем чёрным, чтобы ничего снизу не светилось
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, w, h);
+      firstPaint = true;
     };
 
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
-
     resize();
 
     let last = performance.now();
@@ -89,14 +96,18 @@ export default function MatrixBackground({
       const dt = Math.min(40, t - last);
       last = t;
 
-      ctx.fillStyle = `rgba(0,0,0,${prefersReduced ? 0.28 : 0.18})`;
+      // ФОН: всегда чёрный. Первый кадр — полностью, дальше — “шлейф”.
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = firstPaint || prefersReduced ? "#000" : "rgba(0,0,0,0.22)";
       ctx.fillRect(0, 0, w, h);
+      firstPaint = false;
 
       ctx.globalAlpha = Math.max(0, Math.min(1, opacity));
       ctx.font = `${fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace`;
 
       if (glow) {
-        ctx.shadowColor = "rgba(0, 255, 170, 0.55)";
+        ctx.shadowColor = "rgba(0, 255, 170, 0.50)";
         ctx.shadowBlur = 10;
       } else {
         ctx.shadowBlur = 0;
@@ -108,20 +119,18 @@ export default function MatrixBackground({
         const x = i * fontSize;
         const y = drops[i] * fontSize;
 
-        const ch = chars[(Math.random() * chars.length) | 0];
         ctx.fillStyle = color;
-        ctx.fillText(ch, x, y);
+        ctx.fillText(chars[(Math.random() * chars.length) | 0], x, y);
 
         drops[i] += speeds[i] * step;
 
-        if (y > h && Math.random() > 0.975) {
-          drops[i] = rand(-20, 0);
-          speeds[i] = rand(0.6, 1.8) * speed;
+        if (y > h && Math.random() > 0.985) {
+          drops[i] = rand(-24, 0);
+          speeds[i] = rand(0.55, 1.35) * speed;
         }
       }
 
       ctx.globalAlpha = 1;
-
       rafRef.current = requestAnimationFrame(tick);
     };
 
@@ -133,11 +142,5 @@ export default function MatrixBackground({
     };
   }, [chars, opacity, speed, density, fontSize, color, glow]);
 
-  return (
-    <canvas
-      ref={canvasRef}
-      className={className ?? "bc-matrix-bg"}
-      aria-hidden="true"
-    />
-  );
+  return <canvas ref={canvasRef} className={className ?? "bc-matrix-bg"} aria-hidden="true" />;
 }
