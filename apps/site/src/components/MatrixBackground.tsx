@@ -16,71 +16,19 @@ const DEFAULT_CHARS =
   "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
   "ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜｦﾝ";
 
-function isFullScreenFixedBackground(el: HTMLElement) {
-  const cs = getComputedStyle(el);
-  if (cs.position !== "fixed") return false;
-
-  const z = Number.isFinite(parseInt(cs.zIndex, 10)) ? parseInt(cs.zIndex, 10) : 0;
-  if (z >= 50) return false; // UI/модалки/оверлеи не трогаем
-
-  const hasBg =
-    cs.backgroundImage !== "none" ||
-    cs.backgroundColor !== "rgba(0, 0, 0, 0)" ||
-    cs.filter !== "none" ||
-    cs.backdropFilter !== "none" ||
-    (cs as any).webkitBackdropFilter !== "none";
-
-  if (!hasBg) return false;
-
-  const r = el.getBoundingClientRect();
-  const covers =
-    r.width >= window.innerWidth - 2 &&
-    r.height >= window.innerHeight - 2 &&
-    Math.abs(r.left) <= 2 &&
-    Math.abs(r.top) <= 2;
-
-  return covers;
-}
-
 export default function MatrixBackground({
   className,
-  opacity = 0.085,                 // киношно
-  speed = 0.36,                    // медленнее
+  opacity = 0.085,
+  speed = 0.36,
   density = 1.0,
   fontSize = 16,
-  color = "rgba(90, 190, 255, 0.92)", // premium blue
+  color = "rgba(90, 190, 255, 0.92)",
   glow = true,
 }: MatrixBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number | null>(null);
-  const disabledRef = useRef<Array<{ el: HTMLElement; prev: string }>>([]);
 
   const chars = useMemo(() => DEFAULT_CHARS.split(""), []);
-
-  useEffect(() => {
-    document.documentElement.classList.add("bc-matrix-on");
-
-    // Убиваем старые fullscreen fixed фон-слои, которые перекрывают матрицу
-    const nodes = Array.from(document.body.querySelectorAll<HTMLElement>("*"));
-    const disabled: Array<{ el: HTMLElement; prev: string }> = [];
-
-    for (const el of nodes) {
-      if (el.tagName === "CANVAS") continue;
-      if (!isFullScreenFixedBackground(el)) continue;
-
-      const prev = el.style.display || "";
-      el.style.display = "none";
-      disabled.push({ el, prev });
-    }
-
-    disabledRef.current = disabled;
-
-    return () => {
-      for (const it of disabledRef.current) it.el.style.display = it.prev;
-      disabledRef.current = [];
-      document.documentElement.classList.remove("bc-matrix-on");
-    };
-  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -104,13 +52,9 @@ export default function MatrixBackground({
     const rand = (min: number, max: number) => min + Math.random() * (max - min);
 
     const resize = () => {
-      // Берём реальный viewport (на мобиле это важно)
-      const vw = Math.max(1, Math.floor(window.innerWidth));
-      const vh = Math.max(1, Math.floor(window.innerHeight));
-
       dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-      w = vw;
-      h = vh;
+      w = Math.max(1, Math.floor(window.innerWidth));
+      h = Math.max(1, Math.floor(window.innerHeight));
 
       canvas.width = Math.floor(w * dpr);
       canvas.height = Math.floor(h * dpr);
@@ -183,9 +127,9 @@ export default function MatrixBackground({
     rafRef.current = requestAnimationFrame(tick);
 
     return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("orientationchange", onResize);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, [chars, opacity, speed, density, fontSize, color, glow]);
 
