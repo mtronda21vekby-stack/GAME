@@ -30,31 +30,27 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
 button{ -webkit-tap-highlight-color: transparent; }
 a{ -webkit-tap-highlight-color: transparent; }
 
-/* ===== iOS edge-to-edge baseline (без "рамок") ===== */
+/* ===== iOS edge-to-edge baseline ===== */
 html, body{
   height: 100%;
-  min-height: 100%;
+  min-height:100%;
+  background: var(--bg0);
 }
 
-/* html оставляем черным (fallback), body — прозрачным, чтобы Safari не рисовал “плашки” от body bg */
-html{ background: var(--bg0); }
-
 body{
-  margin: 0;
-  color: var(--text);
-  background: transparent;
-
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
+  margin:0;
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
   overscroll-behavior: none;
 
   /* safe-area */
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Root must stay transparent so the fixed Matrix layer is the real background */
 #root{
-  min-height: 100%;
+  min-height:100%;
   height: 100%;
   background: transparent;
 }
@@ -64,17 +60,85 @@ body{
 
 /* Shell for global background */
 .bcAppShell{
-  position: relative;
-  min-height: 100%;
+  position:relative;
+  min-height:100%;
   height: 100%;
   background: transparent;
 }
 
-/* Content wrapper */
 .bcAppContent{
-  position: relative;
-  min-height: 100%;
+  position:relative;
+  z-index:1;
+  min-height:100%;
   background: transparent;
+}
+
+/* ==================================================
+   Global Matrix layer — закрывает экран и НЕ рвёт скролл
+   ================================================== */
+.bcMatrixLayer{
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+
+  /* динамический viewport: покрываем зону “под барами” */
+  height: 100vh;
+  height: 100svh;
+  height: 100dvh;
+  height: 100lvh;
+
+  z-index: 0;
+  pointer-events: none;
+  background: #000; /* fallback */
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Canvas itself */
+.bcMatrixBg{
+  position: absolute;
+  inset: 0;
+  width: 100vw;
+  height: 100%;
+  pointer-events: none;
+  display:block;
+  background: transparent;
+}
+
+/* ===== Мягкая “дымка” сверху/снизу (ВНУТРИ контента, без линий) ===== */
+.bcMatrixLayer::before,
+.bcMatrixLayer::after{
+  content:"";
+  position:absolute;
+  left:0;
+  width:100%;
+  pointer-events:none;
+}
+
+/* TOP smoke */
+.bcMatrixLayer::before{
+  top:0;
+  height: max(160px, calc(env(safe-area-inset-top) + 120px));
+  background: linear-gradient(
+    180deg,
+    rgba(0,0,0,0.22) 0%,
+    rgba(0,0,0,0.10) 45%,
+    rgba(0,0,0,0.04) 70%,
+    rgba(0,0,0,0.00) 100%
+  );
+}
+
+/* BOTTOM smoke */
+.bcMatrixLayer::after{
+  bottom:0;
+  height: max(180px, calc(env(safe-area-inset-bottom) + 140px));
+  background: linear-gradient(
+    0deg,
+    rgba(0,0,0,0.22) 0%,
+    rgba(0,0,0,0.10) 45%,
+    rgba(0,0,0,0.04) 70%,
+    rgba(0,0,0,0.00) 100%
+  );
 }
 
 /* Motion baseline */
@@ -85,75 +149,66 @@ body{
 
 /* Hero */
 .bcHero{
-  position: relative;
-
-  /* для контента можно оставлять --app-vh (у тебя синкается) */
+  position:relative;
   min-height: calc(var(--app-vh, 100vh));
-
   padding: max(14px, env(safe-area-inset-top)) 14px 24px;
-  overflow: hidden;
+  overflow:hidden;
 }
 
-/* IMPORTANT: декоративные слои не воруют клики */
-.bcHeroBg, .bcHeroVignette, .bcHeroNoise, .bcHeroAurora{
-  pointer-events: none !important;
-}
+/* IMPORTANT: background layers must not steal clicks */
+.bcHeroBg, .bcHeroVignette, .bcHeroNoise, .bcHeroAurora { pointer-events: none !important; }
 
 .bcHeroBg{
-  position: absolute;
-  inset: -20px;
+  position:absolute;
+  inset:-20px;
 }
 
-/* если где-то ещё остались aurora/noise — убираем */
+/* если где-то ещё остались aurora/noise — убираем, чтобы был чистый Matrix */
 .bcHeroAurora{ display:none !important; }
 .bcHeroNoise{ display:none !important; }
 
 .bcHeroVignette{
-  position: absolute;
-  inset: 0;
+  position:absolute;
+  inset:0;
   background:
     radial-gradient(900px 520px at 78% 10%, rgba(70,140,255,0.10), transparent 60%),
     radial-gradient(900px 700px at 30% 80%, rgba(40,210,255,0.06), transparent 60%),
-    linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.62) 70%, rgba(0,0,0,0.85) 100%);
+    linear-gradient(180deg, rgba(0,0,0,0.20) 0%, rgba(0,0,0,0.72) 70%, rgba(0,0,0,0.92) 100%);
 }
 
 /* Top bar */
 .bcTop{
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-
+  position:relative;
+  z-index:2;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
   padding: 10px 10px;
   border-radius: 999px;
-
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.10);
-
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-
   box-shadow: 0 20px 80px rgba(0,0,0,0.22);
 }
 
 .bcBrand{
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  background: transparent;
-  border: 0;
-  color: var(--text);
-  padding: 10px 12px;
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  background:transparent;
+  border:0;
+  color:var(--text);
+  padding:10px 12px;
   border-radius: 999px;
-  cursor: pointer;
+  cursor:pointer;
 }
 
 .bcNav{
-  display: none;
-  gap: 14px;
-  align-items: center;
+  display:none;
+  gap:14px;
+  align-items:center;
 }
 @media (min-width: 820px){
   .bcNav{ display:flex; }
@@ -161,37 +216,37 @@ body{
 
 .bcLink{
   color: rgba(255,255,255,0.84);
-  text-decoration: none;
-  font-weight: 850;
-  font-size: 13px;
+  text-decoration:none;
+  font-weight:850;
+  font-size:13px;
   padding: 8px 10px;
   border-radius: 999px;
   border: 1px solid transparent;
 }
 
 .bcRight{
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  display:flex;
+  align-items:center;
+  gap:10px;
 }
 
 .bcAccountPill{
-  border: 1px solid rgba(255,255,255,0.12);
+  border:1px solid rgba(255,255,255,0.12);
   background: rgba(255,255,255,0.06);
   color: rgba(255,255,255,0.88);
   height: 40px;
   padding: 0 12px;
   border-radius: 999px;
   font-weight: 900;
-  cursor: pointer;
+  cursor:pointer;
 }
 
 /* Hero layout */
 .bcHeroGrid{
-  position: relative;
-  z-index: 2;
-  display: grid;
-  gap: 14px;
+  position:relative;
+  z-index:2;
+  display:grid;
+  gap:14px;
   margin-top: 16px;
 }
 @media (min-width: 980px){
@@ -206,19 +261,17 @@ body{
   border-radius: var(--radius);
   border: 1px solid rgba(255,255,255,0.10);
   background: rgba(255,255,255,0.06);
-
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-
   box-shadow: var(--shadow);
 }
 
-.bcHeroCopy{ padding: 18px; overflow: hidden; }
+.bcHeroCopy{ padding: 18px; overflow:hidden; }
 
 .bcKicker{
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
   padding: 8px 12px;
   border-radius: 999px;
   border: 1px solid rgba(255,255,255,0.10);
@@ -258,7 +311,7 @@ body{
 .bcBadges{
   margin-top: 14px;
   display:flex;
-  gap: 10px;
+  gap:10px;
   flex-wrap: wrap;
   opacity: 0.95;
 }
@@ -273,7 +326,7 @@ body{
 }
 
 .bcPanelRow{
-  display: flex;
+  display:flex;
   gap: 12px;
   padding: 12px;
   border-radius: 18px;
@@ -303,14 +356,13 @@ body{
 
 /* Sections */
 .bcSection{
-  position: relative;
+  position:relative;
   padding: 18px 14px 28px;
 }
 
-/* УБИРАЕМ разделительную линию между секциями => монолит */
+/* MONOLITH: убираем разделительную линию полностью */
 .bcSection::before{
-  content: none !important;
-  display: none !important;
+  display:none !important;
 }
 
 .bcSectionHead{
