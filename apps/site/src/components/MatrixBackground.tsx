@@ -3,14 +3,18 @@ import React from "react";
 export type MatrixBackgroundProps = {
   className?: string;
   style?: React.CSSProperties;
-  intensity?: number; // 0.5..2
+  /** 0.5..2 — плотность/скорость (по умолчанию 1) */
+  intensity?: number;
 };
 
 export function MatrixBackground(props: MatrixBackgroundProps) {
   const { className, style, intensity = 1 } = props;
 
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
+
   const rafRef = React.useRef<number | null>(null);
+  const runningRef = React.useRef(false);
+  const lastFrameAtRef = React.useRef(0);
 
   React.useEffect(() => {
     const canvas = canvasRef.current;
@@ -24,6 +28,7 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
     const mql = window.matchMedia?.("(prefers-reduced-motion: reduce)");
     let reduced = !!mql?.matches;
 
+    // Цвета "blue matrix"
     const FG = "rgba(90, 180, 255, 0.92)";
     const FG_DIM = "rgba(90, 180, 255, 0.55)";
     const FADE = "rgba(0, 0, 0, 0.12)";
@@ -40,16 +45,17 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
       drops: [] as number[],
     };
 
+    function randChar() {
+      const i = (Math.random() * glyphs.length) | 0;
+      return glyphs[i] || "0";
+    }
+
     function stop() {
+      runningRef.current = false;
       if (rafRef.current != null) {
         window.cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
       }
-    }
-
-    function randChar() {
-      const i = (Math.random() * glyphs.length) | 0;
-      return glyphs[i] || "0";
     }
 
     function drawStatic() {
@@ -57,6 +63,7 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
 
       ctx.clearRect(0, 0, state.w, state.h);
 
+      // лёгкая дымка
       ctx.fillStyle = "rgba(0,0,0,0.35)";
       ctx.fillRect(0, 0, state.w, state.h);
 
@@ -69,7 +76,10 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
       }
     }
 
-    function frame() {
+    function frame(ts: number) {
+      lastFrameAtRef.current = ts;
+
+      // fade слой
       ctx.fillStyle = FADE;
       ctx.fillRect(0, 0, state.w, state.h);
 
@@ -98,15 +108,23 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
 
     function start() {
       stop();
+      if (reduced) return;
+      if (document.visibilityState !== "visible") return;
+
+      runningRef.current = true;
+      lastFrameAtRef.current = performance.now();
       rafRef.current = window.requestAnimationFrame(frame);
     }
 
-    function resize() {
+    // ===== Resize (через очередь, чтобы iOS/RO не клинил) =====
+    let resizeQueued = false;
+
+    function resizeNow() {
       const r = host.getBoundingClientRect();
       const w = Math.max(1, Math.floor(r.width));
       const h = Math.max(1, Math.floor(r.height));
 
-      // не дергаем, если реально ничего не изменилось
+      // не дергаем если реально то же самое
       if (w === state.w && h === state.h) return;
 
       const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
@@ -132,41 +150,109 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
       drawStatic();
     }
 
+    function queueResize() {
+      if (resizeQueued) return;
+      resizeQueued = true;
+      window.requestAnimationFrame(() => {
+        resizeQueued = false;
+        resizeNow();
+      });
+    }
+
+    // ===== Watchdog (фикс "завис кадр") =====
+    const watchdog = window.setInterval(() => {
+      if (reduced) return;
+      if (document.visibilityState !== "visible") return;
+
+      const now = performance.now();
+      const dt = now - (lastFrameAtRef.current || 0);
+
+      // если rAF "уснул" — перезапускаем
+      if (runningRef.current && dt > 1500) {
+        start();
+      }
+
+      // если почему-то не running — тоже пинаем
+      if (!runningRef.current && dt > 1500) {
+        start();
+      }
+    }, 900);
+
+    // "пинок" после событий Safari/iOS
+    const poke = () => {
+      if (reduced) return;
+      if (document.visibilityState !== "visible") return;
+      if (!runningRef.current) start();
+    };
+
+    const onVis = () => {
+      if (document.visibilityState === "hidden") stop();
+      else {
+        queueResize();
+        start();
+      }
+    };
+
+    const onFocus = () => {
+      queueResize();
+      poke();
+    };
+
+    const onPageShow = (e: PageTransitionEvent) => {
+      // после bfcache Safari часто отдаёт "застывший" кадр
+      if (e.persisted) {
+        queueResize();
+        start();
+      } else {
+        queueResize();
+        poke();
+      }
+    };
+
+    const onPageHide = () => stop();
+
     const onMql = () => {
       reduced = !!mql?.matches;
-      resize();
+      queueResize();
       if (reduced) stop();
       else start();
     };
 
     mql?.addEventListener?.("change", onMql);
 
-    const onVis = () => {
-      if (document.visibilityState === "hidden") stop();
-      else if (!reduced) start();
-    };
-
     window.addEventListener("visibilitychange", onVis);
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("pageshow", onPageShow);
+    window.addEventListener("pagehide", onPageHide);
 
-    // Ключ: следим за реальным слоем через ResizeObserver (это фиксит iOS/desktop без дерганий)
-    const ro = new ResizeObserver(() => resize());
+    // На iOS во время/после скролла rAF иногда “засыпает”
+    window.addEventListener("scroll", poke, { passive: true });
+    window.addEventListener("touchend", poke, { passive: true });
+    window.addEventListener("resize", queueResize);
+    window.addEventListener("orientationchange", queueResize);
+
+    const ro = new ResizeObserver(queueResize);
     ro.observe(host);
 
-    // Fallback на системные события
-    const onWinResize = () => resize();
-    window.addEventListener("resize", onWinResize);
-    window.addEventListener("orientationchange", onWinResize);
-
-    // первичный размер
-    resize();
-    if (!reduced) start();
+    // первичная инициализация
+    queueResize();
+    start();
 
     return () => {
       stop();
+      window.clearInterval(watchdog);
       ro.disconnect();
-      window.removeEventListener("resize", onWinResize);
-      window.removeEventListener("orientationchange", onWinResize);
+
       window.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("pageshow", onPageShow);
+      window.removeEventListener("pagehide", onPageHide);
+
+      window.removeEventListener("scroll", poke as any);
+      window.removeEventListener("touchend", poke as any);
+      window.removeEventListener("resize", queueResize);
+      window.removeEventListener("orientationchange", queueResize);
+
       mql?.removeEventListener?.("change", onMql);
     };
   }, [intensity]);
@@ -177,8 +263,7 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
       className={["bcMatrixBg", className].filter(Boolean).join(" ")}
       style={{
         position: "absolute",
-        top: 0,
-        left: 0,
+        inset: 0,
         width: "100%",
         height: "100%",
         display: "block",
