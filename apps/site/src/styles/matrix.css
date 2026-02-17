@@ -5,22 +5,36 @@
 
 html,body,#root{
   height:100%;
-  background:#000 !important;
-  background-image:none !important;
   margin:0 !important;
   padding:0 !important;
   overflow-x:hidden !important;
+  background:#000 !important;
+  background-image:none !important;
 }
 
-/* MATRIX = ОСНОВНОЙ ФОН */
+/* УБИВАЕМ СТАРЫЙ HERO ФОН */
+.bcHeroBg,
+.bcHeroAurora,
+.bcHeroVignette,
+.bcHeroNoise{
+  display:none !important;
+}
+
+.bcHero,
+.bcSection{
+  background:transparent !important;
+}
+
+/* MATRIX: прозрачный canvas поверх чёрной базы */
 .bc-matrix-bg{
   position:fixed;
   inset:0;
   width:100vw;
-  height:calc(var(--app-vh, 1vh) * 100);
+  height:100dvh;                 /* ключ: убирает “рамки” при открытии/тулбаре */
+  height:100vh;                  /* fallback */
   z-index:1;
   pointer-events:none;
-  background:#000;
+  background:transparent;        /* важно: canvas не “плашка” */
 }
 
 /* UI выше матрицы */
@@ -30,16 +44,10 @@ html,body,#root{
   min-height:100vh;
 }
 
-/* УБИВАЕМ СТАРЫЙ ФОН (AURORA/VIGNETTE/NOISE) */
-.bcHeroBg,
-.bcHeroAurora,
-.bcHeroVignette,
-.bcHeroNoise{
+/* на всякий: псевдо-фоны */
+html::before, html::after,
+body::before, body::after,
+#root::before, #root::after{
+  content:none !important;
   display:none !important;
-}
-
-/* На всякий: чтобы секции не подменяли фон */
-.bcHero,
-.bcSection{
-  background:transparent !important;
 }
