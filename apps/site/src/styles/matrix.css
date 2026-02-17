@@ -3,6 +3,7 @@ html, body, #root {
   background-image: none !important;
 }
 
+/* Матрица — фон */
 .bc-matrix-bg {
   position: fixed;
   inset: 0;
@@ -16,9 +17,50 @@ html, body, #root {
 .bc-app-layer {
   position: relative;
   z-index: 20;
+  min-height: 100vh;
 }
 
-/* ПК: стеклянные панели не должны размывать матрицу (иначе “мыло”) */
+/* ==============================
+   ВАЖНО: УБИРАЕМ СТАРЫЙ ФОН-ОБВЕС
+   (чаще всего он живёт в ::before/::after)
+   ============================== */
+.bc-matrix-on html::before,
+.bc-matrix-on html::after,
+.bc-matrix-on body::before,
+.bc-matrix-on body::after,
+.bc-matrix-on #root::before,
+.bc-matrix-on #root::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* ==============================
+   ВАЖНО: ОДИН СКРОЛЛ (body)
+   Убираем “двойной скролл контейнер”
+   ============================== */
+.bc-matrix-on body {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  height: auto !important;
+  min-height: 100% !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.bc-matrix-on #root {
+  overflow: visible !important;
+  height: auto !important;
+  min-height: 100% !important;
+}
+
+/* Если где-то был layout-контейнер с overflow/100vh — он ломает “нормальный скролл”.
+   Это безопасный общий фикс: */
+.bc-matrix-on main,
+.bc-matrix-on section,
+.bc-matrix-on [role="main"] {
+  overflow: visible !important;
+}
+
+/* ПК: убираем backdrop-blur, чтобы матрица не становилась мылом */
 @media (pointer: fine) {
   .bc-matrix-on .glass,
   .bc-matrix-on .glassPanel,
@@ -28,6 +70,6 @@ html, body, #root {
   .bc-matrix-on [data-glass] {
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
-    background: rgba(10, 14, 24, 0.72) !important; /* сохраняем премиум-тон */
+    background: rgba(10, 14, 24, 0.72) !important;
   }
 }
