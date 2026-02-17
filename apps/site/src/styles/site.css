@@ -1,6 +1,6 @@
 :root{
-  --bg0:#0B1022;
-  --bg1:#0A0F20;
+  --bg0:#000;
+  --bg1:#000;
   --text:rgba(255,255,255,0.92);
   --muted:rgba(255,255,255,0.72);
   --hair:rgba(255,255,255,0.10);
@@ -29,9 +29,10 @@
 }
 
 *{ box-sizing:border-box; }
+
 html,body{
   height:100%;
-  background:var(--bg0);
+  background:#000;
 }
 
 body{
@@ -40,9 +41,13 @@ body{
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
   overscroll-behavior: none;
+  background:#000;
 }
 
-#root{ min-height:100%; }
+#root{
+  min-height:100%;
+  background:#000;
+}
 
 img{ border:0; outline:0; }
 button{ -webkit-tap-highlight-color: transparent; }
@@ -85,6 +90,15 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
   min-height: calc(var(--app-vh, 100vh));
   padding: max(14px, env(safe-area-inset-top)) 14px 24px;
   overflow:hidden;
+  background: transparent !important;
+}
+
+/* === ВАЖНО: убираем старый фон Hero полностью === */
+.bcHeroBg,
+.bcHeroAurora,
+.bcHeroVignette,
+.bcHeroNoise{
+  display:none !important;
 }
 
 .bcHeroBg{
@@ -316,6 +330,7 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
 .bcSection{
   position:relative;
   padding: 18px 14px 28px;
+  background: transparent !important;
 }
 
 /* Premium section separators */
@@ -523,14 +538,12 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
    ORANGE INTERACTIONS (MAX)
    ========================= */
 
-/* Safe focus ring (keyboard only) */
 .bcSiteRoot :where(a, button, [role="button"], input, textarea, select):focus-visible{
   outline: none;
   box-shadow: var(--bc-ring), 0 18px 90px var(--bc-accent-10);
   border-color: rgba(255,255,255,0.14);
 }
 
-/* Global clickable polish (no logic impact) */
 .bcSiteRoot :where(a, button, [role="button"], .bcBrand, .bcAccountPill, .bcPanelRow){
   transform: translateZ(0);
 }
@@ -549,12 +562,10 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
   }
 }
 
-/* NAV LINKS: orange text + soft glow */
 .bcNav .bcLink{
   position: relative;
 }
 
-/* “halo” under link (Echo-ish) */
 .bcNav .bcLink::after{
   content:"";
   position:absolute;
@@ -568,7 +579,6 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
   pointer-events: none;
 }
 
-/* hover only when real hover exists */
 @media (hover:hover) and (pointer:fine){
   .bcNav .bcLink:hover{
     color: var(--bc-accent);
@@ -583,14 +593,12 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
   }
 }
 
-/* pressed */
 .bcNav .bcLink:active{
   color: var(--bc-accent);
   text-shadow: 0 0 22px var(--bc-accent-glow);
   transform: translateY(1px);
 }
 
-/* active page (optional if Router sets it) */
 .bcNav .bcLink[aria-current="page"]{
   color: var(--bc-accent);
   text-shadow: 0 0 18px var(--bc-accent-glow);
@@ -602,7 +610,6 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
   transform: translateY(0);
 }
 
-/* BRAND + ACCOUNT PILL: orange rim */
 @media (hover:hover) and (pointer:fine){
   .bcBrand:hover,
   .bcAccountPill:hover{
@@ -620,7 +627,6 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
     0 18px 90px var(--bc-accent-14);
 }
 
-/* PANEL ROWS: orange glass wash */
 @media (hover:hover) and (pointer:fine){
   .bcPanelRow:hover{
     background:
@@ -639,7 +645,6 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
     0 18px 90px var(--bc-accent-14);
 }
 
-/* GLASS CARDS: add orange rim/glow but keep your original hover motion */
 @media (hover:hover) and (pointer:fine){
   .glassStrong.bc-motion:hover{
     box-shadow:
@@ -656,7 +661,6 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
     0 28px 110px var(--bc-accent-14);
 }
 
-/* BUTTONS (any): glow only, no layout changes */
 @media (hover:hover) and (pointer:fine){
   .bcSiteRoot :where(button):hover{
     box-shadow:
@@ -672,7 +676,6 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
     0 18px 90px var(--bc-accent-14);
 }
 
-/* INPUTS: orange ring (subtle) */
 @media (hover:hover) and (pointer:fine){
   .bcSiteRoot :where(input, textarea, select):hover{
     border-color: rgba(255,255,255,0.14);
@@ -682,10 +685,37 @@ canvas, iframe{ border:0 !important; outline:0 !important; }
   }
 }
 
-/* Reduce motion safety */
 @media (prefers-reduced-motion: reduce){
   .bcSiteRoot :where(a, button, [role="button"], .glassStrong.bc-motion, .bcPanelRow, .bcBrand, .bcAccountPill){
     transition: none !important;
     transform: none !important;
   }
+}
+
+/* =========================
+   MATRIX LAYER (MAIN BG)
+   ========================= */
+.bc-matrix-bg{
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  height: 100vh;
+  z-index: 1;
+  pointer-events: none;
+  background: transparent;
+}
+
+.bc-app-layer{
+  position: relative;
+  z-index: 2;
+  min-height: 100vh;
+}
+
+/* safety: no pseudo-bg */
+html::before, html::after,
+body::before, body::after,
+#root::before, #root::after{
+  content:none !important;
+  display:none !important;
 }
