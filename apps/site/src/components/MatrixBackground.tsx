@@ -1,153 +1,167 @@
 import React from "react";
 
-const SYMBOLS =
-  "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン" +
-  "0123456789" +
-  "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const GLYPHS =
+  "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-function pickSymbol() {
-  return SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)] ?? "0";
+function prefersReducedMotion() {
+  return typeof window !== "undefined" && window.matchMedia
+    ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    : false;
 }
 
-export function MatrixBackground() {
-  const ref = React.useRef<HTMLCanvasElement | null>(null);
+export default function MatrixBackground() {
+  const wrapRef = React.useRef<HTMLDivElement | null>(null);
+  const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
 
-  React.useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas) return;
+  const rafRef = React.useRef<number | null>(null);
+  const dropsRef = React.useRef<number[]>([]);
+  const colsRef = React.useRef<number>(0);
+  const lastTsRef = React.useRef<number>(0);
+
+  const resize = React.useCallback(() => {
+    const wrap = wrapRef.current;
+    const canvas = canvasRef.current;
+    if (!wrap || !canvas) return;
+
+    const rect = wrap.getBoundingClientRect();
+    const w = Math.max(1, Math.round(rect.width));
+    const h = Math.max(1, Math.round(rect.height));
+
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+
+    // важно: реальный размер canvas = CSS размер * dpr
+    const nextW = Math.round(w * dpr);
+    const nextH = Math.round(h * dpr);
+
+    if (canvas.width !== nextW) canvas.width = nextW;
+    if (canvas.height !== nextH) canvas.height = nextH;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    let raf = 0;
-    let w = 0;
-    let h = 0;
-    let dpr = 1;
+    const fontSize = 15;
+    const cols = Math.max(1, Math.floor(w / fontSize));
+    colsRef.current = cols;
 
-    // performance: чуть крупнее — меньше колонок
-    let fontSize = 16;
-    let cols = 0;
-    let drops: number[] = [];
-
-    let lastTs = 0;
-    let acc = 0;
-
-    function isReduceMotion() {
-      // учитываем системный reduce-motion
-      return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
+    // инициализация “капель” под новый размер
+    const drops = dropsRef.current;
+    if (drops.length !== cols) {
+      dropsRef.current = new Array(cols).fill(0).map(() => Math.random() * (h / fontSize));
     }
+  }, []);
 
-    function resize() {
-      const nextDpr = Math.min(window.devicePixelRatio || 1, 2); // cap для стабильности
-      dpr = nextDpr;
+  React.useEffect(() => {
+    resize();
 
-      const rect = canvas.getBoundingClientRect();
-      w = Math.max(1, Math.floor(rect.width));
-      h = Math.max(1, Math.floor(rect.height));
+    const wrap = wrapRef.current;
+    if (!wrap) return;
 
-      canvas.width = Math.floor(w * dpr);
-      canvas.height = Math.floor(h * dpr);
+    const ro = new ResizeObserver(() => resize());
+    ro.observe(wrap);
 
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const onResize = () => resize();
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
 
-      // на широких экранах чуть крупнее, чтобы не было "каши"
-      fontSize = w >= 980 ? 18 : 16;
-      cols = Math.ceil(w / fontSize);
+    // iOS Safari: “прозрачность” ломается, когда visualViewport меняется при скролле
+    const vv = window.visualViewport;
+    vv?.addEventListener("resize", onResize);
+    vv?.addEventListener("scroll", onResize);
 
-      // стартовые позиции капель
-      drops = new Array(cols).fill(0).map(() => Math.floor(Math.random() * (h / fontSize)));
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+      vv?.removeEventListener("resize", onResize);
+      vv?.removeEventListener("scroll", onResize);
+    };
+  }, [resize]);
+
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const fontSize = 15;
+    const baseSpeed = prefersReducedMotion() ? 30 : 60; // fps cap
+    const frameMs = 1000 / baseSpeed;
+
+    const draw = (ts: number) => {
+      rafRef.current = requestAnimationFrame(draw);
+
+      const last = lastTsRef.current || ts;
+      const dt = ts - last;
+      if (dt < frameMs) return;
+      lastTsRef.current = ts;
+
+      const wrap = wrapRef.current;
+      if (!wrap) return;
+
+      const rect = wrap.getBoundingClientRect();
+      const w = Math.max(1, Math.round(rect.width));
+      const h = Math.max(1, Math.round(rect.height));
+
+      // “шлейф”
+      ctx.fillStyle = "rgba(0,0,0,0.06)";
+      ctx.fillRect(0, 0, w, h);
+
       ctx.font = `${fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace`;
       ctx.textBaseline = "top";
-    }
 
-    function clearFrame(alpha: number) {
-      // "хвост": полупрозрачная заливка
-      ctx.fillStyle = `rgba(0,0,0,${alpha})`;
-      ctx.fillRect(0, 0, w, h);
-    }
-
-    function drawStatic() {
-      clearFrame(1);
-      // лёгкая сетка символов (статично), если reduce-motion
-      const stepY = fontSize * 1.3;
-      const stepX = fontSize * 1.0;
-      for (let y = 0; y < h; y += stepY) {
-        for (let x = 0; x < w; x += stepX) {
-          const a = 0.10 + Math.random() * 0.08;
-          ctx.fillStyle = `rgba(90,160,255,${a})`;
-          ctx.fillText(pickSymbol(), x, y);
-        }
-      }
-    }
-
-    function tick(ts: number) {
-      raf = requestAnimationFrame(tick);
-
-      if (!lastTs) lastTs = ts;
-      const dt = ts - lastTs;
-      lastTs = ts;
-
-      // throttle: целимся в ~30fps, но выглядит плавно и не жрёт
-      acc += dt;
-      if (acc < 33) return;
-      acc = 0;
-
-      if (document.hidden) return;
-
-      // reduce-motion => статичная подложка
-      if (isReduceMotion()) {
-        drawStatic();
-        return;
-      }
-
-      // чем меньше alpha — тем длиннее хвост
-      clearFrame(0.08);
+      const cols = colsRef.current || Math.max(1, Math.floor(w / fontSize));
+      const drops = dropsRef.current.length ? dropsRef.current : new Array(cols).fill(0);
 
       for (let i = 0; i < cols; i++) {
         const x = i * fontSize;
         const y = drops[i] * fontSize;
 
-        // основной цвет
-        ctx.fillStyle = "rgba(90,160,255,0.78)";
-        ctx.fillText(pickSymbol(), x, y);
+        const ch = GLYPHS[(Math.random() * GLYPHS.length) | 0];
 
-        // "голова" чуть ярче иногда
-        if (Math.random() < 0.06) {
-          ctx.fillStyle = "rgba(170,225,255,0.92)";
-          ctx.fillText(pickSymbol(), x, Math.max(0, y - fontSize));
+        // синяя матрица + лёгкий свеч
+        ctx.fillStyle = "rgba(80, 160, 255, 0.86)";
+        ctx.fillText(ch, x, y);
+
+        // “яркая голова” иногда
+        if (Math.random() < 0.07) {
+          ctx.fillStyle = "rgba(170, 220, 255, 0.92)";
+          ctx.fillText(ch, x, y);
         }
 
-        // вниз, иногда сброс
-        drops[i] += 1;
+        // падение
         if (y > h && Math.random() > 0.975) drops[i] = 0;
+        drops[i] += 0.72;
       }
-    }
 
-    resize();
-    // первый кадр — чтобы не мигало
-    clearFrame(1);
-
-    const onResize = () => resize();
-    window.addEventListener("resize", onResize);
-
-    // важно: canvas по кликам не мешает, но пусть будет пауза при hidden
-    const onVis = () => {
-      if (document.hidden) {
-        clearFrame(1);
-      }
+      dropsRef.current = drops;
     };
-    document.addEventListener("visibilitychange", onVis);
 
-    raf = requestAnimationFrame(tick);
-
+    rafRef.current = requestAnimationFrame(draw);
     return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("resize", onResize);
-      document.removeEventListener("visibilitychange", onVis);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
     };
   }, []);
 
-  return <canvas ref={ref} className="bcMatrixBg" aria-hidden="true" />;
+  return (
+    <div
+      ref={wrapRef}
+      style={{
+        position: "absolute",
+        inset: 0,
+        overflow: "hidden",
+      }}
+    >
+      <canvas
+        ref={canvasRef}
+        aria-hidden="true"
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "block",
+        }}
+      />
+    </div>
+  );
 }
-
-export default MatrixBackground;
