@@ -6,11 +6,11 @@ export function App() {
   return (
     <>
       <MatrixBackground
-        opacity={0.045}
-        speed={0.20}
-        density={1.55}
+        opacity={0.028}
+        speed={0.18}
+        density={1.12}
         fontSize={14}
-        color="rgba(90, 190, 255, 0.92)"
+        color="rgba(90, 190, 255, 0.90)"
         glow
       />
       <div className="bc-app-layer">
