@@ -370,16 +370,11 @@ body::after{
   position:relative;
   padding: 18px 14px 28px;
 }
+
+/* ===== MONOLITHIC SCREEN: disable the separator line ===== */
 .bcSection::before{
-  content:"";
-  position:absolute;
-  left:50%;
-  top:0;
-  transform: translateX(-50%);
-  width:min(980px, calc(100% - 28px));
-  height:1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
-  opacity:0.7;
+  display: none !important;
+  content: none !important;
 }
 
 .bcSectionHead{
