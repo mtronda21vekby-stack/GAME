@@ -13,7 +13,7 @@ export function App() {
         color="rgba(90, 190, 255, 0.88)"
         glow={false}
       />
-      <div className="bc-app-layer bcSiteRoot">
+      <div className="bc-app-layer">
         <Router />
       </div>
     </>
