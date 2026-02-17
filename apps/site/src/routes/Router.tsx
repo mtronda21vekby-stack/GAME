@@ -6,7 +6,6 @@ import { Privacy } from "./pages/Privacy";
 import { Terms } from "./pages/Terms";
 import { Store } from "./pages/Store";
 import { Account } from "./pages/Account";
-import { MatrixBackground } from "../components/MatrixBackground";
 
 function normPath(p: string) {
   const path = p.split("?")[0].split("#")[0];
@@ -25,6 +24,7 @@ function isSiteRoute(path: string) {
   );
 }
 
+// IMPORTANT: эти пути НЕ сайт, а внешние приложения (apps/game, apps/lobby)
 function isExternalApp(path: string) {
   return path === "/game" || path.startsWith("/game/") || path === "/lobby" || path.startsWith("/lobby/");
 }
@@ -51,20 +51,26 @@ export function Router() {
       const el = e.target as HTMLElement | null;
       const a = el?.closest?.("a[href]") as HTMLAnchorElement | null;
       if (!a) return;
+
+      // target/download — не трогаем
       if (a.target && a.target !== "_self") return;
       if (a.hasAttribute("download")) return;
 
       const href = a.getAttribute("href") || "";
       if (!href) return;
+
+      // спец-схемы — не трогаем
       if (href.startsWith("mailto:") || href.startsWith("tel:")) return;
 
       // absolute URL
       if (href.startsWith("http://") || href.startsWith("https://")) {
         const u = new URL(href);
-        if (!sameOrigin(u)) return; // внешние не трогаем
+        if (!sameOrigin(u)) return; // внешние домены не перехватываем
+
         const target = normPath(u.pathname);
-        if (isExternalApp(target)) return;
-        if (!isSiteRoute(target)) return;
+        if (isExternalApp(target)) return; // /game и /lobby — наружу
+        if (!isSiteRoute(target)) return; // неизвестные — не ломаем
+
         e.preventDefault();
         window.history.pushState(null, "", u.pathname + u.search + u.hash);
         setPath(normPath(window.location.pathname));
@@ -72,11 +78,15 @@ export function Router() {
         return;
       }
 
-      // relative absolute path
+      // internal absolute path
       if (!href.startsWith("/")) return;
 
       const target = normPath(href);
+
+      // /game и /lobby — наружу (пусть браузер откроет)
       if (isExternalApp(target)) return;
+
+      // перехватываем ТОЛЬКО страницы сайта
       if (!isSiteRoute(target)) return;
 
       e.preventDefault();
@@ -89,44 +99,25 @@ export function Router() {
     return () => document.removeEventListener("click", onClick);
   }, []);
 
-  // если пользователь попал на неизвестный /... — показываем Home, но без редиректа (не ломаем)
-  let page: React.ReactNode;
-  if (!isSiteRoute(path)) {
-    page = <Home />;
-  } else {
-    switch (path) {
-      case "/":
-        page = <Home />;
-        break;
-      case "/about":
-        page = <About />;
-        break;
-      case "/support":
-        page = <Support />;
-        break;
-      case "/privacy":
-        page = <Privacy />;
-        break;
-      case "/terms":
-        page = <Terms />;
-        break;
-      case "/store":
-        page = <Store />;
-        break;
-      case "/account":
-        page = <Account />;
-        break;
-      default:
-        page = <Home />;
-        break;
-    }
-  }
+  // неизвестный путь: показываем Home, без редиректа (ничего не ломаем)
+  if (!isSiteRoute(path)) return <Home />;
 
-  // ВАЖНО: логика роутинга не меняется — только обёртка для общего фона
-  return (
-    <div className="bcAppShell">
-      <MatrixBackground />
-      <div className="bcAppContent">{page}</div>
-    </div>
-  );
+  switch (path) {
+    case "/":
+      return <Home />;
+    case "/about":
+      return <About />;
+    case "/support":
+      return <Support />;
+    case "/privacy":
+      return <Privacy />;
+    case "/terms":
+      return <Terms />;
+    case "/store":
+      return <Store />;
+    case "/account":
+      return <Account />;
+    default:
+      return <Home />;
+  }
 }
