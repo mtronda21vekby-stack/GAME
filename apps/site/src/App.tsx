@@ -9,29 +9,52 @@ function syncAppVh() {
 
 export function App() {
   React.useEffect(() => {
+    // ставим один раз
     syncAppVh();
 
-    const onResize = () => syncAppVh();
+    let raf = 0;
+    let last = 0;
+
+    const update = () => {
+      if (raf) return;
+      raf = window.requestAnimationFrame(() => {
+        raf = 0;
+        const h = window.visualViewport?.height ?? window.innerHeight;
+        const next = Math.round(h);
+
+        // не дёргаем CSS-переменную по мелочи (это и было источником микролагов)
+        if (Math.abs(next - last) >= 3) {
+          last = next;
+          document.documentElement.style.setProperty("--app-vh", `${next}px`);
+        }
+      });
+    };
+
     const vv = window.visualViewport;
 
-    window.addEventListener("resize", onResize);
-    window.addEventListener("orientationchange", onResize);
+    window.addEventListener("resize", update);
+    window.addEventListener("orientationchange", update);
 
-    // iOS Safari: высота реально меняется во время скролла
-    vv?.addEventListener("resize", onResize);
-    vv?.addEventListener("scroll", onResize);
+    // ВАЖНО: НЕ слушаем vv.scroll — это ломает плавность скролла на iOS
+    vv?.addEventListener?.("resize", update);
+
+    // iOS иногда “застывает” после возврата со сна/фонового режима
+    window.addEventListener("pageshow", update);
+    window.addEventListener("focus", update);
 
     return () => {
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("orientationchange", onResize);
-      vv?.removeEventListener("resize", onResize);
-      vv?.removeEventListener("scroll", onResize);
+      if (raf) window.cancelAnimationFrame(raf);
+      window.removeEventListener("resize", update);
+      window.removeEventListener("orientationchange", update);
+      vv?.removeEventListener?.("resize", update);
+      window.removeEventListener("pageshow", update);
+      window.removeEventListener("focus", update);
     };
   }, []);
 
   return (
     <div className="bcAppShell">
-      {/* ВАЖНО: фон покрывает ВЕСЬ экран (layout viewport), иначе будут “поля” под Safari барами */}
+      {/* фон фиксированный и закрывает весь экран */}
       <div className="bcMatrixLayer" aria-hidden="true">
         <MatrixBackground />
       </div>
