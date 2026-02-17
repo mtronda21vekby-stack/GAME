@@ -16,6 +16,7 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
 
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const rafRef = React.useRef<number | null>(null);
+  const runningRef = React.useRef(false);
 
   React.useEffect(() => {
     const canvas = canvasRef.current;
@@ -24,11 +25,10 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
     const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
 
-    // prefers-reduced-motion: reduce => статичный фон без анимации
     const mql = window.matchMedia?.("(prefers-reduced-motion: reduce)");
     let reduced = !!mql?.matches;
 
-    // Blue matrix colors
+    // Цвета "blue matrix"
     const FG = "rgba(90, 180, 255, 0.92)";
     const FG_DIM = "rgba(90, 180, 255, 0.55)";
     const FADE = "rgba(0, 0, 0, 0.12)";
@@ -51,9 +51,9 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
     }
 
     function drawStatic() {
+      if (state.w <= 1 || state.h <= 1) return;
       ctx.clearRect(0, 0, state.w, state.h);
 
-      // мягкая “дымка”
       ctx.fillStyle = "rgba(0,0,0,0.35)";
       ctx.fillRect(0, 0, state.w, state.h);
 
@@ -66,19 +66,14 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
       }
     }
 
-    function measureViewport() {
-      // ВАЖНО: берём реальные размеры viewport без подписки на scroll
-      const vv = window.visualViewport;
-      const w = Math.floor(vv?.width ?? window.innerWidth);
-      const h = Math.floor(vv?.height ?? window.innerHeight);
-      return { w: Math.max(1, w), h: Math.max(1, h) };
-    }
+    function resizeTo(cssW: number, cssH: number) {
+      const w = Math.max(1, Math.floor(cssW));
+      const h = Math.max(1, Math.floor(cssH));
 
-    function resizeNow() {
-      const { w, h } = measureViewport();
-      const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+      // dpr режем до 2 — iOS меньше лагает
+      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
 
-      // если размер не изменился — ничего не делаем (чтобы не лагало)
+      // если размер не изменился — ничего не делаем
       if (w === state.w && h === state.h && dpr === state.dpr) return;
 
       state.w = w;
@@ -87,7 +82,6 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
 
       canvas.width = Math.floor(w * dpr);
       canvas.height = Math.floor(h * dpr);
-
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       const base = w >= 980 ? 18 : 16;
@@ -102,15 +96,15 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
       drawStatic();
     }
 
-    function stop() {
-      if (rafRef.current != null) {
-        window.cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-    }
-
     function frame() {
-      // fade
+      if (!runningRef.current) return;
+
+      // если внезапно ушли в нулевой размер — стопаем
+      if (state.w <= 1 || state.h <= 1) {
+        rafRef.current = window.requestAnimationFrame(frame);
+        return;
+      }
+
       ctx.fillStyle = FADE;
       ctx.fillRect(0, 0, state.w, state.h);
 
@@ -137,54 +131,86 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
       rafRef.current = window.requestAnimationFrame(frame);
     }
 
+    function stop() {
+      runningRef.current = false;
+      if (rafRef.current != null) {
+        window.cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    }
+
     function start() {
-      stop();
+      if (reduced) {
+        stop();
+        drawStatic();
+        return;
+      }
+      if (runningRef.current) return;
+      runningRef.current = true;
       rafRef.current = window.requestAnimationFrame(frame);
     }
 
     const onMql = () => {
       reduced = !!mql?.matches;
-      resizeNow();
-      if (reduced) stop();
+      if (reduced) {
+        stop();
+        drawStatic();
+      } else {
+        start();
+      }
+    };
+    mql?.addEventListener?.("change", onMql);
+
+    const onVis = () => {
+      if (document.visibilityState === "hidden") stop();
       else start();
     };
 
-    mql?.addEventListener?.("change", onMql);
+    // iOS/ Safari: иногда rAF “застывает” после сна — форсим рестарт
+    const onPageShow = () => start();
+    const onFocus = () => start();
+    const onPointer = () => start();
 
-    // Экономия батареи + iOS иногда “замораживает” анимацию
-    const onVis = () => {
-      if (document.visibilityState === "hidden") stop();
-      else if (!reduced) start();
-    };
-
-    // BFCache / возврат на вкладку
-    const onPageShow = () => {
-      resizeNow();
-      if (!reduced) start();
-    };
-
-    // resize события (НЕ scroll!)
-    const onResize = () => resizeNow();
-
-    window.addEventListener("resize", onResize);
-    window.addEventListener("orientationchange", onResize);
     window.addEventListener("visibilitychange", onVis);
     window.addEventListener("pageshow", onPageShow);
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("pointerdown", onPointer, { passive: true });
 
-    // на iOS изменение панелей даёт именно resize у visualViewport
-    const vv = window.visualViewport;
-    vv?.addEventListener?.("resize", onResize);
+    // ResizeObserver — главное: НЕ vv.scroll
+    let ro: ResizeObserver | null = null;
+    let roRaf = 0;
 
-    resizeNow();
-    if (!reduced) start();
+    const scheduleResize = (w: number, h: number) => {
+      if (roRaf) return;
+      roRaf = window.requestAnimationFrame(() => {
+        roRaf = 0;
+        resizeTo(w, h);
+      });
+    };
+
+    ro = new ResizeObserver((entries) => {
+      const e = entries[0];
+      if (!e) return;
+      const cr = e.contentRect;
+      scheduleResize(cr.width, cr.height);
+    });
+
+    // наблюдаем за самим canvas (он растянут CSS-ом под родителя)
+    ro.observe(canvas);
+
+    // первичная инициализация
+    const r = canvas.getBoundingClientRect();
+    resizeTo(r.width, r.height);
+    start();
 
     return () => {
       stop();
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("orientationchange", onResize);
+      if (roRaf) window.cancelAnimationFrame(roRaf);
+      ro?.disconnect();
       window.removeEventListener("visibilitychange", onVis);
       window.removeEventListener("pageshow", onPageShow);
-      vv?.removeEventListener?.("resize", onResize);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("pointerdown", onPointer as any);
       mql?.removeEventListener?.("change", onMql);
     };
   }, [intensity]);
@@ -193,9 +219,10 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
     <canvas
       ref={canvasRef}
       className={["bcMatrixBg", className].filter(Boolean).join(" ")}
-      // ВАЖНО: не задаём height/width инлайном — только CSS рулит
       style={{
         display: "block",
+        width: "100%",
+        height: "100%",
         pointerEvents: "none",
         ...style,
       }}
