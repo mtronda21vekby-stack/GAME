@@ -1,14 +1,16 @@
-import { useEffect, useState } from "react";
+import * as React from "react";
 
-export function usePrefersReducedMotion() {
-  const [reduced, setReduced] = useState(false);
+export function usePrefersReducedMotion(): boolean {
+  const [reduced, setReduced] = React.useState(() => {
+    return !!window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+  });
 
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const onChange = () => setReduced(mq.matches);
-    onChange();
-    mq.addEventListener?.("change", onChange);
-    return () => mq.removeEventListener?.("change", onChange);
+  React.useEffect(() => {
+    const mql = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    if (!mql) return;
+    const onChange = () => setReduced(!!mql.matches);
+    mql.addEventListener?.("change", onChange);
+    return () => mql.removeEventListener?.("change", onChange);
   }, []);
 
   return reduced;
