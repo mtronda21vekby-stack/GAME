@@ -1,0 +1,52 @@
+/* Motion primitives base (без дев-стилей, только механика) */
+
+.bcPressable {
+  transform: translateZ(0);
+  will-change: transform, box-shadow, filter;
+  transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+}
+
+.bcPressable[data-pressed="true"] {
+  transform: translateY(1px) scale(0.995);
+}
+
+@media (hover:hover) {
+  .bcSpringGlow {
+    position: relative;
+  }
+  .bcSpringGlow::after {
+    content: "";
+    position: absolute;
+    inset: -10px;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 180ms ease;
+    background: radial-gradient(
+      80% 120% at var(--bc-hx, 50%) var(--bc-hy, 35%),
+      rgba(255,106,0,0.16),
+      rgba(255,106,0,0.00) 60%
+    );
+  }
+  .bcSpringGlow[data-hover="true"]::after {
+    opacity: 1;
+  }
+}
+
+/* Reveal */
+.bcReveal {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 420ms ease, transform 420ms cubic-bezier(.2,.8,.2,1);
+}
+.bcReveal[data-in="true"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bcPressable, .bcReveal {
+    transition: none !important;
+    transform: none !important;
+  }
+}
