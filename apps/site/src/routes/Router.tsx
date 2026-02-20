@@ -6,6 +6,7 @@ import { Privacy } from "./pages/Privacy";
 import { Terms } from "./pages/Terms";
 import { Store } from "./pages/Store";
 import { Account } from "./pages/Account";
+import { Admin } from "./pages/Admin";
 
 function normPath(p: string) {
   const path = p.split("?")[0].split("#")[0];
@@ -20,7 +21,8 @@ function isSiteRoute(path: string) {
     path === "/privacy" ||
     path === "/terms" ||
     path === "/store" ||
-    path === "/account"
+    path === "/account" ||
+    path === "/admin"
   );
 }
 
@@ -117,6 +119,8 @@ export function Router() {
       return <Store />;
     case "/account":
       return <Account />;
+    case "/admin":
+      return <Admin />;
     default:
       return <Home />;
   }
