@@ -68,10 +68,8 @@ export function App() {
   React.useEffect(() => {
     let alive = true;
 
-    // immediate ping
     pingSite();
 
-    // periodic ping
     const t = window.setInterval(() => {
       if (!alive) return;
       if (document.visibilityState === "visible") pingSite();
@@ -96,6 +94,12 @@ export function App() {
     <div className="bcAppShell">
       <div className="bcMatrixLayer" aria-hidden="true">
         <MatrixBackground />
+      </div>
+
+      {/* premium FX layers (CSS only) */}
+      <div className="bcShellFx" aria-hidden="true">
+        <div className="bcShellVignette" />
+        <div className="bcShellNoise" />
       </div>
 
       <div className="bcAppContent">
