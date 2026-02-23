@@ -16,6 +16,7 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const rafRef = React.useRef<number | null>(null);
   const lastFrameTsRef = React.useRef<number>(0);
+  const lastDrawTsRef = React.useRef<number>(0);
   const watchdogRef = React.useRef<number | null>(null);
 
   React.useEffect(() => {
@@ -44,6 +45,12 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
       cols: 0,
       drops: [] as number[],
     };
+
+    // ~30 FPS (спокойнее и легче для iOS)
+    const FRAME_MS = 1000 / 30;
+
+    // общий замедлитель скорости падения
+    const SLOW = 0.6;
 
     function getRect() {
       // canvas растянут через CSS на 100% wrapper'а
@@ -86,10 +93,7 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       const base = state.w >= 980 ? 18 : 16;
-      state.fontSize = Math.max(
-        14,
-        Math.min(22, Math.floor(base * (0.95 + 0.18 * intensity)))
-      );
+      state.fontSize = Math.max(14, Math.min(22, Math.floor(base * (0.95 + 0.18 * intensity))));
 
       ctx.font = `700 ${state.fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace`;
       ctx.textBaseline = "top";
@@ -100,6 +104,11 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
 
       ctx.clearRect(0, 0, state.w, state.h);
       drawStatic();
+
+      // reset таймеров, чтобы не было "рывка" после ресайза
+      const now = performance.now();
+      lastDrawTsRef.current = now;
+      lastFrameTsRef.current = now;
     }
 
     function stop() {
@@ -112,9 +121,22 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
     function frame(ts: number) {
       lastFrameTsRef.current = ts;
 
+      // throttling: рисуем не чаще ~30fps
+      const lastDraw = lastDrawTsRef.current || 0;
+      if (lastDraw > 0 && ts - lastDraw < FRAME_MS) {
+        rafRef.current = window.requestAnimationFrame(frame);
+        return;
+      }
+
+      // dt для плавности (и для корректного движения при 30fps)
+      const dt = lastDraw > 0 ? ts - lastDraw : FRAME_MS;
+      lastDrawTsRef.current = ts;
+      const dtMul = Math.max(0.5, Math.min(2.2, dt / 16.6667)); // clamp
+
       ctx.fillStyle = FADE;
       ctx.fillRect(0, 0, state.w, state.h);
 
+      // База шага/скорости: дальше мы замедляем через SLOW
       const step = Math.max(10, Math.floor(12 * intensity));
       const speed = 1.0 + 0.55 * intensity;
 
@@ -128,7 +150,8 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
         ctx.fillStyle = FG_DIM;
         ctx.fillText(randChar(), x, y + state.fontSize);
 
-        state.drops[i] = y + step * speed;
+        // ДВИЖЕНИЕ: учитываем dt и замедляем
+        state.drops[i] = y + step * speed * dtMul * SLOW;
 
         if (state.drops[i] > state.h + state.fontSize * 2) {
           if (Math.random() > 0.975) state.drops[i] = -Math.random() * 200;
@@ -140,6 +163,9 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
 
     function start() {
       stop();
+      const now = performance.now();
+      lastDrawTsRef.current = now;
+      lastFrameTsRef.current = now;
       rafRef.current = window.requestAnimationFrame(frame);
     }
 
