@@ -13,7 +13,13 @@ export { useToasts } from "./hooks/useToasts";
 export { usePrefersReducedMotion } from "./hooks/usePrefersReducedMotion";
 export { useSafeAreaInsets } from "./hooks/useSafeAreaInsets";
 
-// ✅ Reveal (нужен apps/site/src/routes/pages/Admin.tsx)
+// ✅ motion-lite primitives (нужны site/admin)
+export { Pressable } from "./Pressable";
+export type { PressableProps } from "./Pressable";
+
+export { SpringGlow } from "./SpringGlow";
+export type { SpringGlowProps } from "./SpringGlow";
+
 export { Reveal } from "./Reveal";
 export type { RevealProps } from "./Reveal";
 
