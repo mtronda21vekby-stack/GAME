@@ -1,8 +1,7 @@
-import "./tokens.css";
-import "./themes/appleGlass.css";
-import "./motion/motion.css";
+// packages/ui/src/index.ts
+// Production-safe barrel: экспортируем только то, что реально существует.
+// НИКАКИХ импортов CSS здесь — иначе Vite/Rollup упадёт, если файла нет.
 
-// keep existing UI exports (site/game/lobby могут на них рассчитывать)
 export { Button } from "./components/Button";
 export { Modal } from "./components/Modal";
 export { Drawer } from "./components/Drawer";
@@ -14,15 +13,11 @@ export { useToasts } from "./hooks/useToasts";
 export { usePrefersReducedMotion } from "./hooks/usePrefersReducedMotion";
 export { useSafeAreaInsets } from "./hooks/useSafeAreaInsets";
 
-// motion primitives (если у тебя реально есть ./motion/index.ts — оставляем)
-export * from "./motion";
+// Если motion папка реально есть — ок. Если нет, ВРЕМЕННО закомментируй 2 строки ниже.
+// export * from "./motion";
+// export * from "./theme";
 
-// stable constants (ok)
 export const PwaManifests = {
   site: "/manifest.webmanifest",
   lobby: "/manifest.webmanifest",
 } as const;
-
-// IMPORTANT:
-// НЕ экспортируем Icons/HeroArt из ui — это лежит в @blackcrown/assets.
-// Так мы не тащим несуществующие файлы и не ломаем билд.
