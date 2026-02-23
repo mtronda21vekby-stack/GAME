@@ -11,6 +11,16 @@ function hourUTC(d = new Date()) {
   return `${y}-${m}-${dd}-${hh}`;
 }
 
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
 function safeName(s: string) {
   return s
     .trim()
@@ -19,25 +29,17 @@ function safeName(s: string) {
     .slice(0, 64);
 }
 
+// best-effort read-modify-write (KV eventually consistent, но для метрик ок)
 async function kvAdd(kv: KVNamespace, key: string, add: number) {
-  // best-effort read-modify-write
-  for (let i = 0; i < 3; i++) {
-    const curRaw = await kv.get(key);
-    const cur = Number(curRaw || "0") || 0;
-    const next = cur + add;
-    await kv.put(key, String(next), { expirationTtl: 26 * 60 * 60 }); // keep 26h
-    return;
-  }
+  const curRaw = await kv.get(key);
+  const cur = Number(curRaw || "0") || 0;
+  const next = cur + add;
+  await kv.put(key, String(next), { expirationTtl: 26 * 60 * 60 }); // keep 26h
 }
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const kv = getMetricsKV(env);
-  if (!kv) {
-    return new Response(JSON.stringify({ ok: true, kv: false }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
+  if (!kv) return json({ ok: true, kv: false });
 
   let body: Body = {};
   try {
@@ -50,20 +52,15 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const name = safeName(String(body.name || ""));
   const n = Math.max(1, Math.min(10_000, Math.floor(Number(body.n || 1) || 1)));
 
-  if (!name) {
-    return new Response(JSON.stringify({ ok: false, reason: "missing_name" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+  if (app !== "site" && app !== "lobby" && app !== "game") {
+    return json({ ok: false, reason: "bad_app" }, 400);
   }
+  if (!name) return json({ ok: false, reason: "missing_name" }, 400);
 
   const h = hourUTC();
   const key = `e:${h}:${app}:${name}`;
 
   await kvAdd(kv, key, n);
 
-  return new Response(JSON.stringify({ ok: true, kv: true }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
+  return json({ ok: true, kv: true });
 };
