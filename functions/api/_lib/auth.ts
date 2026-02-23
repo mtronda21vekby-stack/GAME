@@ -48,10 +48,13 @@ export function setCookie(name: string, value: string, opts: CookieOpts = {}): s
 }
 
 /**
- * Удаление cookie через Set-Cookie.
- * Используй в logout endpoint: headers: { "Set-Cookie": clearCookie("bc_admin") }
+ * Экспорт для logout.ts
+ * Возвращает строку Set-Cookie, которая удаляет cookie.
  */
-export function clearCookie(name: string, opts: Pick<CookieOpts, "path" | "httpOnly" | "sameSite" | "secure"> = {}): string {
+export function clearCookie(
+  name: string,
+  opts: Pick<CookieOpts, "path" | "httpOnly" | "sameSite" | "secure"> = {}
+): string {
   return setCookie(name, "", {
     path: opts.path || "/",
     maxAgeSec: 0,
@@ -187,8 +190,8 @@ export async function verifyAdminToken(request: Request, env: Env): Promise<Admi
 }
 
 /**
- * Совместимый экспорт для endpoints, которые ожидают verifyAdmin().
- * Возвращает true/false (без claims).
+ * Экспорт для session.ts (который импортирует verifyAdmin).
+ * Возвращает boolean, чтобы не ломать существующую логику.
  */
 export async function verifyAdmin(request: Request, env: Env): Promise<boolean> {
   const claims = await verifyAdminToken(request, env);
