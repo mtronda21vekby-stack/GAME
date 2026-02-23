@@ -8,6 +8,10 @@ export type Env = {
   ADMIN_PASSWORD?: string;
   ADMIN_SECRET?: string;
 
+  // optional metrics KV binding (recommended)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  BC_METRICS_KV?: any;
+
   // allow any other env fields without TS pain
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
@@ -48,8 +52,8 @@ export function setCookie(name: string, value: string, opts: CookieOpts = {}): s
 }
 
 export function clearCookie(name: string, opts: CookieOpts = {}): string {
-  // Max-Age=0 + пустое значение = гарантированное удаление
-  return setCookie(name, "", { ...opts, maxAgeSec: 0 });
+  // immediate expiry
+  return setCookie(name, "", { ...opts, maxAgeSec: 0, path: opts.path || "/" });
 }
 
 function parseCookieHeader(cookieHeader: string | null): Record<string, string> {
