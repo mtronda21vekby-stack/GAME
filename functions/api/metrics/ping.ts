@@ -1,7 +1,7 @@
 // functions/api/metrics/ping.ts
 import { Env, getMetricsKV } from "../_lib/auth";
 
-type PingBody = { clientId?: string; area?: string };
+type PingBody = { clientId?: string; app?: "site" | "lobby" | "game" };
 
 function dayUTC(d = new Date()) {
   const y = d.getUTCFullYear();
@@ -13,7 +13,7 @@ function dayUTC(d = new Date()) {
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const kv = getMetricsKV(env);
   if (!kv) {
-    return new Response(JSON.stringify({ ok: false, kv: false }), {
+    return new Response(JSON.stringify({ ok: true, kv: false }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
@@ -27,6 +27,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   }
 
   const clientId = String(body.clientId || "").trim();
+  const app = (body.app || "site") as "site" | "lobby" | "game";
+
   if (!clientId) {
     return new Response(JSON.stringify({ ok: false, reason: "missing_clientId" }), {
       status: 400,
@@ -34,14 +36,13 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     });
   }
 
-  // Online: keep alive key with TTL (2 min)
-  const onlineKey = `o:${clientId}`;
-  await kv.put(onlineKey, String(Date.now()), { expirationTtl: 120 });
-
-  // Unique per UTC day (store as set via keys)
   const d = dayUTC();
-  const uniqKey = `u:${d}:${clientId}`;
-  await kv.put(uniqKey, "1", { expirationTtl: 3 * 24 * 60 * 60 }); // keep 3 days
+
+  // online TTL (2 minutes)
+  await kv.put(`o:${app}:${clientId}`, String(Date.now()), { expirationTtl: 120 });
+
+  // unique per UTC day (keep 3 days)
+  await kv.put(`u:${d}:${app}:${clientId}`, "1", { expirationTtl: 3 * 24 * 60 * 60 });
 
   return new Response(JSON.stringify({ ok: true, kv: true }), {
     status: 200,
