@@ -26,6 +26,27 @@ const KEY_GAME_INPUT = "game.inputMode";
 const KEY_EQUIP_SKIN = "profile.equip.skin";
 const KEY_EQUIP_BADGE = "profile.equip.badge";
 
+/* ===== Hidden Admin shortcut (MVP) ===== */
+const ADMIN_UNLOCK_KEY = "bc.admin.unlocked.v1";
+const ADMIN_UNLOCK_TAPS = 7;
+const ADMIN_TAP_WINDOW_MS = 900;
+
+function getSessionFlag(key: string) {
+  try {
+    return sessionStorage.getItem(key) === "1";
+  } catch {
+    return false;
+  }
+}
+function setSessionFlag(key: string, v: boolean) {
+  try {
+    if (v) sessionStorage.setItem(key, "1");
+    else sessionStorage.removeItem(key);
+  } catch {
+    // ignore
+  }
+}
+
 /* ===== Progress / XP (MVP) ===== */
 const KEY_GUEST_ID = "guest.id";
 const KEY_XP = "progress.xp";
@@ -304,8 +325,7 @@ function Segmented(props: { value: string; options: { value: string; label: stri
 
 function TierBadge(props: { tier: Tier }) {
   const { tier } = props;
-  const text =
-    tier === "Crown" ? "Crown" : tier === "Silver" ? "Silver" : "Bronze";
+  const text = tier === "Crown" ? "Crown" : tier === "Silver" ? "Silver" : "Bronze";
 
   const glow =
     tier === "Crown"
@@ -388,6 +408,10 @@ export function Account() {
   // --- progress ---
   const [progress, setProgress] = React.useState<Progress>(() => buildProgress(getXp()));
 
+  // --- hidden admin ---
+  const [adminUnlocked, setAdminUnlocked] = React.useState(() => getSessionFlag(ADMIN_UNLOCK_KEY));
+  const tapRef = React.useRef<{ count: number; lastAt: number }>({ count: 0, lastAt: 0 });
+
   const [savedPulse, setSavedPulse] = React.useState(0);
 
   const ownedSet = React.useMemo(() => new Set(store.owned), [store.owned]);
@@ -425,33 +449,48 @@ export function Account() {
     setProgress(buildProgress(getXp()));
   }, []);
 
-  const awardXp = React.useCallback(
-    async (event: string, xpAdd: number, cooldownMs: number) => {
-      if (!canAward(event, cooldownMs)) return;
+  const awardXp = React.useCallback(async (event: string, xpAdd: number, cooldownMs: number) => {
+    if (!canAward(event, cooldownMs)) return;
 
-      // Сначала пробуем сервер (если есть)
-      const server = await postXpEvent(event);
-      if (server) {
-        markAward(event);
-        setProgress(server);
-        return;
-      }
-
-      // Локальный fallback
-      const before = getXp();
-      const next = before + xpAdd;
-      setXp(next);
-
-      // счетчик событий (не обязателен, но пригодится для анти-спама/аналитики позже)
-      const total = Number(getString(KEY_XP_TOTAL_EVENTS, "0"));
-      const safeTotal = Number.isFinite(total) ? total + 1 : 1;
-      setString(KEY_XP_TOTAL_EVENTS, String(safeTotal));
-
+    // Сначала пробуем сервер (если есть)
+    const server = await postXpEvent(event);
+    if (server) {
       markAward(event);
-      setProgress(buildProgress(next));
-    },
-    []
-  );
+      setProgress(server);
+      return;
+    }
+
+    // Локальный fallback
+    const before = getXp();
+    const next = before + xpAdd;
+    setXp(next);
+
+    // счетчик событий (не обязателен, но пригодится для анти-спама/аналитики позже)
+    const total = Number(getString(KEY_XP_TOTAL_EVENTS, "0"));
+    const safeTotal = Number.isFinite(total) ? total + 1 : 1;
+    setString(KEY_XP_TOTAL_EVENTS, String(safeTotal));
+
+    markAward(event);
+    setProgress(buildProgress(next));
+  }, []);
+
+  const onAvatarTap = React.useCallback(() => {
+    if (adminUnlocked) return;
+
+    const now = Date.now();
+    const s = tapRef.current;
+
+    if (now - s.lastAt <= ADMIN_TAP_WINDOW_MS) s.count += 1;
+    else s.count = 1;
+
+    s.lastAt = now;
+
+    if (s.count >= ADMIN_UNLOCK_TAPS) {
+      s.count = 0;
+      setAdminUnlocked(true);
+      setSessionFlag(ADMIN_UNLOCK_KEY, true);
+    }
+  }, [adminUnlocked]);
 
   React.useEffect(() => {
     window.addEventListener("focus", refreshStore);
@@ -603,6 +642,12 @@ export function Account() {
                 <span style={{ opacity: 0.82 }}>XP:</span> {progress.xp}
               </Pill>
 
+              {adminUnlocked ? (
+                <Button variant="ghost" onClick={() => nav("/admin")}>
+                  Admin
+                </Button>
+              ) : null}
+
               {equippedSkinItem ? (
                 <Pill tone="accent">
                   Skin: <span style={{ opacity: 0.9 }}>{equippedSkinItem.title}</span>
@@ -631,9 +676,7 @@ export function Account() {
                 <div style={{ opacity: 0.82, fontWeight: 900 }}>
                   До следующего уровня: {Math.max(0, progress.levelNeed - progress.levelXp)} XP
                 </div>
-                <div style={{ opacity: 0.72, fontWeight: 850, fontSize: 12 }}>
-                  Guest ID: {progress.guestId.slice(0, 8)}
-                </div>
+                <div style={{ opacity: 0.72, fontWeight: 850, fontSize: 12 }}>Guest ID: {progress.guestId.slice(0, 8)}</div>
               </div>
               <ProgressBar value={progress.levelXp} max={progress.levelNeed} />
             </div>
@@ -651,6 +694,12 @@ export function Account() {
               <Button variant="ghost" onClick={() => nav("/support")}>
                 Поддержка
               </Button>
+
+              {adminUnlocked ? (
+                <Button variant="ghost" onClick={() => nav("/admin")}>
+                  Admin
+                </Button>
+              ) : null}
             </div>
 
             <div aria-live="polite" style={{ marginTop: 10, opacity: 0.72, fontWeight: 850, fontSize: 12 }} key={savedPulse}>
@@ -674,8 +723,11 @@ export function Account() {
               >
                 <div style={{ display: "grid", gap: 14 }}>
                   <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
-                    <div
+                    <button
+                      type="button"
                       aria-label="Аватар"
+                      onClick={onAvatarTap}
+                      onContextMenu={(e) => e.preventDefault()}
                       style={{
                         width: 66,
                         height: 66,
@@ -688,10 +740,14 @@ export function Account() {
                         color: "rgba(255,255,255,0.92)",
                         fontWeight: 980,
                         letterSpacing: "0.02em",
+                        cursor: "pointer",
+                        outline: "none",
+                        padding: 0,
+                        WebkitTapHighlightColor: "transparent",
                       }}
                     >
                       {initials.slice(0, 2)}
-                    </div>
+                    </button>
 
                     <div style={{ display: "grid", gap: 6, minWidth: 220, flex: "1 1 260px" }}>
                       <LabelRow label="Никнейм" hint="до 18 символов">
@@ -777,6 +833,11 @@ export function Account() {
                     <Button variant="ghost" onClick={() => navExternal("/lobby/")}>
                       В Lobby
                     </Button>
+                    {adminUnlocked ? (
+                      <Button variant="ghost" onClick={() => nav("/admin")}>
+                        Admin
+                      </Button>
+                    ) : null}
                   </div>
                 </div>
               </Card>
@@ -861,6 +922,11 @@ export function Account() {
                     <Button variant="secondary" onClick={openTelegramBot}>
                       AI-Coach
                     </Button>
+                    {adminUnlocked ? (
+                      <Button variant="ghost" onClick={() => nav("/admin")}>
+                        Admin
+                      </Button>
+                    ) : null}
                   </div>
 
                   <div style={{ display: "grid", gap: 10 }}>
@@ -948,6 +1014,11 @@ export function Account() {
                   <Button variant="ghost" onClick={() => nav("/about")}>
                     О платформе
                   </Button>
+                  {adminUnlocked ? (
+                    <Button variant="ghost" onClick={() => nav("/admin")}>
+                      Admin
+                    </Button>
+                  ) : null}
                 </div>
               </div>
             </Card>
