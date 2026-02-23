@@ -26,7 +26,7 @@ async function pingPresence() {
     await fetch("/api/metrics/ping", {
       method: "POST",
       headers: { "content-type": "application/json", accept: "application/json" },
-      body: JSON.stringify({ id }),
+      body: JSON.stringify({ id, app: "lobby" }),
       credentials: "include",
     });
   } catch {
@@ -38,10 +38,8 @@ export function App() {
   React.useEffect(() => {
     let alive = true;
 
-    // immediate ping
     pingPresence();
 
-    // periodic ping
     const t = window.setInterval(() => {
       if (!alive) return;
       pingPresence();
