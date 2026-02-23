@@ -16,13 +16,28 @@ function hourUTC(d: Date) {
   return `${y}-${m}-${dd}-${hh}`;
 }
 
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
 async function countPrefix(kv: KVNamespace, prefix: string): Promise<number> {
   let cursor: string | undefined = undefined;
   let total = 0;
 
+  // 25 * 1000 = 25k ключей верхняя граница на префикс (достаточно для старта)
   for (let i = 0; i < 25; i++) {
     const res = await kv.list({ prefix, cursor, limit: 1000 });
     total += res.keys?.length || 0;
+
+    // В KV API cursor может возвращаться даже если list_complete=true,
+    // поэтому опираемся на list_complete
+    if ((res as any).list_complete) break;
     cursor = res.cursor;
     if (!cursor) break;
   }
@@ -49,23 +64,25 @@ async function collectEventsLast24h(kv: KVNamespace) {
 
     for (let page = 0; page < 10; page++) {
       const res = await kv.list({ prefix: `e:${h}:`, cursor, limit: 1000 });
-      cursor = res.cursor;
 
       for (const k of res.keys || []) {
         const key = k.name; // e:YYYY-MM-DD-HH:app:name
         const parts = key.split(":");
         if (parts.length < 4) continue;
         const app = parts[2] as "site" | "lobby" | "game";
+        if (app !== "site" && app !== "lobby" && app !== "game") continue;
+
         const name = parts.slice(3).join(":");
         const vRaw = await kv.get(key);
         const v = Number(vRaw || "0") || 0;
         if (!v) continue;
 
-        const bucket = byApp[app];
-        bucket[name] = (bucket[name] || 0) + v;
+        byApp[app][name] = (byApp[app][name] || 0) + v;
         total[name] = (total[name] || 0) + v;
       }
 
+      if ((res as any).list_complete) break;
+      cursor = res.cursor;
       if (!cursor) break;
     }
   }
@@ -76,34 +93,30 @@ async function collectEventsLast24h(kv: KVNamespace) {
 export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
   const kv = getMetricsKV(env);
   if (!kv) {
-    return new Response(
-      JSON.stringify({
-        ok: true,
-        stats: {
-          kv: false,
-          online: { site: 0, lobby: 0, game: 0 },
-          uniqueDay: { site: 0, lobby: 0, game: 0 },
-          onlineTotal: 0,
-          uniqueDayTotal: 0,
-        },
-        events24h: { kv: false, byApp: { site: {}, lobby: {}, game: {} }, total: {} },
-      }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
+    return json({
+      ok: true,
+      stats: {
+        kv: false,
+        online: { site: 0, lobby: 0, game: 0 },
+        uniqueDay: { site: 0, lobby: 0, game: 0 },
+        onlineTotal: 0,
+        uniqueDayTotal: 0,
+      },
+      events24h: { kv: false, byApp: { site: {}, lobby: {}, game: {} }, total: {} },
+    });
   }
 
   const d = dayUTC();
 
-  const [oSite, oLobby, oGame, uSite, uLobby, uGame] = await Promise.all([
+  const [oSite, oLobby, oGame, uSite, uLobby, uGame, events24h] = await Promise.all([
     countPrefix(kv, "o:site:"),
     countPrefix(kv, "o:lobby:"),
     countPrefix(kv, "o:game:"),
     countPrefix(kv, `u:${d}:site:`),
     countPrefix(kv, `u:${d}:lobby:`),
     countPrefix(kv, `u:${d}:game:`),
+    collectEventsLast24h(kv),
   ]);
-
-  const events24h = await collectEventsLast24h(kv);
 
   const stats = {
     kv: true,
@@ -113,8 +126,5 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
     uniqueDayTotal: uSite + uLobby + uGame,
   };
 
-  return new Response(JSON.stringify({ ok: true, stats, events24h }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
+  return json({ ok: true, stats, events24h });
 };
