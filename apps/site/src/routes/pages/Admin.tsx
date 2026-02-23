@@ -1,5 +1,6 @@
 import React from "react";
 import { Pressable, SpringGlow } from "@blackcrown/ui";
+import { nav } from "../../lib/nav";
 
 type BlockRow = {
   id: string;
@@ -14,6 +15,13 @@ type ContentPayload = {
 };
 
 type LoginResult = { ok: true } | { ok: false; message: string };
+
+type StatsPayload = {
+  ok: true;
+  ts: number;
+  site: { onlineNow: number; unique24h: number };
+  lobby: { onlineNow: number; unique24h: number };
+};
 
 function safeId() {
   try {
@@ -47,6 +55,19 @@ async function adminLogin(password: string): Promise<LoginResult> {
   }
 }
 
+async function adminLogout(): Promise<boolean> {
+  try {
+    const res = await fetch("/api/admin/logout", {
+      method: "POST",
+      headers: { accept: "application/json" },
+      credentials: "include",
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 async function loadAdminContent(): Promise<ContentPayload> {
   const res = await fetch("/api/admin/content", {
     method: "GET",
@@ -54,9 +75,7 @@ async function loadAdminContent(): Promise<ContentPayload> {
     credentials: "include",
   });
 
-  if (res.status === 401 || res.status === 403) {
-    throw new Error("unauthorized");
-  }
+  if (res.status === 401 || res.status === 403) throw new Error("unauthorized");
   if (!res.ok) throw new Error("load");
 
   return (await res.json()) as ContentPayload;
@@ -80,13 +99,41 @@ async function requestUploadUrl(file: File): Promise<{ uploadUrl: string; public
     credentials: "include",
   });
 
-  if (res.status === 401 || res.status === 403) {
-    throw new Error("unauthorized");
-  }
+  if (res.status === 401 || res.status === 403) throw new Error("unauthorized");
   if (!res.ok) throw new Error("upload-url");
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (await res.json()) as any;
+}
+
+async function loadStats(): Promise<StatsPayload> {
+  const res = await fetch("/api/admin/stats", {
+    method: "GET",
+    headers: { accept: "application/json" },
+    credentials: "include",
+  });
+
+  if (res.status === 401 || res.status === 403) throw new Error("unauthorized");
+  if (!res.ok) throw new Error("stats");
+
+  return (await res.json()) as StatsPayload;
+}
+
+function StatCard(props: { title: string; children: React.ReactNode }) {
+  return (
+    <div
+      className="glassStrong bc-motion"
+      style={{
+        borderRadius: 18,
+        padding: 14,
+        border: "1px solid rgba(255,255,255,0.08)",
+        background: "rgba(255,255,255,0.06)",
+      }}
+    >
+      <div style={{ fontWeight: 950, marginBottom: 8 }}>{props.title}</div>
+      {props.children}
+    </div>
+  );
 }
 
 export function Admin() {
@@ -99,6 +146,9 @@ export function Admin() {
   const [editor, setEditor] = React.useState<string>("{}");
   const [status, setStatus] = React.useState<string>("");
 
+  const [stats, setStats] = React.useState<StatsPayload | null>(null);
+  const [statsErr, setStatsErr] = React.useState<string>("");
+
   const sel = blocks.find((b) => b.id === selected) ?? null;
 
   const reload = React.useCallback(() => {
@@ -109,9 +159,7 @@ export function Admin() {
       .then((c) => {
         const list = c.blocks || [];
         setBlocks(list);
-        if ((!selected || !list.some((x) => x.id === selected)) && list[0]?.id) {
-          setSelected(list[0].id);
-        }
+        if ((!selected || !list.some((x) => x.id === selected)) && list[0]?.id) setSelected(list[0].id);
       })
       .catch((e) => {
         if (String(e?.message) === "unauthorized") {
@@ -124,10 +172,33 @@ export function Admin() {
       .finally(() => setBusy(false));
   }, [selected]);
 
+  const refreshStats = React.useCallback(async () => {
+    try {
+      setStatsErr("");
+      const s = await loadStats();
+      setStats(s);
+    } catch (e: any) {
+      if (String(e?.message) === "unauthorized") {
+        setAuthed(false);
+        setStatus("Сессия истекла. Войди снова.");
+        return;
+      }
+      setStatsErr("Stats unavailable");
+    }
+  }, []);
+
   React.useEffect(() => {
     if (!authed) return;
     reload();
   }, [authed, reload]);
+
+  React.useEffect(() => {
+    if (!authed) return;
+
+    refreshStats();
+    const t = window.setInterval(refreshStats, 10_000);
+    return () => window.clearInterval(t);
+  }, [authed, refreshStats]);
 
   React.useEffect(() => {
     if (!sel) return;
@@ -194,7 +265,6 @@ export function Admin() {
                 }}
               />
 
-              {/* ВАЖНО: submit внутри form — на iOS кликается стабильнее всего */}
               <button
                 type="submit"
                 className="bcAccountPill"
@@ -219,10 +289,60 @@ export function Admin() {
     <div className="bcSection">
       <div className="bcSectionHead">
         <div className="bcSectionTitle">Admin</div>
-        <div className="bcSectionSub">Blocks & media management.</div>
+        <div className="bcSectionSub">Blocks, media & live stats.</div>
       </div>
 
       <div className="bcCards" style={{ gridTemplateColumns: "1fr", gap: 12 }}>
+        <SpringGlow className="glassStrong bc-motion" style={{ padding: 18 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ fontWeight: 950 }}>Dashboard</div>
+
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <Pressable as="button" className="bcAccountPill" onClick={() => nav("/")}>
+                Site
+              </Pressable>
+
+              <Pressable
+                as="button"
+                className="bcAccountPill"
+                onClick={async () => {
+                  setBusy(true);
+                  const ok = await adminLogout();
+                  setBusy(false);
+                  setAuthed(false);
+                  setStatus(ok ? "Вышел." : "Logout failed.");
+                }}
+              >
+                Logout
+              </Pressable>
+
+              <Pressable as="button" className="bcAccountPill" onClick={refreshStats}>
+                Refresh stats
+              </Pressable>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+            <div style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr" as any }}>
+              <StatCard title="Online now">
+                <div style={{ display: "grid", gap: 6, fontWeight: 850, opacity: 0.9 }}>
+                  <div>Site: {stats?.site?.onlineNow ?? 0}</div>
+                  <div>Lobby: {stats?.lobby?.onlineNow ?? 0}</div>
+                </div>
+              </StatCard>
+
+              <StatCard title="Unique last 24h">
+                <div style={{ display: "grid", gap: 6, fontWeight: 850, opacity: 0.9 }}>
+                  <div>Site: {stats?.site?.unique24h ?? 0}</div>
+                  <div>Lobby: {stats?.lobby?.unique24h ?? 0}</div>
+                </div>
+              </StatCard>
+            </div>
+
+            {statsErr ? <div style={{ opacity: 0.82, fontWeight: 800 }}>{statsErr}</div> : null}
+          </div>
+        </SpringGlow>
+
         <SpringGlow className="glassStrong bc-motion" style={{ padding: 18 }}>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ fontWeight: 950 }}>Content blocks</div>
@@ -413,5 +533,3 @@ export function Admin() {
     </div>
   );
 }
-
-export default Admin;
