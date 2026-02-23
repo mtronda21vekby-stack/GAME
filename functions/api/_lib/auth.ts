@@ -13,8 +13,6 @@ export type Env = {
   [key: string]: any;
 };
 
-export const ADMIN_COOKIE_NAME = "bc_admin";
-
 export type CookieOpts = {
   maxAgeSec?: number;
   path?: string;
@@ -41,14 +39,7 @@ export function setCookie(name: string, value: string, opts: CookieOpts = {}): s
   const parts: string[] = [];
   parts.push(`${name}=${value}`);
   parts.push(`Path=${path}`);
-
-  if (maxAge !== undefined) {
-    parts.push(`Max-Age=${maxAge}`);
-    // Добавляем Expires для лучшей совместимости удаления cookie
-    const expires = new Date(Date.now() + maxAge * 1000).toUTCString();
-    parts.push(`Expires=${expires}`);
-  }
-
+  if (maxAge !== undefined) parts.push(`Max-Age=${maxAge}`);
   if (httpOnly) parts.push("HttpOnly");
   parts.push(`SameSite=${sameSite}`);
   if (secure) parts.push("Secure");
@@ -57,7 +48,7 @@ export function setCookie(name: string, value: string, opts: CookieOpts = {}): s
 }
 
 export function clearCookie(name: string, opts: CookieOpts = {}): string {
-  // Для удаления: пустое значение + Max-Age=0 (+ Expires выставится в setCookie)
+  // Max-Age=0 + пустое значение = гарантированное удаление
   return setCookie(name, "", { ...opts, maxAgeSec: 0 });
 }
 
@@ -162,7 +153,7 @@ export async function verifyAdminToken(request: Request, env: Env): Promise<Admi
   const secret = getAdminSecret(env);
   if (!secret) return null;
 
-  const token = readCookie(request, ADMIN_COOKIE_NAME);
+  const token = readCookie(request, "bc_admin");
   if (!token) return null;
 
   const parts = token.split(".");
@@ -186,10 +177,6 @@ export async function verifyAdminToken(request: Request, env: Env): Promise<Admi
   return claims;
 }
 
-/**
- * Backward-compatible helper for routes that expect verifyAdmin().
- * Возвращает boolean, не раскрывая claims.
- */
 export async function verifyAdmin(request: Request, env: Env): Promise<boolean> {
   const claims = await verifyAdminToken(request, env);
   return !!claims;
