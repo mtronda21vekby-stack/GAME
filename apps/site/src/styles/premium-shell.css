@@ -21,6 +21,12 @@
 
   /* Background base */
   --bc-bg: #000000;
+
+  /* Motion tuning */
+  --bc-ease: cubic-bezier(0.2, 0.9, 0.2, 1);
+  --bc-fast: 140ms;
+  --bc-mid: 220ms;
+  --bc-slow: 420ms;
 }
 
 /* iOS / Safari stability */
@@ -41,9 +47,7 @@ body {
   background: var(--bc-bg);
 }
 
-/* === SHELL CONTAINERS === */
 /* Support both naming schemes: bcShell* and bcAppShell* */
-
 .bcShell,
 .bcAppShell {
   position: relative;
@@ -124,19 +128,94 @@ body {
 
 /* Accent interactions: orange premium */
 .bcAccentHover {
-  transition: box-shadow 160ms ease, transform 160ms ease, border-color 160ms ease;
+  transition:
+    box-shadow var(--bc-fast) var(--bc-ease),
+    transform var(--bc-fast) var(--bc-ease),
+    border-color var(--bc-fast) var(--bc-ease),
+    filter var(--bc-fast) var(--bc-ease);
+  will-change: transform, box-shadow, border-color, filter;
 }
 .bcAccentHover:hover {
   box-shadow: 0 0 0 1px var(--bc-accent-soft), 0 0 26px rgba(255, 140, 0, 0.18);
   border-color: rgba(255, 140, 0, 0.30);
+  filter: saturate(1.05);
 }
 .bcAccentHover:active {
   transform: translateY(1px) scale(0.99);
 }
 
+/* Premium appear for sections/cards (opt-in class) */
+.bcAppear {
+  animation: bcAppear var(--bc-slow) var(--bc-ease) both;
+}
+@keyframes bcAppear {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+/* ROUTE TRANSITIONS (the missing premium feel) */
+.bcRouteStage {
+  position: relative;
+  min-height: inherit;
+}
+
+.bcRouteLayer {
+  position: relative;
+}
+
+.bcRouteOut {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 1;
+  filter: blur(0);
+  transform: translateY(0);
+  transition:
+    opacity var(--bc-mid) var(--bc-ease),
+    transform var(--bc-mid) var(--bc-ease),
+    filter var(--bc-mid) var(--bc-ease);
+}
+
+.bcRouteStageSwap .bcRouteOut {
+  opacity: 0;
+  filter: blur(2px);
+  transform: translateY(6px);
+}
+
+.bcRouteIn {
+  opacity: 0;
+  filter: blur(2px);
+  transform: translateY(6px);
+  animation: bcRouteIn var(--bc-mid) var(--bc-ease) forwards;
+}
+
+@keyframes bcRouteIn {
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
 /* Reduced motion compliance */
 @media (prefers-reduced-motion: reduce) {
-  .bcAccentHover {
+  .bcAccentHover,
+  .bcRouteOut {
     transition: none;
+  }
+  .bcRouteIn,
+  .bcAppear {
+    animation: none;
+    opacity: 1;
+    filter: none;
+    transform: none;
   }
 }
