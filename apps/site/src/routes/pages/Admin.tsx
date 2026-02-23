@@ -56,6 +56,7 @@ async function adminLogin(password: string): Promise<LoginResult> {
 
     if (res.ok) return { ok: true };
     if (res.status === 401 || res.status === 403) return { ok: false, message: "Доступ запрещён: неверный пароль." };
+    if (res.status === 503) return { ok: false, message: "Админка не настроена (нет пароля/секрета в env)." };
     return { ok: false, message: "Не удалось войти. Повтори ещё раз." };
   } catch {
     return { ok: false, message: "Сеть недоступна. Проверь соединение." };
@@ -95,6 +96,8 @@ async function saveAdminContent(payload: ContentPayload): Promise<boolean> {
     body: JSON.stringify(payload),
     credentials: "include",
   });
+
+  if (res.status === 401 || res.status === 403) throw new Error("unauthorized");
   return res.ok;
 }
 
@@ -142,7 +145,11 @@ async function createEvent(app: "site" | "lobby" | "game", name: string, n = 1) 
 
 async function snapList(): Promise<SnapList | null> {
   try {
-    const res = await fetch("/api/admin/snapshots", { method: "GET", headers: { accept: "application/json" }, credentials: "include" });
+    const res = await fetch("/api/admin/snapshots", {
+      method: "GET",
+      headers: { accept: "application/json" },
+      credentials: "include",
+    });
     if (!res.ok) return null;
     return (await res.json()) as SnapList;
   } catch {
@@ -441,24 +448,36 @@ export function Admin() {
                 <div className="glassStrong" style={{ padding: 14, borderRadius: 16, border: "1px solid rgba(255,255,255,0.10)" }}>
                   <div style={{ fontWeight: 950 }}>Site</div>
                   <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
-                    <div style={{ opacity: 0.86, fontWeight: 850 }}>Online: <span style={{ fontWeight: 950 }}>{s?.online.site ?? 0}</span></div>
-                    <div style={{ opacity: 0.86, fontWeight: 850 }}>Unique day: <span style={{ fontWeight: 950 }}>{s?.uniqueDay.site ?? 0}</span></div>
+                    <div style={{ opacity: 0.86, fontWeight: 850 }}>
+                      Online: <span style={{ fontWeight: 950 }}>{s?.online.site ?? 0}</span>
+                    </div>
+                    <div style={{ opacity: 0.86, fontWeight: 850 }}>
+                      Unique day: <span style={{ fontWeight: 950 }}>{s?.uniqueDay.site ?? 0}</span>
+                    </div>
                   </div>
                 </div>
 
                 <div className="glassStrong" style={{ padding: 14, borderRadius: 16, border: "1px solid rgba(255,255,255,0.10)" }}>
                   <div style={{ fontWeight: 950 }}>Lobby</div>
                   <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
-                    <div style={{ opacity: 0.86, fontWeight: 850 }}>Online: <span style={{ fontWeight: 950 }}>{s?.online.lobby ?? 0}</span></div>
-                    <div style={{ opacity: 0.86, fontWeight: 850 }}>Unique day: <span style={{ fontWeight: 950 }}>{s?.uniqueDay.lobby ?? 0}</span></div>
+                    <div style={{ opacity: 0.86, fontWeight: 850 }}>
+                      Online: <span style={{ fontWeight: 950 }}>{s?.online.lobby ?? 0}</span>
+                    </div>
+                    <div style={{ opacity: 0.86, fontWeight: 850 }}>
+                      Unique day: <span style={{ fontWeight: 950 }}>{s?.uniqueDay.lobby ?? 0}</span>
+                    </div>
                   </div>
                 </div>
 
                 <div className="glassStrong" style={{ padding: 14, borderRadius: 16, border: "1px solid rgba(255,255,255,0.10)" }}>
                   <div style={{ fontWeight: 950 }}>Game</div>
                   <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
-                    <div style={{ opacity: 0.86, fontWeight: 850 }}>Online: <span style={{ fontWeight: 950 }}>{s?.online.game ?? 0}</span></div>
-                    <div style={{ opacity: 0.86, fontWeight: 850 }}>Unique day: <span style={{ fontWeight: 950 }}>{s?.uniqueDay.game ?? 0}</span></div>
+                    <div style={{ opacity: 0.86, fontWeight: 850 }}>
+                      Online: <span style={{ fontWeight: 950 }}>{s?.online.game ?? 0}</span>
+                    </div>
+                    <div style={{ opacity: 0.86, fontWeight: 850 }}>
+                      Unique day: <span style={{ fontWeight: 950 }}>{s?.uniqueDay.game ?? 0}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -499,7 +518,15 @@ export function Admin() {
                     <div style={{ opacity: 0.82, fontWeight: 900, marginBottom: 6 }}>By app</div>
                     <div style={{ display: "grid", gap: 10 }}>
                       {(["site", "lobby", "game"] as const).map((a) => (
-                        <div key={a} style={{ padding: 10, borderRadius: 14, border: "1px solid rgba(255,255,255,0.10)", background: "rgba(0,0,0,0.12)" }}>
+                        <div
+                          key={a}
+                          style={{
+                            padding: 10,
+                            borderRadius: 14,
+                            border: "1px solid rgba(255,255,255,0.10)",
+                            background: "rgba(0,0,0,0.12)",
+                          }}
+                        >
                           <div style={{ fontWeight: 950, marginBottom: 6 }}>{a}</div>
                           <div style={{ display: "grid", gap: 6 }}>
                             {sortTop(ev?.byApp?.[a] || {}, 5).map(([k, v]) => (
@@ -508,9 +535,7 @@ export function Admin() {
                                 <span style={{ fontWeight: 950 }}>{v}</span>
                               </div>
                             ))}
-                            {Object.keys(ev?.byApp?.[a] || {}).length === 0 ? (
-                              <div style={{ opacity: 0.8, fontWeight: 850 }}>—</div>
-                            ) : null}
+                            {Object.keys(ev?.byApp?.[a] || {}).length === 0 ? <div style={{ opacity: 0.8, fontWeight: 850 }}>—</div> : null}
                           </div>
                         </div>
                       ))}
@@ -520,7 +545,7 @@ export function Admin() {
 
                 {!s?.kv ? (
                   <div style={{ marginTop: 10, opacity: 0.82, fontWeight: 850, lineHeight: 1.45 }}>
-                    KV выключен — analytics не будут стабильными.
+                    KV выключен — analytics будут нулевые. В Cloudflare Pages добавь KV binding (например BC_KV).
                   </div>
                 ) : null}
               </div>
@@ -659,7 +684,12 @@ export function Admin() {
                         try {
                           const ok = await saveAdminContent({ blocks: nextBlocks });
                           setStatus(ok ? "Saved." : "Save failed.");
-                        } catch {
+                        } catch (e) {
+                          if (String((e as any)?.message) === "unauthorized") {
+                            setAuthed(false);
+                            setStatus("Сессия истекла. Войди снова.");
+                            return;
+                          }
                           setStatus("Save failed.");
                         }
                       }}
@@ -750,7 +780,7 @@ export function Admin() {
                     const blocksFromSnap = r.payload?.blocks || [];
                     setBlocks(blocksFromSnap);
                     if (blocksFromSnap?.[0]?.id) setSelected(blocksFromSnap[0].id);
-                    setSnapStatus("Loaded into editor. Now you can Save to apply.");
+                    setSnapStatus("Loaded into editor. Now go Content tab and press Save to apply.");
                   }}
                 >
                   Load into editor
@@ -776,7 +806,7 @@ export function Admin() {
               </div>
 
               <div style={{ opacity: 0.82, fontWeight: 850, lineHeight: 1.45 }}>
-                Backup хранит blocks JSON. “Load into editor” подставляет snapshot в Content tab — затем жми Save чтобы применить.
+                Snapshots хранят backup blocks JSON в KV. “Load into editor” подставляет snapshot в редактор — затем применяй через Save в Content.
               </div>
             </div>
           </Card>
@@ -798,4 +828,105 @@ export function Admin() {
 
                   setStatus("Preparing upload…");
 
-                 
+                  requestUploadUrl(f)
+                    .then(async ({ uploadUrl, publicUrl }) => {
+                      const put = await fetch(uploadUrl, {
+                        method: "PUT",
+                        headers: { "content-type": f.type || "application/octet-stream" },
+                        body: f,
+                      });
+
+                      if (!put.ok) {
+                        setStatus("Upload failed.");
+                        return;
+                      }
+
+                      setStatus(`Uploaded: ${publicUrl}`);
+                      try {
+                        await createEvent("site", "upload_media", 1);
+                      } catch {
+                        // ignore
+                      }
+                    })
+                    .catch((err) => {
+                      if (String(err?.message) === "unauthorized") {
+                        setAuthed(false);
+                        setStatus("Сессия истекла. Войди снова.");
+                        return;
+                      }
+                      setStatus("Upload failed.");
+                    });
+                }}
+              />
+            </div>
+
+            {status ? <div style={{ marginTop: 10, opacity: 0.82, fontWeight: 800 }}>{status}</div> : null}
+          </Card>
+        ) : null}
+
+        {tab === "tools" ? (
+          <Card title="Tools">
+            <div style={{ display: "grid", gap: 12 }}>
+              <div style={{ opacity: 0.82, fontWeight: 850, lineHeight: 1.45 }}>
+                Это утилиты для проверки метрик и диагностики. Если KV: OFF — сначала подключи KV binding в Cloudflare Pages.
+              </div>
+
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <Pressable
+                  as="button"
+                  className="bcAccountPill"
+                  onClick={async () => {
+                    await createEvent("site", "admin_tool_click", 1);
+                    await reloadStats();
+                  }}
+                >
+                  Emit event: admin_tool_click
+                </Pressable>
+
+                <Pressable
+                  as="button"
+                  className="bcAccountPill"
+                  onClick={async () => {
+                    await createEvent("lobby", "admin_ping_lobby", 1);
+                    await reloadStats();
+                  }}
+                >
+                  Emit event: admin_ping_lobby
+                </Pressable>
+
+                <Pressable
+                  as="button"
+                  className="bcAccountPill"
+                  onClick={async () => {
+                    await reloadStats();
+                    await reloadSnapshots();
+                    await reloadContent();
+                  }}
+                >
+                  Full refresh
+                </Pressable>
+              </div>
+
+              <div className="glassStrong" style={{ padding: 14, borderRadius: 16, border: "1px solid rgba(255,255,255,0.10)" }}>
+                <div style={{ fontWeight: 950 }}>Quick diagnostics</div>
+                <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                  <div style={{ opacity: 0.88, fontWeight: 850 }}>
+                    blocks: <span style={{ fontWeight: 950 }}>{blocks.length}</span>
+                  </div>
+                  <div style={{ opacity: 0.88, fontWeight: 850 }}>
+                    snapshots: <span style={{ fontWeight: 950 }}>{snapIds.length}</span>
+                  </div>
+                  <div style={{ opacity: 0.88, fontWeight: 850 }}>
+                    stats: <span style={{ fontWeight: 950 }}>{stats ? "loaded" : "—"}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+export default Admin;
