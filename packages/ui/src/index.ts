@@ -13,6 +13,10 @@ export { useToasts } from "./hooks/useToasts";
 export { usePrefersReducedMotion } from "./hooks/usePrefersReducedMotion";
 export { useSafeAreaInsets } from "./hooks/useSafeAreaInsets";
 
+// ✅ Reveal (нужен apps/site/src/routes/pages/Admin.tsx)
+export { Reveal } from "./Reveal";
+export type { RevealProps } from "./Reveal";
+
 // Если motion папка реально есть — ок. Если нет, ВРЕМЕННО закомментируй 2 строки ниже.
 // export * from "./motion";
 // export * from "./theme";
