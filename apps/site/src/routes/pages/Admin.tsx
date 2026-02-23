@@ -15,9 +15,24 @@ type ContentPayload = {
 
 type LoginResult = { ok: true } | { ok: false; message: string };
 
-type MetricsResult =
-  | { ok: true; online: number; dayUnique: number; kv: boolean }
-  | { ok: false };
+type StatsPayload = {
+  ok: true;
+  stats: {
+    kv: boolean;
+    online: { site: number; lobby: number; game: number };
+    uniqueDay: { site: number; lobby: number; game: number };
+    onlineTotal: number;
+    uniqueDayTotal: number;
+  };
+  events24h: {
+    kv: boolean;
+    byApp: { site: Record<string, number>; lobby: Record<string, number>; game: Record<string, number> };
+    total: Record<string, number>;
+  };
+};
+
+type SnapList = { ok: boolean; ids: string[] };
+type SnapGet = { ok: boolean; id: string; payload: any };
 
 function safeId() {
   try {
@@ -98,17 +113,69 @@ async function requestUploadUrl(file: File): Promise<{ uploadUrl: string; public
   return (await res.json()) as any;
 }
 
-async function fetchMetrics(): Promise<MetricsResult> {
+async function fetchStats(): Promise<StatsPayload | null> {
   try {
     const res = await fetch("/api/metrics/stats", {
       method: "GET",
       headers: { accept: "application/json" },
       credentials: "include",
     });
-    if (!res.ok) return { ok: false };
-    return (await res.json()) as MetricsResult;
+    if (!res.ok) return null;
+    return (await res.json()) as StatsPayload;
   } catch {
-    return { ok: false };
+    return null;
+  }
+}
+
+async function createEvent(app: "site" | "lobby" | "game", name: string, n = 1) {
+  try {
+    await fetch("/api/metrics/event", {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify({ app, name, n }),
+      credentials: "include",
+    });
+  } catch {
+    // ignore
+  }
+}
+
+async function snapList(): Promise<SnapList | null> {
+  try {
+    const res = await fetch("/api/admin/snapshots", { method: "GET", headers: { accept: "application/json" }, credentials: "include" });
+    if (!res.ok) return null;
+    return (await res.json()) as SnapList;
+  } catch {
+    return null;
+  }
+}
+
+async function snapSave(payload: any): Promise<{ ok: boolean; id?: string } | null> {
+  try {
+    const res = await fetch("/api/admin/snapshots", {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify(payload),
+      credentials: "include",
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as any;
+  } catch {
+    return null;
+  }
+}
+
+async function snapGet(id: string): Promise<SnapGet | null> {
+  try {
+    const res = await fetch(`/api/admin/snapshots?id=${encodeURIComponent(id)}`, {
+      method: "GET",
+      headers: { accept: "application/json" },
+      credentials: "include",
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as SnapGet;
+  } catch {
+    return null;
   }
 }
 
@@ -124,21 +191,45 @@ function Card(props: { title: string; right?: React.ReactNode; children: React.R
   );
 }
 
+function Pill(props: { children: React.ReactNode }) {
+  return (
+    <div className="bcAccountPill" style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+      {props.children}
+    </div>
+  );
+}
+
+function sortTop(obj: Record<string, number>, limit = 10) {
+  return Object.entries(obj)
+    .sort((a, b) => (b[1] || 0) - (a[1] || 0))
+    .slice(0, limit);
+}
+
 export function Admin() {
   const [authed, setAuthed] = React.useState(false);
   const [password, setPassword] = React.useState("");
   const [busy, setBusy] = React.useState(false);
 
+  const [tab, setTab] = React.useState<"dashboard" | "content" | "snapshots" | "media" | "tools">("dashboard");
+
+  // content
   const [blocks, setBlocks] = React.useState<BlockRow[]>([]);
   const [selected, setSelected] = React.useState<string>("");
   const [editor, setEditor] = React.useState<string>("{}");
   const [status, setStatus] = React.useState<string>("");
 
-  const [metrics, setMetrics] = React.useState<MetricsResult>({ ok: false });
+  // stats
+  const [stats, setStats] = React.useState<StatsPayload | null>(null);
+  const [statsAt, setStatsAt] = React.useState<number>(0);
+
+  // snapshots
+  const [snapIds, setSnapIds] = React.useState<string[]>([]);
+  const [snapSelected, setSnapSelected] = React.useState<string>("");
+  const [snapStatus, setSnapStatus] = React.useState<string>("");
 
   const sel = blocks.find((b) => b.id === selected) ?? null;
 
-  const reload = React.useCallback(() => {
+  const reloadContent = React.useCallback(() => {
     setStatus("");
     setBusy(true);
 
@@ -161,24 +252,33 @@ export function Admin() {
       .finally(() => setBusy(false));
   }, [selected]);
 
-  const reloadMetrics = React.useCallback(async () => {
-    const m = await fetchMetrics();
-    setMetrics(m);
+  const reloadStats = React.useCallback(async () => {
+    const s = await fetchStats();
+    if (s) {
+      setStats(s);
+      setStatsAt(Date.now());
+    }
+  }, []);
+
+  const reloadSnapshots = React.useCallback(async () => {
+    const r = await snapList();
+    if (r?.ok) setSnapIds(r.ids || []);
   }, []);
 
   React.useEffect(() => {
     if (!authed) return;
-    reload();
-    reloadMetrics();
-  }, [authed, reload, reloadMetrics]);
+    reloadContent();
+    reloadStats();
+    reloadSnapshots();
+  }, [authed, reloadContent, reloadStats, reloadSnapshots]);
 
   React.useEffect(() => {
     if (!authed) return;
     const t = window.setInterval(() => {
-      reloadMetrics();
+      reloadStats();
     }, 10_000);
     return () => window.clearInterval(t);
-  }, [authed, reloadMetrics]);
+  }, [authed, reloadStats]);
 
   React.useEffect(() => {
     if (!sel) return;
@@ -265,20 +365,23 @@ export function Admin() {
     );
   }
 
+  const s = stats?.stats;
+  const ev = stats?.events24h;
+
   return (
     <div className="bcSection">
       <div className="bcSectionHead">
         <div className="bcSectionTitle">Admin</div>
-        <div className="bcSectionSub">Blocks, media & metrics.</div>
+        <div className="bcSectionSub">Dashboard, analytics, content & tools.</div>
       </div>
 
       <div className="bcCards" style={{ gridTemplateColumns: "1fr", gap: 12 }}>
         <Card
-          title="Metrics"
+          title="Navigation"
           right={
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <Pressable as="button" className="bcAccountPill" onClick={reloadMetrics}>
-                Refresh
+              <Pressable as="button" className="bcAccountPill" onClick={reloadStats}>
+                Refresh stats
               </Pressable>
               <Pressable
                 as="button"
@@ -287,7 +390,8 @@ export function Admin() {
                   setStatus("");
                   const ok = await adminLogout();
                   setAuthed(false);
-                  setMetrics({ ok: false });
+                  setStats(null);
+                  setSnapIds([]);
                   if (!ok) setStatus("Logout failed.");
                 }}
               >
@@ -296,220 +400,402 @@ export function Admin() {
             </div>
           }
         >
-          {metrics.ok ? (
-            <div style={{ display: "grid", gap: 10 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <Pressable as="button" className="bcAccountPill" onClick={() => setTab("dashboard")}>
+              Dashboard
+            </Pressable>
+            <Pressable as="button" className="bcAccountPill" onClick={() => setTab("content")}>
+              Content
+            </Pressable>
+            <Pressable as="button" className="bcAccountPill" onClick={() => setTab("snapshots")}>
+              Snapshots
+            </Pressable>
+            <Pressable as="button" className="bcAccountPill" onClick={() => setTab("media")}>
+              Media
+            </Pressable>
+            <Pressable as="button" className="bcAccountPill" onClick={() => setTab("tools")}>
+              Tools
+            </Pressable>
+          </div>
+        </Card>
+
+        {tab === "dashboard" ? (
+          <Card title="Dashboard & Analytics">
+            <div style={{ display: "grid", gap: 12 }}>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <div className="bcAccountPill" style={{ display: "inline-flex", alignItems: "center" }}>
-                  Online: <span style={{ marginLeft: 8, fontWeight: 950 }}>{metrics.online}</span>
+                <Pill>
+                  KV: <span style={{ fontWeight: 950 }}>{s?.kv ? "ON" : "OFF"}</span>
+                </Pill>
+                <Pill>
+                  Online total: <span style={{ fontWeight: 950 }}>{s?.onlineTotal ?? 0}</span>
+                </Pill>
+                <Pill>
+                  Unique (UTC day) total: <span style={{ fontWeight: 950 }}>{s?.uniqueDayTotal ?? 0}</span>
+                </Pill>
+                <Pill>
+                  Updated: <span style={{ fontWeight: 950 }}>{statsAt ? new Date(statsAt).toLocaleTimeString() : "—"}</span>
+                </Pill>
+              </div>
+
+              <div style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr 1fr" as any }}>
+                <div className="glassStrong" style={{ padding: 14, borderRadius: 16, border: "1px solid rgba(255,255,255,0.10)" }}>
+                  <div style={{ fontWeight: 950 }}>Site</div>
+                  <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
+                    <div style={{ opacity: 0.86, fontWeight: 850 }}>Online: <span style={{ fontWeight: 950 }}>{s?.online.site ?? 0}</span></div>
+                    <div style={{ opacity: 0.86, fontWeight: 850 }}>Unique day: <span style={{ fontWeight: 950 }}>{s?.uniqueDay.site ?? 0}</span></div>
+                  </div>
                 </div>
-                <div className="bcAccountPill" style={{ display: "inline-flex", alignItems: "center" }}>
-                  Unique (UTC day): <span style={{ marginLeft: 8, fontWeight: 950 }}>{metrics.dayUnique}</span>
+
+                <div className="glassStrong" style={{ padding: 14, borderRadius: 16, border: "1px solid rgba(255,255,255,0.10)" }}>
+                  <div style={{ fontWeight: 950 }}>Lobby</div>
+                  <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
+                    <div style={{ opacity: 0.86, fontWeight: 850 }}>Online: <span style={{ fontWeight: 950 }}>{s?.online.lobby ?? 0}</span></div>
+                    <div style={{ opacity: 0.86, fontWeight: 850 }}>Unique day: <span style={{ fontWeight: 950 }}>{s?.uniqueDay.lobby ?? 0}</span></div>
+                  </div>
                 </div>
-                <div className="bcAccountPill" style={{ display: "inline-flex", alignItems: "center", opacity: 0.9 }}>
-                  KV: <span style={{ marginLeft: 8, fontWeight: 950 }}>{metrics.kv ? "ON" : "OFF"}</span>
+
+                <div className="glassStrong" style={{ padding: 14, borderRadius: 16, border: "1px solid rgba(255,255,255,0.10)" }}>
+                  <div style={{ fontWeight: 950 }}>Game</div>
+                  <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
+                    <div style={{ opacity: 0.86, fontWeight: 850 }}>Online: <span style={{ fontWeight: 950 }}>{s?.online.game ?? 0}</span></div>
+                    <div style={{ opacity: 0.86, fontWeight: 850 }}>Unique day: <span style={{ fontWeight: 950 }}>{s?.uniqueDay.game ?? 0}</span></div>
+                  </div>
                 </div>
               </div>
 
-              {!metrics.kv ? (
-                <div style={{ opacity: 0.82, fontWeight: 850, lineHeight: 1.45 }}>
-                  KV не подключён — метрики могут сбрасываться и “плавать”.
-                  Подключи KV binding <span style={{ fontWeight: 950 }}>BC_METRICS_KV</span> в Cloudflare Pages.
-                </div>
-              ) : null}
-            </div>
-          ) : (
-            <div style={{ opacity: 0.82, fontWeight: 850, lineHeight: 1.45 }}>
-              Метрики недоступны (нет доступа или endpoint ещё не задеплоен).
-            </div>
-          )}
-        </Card>
+              <div className="glassStrong" style={{ padding: 14, borderRadius: 16, border: "1px solid rgba(255,255,255,0.10)" }}>
+                <div style={{ fontWeight: 950 }}>Events (last 24h)</div>
 
-        <Card
-          title="Content blocks"
-          right={
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <Pressable as="button" className="bcAccountPill" onClick={reload}>
-                {busy ? "Loading…" : "Reload"}
-              </Pressable>
-
-              <Pressable
-                as="button"
-                className="bcAccountPill"
-                onClick={() => {
-                  const id = safeId();
-                  const nb: BlockRow = { id, kind: "cards", title: "New block", data: { items: [] } };
-                  setBlocks((x) => [nb, ...x]);
-                  setSelected(id);
-                  setEditor(JSON.stringify(nb.data, null, 2));
-                  setStatus("");
-                }}
-              >
-                New block
-              </Pressable>
-            </div>
-          }
-        >
-          <div style={{ display: "grid", gap: 10 }}>
-            <select
-              value={selected}
-              onChange={(e) => setSelected(e.target.value)}
-              style={{
-                height: 44,
-                borderRadius: 14,
-                border: "1px solid rgba(255,255,255,0.12)",
-                background: "rgba(255,255,255,0.06)",
-                color: "rgba(255,255,255,0.92)",
-                padding: "0 12px",
-                fontWeight: 850,
-                outline: "none",
-              }}
-            >
-              {blocks.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {(b.title || b.kind || "Block").toString()}
-                </option>
-              ))}
-            </select>
-
-            {sel ? (
-              <>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  <input
-                    value={sel.title ?? ""}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setBlocks((xs) => xs.map((b) => (b.id === sel.id ? { ...b, title: v } : b)));
-                    }}
-                    placeholder="Title"
-                    style={{
-                      height: 44,
-                      borderRadius: 14,
-                      border: "1px solid rgba(255,255,255,0.12)",
-                      background: "rgba(255,255,255,0.06)",
-                      color: "rgba(255,255,255,0.92)",
-                      padding: "0 12px",
-                      fontWeight: 800,
-                      outline: "none",
-                    }}
-                  />
-
-                  <input
-                    value={sel.kind ?? ""}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setBlocks((xs) => xs.map((b) => (b.id === sel.id ? { ...b, kind: v } : b)));
-                    }}
-                    placeholder="Kind (e.g. cards)"
-                    style={{
-                      height: 44,
-                      borderRadius: 14,
-                      border: "1px solid rgba(255,255,255,0.12)",
-                      background: "rgba(255,255,255,0.06)",
-                      color: "rgba(255,255,255,0.92)",
-                      padding: "0 12px",
-                      fontWeight: 800,
-                      outline: "none",
-                    }}
-                  />
-                </div>
-
-                <textarea
-                  value={editor}
-                  onChange={(e) => setEditor(e.target.value)}
-                  style={{
-                    width: "100%",
-                    minHeight: 240,
-                    borderRadius: 14,
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    background: "rgba(255,255,255,0.06)",
-                    color: "rgba(255,255,255,0.92)",
-                    padding: 12,
-                    fontWeight: 750,
-                    outline: "none",
-                    fontFamily:
-                      'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-                  }}
-                />
-
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ opacity: 0.82, fontWeight: 800 }}>{status}</div>
-
+                <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
                   <Pressable
                     as="button"
                     className="bcAccountPill"
                     onClick={async () => {
-                      setStatus("");
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      let data: any = null;
-                      try {
-                        data = JSON.parse(editor);
-                      } catch {
-                        setStatus("Некорректный JSON.");
-                        return;
-                      }
-
-                      const nextBlocks = blocks.map((b) => (b.id === sel.id ? { ...b, data } : b));
-                      setBlocks(nextBlocks);
-
-                      try {
-                        const ok = await saveAdminContent({ blocks: nextBlocks });
-                        setStatus(ok ? "Saved." : "Save failed.");
-                      } catch {
-                        setStatus("Save failed.");
-                      }
+                      await createEvent("lobby", "admin_test", 1);
+                      await reloadStats();
                     }}
                   >
-                    Save
+                    + test event
                   </Pressable>
                 </div>
-              </>
-            ) : null}
-          </div>
-        </Card>
 
-        <Card title="Media upload">
-          <div style={{ opacity: 0.82, fontWeight: 800, lineHeight: 1.45 }}>
-            Upload returns a public URL you can paste into block JSON.
-          </div>
+                <div style={{ marginTop: 10, display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr" as any }}>
+                  <div>
+                    <div style={{ opacity: 0.82, fontWeight: 900, marginBottom: 6 }}>Top total</div>
+                    <div style={{ display: "grid", gap: 6 }}>
+                      {sortTop(ev?.total || {}, 10).map(([k, v]) => (
+                        <div key={k} style={{ display: "flex", justifyContent: "space-between", gap: 10, opacity: 0.9, fontWeight: 850 }}>
+                          <span>{k}</span>
+                          <span style={{ fontWeight: 950 }}>{v}</span>
+                        </div>
+                      ))}
+                      {Object.keys(ev?.total || {}).length === 0 ? (
+                        <div style={{ opacity: 0.8, fontWeight: 850 }}>Нет событий за 24ч.</div>
+                      ) : null}
+                    </div>
+                  </div>
 
-          <div style={{ marginTop: 12 }}>
-            <input
-              type="file"
-              accept="image/*,video/*"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (!f) return;
+                  <div>
+                    <div style={{ opacity: 0.82, fontWeight: 900, marginBottom: 6 }}>By app</div>
+                    <div style={{ display: "grid", gap: 10 }}>
+                      {(["site", "lobby", "game"] as const).map((a) => (
+                        <div key={a} style={{ padding: 10, borderRadius: 14, border: "1px solid rgba(255,255,255,0.10)", background: "rgba(0,0,0,0.12)" }}>
+                          <div style={{ fontWeight: 950, marginBottom: 6 }}>{a}</div>
+                          <div style={{ display: "grid", gap: 6 }}>
+                            {sortTop(ev?.byApp?.[a] || {}, 5).map(([k, v]) => (
+                              <div key={k} style={{ display: "flex", justifyContent: "space-between", gap: 10, opacity: 0.9, fontWeight: 850 }}>
+                                <span>{k}</span>
+                                <span style={{ fontWeight: 950 }}>{v}</span>
+                              </div>
+                            ))}
+                            {Object.keys(ev?.byApp?.[a] || {}).length === 0 ? (
+                              <div style={{ opacity: 0.8, fontWeight: 850 }}>—</div>
+                            ) : null}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
 
-                setStatus("Preparing upload…");
+                {!s?.kv ? (
+                  <div style={{ marginTop: 10, opacity: 0.82, fontWeight: 850, lineHeight: 1.45 }}>
+                    KV выключен — analytics не будут стабильными.
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </Card>
+        ) : null}
 
-                requestUploadUrl(f)
-                  .then(async ({ uploadUrl, publicUrl }) => {
-                    const put = await fetch(uploadUrl, {
-                      method: "PUT",
-                      headers: { "content-type": f.type || "application/octet-stream" },
-                      body: f,
-                    });
+        {tab === "content" ? (
+          <Card
+            title="Content blocks"
+            right={
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <Pressable as="button" className="bcAccountPill" onClick={reloadContent}>
+                  {busy ? "Loading…" : "Reload"}
+                </Pressable>
 
-                    if (!put.ok) {
-                      setStatus("Upload failed.");
+                <Pressable
+                  as="button"
+                  className="bcAccountPill"
+                  onClick={() => {
+                    const id = safeId();
+                    const nb: BlockRow = { id, kind: "cards", title: "New block", data: { items: [] } };
+                    setBlocks((x) => [nb, ...x]);
+                    setSelected(id);
+                    setEditor(JSON.stringify(nb.data, null, 2));
+                    setStatus("");
+                  }}
+                >
+                  New block
+                </Pressable>
+              </div>
+            }
+          >
+            <div style={{ display: "grid", gap: 10 }}>
+              <select
+                value={selected}
+                onChange={(e) => setSelected(e.target.value)}
+                style={{
+                  height: 44,
+                  borderRadius: 14,
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  background: "rgba(255,255,255,0.06)",
+                  color: "rgba(255,255,255,0.92)",
+                  padding: "0 12px",
+                  fontWeight: 850,
+                  outline: "none",
+                }}
+              >
+                {blocks.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {(b.title || b.kind || "Block").toString()}
+                  </option>
+                ))}
+              </select>
+
+              {sel ? (
+                <>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <input
+                      value={sel.title ?? ""}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setBlocks((xs) => xs.map((b) => (b.id === sel.id ? { ...b, title: v } : b)));
+                      }}
+                      placeholder="Title"
+                      style={{
+                        height: 44,
+                        borderRadius: 14,
+                        border: "1px solid rgba(255,255,255,0.12)",
+                        background: "rgba(255,255,255,0.06)",
+                        color: "rgba(255,255,255,0.92)",
+                        padding: "0 12px",
+                        fontWeight: 800,
+                        outline: "none",
+                      }}
+                    />
+
+                    <input
+                      value={sel.kind ?? ""}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setBlocks((xs) => xs.map((b) => (b.id === sel.id ? { ...b, kind: v } : b)));
+                      }}
+                      placeholder="Kind (e.g. cards)"
+                      style={{
+                        height: 44,
+                        borderRadius: 14,
+                        border: "1px solid rgba(255,255,255,0.12)",
+                        background: "rgba(255,255,255,0.06)",
+                        color: "rgba(255,255,255,0.92)",
+                        padding: "0 12px",
+                        fontWeight: 800,
+                        outline: "none",
+                      }}
+                    />
+                  </div>
+
+                  <textarea
+                    value={editor}
+                    onChange={(e) => setEditor(e.target.value)}
+                    style={{
+                      width: "100%",
+                      minHeight: 260,
+                      borderRadius: 14,
+                      border: "1px solid rgba(255,255,255,0.12)",
+                      background: "rgba(255,255,255,0.06)",
+                      color: "rgba(255,255,255,0.92)",
+                      padding: 12,
+                      fontWeight: 750,
+                      outline: "none",
+                      fontFamily:
+                        'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                    }}
+                  />
+
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ opacity: 0.82, fontWeight: 800 }}>{status}</div>
+
+                    <Pressable
+                      as="button"
+                      className="bcAccountPill"
+                      onClick={async () => {
+                        setStatus("");
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        let data: any = null;
+                        try {
+                          data = JSON.parse(editor);
+                        } catch {
+                          setStatus("Некорректный JSON.");
+                          return;
+                        }
+
+                        const nextBlocks = blocks.map((b) => (b.id === sel.id ? { ...b, data } : b));
+                        setBlocks(nextBlocks);
+
+                        try {
+                          const ok = await saveAdminContent({ blocks: nextBlocks });
+                          setStatus(ok ? "Saved." : "Save failed.");
+                        } catch {
+                          setStatus("Save failed.");
+                        }
+                      }}
+                    >
+                      Save
+                    </Pressable>
+                  </div>
+                </>
+              ) : null}
+            </div>
+          </Card>
+        ) : null}
+
+        {tab === "snapshots" ? (
+          <Card
+            title="Snapshots (backup / restore)"
+            right={
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <Pressable as="button" className="bcAccountPill" onClick={reloadSnapshots}>
+                  Reload list
+                </Pressable>
+                <Pressable
+                  as="button"
+                  className="bcAccountPill"
+                  onClick={async () => {
+                    setSnapStatus("");
+                    try {
+                      const content = await loadAdminContent();
+                      const payload = {
+                        kind: "content_snapshot_v1",
+                        at: Date.now(),
+                        blocks: content.blocks || [],
+                      };
+                      const r = await snapSave(payload);
+                      if (r?.ok) {
+                        setSnapStatus(`Saved: ${r.id}`);
+                        await reloadSnapshots();
+                      } else {
+                        setSnapStatus("Save failed.");
+                      }
+                    } catch {
+                      setSnapStatus("Save failed.");
+                    }
+                  }}
+                >
+                  Save snapshot
+                </Pressable>
+              </div>
+            }
+          >
+            <div style={{ display: "grid", gap: 10 }}>
+              <div style={{ opacity: 0.82, fontWeight: 850 }}>{snapStatus}</div>
+
+              <select
+                value={snapSelected}
+                onChange={(e) => setSnapSelected(e.target.value)}
+                style={{
+                  height: 44,
+                  borderRadius: 14,
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  background: "rgba(255,255,255,0.06)",
+                  color: "rgba(255,255,255,0.92)",
+                  padding: "0 12px",
+                  fontWeight: 850,
+                  outline: "none",
+                }}
+              >
+                <option value="">Select snapshot…</option>
+                {snapIds.map((id) => (
+                  <option key={id} value={id}>
+                    {id}
+                  </option>
+                ))}
+              </select>
+
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <Pressable
+                  as="button"
+                  className="bcAccountPill"
+                  onClick={async () => {
+                    if (!snapSelected) return;
+                    setSnapStatus("Loading…");
+                    const r = await snapGet(snapSelected);
+                    if (!r?.ok) {
+                      setSnapStatus("Load failed.");
                       return;
                     }
+                    const blocksFromSnap = r.payload?.blocks || [];
+                    setBlocks(blocksFromSnap);
+                    if (blocksFromSnap?.[0]?.id) setSelected(blocksFromSnap[0].id);
+                    setSnapStatus("Loaded into editor. Now you can Save to apply.");
+                  }}
+                >
+                  Load into editor
+                </Pressable>
 
-                    setStatus(`Uploaded: ${publicUrl}`);
-                  })
-                  .catch((err) => {
-                    if (String(err?.message) === "unauthorized") {
-                      setAuthed(false);
-                      setStatus("Сессия истекла. Войди снова.");
+                <Pressable
+                  as="button"
+                  className="bcAccountPill"
+                  onClick={async () => {
+                    if (!snapSelected) return;
+                    setSnapStatus("Preview…");
+                    const r = await snapGet(snapSelected);
+                    if (!r?.ok) {
+                      setSnapStatus("Preview failed.");
                       return;
                     }
-                    setStatus("Upload failed.");
-                  });
-              }}
-            />
-          </div>
-        </Card>
-      </div>
-    </div>
-  );
-}
+                    const count = Array.isArray(r.payload?.blocks) ? r.payload.blocks.length : 0;
+                    setSnapStatus(`Snapshot blocks: ${count}`);
+                  }}
+                >
+                  Preview
+                </Pressable>
+              </div>
+
+              <div style={{ opacity: 0.82, fontWeight: 850, lineHeight: 1.45 }}>
+                Backup хранит blocks JSON. “Load into editor” подставляет snapshot в Content tab — затем жми Save чтобы применить.
+              </div>
+            </div>
+          </Card>
+        ) : null}
+
+        {tab === "media" ? (
+          <Card title="Media upload">
+            <div style={{ opacity: 0.82, fontWeight: 800, lineHeight: 1.45 }}>
+              Upload returns a public URL you can paste into block JSON.
+            </div>
+
+            <div style={{ marginTop: 12 }}>
+              <input
+                type="file"
+                accept="image/*,video/*"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (!f) return;
+
+                  setStatus("Preparing upload…");
+
+                 
