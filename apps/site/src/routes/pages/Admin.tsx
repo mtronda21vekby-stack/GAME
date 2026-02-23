@@ -1,6 +1,5 @@
 import React from "react";
 import { Pressable, SpringGlow } from "@blackcrown/ui";
-import { nav } from "../../lib/nav";
 
 type BlockRow = {
   id: string;
@@ -16,12 +15,9 @@ type ContentPayload = {
 
 type LoginResult = { ok: true } | { ok: false; message: string };
 
-type StatsPayload = {
-  ok: true;
-  ts: number;
-  site: { onlineNow: number; unique24h: number };
-  lobby: { onlineNow: number; unique24h: number };
-};
+type MetricsResult =
+  | { ok: true; online: number; dayUnique: number; kv: boolean }
+  | { ok: false };
 
 function safeId() {
   try {
@@ -44,11 +40,7 @@ async function adminLogin(password: string): Promise<LoginResult> {
     });
 
     if (res.ok) return { ok: true };
-
-    if (res.status === 401 || res.status === 403) {
-      return { ok: false, message: "Доступ запрещён: неверный пароль." };
-    }
-
+    if (res.status === 401 || res.status === 403) return { ok: false, message: "Доступ запрещён: неверный пароль." };
     return { ok: false, message: "Не удалось войти. Повтори ещё раз." };
   } catch {
     return { ok: false, message: "Сеть недоступна. Проверь соединение." };
@@ -106,33 +98,29 @@ async function requestUploadUrl(file: File): Promise<{ uploadUrl: string; public
   return (await res.json()) as any;
 }
 
-async function loadStats(): Promise<StatsPayload> {
-  const res = await fetch("/api/admin/stats", {
-    method: "GET",
-    headers: { accept: "application/json" },
-    credentials: "include",
-  });
-
-  if (res.status === 401 || res.status === 403) throw new Error("unauthorized");
-  if (!res.ok) throw new Error("stats");
-
-  return (await res.json()) as StatsPayload;
+async function fetchMetrics(): Promise<MetricsResult> {
+  try {
+    const res = await fetch("/api/metrics/stats", {
+      method: "GET",
+      headers: { accept: "application/json" },
+      credentials: "include",
+    });
+    if (!res.ok) return { ok: false };
+    return (await res.json()) as MetricsResult;
+  } catch {
+    return { ok: false };
+  }
 }
 
-function StatCard(props: { title: string; children: React.ReactNode }) {
+function Card(props: { title: string; right?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div
-      className="glassStrong bc-motion"
-      style={{
-        borderRadius: 18,
-        padding: 14,
-        border: "1px solid rgba(255,255,255,0.08)",
-        background: "rgba(255,255,255,0.06)",
-      }}
-    >
-      <div style={{ fontWeight: 950, marginBottom: 8 }}>{props.title}</div>
-      {props.children}
-    </div>
+    <SpringGlow className="glassStrong bc-motion" style={{ padding: 18 }}>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ fontWeight: 950 }}>{props.title}</div>
+        {props.right}
+      </div>
+      <div style={{ marginTop: 12 }}>{props.children}</div>
+    </SpringGlow>
   );
 }
 
@@ -146,8 +134,7 @@ export function Admin() {
   const [editor, setEditor] = React.useState<string>("{}");
   const [status, setStatus] = React.useState<string>("");
 
-  const [stats, setStats] = React.useState<StatsPayload | null>(null);
-  const [statsErr, setStatsErr] = React.useState<string>("");
+  const [metrics, setMetrics] = React.useState<MetricsResult>({ ok: false });
 
   const sel = blocks.find((b) => b.id === selected) ?? null;
 
@@ -159,7 +146,9 @@ export function Admin() {
       .then((c) => {
         const list = c.blocks || [];
         setBlocks(list);
-        if ((!selected || !list.some((x) => x.id === selected)) && list[0]?.id) setSelected(list[0].id);
+        if ((!selected || !list.some((x) => x.id === selected)) && list[0]?.id) {
+          setSelected(list[0].id);
+        }
       })
       .catch((e) => {
         if (String(e?.message) === "unauthorized") {
@@ -172,33 +161,24 @@ export function Admin() {
       .finally(() => setBusy(false));
   }, [selected]);
 
-  const refreshStats = React.useCallback(async () => {
-    try {
-      setStatsErr("");
-      const s = await loadStats();
-      setStats(s);
-    } catch (e: any) {
-      if (String(e?.message) === "unauthorized") {
-        setAuthed(false);
-        setStatus("Сессия истекла. Войди снова.");
-        return;
-      }
-      setStatsErr("Stats unavailable");
-    }
+  const reloadMetrics = React.useCallback(async () => {
+    const m = await fetchMetrics();
+    setMetrics(m);
   }, []);
 
   React.useEffect(() => {
     if (!authed) return;
     reload();
-  }, [authed, reload]);
+    reloadMetrics();
+  }, [authed, reload, reloadMetrics]);
 
   React.useEffect(() => {
     if (!authed) return;
-
-    refreshStats();
-    const t = window.setInterval(refreshStats, 10_000);
+    const t = window.setInterval(() => {
+      reloadMetrics();
+    }, 10_000);
     return () => window.clearInterval(t);
-  }, [authed, refreshStats]);
+  }, [authed, reloadMetrics]);
 
   React.useEffect(() => {
     if (!sel) return;
@@ -289,63 +269,64 @@ export function Admin() {
     <div className="bcSection">
       <div className="bcSectionHead">
         <div className="bcSectionTitle">Admin</div>
-        <div className="bcSectionSub">Blocks, media & live stats.</div>
+        <div className="bcSectionSub">Blocks, media & metrics.</div>
       </div>
 
       <div className="bcCards" style={{ gridTemplateColumns: "1fr", gap: 12 }}>
-        <SpringGlow className="glassStrong bc-motion" style={{ padding: 18 }}>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ fontWeight: 950 }}>Dashboard</div>
-
+        <Card
+          title="Metrics"
+          right={
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <Pressable as="button" className="bcAccountPill" onClick={() => nav("/")}>
-                Site
+              <Pressable as="button" className="bcAccountPill" onClick={reloadMetrics}>
+                Refresh
               </Pressable>
-
               <Pressable
                 as="button"
                 className="bcAccountPill"
                 onClick={async () => {
-                  setBusy(true);
+                  setStatus("");
                   const ok = await adminLogout();
-                  setBusy(false);
                   setAuthed(false);
-                  setStatus(ok ? "Вышел." : "Logout failed.");
+                  setMetrics({ ok: false });
+                  if (!ok) setStatus("Logout failed.");
                 }}
               >
                 Logout
               </Pressable>
-
-              <Pressable as="button" className="bcAccountPill" onClick={refreshStats}>
-                Refresh stats
-              </Pressable>
             </div>
-          </div>
-
-          <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-            <div style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr" as any }}>
-              <StatCard title="Online now">
-                <div style={{ display: "grid", gap: 6, fontWeight: 850, opacity: 0.9 }}>
-                  <div>Site: {stats?.site?.onlineNow ?? 0}</div>
-                  <div>Lobby: {stats?.lobby?.onlineNow ?? 0}</div>
+          }
+        >
+          {metrics.ok ? (
+            <div style={{ display: "grid", gap: 10 }}>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <div className="bcAccountPill" style={{ display: "inline-flex", alignItems: "center" }}>
+                  Online: <span style={{ marginLeft: 8, fontWeight: 950 }}>{metrics.online}</span>
                 </div>
-              </StatCard>
-
-              <StatCard title="Unique last 24h">
-                <div style={{ display: "grid", gap: 6, fontWeight: 850, opacity: 0.9 }}>
-                  <div>Site: {stats?.site?.unique24h ?? 0}</div>
-                  <div>Lobby: {stats?.lobby?.unique24h ?? 0}</div>
+                <div className="bcAccountPill" style={{ display: "inline-flex", alignItems: "center" }}>
+                  Unique (UTC day): <span style={{ marginLeft: 8, fontWeight: 950 }}>{metrics.dayUnique}</span>
                 </div>
-              </StatCard>
+                <div className="bcAccountPill" style={{ display: "inline-flex", alignItems: "center", opacity: 0.9 }}>
+                  KV: <span style={{ marginLeft: 8, fontWeight: 950 }}>{metrics.kv ? "ON" : "OFF"}</span>
+                </div>
+              </div>
+
+              {!metrics.kv ? (
+                <div style={{ opacity: 0.82, fontWeight: 850, lineHeight: 1.45 }}>
+                  KV не подключён — метрики могут сбрасываться и “плавать”.
+                  Подключи KV binding <span style={{ fontWeight: 950 }}>BC_METRICS_KV</span> в Cloudflare Pages.
+                </div>
+              ) : null}
             </div>
+          ) : (
+            <div style={{ opacity: 0.82, fontWeight: 850, lineHeight: 1.45 }}>
+              Метрики недоступны (нет доступа или endpoint ещё не задеплоен).
+            </div>
+          )}
+        </Card>
 
-            {statsErr ? <div style={{ opacity: 0.82, fontWeight: 800 }}>{statsErr}</div> : null}
-          </div>
-        </SpringGlow>
-
-        <SpringGlow className="glassStrong bc-motion" style={{ padding: 18 }}>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ fontWeight: 950 }}>Content blocks</div>
+        <Card
+          title="Content blocks"
+          right={
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <Pressable as="button" className="bcAccountPill" onClick={reload}>
                 {busy ? "Loading…" : "Reload"}
@@ -366,9 +347,9 @@ export function Admin() {
                 New block
               </Pressable>
             </div>
-          </div>
-
-          <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+          }
+        >
+          <div style={{ display: "grid", gap: 10 }}>
             <select
               value={selected}
               onChange={(e) => setSelected(e.target.value)}
@@ -484,11 +465,10 @@ export function Admin() {
               </>
             ) : null}
           </div>
-        </SpringGlow>
+        </Card>
 
-        <SpringGlow className="glassStrong bc-motion" style={{ padding: 18 }}>
-          <div style={{ fontWeight: 950 }}>Media upload</div>
-          <div style={{ marginTop: 10, opacity: 0.82, fontWeight: 800, lineHeight: 1.45 }}>
+        <Card title="Media upload">
+          <div style={{ opacity: 0.82, fontWeight: 800, lineHeight: 1.45 }}>
             Upload returns a public URL you can paste into block JSON.
           </div>
 
@@ -528,7 +508,7 @@ export function Admin() {
               }}
             />
           </div>
-        </SpringGlow>
+        </Card>
       </div>
     </div>
   );
