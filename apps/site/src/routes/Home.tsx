@@ -19,6 +19,195 @@ function getName() {
   return userStorage.getString("nickname", "") || "Игрок";
 }
 
+/* =========================
+   Public content (MVP)
+   ========================= */
+
+type ContentLinkKind = "site" | "external";
+
+type ContentCard = {
+  id?: string;
+  title: string;
+  desc?: string;
+  tag?: string;
+  actionLabel?: string;
+  href?: string;
+  kind?: ContentLinkKind;
+  imageSrc?: string;
+};
+
+type ContentBlock =
+  | {
+      id: string;
+      type: "section";
+      title?: string;
+      subtitle?: string;
+      cards?: ContentCard[];
+    }
+  | {
+      id: string;
+      type: "cta";
+      title?: string;
+      subtitle?: string;
+      buttons?: Array<{
+        label: string;
+        href: string;
+        kind?: ContentLinkKind;
+        variant?: "primary" | "secondary" | "ghost";
+        leftIcon?: "play";
+      }>;
+    }
+  | {
+      id: string;
+      type: "text";
+      title?: string;
+      body?: string;
+    };
+
+type PublicContentResponse = {
+  blocks?: ContentBlock[];
+};
+
+function isObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
+}
+
+function safeArray<T = unknown>(v: unknown): T[] {
+  return Array.isArray(v) ? (v as T[]) : [];
+}
+
+/** Ничего не “обещаем”: просто безопасно парсим то, что пришло */
+function normalizeContent(payload: unknown): PublicContentResponse {
+  if (!isObject(payload)) return {};
+
+  const blocksRaw = safeArray(payload.blocks);
+  const blocks: ContentBlock[] = [];
+
+  for (const b of blocksRaw) {
+    if (!isObject(b)) continue;
+
+    const id = typeof b.id === "string" ? b.id : "";
+    const type = typeof b.type === "string" ? b.type : "";
+
+    if (!id || (type !== "section" && type !== "cta" && type !== "text")) continue;
+
+    if (type === "section") {
+      const cardsRaw = safeArray(b.cards);
+      const cards: ContentCard[] = [];
+
+      for (const c of cardsRaw) {
+        if (!isObject(c)) continue;
+        const title = typeof c.title === "string" ? c.title : "";
+        if (!title) continue;
+
+        const card: ContentCard = {
+          id: typeof c.id === "string" ? c.id : undefined,
+          title,
+          desc: typeof c.desc === "string" ? c.desc : undefined,
+          tag: typeof c.tag === "string" ? c.tag : undefined,
+          actionLabel: typeof c.actionLabel === "string" ? c.actionLabel : undefined,
+          href: typeof c.href === "string" ? c.href : undefined,
+          kind: c.kind === "external" ? "external" : "site",
+          imageSrc: typeof c.imageSrc === "string" ? c.imageSrc : undefined,
+        };
+
+        cards.push(card);
+      }
+
+      blocks.push({
+        id,
+        type: "section",
+        title: typeof b.title === "string" ? b.title : undefined,
+        subtitle: typeof b.subtitle === "string" ? b.subtitle : undefined,
+        cards,
+      });
+
+      continue;
+    }
+
+    if (type === "cta") {
+      const buttonsRaw = safeArray(b.buttons);
+      const buttons: NonNullable<ContentBlock & { type: "cta" }>["buttons"] = [];
+
+      for (const bt of buttonsRaw) {
+        if (!isObject(bt)) continue;
+        const label = typeof bt.label === "string" ? bt.label : "";
+        const href = typeof bt.href === "string" ? bt.href : "";
+        if (!label || !href) continue;
+
+        const variant =
+          bt.variant === "primary" || bt.variant === "secondary" || bt.variant === "ghost" ? bt.variant : "secondary";
+
+        buttons.push({
+          label,
+          href,
+          kind: bt.kind === "external" ? "external" : "site",
+          variant,
+          leftIcon: bt.leftIcon === "play" ? "play" : undefined,
+        });
+      }
+
+      blocks.push({
+        id,
+        type: "cta",
+        title: typeof b.title === "string" ? b.title : undefined,
+        subtitle: typeof b.subtitle === "string" ? b.subtitle : undefined,
+        buttons,
+      });
+
+      continue;
+    }
+
+    // text
+    blocks.push({
+      id,
+      type: "text",
+      title: typeof b.title === "string" ? b.title : undefined,
+      body: typeof b.body === "string" ? b.body : undefined,
+    });
+  }
+
+  return { blocks };
+}
+
+function usePublicContent() {
+  const [content, setContent] = React.useState<PublicContentResponse>({});
+  const [ready, setReady] = React.useState(false);
+
+  React.useEffect(() => {
+    const ac = new AbortController();
+
+    (async () => {
+      try {
+        const res = await fetch("/api/content", {
+          method: "GET",
+          signal: ac.signal,
+          headers: { Accept: "application/json" },
+        });
+
+        if (!res.ok) {
+          setReady(true);
+          return;
+        }
+
+        const json = (await res.json()) as unknown;
+        setContent(normalizeContent(json));
+        setReady(true);
+      } catch {
+        setReady(true);
+      }
+    })();
+
+    return () => ac.abort();
+  }, []);
+
+  return { content, ready };
+}
+
+/* =========================
+   UI bits
+   ========================= */
+
 function Pill(props: { children: React.ReactNode }) {
   return (
     <span
@@ -131,8 +320,138 @@ function FeatureCard(props: {
   );
 }
 
+function renderBlocks(blocks: ContentBlock[]) {
+  return blocks.map((b) => {
+    if (b.type === "section") {
+      const cards = b.cards ?? [];
+      if (!b.title && !b.subtitle && cards.length === 0) return null;
+
+      return (
+        <section key={b.id} className="bcSection">
+          <div className="bcSectionHead">
+            {b.title ? <div className="bcSectionTitle">{b.title}</div> : null}
+            {b.subtitle ? <div className="bcSectionSub">{b.subtitle}</div> : null}
+          </div>
+
+          {cards.length ? (
+            <div className="bcCards">
+              {cards.map((c, idx) => {
+                const tag = c.tag ?? "Info";
+                const desc = c.desc ?? "";
+                const actionLabel = c.actionLabel ?? "Открыть";
+                const kind: ContentLinkKind = c.kind ?? "site";
+
+                // если href нет — просто карта без перехода (но без “заглушек”)
+                if (!c.href) {
+                  return (
+                    <div
+                      key={c.id ?? `${b.id}-${idx}`}
+                      className="glassStrong bc-motion"
+                      style={{
+                        borderRadius: 22,
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        background: "rgba(255,255,255,0.06)",
+                        boxShadow: "0 34px 120px rgba(0,0,0,0.30)",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <div style={{ padding: 18 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "baseline" }}>
+                          <div style={{ fontWeight: 950, fontSize: 18, letterSpacing: "-0.02em" }}>{c.title}</div>
+                          <Pill>{tag}</Pill>
+                        </div>
+                        {desc ? <div style={{ marginTop: 8, opacity: 0.86, lineHeight: 1.45 }}>{desc}</div> : null}
+                      </div>
+                      <div style={{ padding: 14, paddingTop: 0 }}>
+                        <img
+                          alt=""
+                          src={c.imageSrc ?? HeroArt.cardWave}
+                          style={{
+                            width: "100%",
+                            height: 160,
+                            objectFit: "cover",
+                            borderRadius: 18,
+                            border: "none",
+                            display: "block",
+                            opacity: 0.95,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <FeatureCard
+                    key={c.id ?? `${b.id}-${idx}`}
+                    title={c.title}
+                    desc={desc}
+                    tag={tag}
+                    actionLabel={actionLabel}
+                    onAction={() => (kind === "external" ? navExternal(c.href!) : navSite(c.href!))}
+                    href={c.href}
+                    kind={kind}
+                    imageSrc={c.imageSrc ?? HeroArt.cardWave}
+                  />
+                );
+              })}
+            </div>
+          ) : null}
+        </section>
+      );
+    }
+
+    if (b.type === "cta") {
+      const buttons = b.buttons ?? [];
+      if (!b.title && !b.subtitle && buttons.length === 0) return null;
+
+      return (
+        <section key={b.id} className="bcSection">
+          <div className="bcSectionHead">
+            {b.title ? <div className="bcSectionTitle">{b.title}</div> : null}
+            {b.subtitle ? <div className="bcSectionSub">{b.subtitle}</div> : null}
+          </div>
+
+          {buttons.length ? (
+            <div style={{ maxWidth: 980, margin: "0 auto", display: "flex", gap: 10, flexWrap: "wrap" }}>
+              {buttons.map((bt, i) => {
+                const leftIconSrc = bt.leftIcon === "play" ? Icons.play : undefined;
+                const onClick = () => (bt.kind === "external" ? navExternal(bt.href) : navSite(bt.href));
+                return (
+                  <Button key={`${b.id}-btn-${i}`} variant={bt.variant ?? "secondary"} leftIconSrc={leftIconSrc} onClick={onClick}>
+                    {bt.label}
+                  </Button>
+                );
+              })}
+            </div>
+          ) : null}
+        </section>
+      );
+    }
+
+    // text
+    if (!b.title && !b.body) return null;
+
+    return (
+      <section key={b.id} className="bcSection">
+        <div className="bcSectionHead">
+          {b.title ? <div className="bcSectionTitle">{b.title}</div> : null}
+        </div>
+        {b.body ? (
+          <div style={{ maxWidth: 980, margin: "0 auto", color: "rgba(255,255,255,0.78)", lineHeight: 1.55, whiteSpace: "pre-wrap" }}>
+            {b.body}
+          </div>
+        ) : null}
+      </section>
+    );
+  });
+}
+
 export function Home() {
   const name = getName();
+  const { content } = usePublicContent();
+  const blocks = content.blocks ?? [];
+  const hasBlocks = blocks.length > 0;
 
   return (
     <main className="bcSiteRoot">
@@ -191,8 +510,8 @@ export function Home() {
             </h1>
 
             <p className="bcLead">
-              BlackCrown — витрина и лончер для наших игр. Сегодня доступна <b>EvoFish</b>, дальше — новые проекты и события.
-              В экосистему входит <b>AI-Coach в Telegram</b>, который помогает с прогрессом и стратегиями.
+              BlackCrown — витрина и лончер для наших игр. Сегодня доступна <b>EvoFish</b>, дальше — новые проекты и события. В
+              экосистему входит <b>AI-Coach в Telegram</b>, который помогает с прогрессом и стратегиями.
             </p>
 
             <div className="bcCtas">
@@ -272,73 +591,79 @@ export function Home() {
         </div>
       </section>
 
-      <section className="bcSection">
-        <div className="bcSectionHead">
-          <div className="bcSectionTitle">Экосистема</div>
-          <div className="bcSectionSub">Игры + сервисы для игроков: профиль, лобби, магазин и AI-помощник в Telegram.</div>
-        </div>
-
-        <div className="bcCards">
-          <FeatureCard
-            title="Игры"
-            desc="Единый запуск, настройки и управление. Игры открываются как отдельные приложения на этом же домене."
-            tag="Play"
-            actionLabel="Открыть игру"
-            onAction={() => navExternal("/game/")}
-            href="/game/"
-            kind="external"
-          />
-
-          <FeatureCard
-            title="Lobby"
-            desc="Комната на 8 игроков: список участников, ready/unready и прозрачный чат."
-            tag="Social"
-            actionLabel="В Lobby"
-            onAction={() => navExternal("/lobby/")}
-            href="/lobby/"
-            kind="external"
-          />
-
-          <FeatureCard
-            title="Магазин"
-            desc="Предметы для профиля и интерфейса. Всё попадает в коллекцию и доступно в аккаунте."
-            tag="Store"
-            actionLabel="Открыть Store"
-            onAction={() => navSite("/store")}
-            href="/store"
-            kind="site"
-            imageSrc={HeroArt.cardWave}
-          />
-
-          <FeatureCard
-            title="AI-Coach в Telegram"
-            desc="Помогает с прогрессом, механиками, стратегиями и целями. Быстрый вход в контекст и подсказки по делу."
-            tag="Coach"
-            actionLabel="Открыть бота"
-            onAction={openTelegramBot}
-            href="/about"
-            kind="site"
-            imageSrc={HeroArt.cardWave}
-          />
-        </div>
-
-        <div style={{ maxWidth: 980, margin: "16px auto 0", opacity: 0.78 }}>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <a className="bcLink bcHotLink" href="/privacy">
-              Privacy
-            </a>
-            <a className="bcLink bcHotLink" href="/terms">
-              Terms
-            </a>
-            <a className="bcLink bcHotLink" href="/support">
-              Поддержка
-            </a>
-            <a className="bcLink bcHotLink" href="/store">
-              Магазин
-            </a>
+      {/* Если /api/content отдаёт blocks — рендерим их.
+          Если пусто/не готово — показываем твой текущий раздел "Экосистема". */}
+      {hasBlocks ? (
+        <>{renderBlocks(blocks)}</>
+      ) : (
+        <section className="bcSection">
+          <div className="bcSectionHead">
+            <div className="bcSectionTitle">Экосистема</div>
+            <div className="bcSectionSub">Игры + сервисы для игроков: профиль, лобби, магазин и AI-помощник в Telegram.</div>
           </div>
-        </div>
-      </section>
+
+          <div className="bcCards">
+            <FeatureCard
+              title="Игры"
+              desc="Единый запуск, настройки и управление. Игры открываются как отдельные приложения на этом же домене."
+              tag="Play"
+              actionLabel="Открыть игру"
+              onAction={() => navExternal("/game/")}
+              href="/game/"
+              kind="external"
+            />
+
+            <FeatureCard
+              title="Lobby"
+              desc="Комната на 8 игроков: список участников, ready/unready и прозрачный чат."
+              tag="Social"
+              actionLabel="В Lobby"
+              onAction={() => navExternal("/lobby/")}
+              href="/lobby/"
+              kind="external"
+            />
+
+            <FeatureCard
+              title="Магазин"
+              desc="Предметы для профиля и интерфейса. Всё попадает в коллекцию и доступно в аккаунте."
+              tag="Store"
+              actionLabel="Открыть Store"
+              onAction={() => navSite("/store")}
+              href="/store"
+              kind="site"
+              imageSrc={HeroArt.cardWave}
+            />
+
+            <FeatureCard
+              title="AI-Coach в Telegram"
+              desc="Помогает с прогрессом, механиками, стратегиями и целями. Быстрый вход в контекст и подсказки по делу."
+              tag="Coach"
+              actionLabel="Открыть бота"
+              onAction={openTelegramBot}
+              href="/about"
+              kind="site"
+              imageSrc={HeroArt.cardWave}
+            />
+          </div>
+
+          <div style={{ maxWidth: 980, margin: "16px auto 0", opacity: 0.78 }}>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <a className="bcLink bcHotLink" href="/privacy">
+                Privacy
+              </a>
+              <a className="bcLink bcHotLink" href="/terms">
+                Terms
+              </a>
+              <a className="bcLink bcHotLink" href="/support">
+                Поддержка
+              </a>
+              <a className="bcLink bcHotLink" href="/store">
+                Магазин
+              </a>
+            </div>
+          </div>
+        </section>
+      )}
     </main>
   );
 }
