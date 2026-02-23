@@ -13,9 +13,7 @@ type ContentPayload = {
   blocks: BlockRow[];
 };
 
-type LoginResult =
-  | { ok: true }
-  | { ok: false; message: string };
+type LoginResult = { ok: true } | { ok: false; message: string };
 
 function safeId() {
   try {
@@ -43,7 +41,8 @@ async function adminLogin(password: string): Promise<LoginResult> {
       return { ok: false, message: "Доступ запрещён: неверный пароль." };
     }
 
-    return { ok: false, message: "Не удалось войти. Повтори ещё раз." };
+    // 503/500 и т.п.
+    return { ok: false, message: "Не удалось войти. Проверь переменные окружения и повтори." };
   } catch {
     return { ok: false, message: "Сеть недоступна. Проверь соединение." };
   }
@@ -56,9 +55,7 @@ async function loadAdminContent(): Promise<ContentPayload> {
     credentials: "include",
   });
 
-  if (res.status === 401 || res.status === 403) {
-    throw new Error("unauthorized");
-  }
+  if (res.status === 401 || res.status === 403) throw new Error("unauthorized");
   if (!res.ok) throw new Error("load");
 
   return (await res.json()) as ContentPayload;
@@ -82,9 +79,7 @@ async function requestUploadUrl(file: File): Promise<{ uploadUrl: string; public
     credentials: "include",
   });
 
-  if (res.status === 401 || res.status === 403) {
-    throw new Error("unauthorized");
-  }
+  if (res.status === 401 || res.status === 403) throw new Error("unauthorized");
   if (!res.ok) throw new Error("upload-url");
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -111,6 +106,7 @@ export function Admin() {
       .then((c) => {
         const list = c.blocks || [];
         setBlocks(list);
+
         if ((!selected || !list.some((x) => x.id === selected)) && list[0]?.id) {
           setSelected(list[0].id);
         }
@@ -197,15 +193,12 @@ export function Admin() {
                   }}
                 />
 
-                {/* ВАЖНО: submit внутри form — на iOS кликается стабильнее всего */}
+                {/* submit внутри form — на iOS кликается стабильнее всего */}
                 <button
                   type="submit"
                   className="bcAccountPill"
                   disabled={busy}
-                  style={{
-                    opacity: busy ? 0.7 : 1,
-                    cursor: busy ? "default" : "pointer",
-                  }}
+                  style={{ opacity: busy ? 0.7 : 1, cursor: busy ? "default" : "pointer" }}
                 >
                   {busy ? "Signing in…" : "Sign in"}
                 </button>
@@ -230,6 +223,7 @@ export function Admin() {
         <SpringGlow className="glassStrong bc-motion" style={{ padding: 18 }}>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ fontWeight: 950 }}>Content blocks</div>
+
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <Pressable as="button" className="bcAccountPill" onClick={reload}>
                 {busy ? "Loading…" : "Reload"}
@@ -344,6 +338,7 @@ export function Admin() {
                       setStatus("");
                       // eslint-disable-next-line @typescript-eslint/no-explicit-any
                       let data: any = null;
+
                       try {
                         data = JSON.parse(editor);
                       } catch {
@@ -417,3 +412,5 @@ export function Admin() {
     </div>
   );
 }
+
+export default Admin;
