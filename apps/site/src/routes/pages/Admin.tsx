@@ -5,6 +5,7 @@ type BlockRow = {
   id: string;
   kind: string;
   title?: string | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data?: any;
 };
 
@@ -12,26 +13,63 @@ type ContentPayload = {
   blocks: BlockRow[];
 };
 
-async function adminLogin(password: string): Promise<boolean> {
-  const res = await fetch("/api/admin/login", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ password }),
-  });
-  return res.ok;
+type LoginResult =
+  | { ok: true }
+  | { ok: false; message: string };
+
+function safeId() {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const anyCrypto = crypto as any;
+    if (anyCrypto?.randomUUID) return anyCrypto.randomUUID();
+  } catch {
+    // ignore
+  }
+  return `b_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
+}
+
+async function adminLogin(password: string): Promise<LoginResult> {
+  try {
+    const res = await fetch("/api/admin/login", {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify({ password }),
+      credentials: "include",
+    });
+
+    if (res.ok) return { ok: true };
+
+    if (res.status === 401 || res.status === 403) {
+      return { ok: false, message: "Доступ запрещён: неверный пароль." };
+    }
+
+    return { ok: false, message: "Не удалось войти. Повтори ещё раз." };
+  } catch {
+    return { ok: false, message: "Сеть недоступна. Проверь соединение." };
+  }
 }
 
 async function loadAdminContent(): Promise<ContentPayload> {
-  const res = await fetch("/api/admin/content", { method: "GET", headers: { accept: "application/json" } });
+  const res = await fetch("/api/admin/content", {
+    method: "GET",
+    headers: { accept: "application/json" },
+    credentials: "include",
+  });
+
+  if (res.status === 401 || res.status === 403) {
+    throw new Error("unauthorized");
+  }
   if (!res.ok) throw new Error("load");
+
   return (await res.json()) as ContentPayload;
 }
 
 async function saveAdminContent(payload: ContentPayload): Promise<boolean> {
   const res = await fetch("/api/admin/content", {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", accept: "application/json" },
     body: JSON.stringify(payload),
+    credentials: "include",
   });
   return res.ok;
 }
@@ -39,16 +77,25 @@ async function saveAdminContent(payload: ContentPayload): Promise<boolean> {
 async function requestUploadUrl(file: File): Promise<{ uploadUrl: string; publicUrl: string }> {
   const res = await fetch("/api/admin/upload-url", {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", accept: "application/json" },
     body: JSON.stringify({ filename: file.name, contentType: file.type || "application/octet-stream" }),
+    credentials: "include",
   });
+
+  if (res.status === 401 || res.status === 403) {
+    throw new Error("unauthorized");
+  }
   if (!res.ok) throw new Error("upload-url");
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (await res.json()) as any;
 }
 
 export function Admin() {
   const [authed, setAuthed] = React.useState(false);
   const [password, setPassword] = React.useState("");
+  const [busy, setBusy] = React.useState(false);
+
   const [blocks, setBlocks] = React.useState<BlockRow[]>([]);
   const [selected, setSelected] = React.useState<string>("");
   const [editor, setEditor] = React.useState<string>("{}");
@@ -58,12 +105,25 @@ export function Admin() {
 
   const reload = React.useCallback(() => {
     setStatus("");
+    setBusy(true);
+
     loadAdminContent()
       .then((c) => {
-        setBlocks(c.blocks || []);
-        if (!selected && c.blocks?.[0]?.id) setSelected(c.blocks[0].id);
+        const list = c.blocks || [];
+        setBlocks(list);
+        if ((!selected || !list.some((x) => x.id === selected)) && list[0]?.id) {
+          setSelected(list[0].id);
+        }
       })
-      .catch(() => setStatus("Failed to load content"));
+      .catch((e) => {
+        if (String(e?.message) === "unauthorized") {
+          setAuthed(false);
+          setStatus("Сессия истекла. Войди снова.");
+          return;
+        }
+        setStatus("Не удалось загрузить контент.");
+      })
+      .finally(() => setBusy(false));
   }, [selected]);
 
   React.useEffect(() => {
@@ -74,6 +134,7 @@ export function Admin() {
   React.useEffect(() => {
     if (!sel) return;
     setEditor(JSON.stringify(sel.data ?? {}, null, 2));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sel?.id]);
 
   if (!authed) {
@@ -89,12 +150,41 @@ export function Admin() {
             <SpringGlow className="glassStrong bc-motion" style={{ padding: 18 }}>
               <div style={{ fontWeight: 950 }}>Login</div>
 
-              <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (busy) return;
+
+                  const p = password.trim();
+                  if (!p) {
+                    setStatus("Введите пароль.");
+                    return;
+                  }
+
+                  setStatus("");
+                  setBusy(true);
+                  const r = await adminLogin(p);
+                  setBusy(false);
+
+                  if (r.ok) {
+                    setAuthed(true);
+                    setPassword("");
+                    return;
+                  }
+
+                  setAuthed(false);
+                  setStatus(r.message);
+                }}
+                style={{ marginTop: 12, display: "grid", gap: 10 }}
+              >
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Password"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   style={{
                     height: 44,
                     borderRadius: 14,
@@ -103,24 +193,25 @@ export function Admin() {
                     color: "rgba(255,255,255,0.92)",
                     padding: "0 12px",
                     fontWeight: 800,
+                    outline: "none",
                   }}
                 />
 
-                <Pressable
-                  as="button"
+                {/* ВАЖНО: submit внутри form — на iOS кликается стабильнее всего */}
+                <button
+                  type="submit"
                   className="bcAccountPill"
-                  onClick={() => {
-                    setStatus("");
-                    adminLogin(password)
-                      .then((ok) => setAuthed(ok))
-                      .catch(() => setStatus("Login failed"));
+                  disabled={busy}
+                  style={{
+                    opacity: busy ? 0.7 : 1,
+                    cursor: busy ? "default" : "pointer",
                   }}
                 >
-                  Sign in
-                </Pressable>
+                  {busy ? "Signing in…" : "Sign in"}
+                </button>
 
-                {status ? <div style={{ opacity: 0.78, fontWeight: 750 }}>{status}</div> : null}
-              </div>
+                {status ? <div style={{ opacity: 0.82, fontWeight: 800 }}>{status}</div> : null}
+              </form>
             </SpringGlow>
           </Reveal>
         </div>
@@ -140,16 +231,20 @@ export function Admin() {
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ fontWeight: 950 }}>Content blocks</div>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <Pressable as="button" className="bcAccountPill" onClick={reload}>Reload</Pressable>
+              <Pressable as="button" className="bcAccountPill" onClick={reload}>
+                {busy ? "Loading…" : "Reload"}
+              </Pressable>
+
               <Pressable
                 as="button"
                 className="bcAccountPill"
                 onClick={() => {
-                  const id = crypto.randomUUID();
+                  const id = safeId();
                   const nb: BlockRow = { id, kind: "cards", title: "New block", data: { items: [] } };
                   setBlocks((x) => [nb, ...x]);
                   setSelected(id);
                   setEditor(JSON.stringify(nb.data, null, 2));
+                  setStatus("");
                 }}
               >
                 New block
@@ -169,6 +264,7 @@ export function Admin() {
                 color: "rgba(255,255,255,0.92)",
                 padding: "0 12px",
                 fontWeight: 850,
+                outline: "none",
               }}
             >
               {blocks.map((b) => (
@@ -196,6 +292,7 @@ export function Admin() {
                       color: "rgba(255,255,255,0.92)",
                       padding: "0 12px",
                       fontWeight: 800,
+                      outline: "none",
                     }}
                   />
 
@@ -214,6 +311,7 @@ export function Admin() {
                       color: "rgba(255,255,255,0.92)",
                       padding: "0 12px",
                       fontWeight: 800,
+                      outline: "none",
                     }}
                   />
                 </div>
@@ -230,32 +328,38 @@ export function Admin() {
                     color: "rgba(255,255,255,0.92)",
                     padding: 12,
                     fontWeight: 750,
+                    outline: "none",
                     fontFamily:
                       'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
                   }}
                 />
 
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ opacity: 0.78, fontWeight: 750 }}>{status}</div>
+                  <div style={{ opacity: 0.82, fontWeight: 800 }}>{status}</div>
+
                   <Pressable
                     as="button"
                     className="bcAccountPill"
-                    onClick={() => {
+                    onClick={async () => {
                       setStatus("");
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
                       let data: any = null;
                       try {
                         data = JSON.parse(editor);
                       } catch {
-                        setStatus("Invalid JSON");
+                        setStatus("Некорректный JSON.");
                         return;
                       }
 
                       const nextBlocks = blocks.map((b) => (b.id === sel.id ? { ...b, data } : b));
                       setBlocks(nextBlocks);
 
-                      saveAdminContent({ blocks: nextBlocks })
-                        .then((ok) => setStatus(ok ? "Saved" : "Save failed"))
-                        .catch(() => setStatus("Save failed"));
+                      try {
+                        const ok = await saveAdminContent({ blocks: nextBlocks });
+                        setStatus(ok ? "Saved." : "Save failed.");
+                      } catch {
+                        setStatus("Save failed.");
+                      }
                     }}
                   >
                     Save
@@ -268,7 +372,7 @@ export function Admin() {
 
         <SpringGlow className="glassStrong bc-motion" style={{ padding: 18 }}>
           <div style={{ fontWeight: 950 }}>Media upload</div>
-          <div style={{ marginTop: 10, opacity: 0.78, fontWeight: 750, lineHeight: 1.45 }}>
+          <div style={{ marginTop: 10, opacity: 0.82, fontWeight: 800, lineHeight: 1.45 }}>
             Upload returns a public URL you can paste into block JSON.
           </div>
 
@@ -281,6 +385,7 @@ export function Admin() {
                 if (!f) return;
 
                 setStatus("Preparing upload…");
+
                 requestUploadUrl(f)
                   .then(async ({ uploadUrl, publicUrl }) => {
                     const put = await fetch(uploadUrl, {
@@ -288,13 +393,22 @@ export function Admin() {
                       headers: { "content-type": f.type || "application/octet-stream" },
                       body: f,
                     });
+
                     if (!put.ok) {
-                      setStatus("Upload failed");
+                      setStatus("Upload failed.");
                       return;
                     }
+
                     setStatus(`Uploaded: ${publicUrl}`);
                   })
-                  .catch(() => setStatus("Upload failed"));
+                  .catch((err) => {
+                    if (String(err?.message) === "unauthorized") {
+                      setAuthed(false);
+                      setStatus("Сессия истекла. Войди снова.");
+                      return;
+                    }
+                    setStatus("Upload failed.");
+                  });
               }}
             />
           </div>
