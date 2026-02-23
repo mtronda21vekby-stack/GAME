@@ -26,6 +26,30 @@ const KEY_GAME_INPUT = "game.inputMode";
 const KEY_EQUIP_SKIN = "profile.equip.skin";
 const KEY_EQUIP_BADGE = "profile.equip.badge";
 
+/* ===== Progress / XP (MVP) ===== */
+const KEY_GUEST_ID = "guest.id";
+const KEY_XP = "progress.xp";
+const KEY_XP_TOTAL_EVENTS = "progress.xp.events.total";
+const XP_EVENT_PREFIX = "progress.xp.cooldown.";
+
+type Tier = "Bronze" | "Silver" | "Crown";
+
+type Progress = {
+  guestId: string;
+  xp: number;
+  level: number;
+  tier: Tier;
+  levelXp: number; // xp inside current level
+  levelNeed: number; // xp needed to next level
+};
+
+type ApiProgress = {
+  xp?: number;
+  level?: number;
+  tier?: Tier | string;
+  guestId?: string;
+};
+
 const AVATARS: { id: string; label: string; bg: string }[] = [
   { id: "0", label: "Aurora", bg: "linear-gradient(135deg, rgba(94,234,212,0.95), rgba(99,102,241,0.95))" },
   { id: "1", label: "Neon", bg: "linear-gradient(135deg, rgba(251,113,133,0.95), rgba(147,51,234,0.95))" },
@@ -57,6 +81,128 @@ function setBool(key: string, v: boolean) {
 function clampStr(s: string, max: number) {
   const t = s.replace(/\s+/g, " ").trim();
   return t.length > max ? t.slice(0, max) : t;
+}
+
+/* ===== Progress helpers ===== */
+
+function getOrCreateGuestId(): string {
+  const existing = getString(KEY_GUEST_ID, "");
+  if (existing) return existing;
+
+  let id = "";
+  try {
+    // Safari поддерживает crypto.randomUUID на новых версиях
+    // но держим fallback на всякий
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const anyCrypto = crypto as any;
+    if (anyCrypto?.randomUUID) id = anyCrypto.randomUUID();
+  } catch {
+    // ignore
+  }
+  if (!id) id = `g_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
+
+  setString(KEY_GUEST_ID, id);
+  return id;
+}
+
+function clampInt(n: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, Math.floor(n)));
+}
+
+function getXp(): number {
+  const raw = getString(KEY_XP, "0");
+  const n = Number(raw);
+  return Number.isFinite(n) ? clampInt(n, 0, 2_000_000_000) : 0;
+}
+
+function setXp(xp: number) {
+  setString(KEY_XP, String(clampInt(xp, 0, 2_000_000_000)));
+}
+
+function tierFromXp(xp: number): Tier {
+  // Порог можно менять позже в одном месте
+  if (xp >= 8000) return "Crown";
+  if (xp >= 2500) return "Silver";
+  return "Bronze";
+}
+
+/**
+ * Математика уровня: дешёвая, стабильная, без зависимости от backend.
+ * XP per level растёт плавно.
+ */
+function levelFromXp(xp: number) {
+  // базовый шаг уровня (можно тюнить)
+  const base = 250;
+  const level = Math.max(1, Math.floor(Math.sqrt(xp / base)) + 1);
+  const prevNeed = (level - 1) * (level - 1) * base;
+  const nextNeed = level * level * base;
+  const inside = Math.max(0, xp - prevNeed);
+  const need = Math.max(1, nextNeed - prevNeed);
+  return { level, inside, need };
+}
+
+function buildProgress(xp: number): Progress {
+  const guestId = getOrCreateGuestId();
+  const { level, inside, need } = levelFromXp(xp);
+  const tier = tierFromXp(xp);
+  return { guestId, xp, level, tier, levelXp: inside, levelNeed: need };
+}
+
+function getCooldownKey(event: string) {
+  return `${XP_EVENT_PREFIX}${event}`;
+}
+
+function nowMs() {
+  return Date.now();
+}
+
+function canAward(event: string, cooldownMs: number) {
+  const k = getCooldownKey(event);
+  const last = Number(getString(k, "0"));
+  if (!Number.isFinite(last) || last <= 0) return true;
+  return nowMs() - last >= cooldownMs;
+}
+
+function markAward(event: string) {
+  setString(getCooldownKey(event), String(nowMs()));
+}
+
+async function postXpEvent(event: string) {
+  try {
+    const res = await fetch("/api/user/xp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ event }),
+      credentials: "include",
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as ApiProgress;
+    if (typeof json?.xp === "number" && Number.isFinite(json.xp)) {
+      return buildProgress(json.xp);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchProgress(): Promise<Progress | null> {
+  try {
+    const res = await fetch("/api/user/progress", {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      credentials: "include",
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as ApiProgress;
+    if (typeof json?.xp === "number" && Number.isFinite(json.xp)) {
+      // tier/level можно доверять частично, но для консистентности считаем сами
+      return buildProgress(json.xp);
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 function Pill(props: { children: React.ReactNode; tone?: "soft" | "accent" }) {
@@ -156,6 +302,66 @@ function Segmented(props: { value: string; options: { value: string; label: stri
   );
 }
 
+function TierBadge(props: { tier: Tier }) {
+  const { tier } = props;
+  const text =
+    tier === "Crown" ? "Crown" : tier === "Silver" ? "Silver" : "Bronze";
+
+  const glow =
+    tier === "Crown"
+      ? "0 0 18px rgba(255,106,0,0.40)"
+      : tier === "Silver"
+      ? "0 0 18px rgba(180,210,255,0.32)"
+      : "0 0 16px rgba(255,170,90,0.26)";
+
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "8px 12px",
+        borderRadius: 999,
+        border: "1px solid rgba(255,255,255,0.14)",
+        background: "rgba(255,255,255,0.08)",
+        color: "rgba(255,255,255,0.90)",
+        fontWeight: 950,
+        fontSize: 12,
+        letterSpacing: "0.02em",
+        textShadow: glow,
+      }}
+    >
+      {text}
+    </span>
+  );
+}
+
+function ProgressBar(props: { value: number; max: number }) {
+  const ratio = props.max <= 0 ? 0 : Math.max(0, Math.min(1, props.value / props.max));
+  return (
+    <div
+      aria-label="Прогресс уровня"
+      style={{
+        height: 10,
+        borderRadius: 999,
+        border: "1px solid rgba(255,255,255,0.10)",
+        background: "rgba(0,0,0,0.18)",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          height: "100%",
+          width: `${Math.round(ratio * 100)}%`,
+          background: "linear-gradient(90deg, rgba(90,180,255,0.85), rgba(255,106,0,0.70))",
+          borderRadius: 999,
+          transform: "translateZ(0)",
+        }}
+      />
+    </div>
+  );
+}
+
 export function Account() {
   // --- profile ---
   const [nick, setNick] = React.useState(() => getString(KEY_NICK, ""));
@@ -178,6 +384,9 @@ export function Account() {
     ensureStoreInit();
     return getStoreState();
   });
+
+  // --- progress ---
+  const [progress, setProgress] = React.useState<Progress>(() => buildProgress(getXp()));
 
   const [savedPulse, setSavedPulse] = React.useState(0);
 
@@ -212,6 +421,38 @@ export function Account() {
     setStore(getStoreState());
   }, []);
 
+  const refreshProgressLocal = React.useCallback(() => {
+    setProgress(buildProgress(getXp()));
+  }, []);
+
+  const awardXp = React.useCallback(
+    async (event: string, xpAdd: number, cooldownMs: number) => {
+      if (!canAward(event, cooldownMs)) return;
+
+      // Сначала пробуем сервер (если есть)
+      const server = await postXpEvent(event);
+      if (server) {
+        markAward(event);
+        setProgress(server);
+        return;
+      }
+
+      // Локальный fallback
+      const before = getXp();
+      const next = before + xpAdd;
+      setXp(next);
+
+      // счетчик событий (не обязателен, но пригодится для анти-спама/аналитики позже)
+      const total = Number(getString(KEY_XP_TOTAL_EVENTS, "0"));
+      const safeTotal = Number.isFinite(total) ? total + 1 : 1;
+      setString(KEY_XP_TOTAL_EVENTS, String(safeTotal));
+
+      markAward(event);
+      setProgress(buildProgress(next));
+    },
+    []
+  );
+
   React.useEffect(() => {
     window.addEventListener("focus", refreshStore);
     window.addEventListener("popstate", refreshStore);
@@ -220,6 +461,26 @@ export function Account() {
       window.removeEventListener("popstate", refreshStore);
     };
   }, [refreshStore]);
+
+  // подтягиваем прогресс с сервера, если он есть (иначе остаётся локальный)
+  React.useEffect(() => {
+    let alive = true;
+    (async () => {
+      const p = await fetchProgress();
+      if (!alive) return;
+      if (p) setProgress(p);
+      else refreshProgressLocal();
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [refreshProgressLocal]);
+
+  // MVP начисление XP за визит аккаунта (редко)
+  React.useEffect(() => {
+    awardXp("visit_account", 12, 12 * 60 * 60 * 1000);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const saveProfile = React.useCallback(() => {
     const n = clampStr(nick, 18);
@@ -230,7 +491,10 @@ export function Account() {
     setString(KEY_STATUS, s);
     setString(KEY_AVATAR, avatarId);
     pulseSaved();
-  }, [nick, status, avatarId, pulseSaved]);
+
+    // XP: за сохранение профиля (редко)
+    awardXp("save_profile", 18, 10 * 60 * 1000);
+  }, [nick, status, avatarId, pulseSaved, awardXp]);
 
   const resetProfile = React.useCallback(() => {
     setNick("");
@@ -265,8 +529,11 @@ export function Account() {
         setInputMode(next.inputMode);
       }
       pulseSaved();
+
+      // XP: за настройку (с anti-spam)
+      awardXp("save_prefs", 10, 7 * 60 * 1000);
     },
-    [pulseSaved]
+    [pulseSaved, awardXp]
   );
 
   const equip = React.useCallback(
@@ -277,6 +544,7 @@ export function Account() {
         setEquipSkin(item.id);
         setString(KEY_EQUIP_SKIN, item.id);
         pulseSaved();
+        awardXp("equip_skin", 6, 5 * 60 * 1000);
         return;
       }
 
@@ -284,10 +552,11 @@ export function Account() {
         setEquipBadge(item.id);
         setString(KEY_EQUIP_BADGE, item.id);
         pulseSaved();
+        awardXp("equip_badge", 6, 5 * 60 * 1000);
         return;
       }
     },
-    [ownedSet, pulseSaved]
+    [ownedSet, pulseSaved, awardXp]
   );
 
   const unequip = React.useCallback(
@@ -326,6 +595,14 @@ export function Account() {
                 <span style={{ opacity: 0.82 }}>Баланс:</span> {formatCoins(store.balance)}
               </Pill>
 
+              <Pill tone="accent">
+                Level <span style={{ opacity: 0.9 }}>{progress.level}</span>
+              </Pill>
+              <TierBadge tier={progress.tier} />
+              <Pill>
+                <span style={{ opacity: 0.82 }}>XP:</span> {progress.xp}
+              </Pill>
+
               {equippedSkinItem ? (
                 <Pill tone="accent">
                   Skin: <span style={{ opacity: 0.9 }}>{equippedSkinItem.title}</span>
@@ -346,8 +623,20 @@ export function Account() {
             </h1>
 
             <p className="bcLead" style={{ marginTop: 10 }}>
-              Профиль, статус, настройки и коллекция из магазина. Всё хранится локально.
+              Профиль, статус, настройки, прогресс и коллекция из магазина. Всё хранится локально.
             </p>
+
+            <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                <div style={{ opacity: 0.82, fontWeight: 900 }}>
+                  До следующего уровня: {Math.max(0, progress.levelNeed - progress.levelXp)} XP
+                </div>
+                <div style={{ opacity: 0.72, fontWeight: 850, fontSize: 12 }}>
+                  Guest ID: {progress.guestId.slice(0, 8)}
+                </div>
+              </div>
+              <ProgressBar value={progress.levelXp} max={progress.levelNeed} />
+            </div>
 
             <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
               <Button variant="primary" onClick={saveProfile}>
@@ -460,6 +749,7 @@ export function Account() {
                               setAvatarId(a.id);
                               setString(KEY_AVATAR, a.id);
                               pulseSaved();
+                              awardXp("pick_avatar", 6, 10 * 60 * 1000);
                             }}
                             aria-label={`Аватар ${a.label}`}
                             style={{
