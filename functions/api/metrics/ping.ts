@@ -1,28 +1,49 @@
 // functions/api/metrics/ping.ts
-import type { Env } from "../_lib/auth";
-import { trackPresence } from "./_lib";
+import { Env, getMetricsKV } from "../_lib/auth";
+
+type PingBody = { clientId?: string; area?: string };
+
+function dayUTC(d = new Date()) {
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${dd}`;
+}
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
-  let id = "";
-  let app = "site";
-  try {
-    const body = (await request.json()) as { id?: string; app?: string };
-    id = String(body?.id || "").trim();
-    app = String(body?.app || "site").trim();
-  } catch {
-    id = "";
+  const kv = getMetricsKV(env);
+  if (!kv) {
+    return new Response(JSON.stringify({ ok: false, kv: false }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
-  if (!id || id.length < 6 || id.length > 128) {
-    return new Response(JSON.stringify({ ok: false }), {
+  let body: PingBody = {};
+  try {
+    body = (await request.json()) as PingBody;
+  } catch {
+    body = {};
+  }
+
+  const clientId = String(body.clientId || "").trim();
+  if (!clientId) {
+    return new Response(JSON.stringify({ ok: false, reason: "missing_clientId" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
     });
   }
 
-  await trackPresence(env, app, id);
+  // Online: keep alive key with TTL (2 min)
+  const onlineKey = `o:${clientId}`;
+  await kv.put(onlineKey, String(Date.now()), { expirationTtl: 120 });
 
-  return new Response(JSON.stringify({ ok: true }), {
+  // Unique per UTC day (store as set via keys)
+  const d = dayUTC();
+  const uniqKey = `u:${d}:${clientId}`;
+  await kv.put(uniqKey, "1", { expirationTtl: 3 * 24 * 60 * 60 }); // keep 3 days
+
+  return new Response(JSON.stringify({ ok: true, kv: true }), {
     status: 200,
     headers: { "Content-Type": "application/json" },
   });
