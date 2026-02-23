@@ -5,6 +5,7 @@ import "@blackcrown/ui";
 import "./app.css";
 import "./styles/site.css";
 import "./styles/matrix.css";
+import "./styles/premium-shell.css";
 import { App } from "./App";
 import { registerSW } from "./pwa/registerSW";
 import { ErrorBoundary } from "./ErrorBoundary";
@@ -92,10 +93,9 @@ function initMotionRuntime() {
   state.reduced = !!mql?.matches;
 
   const setVars = (tNow: number) => {
-    const dt = Math.max(8, Math.min(64, tNow - state.t)); // clamp for stability
+    const dt = Math.max(8, Math.min(64, tNow - state.t));
     state.t = tNow;
 
-    // cursor smoothing (very light, no "laggy follow")
     const follow = state.reduced ? 1 : 0.28;
     state.cx += (state.tx - state.cx) * follow;
     state.cy += (state.ty - state.cy) * follow;
@@ -105,7 +105,6 @@ function initMotionRuntime() {
     state.pcx = state.cx;
     state.pcy = state.cy;
 
-    // scroll
     state.sy = window.scrollY || 0;
     const sv = (state.sy - state.psy) / dt;
     state.psy = state.sy;
@@ -114,7 +113,6 @@ function initMotionRuntime() {
     const maxScroll = Math.max(1, (doc.scrollHeight || 0) - (window.innerHeight || 0));
     const sp = Math.max(0, Math.min(1, state.sy / maxScroll));
 
-    // normalized cursor (-0.5..0.5)
     const nx = window.innerWidth > 0 ? state.cx / window.innerWidth - 0.5 : 0;
     const ny = window.innerHeight > 0 ? state.cy / window.innerHeight - 0.5 : 0;
 
@@ -142,7 +140,6 @@ function initMotionRuntime() {
   };
 
   const onPointerMove = (e: PointerEvent) => {
-    // only primary pointer for stability
     if (e.isPrimary === false) return;
     state.tx = e.clientX;
     state.ty = e.clientY;
@@ -157,13 +154,8 @@ function initMotionRuntime() {
     requestTick();
   };
 
-  const onScroll = () => {
-    requestTick();
-  };
-
-  const onResize = () => {
-    requestTick();
-  };
+  const onScroll = () => requestTick();
+  const onResize = () => requestTick();
 
   const onVis = () => {
     state.active = document.visibilityState !== "hidden";
@@ -175,7 +167,6 @@ function initMotionRuntime() {
     requestTick();
   };
 
-  // init immediately
   requestTick();
 
   window.addEventListener("pointermove", onPointerMove, { passive: true });
@@ -186,7 +177,6 @@ function initMotionRuntime() {
   document.addEventListener("visibilitychange", onVis);
   mql?.addEventListener?.("change", onMql);
 
-  // iOS: visualViewport changes during scroll (no layout thrash; only schedules a tick)
   const vv = window.visualViewport;
   vv?.addEventListener?.("resize", onResize);
   vv?.addEventListener?.("scroll", onResize);
