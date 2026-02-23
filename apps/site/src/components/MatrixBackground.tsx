@@ -46,14 +46,13 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
       drops: [] as number[],
     };
 
-    // ~30 FPS (спокойнее и легче для iOS)
-    const FRAME_MS = 1000 / 30;
+    // Медленнее и легче: ~24 FPS
+    const FRAME_MS = 1000 / 24;
 
-    // общий замедлитель скорости падения
-    const SLOW = 0.6;
+    // Общий замедлитель скорости падения (ещё медленнее)
+    const SLOW = 0.45;
 
     function getRect() {
-      // canvas растянут через CSS на 100% wrapper'а
       return canvas.getBoundingClientRect();
     }
 
@@ -80,7 +79,7 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
     function resize() {
       const r = getRect();
 
-      // ВАЖНО: на iPhone 3х DPR слишком жирно для canvas — ограничим до 2 (меньше лагов)
+      // iPhone 3x DPR тяжёлый — ограничим до 2
       const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
 
       state.w = Math.max(1, Math.floor(r.width));
@@ -92,20 +91,23 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      const base = state.w >= 980 ? 18 : 16;
-      state.fontSize = Math.max(14, Math.min(22, Math.floor(base * (0.95 + 0.18 * intensity))));
+      // КРУПНЕЕ СИМВОЛЫ:
+      // - поднял базу
+      // - поднял min/max
+      // - интенсивность слегка влияет, но не раздувает всё в кашу
+      const base = state.w >= 980 ? 22 : 20;
+      state.fontSize = Math.max(18, Math.min(30, Math.floor(base * (0.98 + 0.16 * intensity))));
 
       ctx.font = `700 ${state.fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace`;
       ctx.textBaseline = "top";
       ctx.imageSmoothingEnabled = false;
 
-      state.cols = Math.max(10, Math.floor(state.w / state.fontSize));
+      state.cols = Math.max(8, Math.floor(state.w / state.fontSize));
       state.drops = new Array(state.cols).fill(0).map(() => Math.random() * state.h);
 
       ctx.clearRect(0, 0, state.w, state.h);
       drawStatic();
 
-      // reset таймеров, чтобы не было "рывка" после ресайза
       const now = performance.now();
       lastDrawTsRef.current = now;
       lastFrameTsRef.current = now;
@@ -121,22 +123,23 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
     function frame(ts: number) {
       lastFrameTsRef.current = ts;
 
-      // throttling: рисуем не чаще ~30fps
+      // throttling: рисуем не чаще ~24fps
       const lastDraw = lastDrawTsRef.current || 0;
       if (lastDraw > 0 && ts - lastDraw < FRAME_MS) {
         rafRef.current = window.requestAnimationFrame(frame);
         return;
       }
 
-      // dt для плавности (и для корректного движения при 30fps)
       const dt = lastDraw > 0 ? ts - lastDraw : FRAME_MS;
       lastDrawTsRef.current = ts;
-      const dtMul = Math.max(0.5, Math.min(2.2, dt / 16.6667)); // clamp
+
+      // clamp dt multiplier
+      const dtMul = Math.max(0.5, Math.min(2.2, dt / 16.6667));
 
       ctx.fillStyle = FADE;
       ctx.fillRect(0, 0, state.w, state.h);
 
-      // База шага/скорости: дальше мы замедляем через SLOW
+      // База шага/скорости
       const step = Math.max(10, Math.floor(12 * intensity));
       const speed = 1.0 + 0.55 * intensity;
 
@@ -150,11 +153,11 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
         ctx.fillStyle = FG_DIM;
         ctx.fillText(randChar(), x, y + state.fontSize);
 
-        // ДВИЖЕНИЕ: учитываем dt и замедляем
+        // Движение: dt + замедление
         state.drops[i] = y + step * speed * dtMul * SLOW;
 
         if (state.drops[i] > state.h + state.fontSize * 2) {
-          if (Math.random() > 0.975) state.drops[i] = -Math.random() * 200;
+          if (Math.random() > 0.975) state.drops[i] = -Math.random() * 220;
         }
       }
 
@@ -184,13 +187,12 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
 
     const onResize = () => resize();
 
-    // ВАЖНО: НЕ слушаем visualViewport.scroll — он спамит во время обычного скролла и рвёт FPS.
+    // НЕ слушаем visualViewport.scroll
     const vv = window.visualViewport;
 
     window.addEventListener("resize", onResize);
     window.addEventListener("orientationchange", onResize);
     window.addEventListener("visibilitychange", onVis);
-
     vv?.addEventListener?.("resize", onResize);
 
     // Watchdog: если iOS “подвесил” rAF — мягко перезапускаем
@@ -201,13 +203,11 @@ export function MatrixBackground(props: MatrixBackgroundProps) {
       const now = performance.now();
       const last = lastFrameTsRef.current || 0;
 
-      // если кадров не было давно — стартуем заново
       if (rafRef.current == null || (last > 0 && now - last > 1500)) {
         start();
       }
     }, 1200) as unknown as number;
 
-    // старт
     resize();
     if (!reduced) start();
 
