@@ -11,6 +11,49 @@ import { ErrorBoundary } from "./ErrorBoundary";
 import { applySitePrefs } from "./lib/prefs";
 
 /**
+ * Crash hooks (Production Safe)
+ * Sends minimal analytics events to /api/metrics/event
+ * - site_window_error
+ * - site_unhandled_rejection
+ */
+function installCrashHooks() {
+  const w = window as unknown as { __bc_crash_hooks_inited?: boolean };
+  if (w.__bc_crash_hooks_inited) return;
+  w.__bc_crash_hooks_inited = true;
+
+  const emit = async (name: string) => {
+    try {
+      await fetch("/api/metrics/event", {
+        method: "POST",
+        headers: { "content-type": "application/json", accept: "application/json" },
+        body: JSON.stringify({ app: "site", name, n: 1 }),
+        credentials: "include",
+        cache: "no-store",
+        keepalive: true,
+      });
+    } catch {
+      // ignore
+    }
+  };
+
+  window.addEventListener(
+    "error",
+    () => {
+      emit("site_window_error");
+    },
+    { passive: true }
+  );
+
+  window.addEventListener(
+    "unhandledrejection",
+    () => {
+      emit("site_unhandled_rejection");
+    },
+    { passive: true }
+  );
+}
+
+/**
  * Cursor + Scroll runtime vars (no deps, Production Safe)
  * Exposes CSS vars on :root:
  *  --bc-cx, --bc-cy (px)
@@ -150,6 +193,7 @@ function initMotionRuntime() {
 }
 
 applySitePrefs();
+installCrashHooks();
 initMotionRuntime();
 
 createRoot(document.getElementById("root")!).render(
