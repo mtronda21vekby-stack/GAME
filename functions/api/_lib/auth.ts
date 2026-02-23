@@ -48,20 +48,11 @@ export function setCookie(name: string, value: string, opts: CookieOpts = {}): s
 }
 
 /**
- * Экспорт для logout.ts
- * Возвращает строку Set-Cookie, которая удаляет cookie.
+ * Clears cookie by setting Max-Age=0.
+ * Matches imports used by: functions/api/admin/logout.ts
  */
-export function clearCookie(
-  name: string,
-  opts: Pick<CookieOpts, "path" | "httpOnly" | "sameSite" | "secure"> = {}
-): string {
-  return setCookie(name, "", {
-    path: opts.path || "/",
-    maxAgeSec: 0,
-    httpOnly: opts.httpOnly ?? true,
-    sameSite: opts.sameSite || "Lax",
-    secure: opts.secure ?? true,
-  });
+export function clearCookie(name: string, opts: CookieOpts = {}): string {
+  return setCookie(name, "", { ...opts, maxAgeSec: 0 });
 }
 
 function parseCookieHeader(cookieHeader: string | null): Record<string, string> {
@@ -190,8 +181,8 @@ export async function verifyAdminToken(request: Request, env: Env): Promise<Admi
 }
 
 /**
- * Экспорт для session.ts (который импортирует verifyAdmin).
- * Возвращает boolean, чтобы не ломать существующую логику.
+ * Boolean helper for session endpoint.
+ * Matches imports used by: functions/api/admin/session.ts
  */
 export async function verifyAdmin(request: Request, env: Env): Promise<boolean> {
   const claims = await verifyAdminToken(request, env);
