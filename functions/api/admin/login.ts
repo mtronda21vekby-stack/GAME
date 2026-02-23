@@ -1,32 +1,45 @@
+// functions/api/admin/login.ts
+import { Env, setCookie, signAdminToken } from "../_lib/auth";
 
-import { json, badRequest, methodNotAllowed } from "../../_lib/http";
-import type { Env } from "../../_lib/db";
-import { signAdminSession } from "../../_lib/auth";
-import { timingSafeEqual } from "../../_lib/crypto";
-
-export const onRequest: PagesFunction<Env> = async (ctx) => {
-  if (ctx.request.method !== "POST") return methodNotAllowed();
-
-  let body: any = null;
+export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+  let password = "";
   try {
-    body = await ctx.request.json();
+    const body = (await request.json()) as { password?: string };
+    password = String(body?.password || "");
   } catch {
-    return badRequest("Invalid JSON");
+    password = "";
   }
 
-  const password = String(body?.password ?? "");
-  if (!password) return badRequest("Password required");
+  const expected = env.BC_ADMIN_PASSWORD || "";
+  const secret = env.BC_ADMIN_SECRET || "";
 
-  if (!timingSafeEqual(password, ctx.env.ADMIN_PASSWORD)) {
-    return json({ ok: false }, { status: 401 });
+  if (!expected || !secret) {
+    return new Response(JSON.stringify({ ok: false }), {
+      status: 503,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
-  const token = await signAdminSession(ctx.env.SESSION_SECRET, 1000 * 60 * 60 * 8); // 8h
-  const headers = new Headers();
-  headers.append(
-    "set-cookie",
-    `bc_admin=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${60 * 60 * 8}`
-  );
+  if (!password || password !== expected) {
+    return new Response(JSON.stringify({ ok: false }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
-  return json({ ok: true }, { headers });
+  const token = await signAdminToken(env, 24 * 60 * 60); // 24h
+  if (!token) {
+    return new Response(JSON.stringify({ ok: false }), {
+      status: 503,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  return new Response(JSON.stringify({ ok: true }), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json",
+      "Set-Cookie": setCookie("bc_admin", token, { maxAgeSec: 24 * 60 * 60 }),
+    },
+  });
 };
