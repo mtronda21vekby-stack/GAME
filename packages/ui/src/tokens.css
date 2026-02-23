@@ -1,0 +1,7 @@
+/* UI tokens (safe no-op baseline)
+   Keep minimal: site/app define the real vars. */
+
+:root{
+  /* Intentionally empty baseline to prevent build failures
+     when @blackcrown/ui imports ./tokens.css */
+}
