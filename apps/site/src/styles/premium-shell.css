@@ -1,0 +1,137 @@
+/* Premium Shell (Production Safe) */
+
+:root {
+  /* Safe-area with fallback */
+  --bc-safe-top: env(safe-area-inset-top, 0px);
+  --bc-safe-right: env(safe-area-inset-right, 0px);
+  --bc-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --bc-safe-left: env(safe-area-inset-left, 0px);
+
+  /* Shell sizing */
+  --bc-vh: var(--app-vh, 100vh);
+
+  /* Glass tuning */
+  --bc-glass: rgba(255, 255, 255, 0.06);
+  --bc-glass-strong: rgba(255, 255, 255, 0.085);
+  --bc-stroke: rgba(255, 255, 255, 0.10);
+
+  /* Premium highlight (ты хотел ярко-оранжевый hover/press) */
+  --bc-accent: rgba(255, 140, 0, 0.95);
+  --bc-accent-soft: rgba(255, 140, 0, 0.22);
+
+  /* Background base */
+  --bc-bg: #000000;
+}
+
+/* iOS / Safari stability */
+html,
+body {
+  height: 100%;
+  background: var(--bc-bg);
+  margin: 0;
+  padding: 0;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overscroll-behavior-y: none;
+}
+
+/* Root should not show white during rubber-band */
+#root {
+  min-height: var(--bc-vh);
+  background: var(--bc-bg);
+}
+
+/* Shell */
+.bcShell {
+  position: relative;
+  min-height: var(--bc-vh);
+  width: 100%;
+  background: var(--bc-bg);
+  overflow: clip; /* compositor-friendly */
+  isolation: isolate;
+}
+
+/* Background layer (matrix etc.) */
+.bcShellBg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  transform: translateZ(0);
+}
+
+/* FX layer: vignette + noise */
+.bcShellFx {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  transform: translateZ(0);
+}
+
+.bcShellVignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(1200px 900px at 50% 25%, rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.80)),
+    radial-gradient(900px 700px at 20% 80%, rgba(0, 0, 0, 0.20), rgba(0, 0, 0, 0.75)),
+    radial-gradient(900px 700px at 80% 80%, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.75));
+}
+
+/* Premium noise without images (CSS-only, very cheap) */
+.bcShellNoise {
+  position: absolute;
+  inset: 0;
+  opacity: 0.06;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.06) 0px, rgba(255, 255, 255, 0.00) 1px, rgba(255, 255, 255, 0.00) 2px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0px, rgba(255, 255, 255, 0.00) 1px, rgba(255, 255, 255, 0.00) 3px);
+  mix-blend-mode: overlay;
+}
+
+/* Content layer */
+.bcShellContent {
+  position: relative;
+  z-index: 2;
+  min-height: var(--bc-vh);
+  padding-top: var(--bc-safe-top);
+  padding-right: var(--bc-safe-right);
+  padding-bottom: var(--bc-safe-bottom);
+  padding-left: var(--bc-safe-left);
+}
+
+/* Premium glass helpers (optional) */
+.bcGlass {
+  background: var(--bc-glass);
+  border: 1px solid var(--bc-stroke);
+  border-radius: 18px;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.bcGlassStrong {
+  background: var(--bc-glass-strong);
+  border: 1px solid var(--bc-stroke);
+  border-radius: 18px;
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+
+/* Accent interactions: orange premium */
+.bcAccentHover {
+  transition: box-shadow 160ms ease, transform 160ms ease, border-color 160ms ease;
+}
+.bcAccentHover:hover {
+  box-shadow: 0 0 0 1px var(--bc-accent-soft), 0 0 26px rgba(255, 140, 0, 0.18);
+  border-color: rgba(255, 140, 0, 0.30);
+}
+.bcAccentHover:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+/* Reduced motion compliance */
+@media (prefers-reduced-motion: reduce) {
+  .bcAccentHover {
+    transition: none;
+  }
+}
