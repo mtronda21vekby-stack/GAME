@@ -1,6 +1,6 @@
 import { json, badRequest, methodNotAllowed } from "../../_lib/http";
 import type { Env } from "../../_lib/db";
-import { levelFromXp, nextLevelXp, statusFromXp } from "@blackcrown/core";
+import { levelFromXp, nextLevelXp, statusFromXp } from "../../_shared/xp";
 
 export const onRequest: PagesFunction<Env> = async (ctx) => {
   if (ctx.request.method !== "GET") return methodNotAllowed();
