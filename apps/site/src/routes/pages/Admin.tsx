@@ -34,6 +34,10 @@ type StatsPayload = {
 type SnapList = { ok: boolean; ids: string[] };
 type SnapGet = { ok: boolean; id: string; payload: any };
 
+type KvHealthPayload =
+  | { ok: true; kv: "ON" | "ERROR"; wrote?: string; read?: string | null }
+  | { ok: false; reason?: string; kv?: "ERROR" };
+
 function safeId() {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -52,6 +56,7 @@ async function adminLogin(password: string): Promise<LoginResult> {
       headers: { "content-type": "application/json", accept: "application/json" },
       body: JSON.stringify({ password }),
       credentials: "include",
+      cache: "no-store",
     });
 
     if (res.ok) return { ok: true };
@@ -69,6 +74,7 @@ async function adminLogout(): Promise<boolean> {
       method: "POST",
       headers: { accept: "application/json" },
       credentials: "include",
+      cache: "no-store",
     });
     return res.ok;
   } catch {
@@ -81,6 +87,7 @@ async function loadAdminContent(): Promise<ContentPayload> {
     method: "GET",
     headers: { accept: "application/json" },
     credentials: "include",
+    cache: "no-store",
   });
 
   if (res.status === 401 || res.status === 403) throw new Error("unauthorized");
@@ -95,6 +102,7 @@ async function saveAdminContent(payload: ContentPayload): Promise<boolean> {
     headers: { "content-type": "application/json", accept: "application/json" },
     body: JSON.stringify(payload),
     credentials: "include",
+    cache: "no-store",
   });
 
   if (res.status === 401 || res.status === 403) throw new Error("unauthorized");
@@ -107,6 +115,7 @@ async function requestUploadUrl(file: File): Promise<{ uploadUrl: string; public
     headers: { "content-type": "application/json", accept: "application/json" },
     body: JSON.stringify({ filename: file.name, contentType: file.type || "application/octet-stream" }),
     credentials: "include",
+    cache: "no-store",
   });
 
   if (res.status === 401 || res.status === 403) throw new Error("unauthorized");
@@ -122,11 +131,29 @@ async function fetchStats(): Promise<StatsPayload | null> {
       method: "GET",
       headers: { accept: "application/json" },
       credentials: "include",
+      cache: "no-store",
     });
     if (!res.ok) return null;
     return (await res.json()) as StatsPayload;
   } catch {
     return null;
+  }
+}
+
+// КЛЮЧЕВОЕ: берём реальный статус KV из /api/kv-health
+async function fetchKvHealth(): Promise<boolean> {
+  try {
+    const res = await fetch("/api/kv-health", {
+      method: "GET",
+      headers: { accept: "application/json" },
+      credentials: "include",
+      cache: "no-store",
+    });
+    if (!res.ok) return false;
+    const data = (await res.json()) as KvHealthPayload;
+    return !!data && data.ok === true && (data as any).kv === "ON";
+  } catch {
+    return false;
   }
 }
 
@@ -137,6 +164,7 @@ async function createEvent(app: "site" | "lobby" | "game", name: string, n = 1) 
       headers: { "content-type": "application/json", accept: "application/json" },
       body: JSON.stringify({ app, name, n }),
       credentials: "include",
+      cache: "no-store",
     });
   } catch {
     // ignore
@@ -149,6 +177,7 @@ async function snapList(): Promise<SnapList | null> {
       method: "GET",
       headers: { accept: "application/json" },
       credentials: "include",
+      cache: "no-store",
     });
     if (!res.ok) return null;
     return (await res.json()) as SnapList;
@@ -164,6 +193,7 @@ async function snapSave(payload: any): Promise<{ ok: boolean; id?: string } | nu
       headers: { "content-type": "application/json", accept: "application/json" },
       body: JSON.stringify(payload),
       credentials: "include",
+      cache: "no-store",
     });
     if (!res.ok) return null;
     return (await res.json()) as any;
@@ -178,6 +208,7 @@ async function snapGet(id: string): Promise<SnapGet | null> {
       method: "GET",
       headers: { accept: "application/json" },
       credentials: "include",
+      cache: "no-store",
     });
     if (!res.ok) return null;
     return (await res.json()) as SnapGet;
@@ -228,6 +259,7 @@ export function Admin() {
   // stats
   const [stats, setStats] = React.useState<StatsPayload | null>(null);
   const [statsAt, setStatsAt] = React.useState<number>(0);
+  const [kvOn, setKvOn] = React.useState<boolean>(false);
 
   // snapshots
   const [snapIds, setSnapIds] = React.useState<string[]>([]);
@@ -260,9 +292,15 @@ export function Admin() {
   }, [selected]);
 
   const reloadStats = React.useCallback(async () => {
-    const s = await fetchStats();
+    // Делаем параллельно: stats + kv-health
+    const [s, kv] = await Promise.all([fetchStats(), fetchKvHealth()]);
+    setKvOn(kv);
+
     if (s) {
       setStats(s);
+      setStatsAt(Date.now());
+    } else {
+      // если stats endpoint упал/старый — kv всё равно покажем корректно
       setStatsAt(Date.now());
     }
   }, []);
@@ -399,6 +437,7 @@ export function Admin() {
                   setAuthed(false);
                   setStats(null);
                   setSnapIds([]);
+                  setKvOn(false);
                   if (!ok) setStatus("Logout failed.");
                 }}
               >
@@ -431,7 +470,7 @@ export function Admin() {
             <div style={{ display: "grid", gap: 12 }}>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <Pill>
-                  KV: <span style={{ fontWeight: 950 }}>{s?.kv ? "ON" : "OFF"}</span>
+                  KV: <span style={{ fontWeight: 950 }}>{kvOn ? "ON" : "OFF"}</span>
                 </Pill>
                 <Pill>
                   Online total: <span style={{ fontWeight: 950 }}>{s?.onlineTotal ?? 0}</span>
@@ -543,9 +582,9 @@ export function Admin() {
                   </div>
                 </div>
 
-                {!s?.kv ? (
+                {!kvOn ? (
                   <div style={{ marginTop: 10, opacity: 0.82, fontWeight: 850, lineHeight: 1.45 }}>
-                    KV выключен — analytics будут нулевые. В Cloudflare Pages добавь KV binding (например BC_KV).
+                    KV выключен — analytics будут нулевые. В Cloudflare Pages добавь KV binding (например BC_METRICS_KV).
                   </div>
                 ) : null}
               </div>
@@ -918,6 +957,9 @@ export function Admin() {
                   </div>
                   <div style={{ opacity: 0.88, fontWeight: 850 }}>
                     stats: <span style={{ fontWeight: 950 }}>{stats ? "loaded" : "—"}</span>
+                  </div>
+                  <div style={{ opacity: 0.88, fontWeight: 850 }}>
+                    kv-health: <span style={{ fontWeight: 950 }}>{kvOn ? "ON" : "OFF"}</span>
                   </div>
                 </div>
               </div>
