@@ -1,7 +1,7 @@
 // functions/api/metrics/stats.ts
 import type { Env } from "../_lib/auth";
 import { verifyAdmin } from "../_lib/auth";
-import { getStats } from "./_lib";
+import { getEvents24h, getStats } from "./_lib";
 
 export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   const ok = await verifyAdmin(request, env);
@@ -13,8 +13,14 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   }
 
   const s = await getStats(env);
-  return new Response(JSON.stringify({ ok: true, ...s }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
+  const e = await getEvents24h(env);
+
+  return new Response(
+    JSON.stringify({
+      ok: true,
+      stats: s,
+      events24h: e,
+    }),
+    { status: 200, headers: { "Content-Type": "application/json" } }
+  );
 };
