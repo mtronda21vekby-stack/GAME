@@ -33,6 +33,7 @@ const ADMIN_TAP_WINDOW_MS = 900;
 
 function getSessionFlag(key: string) {
   try {
+    if (typeof window === "undefined") return false;
     return sessionStorage.getItem(key) === "1";
   } catch {
     return false;
@@ -40,6 +41,7 @@ function getSessionFlag(key: string) {
 }
 function setSessionFlag(key: string, v: boolean) {
   try {
+    if (typeof window === "undefined") return;
     if (v) sessionStorage.setItem(key, "1");
     else sessionStorage.removeItem(key);
   } catch {
@@ -112,8 +114,6 @@ function getOrCreateGuestId(): string {
 
   let id = "";
   try {
-    // Safari поддерживает crypto.randomUUID на новых версиях
-    // но держим fallback на всякий
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const anyCrypto = crypto as any;
     if (anyCrypto?.randomUUID) id = anyCrypto.randomUUID();
@@ -141,18 +141,12 @@ function setXp(xp: number) {
 }
 
 function tierFromXp(xp: number): Tier {
-  // Порог можно менять позже в одном месте
   if (xp >= 8000) return "Crown";
   if (xp >= 2500) return "Silver";
   return "Bronze";
 }
 
-/**
- * Математика уровня: дешёвая, стабильная, без зависимости от backend.
- * XP per level растёт плавно.
- */
 function levelFromXp(xp: number) {
-  // базовый шаг уровня (можно тюнить)
   const base = 250;
   const level = Math.max(1, Math.floor(Math.sqrt(xp / base)) + 1);
   const prevNeed = (level - 1) * (level - 1) * base;
@@ -217,7 +211,6 @@ async function fetchProgress(): Promise<Progress | null> {
     if (!res.ok) return null;
     const json = (await res.json()) as ApiProgress;
     if (typeof json?.xp === "number" && Number.isFinite(json.xp)) {
-      // tier/level можно доверять частично, но для консистентности считаем сами
       return buildProgress(json.xp);
     }
     return null;
@@ -452,7 +445,6 @@ export function Account() {
   const awardXp = React.useCallback(async (event: string, xpAdd: number, cooldownMs: number) => {
     if (!canAward(event, cooldownMs)) return;
 
-    // Сначала пробуем сервер (если есть)
     const server = await postXpEvent(event);
     if (server) {
       markAward(event);
@@ -460,12 +452,10 @@ export function Account() {
       return;
     }
 
-    // Локальный fallback
     const before = getXp();
     const next = before + xpAdd;
     setXp(next);
 
-    // счетчик событий (не обязателен, но пригодится для анти-спама/аналитики позже)
     const total = Number(getString(KEY_XP_TOTAL_EVENTS, "0"));
     const safeTotal = Number.isFinite(total) ? total + 1 : 1;
     setString(KEY_XP_TOTAL_EVENTS, String(safeTotal));
@@ -501,7 +491,6 @@ export function Account() {
     };
   }, [refreshStore]);
 
-  // подтягиваем прогресс с сервера, если он есть (иначе остаётся локальный)
   React.useEffect(() => {
     let alive = true;
     (async () => {
@@ -515,7 +504,6 @@ export function Account() {
     };
   }, [refreshProgressLocal]);
 
-  // MVP начисление XP за визит аккаунта (редко)
   React.useEffect(() => {
     awardXp("visit_account", 12, 12 * 60 * 60 * 1000);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -531,7 +519,6 @@ export function Account() {
     setString(KEY_AVATAR, avatarId);
     pulseSaved();
 
-    // XP: за сохранение профиля (редко)
     awardXp("save_profile", 18, 10 * 60 * 1000);
   }, [nick, status, avatarId, pulseSaved, awardXp]);
 
@@ -569,7 +556,6 @@ export function Account() {
       }
       pulseSaved();
 
-      // XP: за настройку (с anti-spam)
       awardXp("save_prefs", 10, 7 * 60 * 1000);
     },
     [pulseSaved, awardXp]
@@ -641,12 +627,6 @@ export function Account() {
               <Pill>
                 <span style={{ opacity: 0.82 }}>XP:</span> {progress.xp}
               </Pill>
-
-              {adminUnlocked ? (
-                <Button variant="ghost" onClick={() => nav("/admin")}>
-                  Admin
-                </Button>
-              ) : null}
 
               {equippedSkinItem ? (
                 <Pill tone="accent">
@@ -744,6 +724,7 @@ export function Account() {
                         outline: "none",
                         padding: 0,
                         WebkitTapHighlightColor: "transparent",
+                        touchAction: "manipulation",
                       }}
                     >
                       {initials.slice(0, 2)}
@@ -968,7 +949,9 @@ export function Account() {
 
                               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                                 <span style={{ fontWeight: 900, color: rarityAccent(it.rarity) }}>{rarityLabel(it.rarity)}</span>
-                                <span style={{ opacity: 0.78, fontWeight: 850 }}>{isSkin ? "Skin" : isBadge ? "Badge" : "Bundle"}</span>
+                                <span style={{ opacity: 0.78, fontWeight: 850 }}>
+                                  {isSkin ? "Skin" : isBadge ? "Badge" : "Bundle"}
+                                </span>
                                 {isActive ? <Pill tone="accent">Активно</Pill> : null}
                               </div>
                             </div>
