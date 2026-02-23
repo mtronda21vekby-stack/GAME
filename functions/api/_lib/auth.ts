@@ -181,14 +181,13 @@ export async function verifyAdminToken(request: Request, env: Env): Promise<Admi
   return claims;
 }
 
-/** compat wrapper used by functions/api/admin/session.ts */
+// compat wrapper
 export async function verifyAdmin(request: Request, env: Env): Promise<boolean> {
   const claims = await verifyAdminToken(request, env);
   return !!claims;
 }
 
-/** KV helper */
+// KV helper
 export function getMetricsKV(env: Env): KVNamespace | null {
-  // try several binding names without breaking existing env typing
   return (env.BC_KV || env.METRICS_KV || env.KV || null) as any;
 }
