@@ -31,6 +31,15 @@ type StatsPayload = {
   };
 };
 
+type OnlineListPayload =
+  | {
+      ok: true;
+      kv: true;
+      online: { site: string[]; lobby: string[]; game: string[]; total: number };
+    }
+  | { ok: true; kv: false }
+  | { ok: false };
+
 type SnapList = { ok: boolean; ids: string[] };
 type SnapGet = { ok: boolean; id: string; payload: any };
 
@@ -140,6 +149,21 @@ async function fetchStats(): Promise<StatsPayload | null> {
   }
 }
 
+async function fetchOnlineList(): Promise<OnlineListPayload | null> {
+  try {
+    const res = await fetch("/api/metrics/online-list", {
+      method: "GET",
+      headers: { accept: "application/json" },
+      credentials: "include",
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as OnlineListPayload;
+  } catch {
+    return null;
+  }
+}
+
 // КЛЮЧЕВОЕ: берём реальный статус KV из /api/kv-health
 async function fetchKvHealth(): Promise<boolean> {
   try {
@@ -243,6 +267,12 @@ function sortTop(obj: Record<string, number>, limit = 10) {
     .slice(0, limit);
 }
 
+function shortId(s: string, max = 22) {
+  if (!s) return "—";
+  if (s.length <= max) return s;
+  return `${s.slice(0, 10)}…${s.slice(-8)}`;
+}
+
 export function Admin() {
   const [authed, setAuthed] = React.useState(false);
   const [password, setPassword] = React.useState("");
@@ -260,6 +290,10 @@ export function Admin() {
   const [stats, setStats] = React.useState<StatsPayload | null>(null);
   const [statsAt, setStatsAt] = React.useState<number>(0);
   const [kvOn, setKvOn] = React.useState<boolean>(false);
+
+  // online list
+  const [onlineList, setOnlineList] = React.useState<OnlineListPayload | null>(null);
+  const [onlineAt, setOnlineAt] = React.useState<number>(0);
 
   // snapshots
   const [snapIds, setSnapIds] = React.useState<string[]>([]);
@@ -292,17 +326,17 @@ export function Admin() {
   }, [selected]);
 
   const reloadStats = React.useCallback(async () => {
-    // Делаем параллельно: stats + kv-health
     const [s, kv] = await Promise.all([fetchStats(), fetchKvHealth()]);
     setKvOn(kv);
 
-    if (s) {
-      setStats(s);
-      setStatsAt(Date.now());
-    } else {
-      // если stats endpoint упал/старый — kv всё равно покажем корректно
-      setStatsAt(Date.now());
-    }
+    if (s) setStats(s);
+    setStatsAt(Date.now());
+  }, []);
+
+  const reloadOnline = React.useCallback(async () => {
+    const r = await fetchOnlineList();
+    if (r) setOnlineList(r);
+    setOnlineAt(Date.now());
   }, []);
 
   const reloadSnapshots = React.useCallback(async () => {
@@ -314,16 +348,18 @@ export function Admin() {
     if (!authed) return;
     reloadContent();
     reloadStats();
+    reloadOnline();
     reloadSnapshots();
-  }, [authed, reloadContent, reloadStats, reloadSnapshots]);
+  }, [authed, reloadContent, reloadStats, reloadOnline, reloadSnapshots]);
 
   React.useEffect(() => {
     if (!authed) return;
     const t = window.setInterval(() => {
       reloadStats();
+      reloadOnline();
     }, 10_000);
     return () => window.clearInterval(t);
-  }, [authed, reloadStats]);
+  }, [authed, reloadStats, reloadOnline]);
 
   React.useEffect(() => {
     if (!sel) return;
@@ -413,6 +449,8 @@ export function Admin() {
   const s = stats?.stats;
   const ev = stats?.events24h;
 
+  const online = (onlineList as any)?.online as { site: string[]; lobby: string[]; game: string[]; total: number } | undefined;
+
   return (
     <div className="bcSection">
       <div className="bcSectionHead">
@@ -425,8 +463,15 @@ export function Admin() {
           title="Navigation"
           right={
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <Pressable as="button" className="bcAccountPill" onClick={reloadStats}>
-                Refresh stats
+              <Pressable
+                as="button"
+                className="bcAccountPill"
+                onClick={async () => {
+                  await reloadStats();
+                  await reloadOnline();
+                }}
+              >
+                Refresh
               </Pressable>
               <Pressable
                 as="button"
@@ -436,6 +481,7 @@ export function Admin() {
                   const ok = await adminLogout();
                   setAuthed(false);
                   setStats(null);
+                  setOnlineList(null);
                   setSnapIds([]);
                   setKvOn(false);
                   if (!ok) setStatus("Logout failed.");
@@ -521,6 +567,77 @@ export function Admin() {
                 </div>
               </div>
 
+              {/* LIVE ONLINE LIST */}
+              <div className="glassStrong" style={{ padding: 14, borderRadius: 16, border: "1px solid rgba(255,255,255,0.10)" }}>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ fontWeight: 950 }}>Active sessions (live)</div>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                    <div style={{ opacity: 0.82, fontWeight: 850 }}>
+                      Updated: <span style={{ fontWeight: 950 }}>{onlineAt ? new Date(onlineAt).toLocaleTimeString() : "—"}</span>
+                    </div>
+                    <Pressable as="button" className="bcAccountPill" onClick={reloadOnline}>
+                      Refresh list
+                    </Pressable>
+                  </div>
+                </div>
+
+                {!kvOn ? (
+                  <div style={{ marginTop: 10, opacity: 0.82, fontWeight: 850, lineHeight: 1.45 }}>
+                    KV выключен — live sessions недоступны.
+                  </div>
+                ) : !online ? (
+                  <div style={{ marginTop: 10, opacity: 0.82, fontWeight: 850 }}>List not loaded.</div>
+                ) : (
+                  <div style={{ marginTop: 10, display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr 1fr" as any }}>
+                    {(["site", "lobby", "game"] as const).map((area) => (
+                      <div
+                        key={area}
+                        style={{
+                          padding: 10,
+                          borderRadius: 14,
+                          border: "1px solid rgba(255,255,255,0.10)",
+                          background: "rgba(0,0,0,0.12)",
+                        }}
+                      >
+                        <div style={{ fontWeight: 950, display: "flex", justifyContent: "space-between", gap: 10 }}>
+                          <span>{area}</span>
+                          <span style={{ opacity: 0.9 }}>{(online as any)[area]?.length ?? 0}</span>
+                        </div>
+
+                        <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
+                          {((online as any)[area] as string[]).slice(0, 12).map((id) => (
+                            <div
+                              key={id}
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                gap: 10,
+                                opacity: 0.9,
+                                fontWeight: 850,
+                                fontFamily:
+                                  'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                              }}
+                              title={id}
+                            >
+                              <span>{shortId(id)}</span>
+                            </div>
+                          ))}
+                          {((online as any)[area] as string[])?.length === 0 ? (
+                            <div style={{ opacity: 0.8, fontWeight: 850 }}>—</div>
+                          ) : null}
+                          {((online as any)[area] as string[])?.length > 12 ? (
+                            <div style={{ opacity: 0.75, fontWeight: 850 }}>
+                              +{((online as any)[area] as string[]).length - 12} more
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* EVENTS */}
               <div className="glassStrong" style={{ padding: 14, borderRadius: 16, border: "1px solid rgba(255,255,255,0.10)" }}>
                 <div style={{ fontWeight: 950 }}>Events (last 24h)</div>
 
@@ -938,6 +1055,7 @@ export function Admin() {
                   className="bcAccountPill"
                   onClick={async () => {
                     await reloadStats();
+                    await reloadOnline();
                     await reloadSnapshots();
                     await reloadContent();
                   }}
@@ -960,6 +1078,12 @@ export function Admin() {
                   </div>
                   <div style={{ opacity: 0.88, fontWeight: 850 }}>
                     kv-health: <span style={{ fontWeight: 950 }}>{kvOn ? "ON" : "OFF"}</span>
+                  </div>
+                  <div style={{ opacity: 0.88, fontWeight: 850 }}>
+                    live-online:{" "}
+                    <span style={{ fontWeight: 950 }}>
+                      {online?.total ?? 0}
+                    </span>
                   </div>
                 </div>
               </div>
