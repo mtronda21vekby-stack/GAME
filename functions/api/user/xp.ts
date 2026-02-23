@@ -1,6 +1,6 @@
 import { json, badRequest, methodNotAllowed } from "../../_lib/http";
 import type { Env } from "../../_lib/db";
-import { xpForEvent, cooldownMsForEvent, dedupeKeyForEvent, levelFromXp, nextLevelXp, statusFromXp } from "@blackcrown/core";
+import { levelFromXp, nextLevelXp, statusFromXp } from "../../_shared/xp";
 import type { XpEvent } from "@blackcrown/core";
 
 export const onRequest: PagesFunction<Env> = async (ctx) => {
