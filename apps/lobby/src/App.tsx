@@ -1,28 +1,33 @@
-// GAME/apps/lobby/src/App.tsx
 import React from "react";
 import { Lobby } from "./routes/Lobby";
 
-function getOrCreateGuestId(): string {
+function getOrCreateVisitorId(): string {
   try {
-    const existing = localStorage.getItem("guest.id");
-    if (existing) return existing;
+    const k = "bc.visitor.id";
+    const existing = localStorage.getItem(k);
+    if (existing && existing.length > 6) return existing;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const anyCrypto = crypto as any;
-    const id = anyCrypto?.randomUUID ? anyCrypto.randomUUID() : `g_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
-    localStorage.setItem("guest.id", id);
+    const id = anyCrypto?.randomUUID
+      ? anyCrypto.randomUUID()
+      : `v_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
+
+    localStorage.setItem(k, id);
     return id;
   } catch {
-    return `g_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
+    return `v_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
   }
 }
 
-async function pingPresence(id: string) {
+async function pingPresence() {
   try {
-    await fetch("/api/presence/ping", {
+    const id = getOrCreateVisitorId();
+    await fetch("/api/metrics/ping", {
       method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ scope: "lobby", id }),
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify({ id }),
+      credentials: "include",
     });
   } catch {
     // ignore
@@ -31,15 +36,30 @@ async function pingPresence(id: string) {
 
 export function App() {
   React.useEffect(() => {
-    if (typeof window === "undefined") return;
+    let alive = true;
 
-    const id = getOrCreateGuestId();
+    // immediate ping
+    pingPresence();
 
-    // сразу пингуем и дальше поддерживаем "online"
-    pingPresence(id);
-    const t = window.setInterval(() => pingPresence(id), 25_000);
+    // periodic ping
+    const t = window.setInterval(() => {
+      if (!alive) return;
+      pingPresence();
+    }, 30_000);
 
-    return () => window.clearInterval(t);
+    const onVis = () => {
+      if (document.visibilityState === "visible") pingPresence();
+    };
+
+    window.addEventListener("focus", pingPresence);
+    document.addEventListener("visibilitychange", onVis);
+
+    return () => {
+      alive = false;
+      window.clearInterval(t);
+      window.removeEventListener("focus", pingPresence);
+      document.removeEventListener("visibilitychange", onVis);
+    };
   }, []);
 
   return <Lobby />;
