@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, SpringGlow, Reveal } from "@blackcrown/ui";
+import { Pressable, SpringGlow } from "@blackcrown/ui";
 
 type BlockRow = {
   id: string;
@@ -41,8 +41,7 @@ async function adminLogin(password: string): Promise<LoginResult> {
       return { ok: false, message: "Доступ запрещён: неверный пароль." };
     }
 
-    // 503/500 и т.п.
-    return { ok: false, message: "Не удалось войти. Проверь переменные окружения и повтори." };
+    return { ok: false, message: "Не удалось войти. Повтори ещё раз." };
   } catch {
     return { ok: false, message: "Сеть недоступна. Проверь соединение." };
   }
@@ -55,7 +54,9 @@ async function loadAdminContent(): Promise<ContentPayload> {
     credentials: "include",
   });
 
-  if (res.status === 401 || res.status === 403) throw new Error("unauthorized");
+  if (res.status === 401 || res.status === 403) {
+    throw new Error("unauthorized");
+  }
   if (!res.ok) throw new Error("load");
 
   return (await res.json()) as ContentPayload;
@@ -79,7 +80,9 @@ async function requestUploadUrl(file: File): Promise<{ uploadUrl: string; public
     credentials: "include",
   });
 
-  if (res.status === 401 || res.status === 403) throw new Error("unauthorized");
+  if (res.status === 401 || res.status === 403) {
+    throw new Error("unauthorized");
+  }
   if (!res.ok) throw new Error("upload-url");
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -106,7 +109,6 @@ export function Admin() {
       .then((c) => {
         const list = c.blocks || [];
         setBlocks(list);
-
         if ((!selected || !list.some((x) => x.id === selected)) && list[0]?.id) {
           setSelected(list[0].id);
         }
@@ -142,71 +144,72 @@ export function Admin() {
         </div>
 
         <div className="bcCards">
-          <Reveal>
-            <SpringGlow className="glassStrong bc-motion" style={{ padding: 18 }}>
-              <div style={{ fontWeight: 950 }}>Login</div>
+          <SpringGlow className="glassStrong bc-motion" style={{ padding: 18 }}>
+            <div style={{ fontWeight: 950 }}>Login</div>
 
-              <form
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  if (busy) return;
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (busy) return;
 
-                  const p = password.trim();
-                  if (!p) {
-                    setStatus("Введите пароль.");
-                    return;
-                  }
+                const p = password.trim();
+                if (!p) {
+                  setStatus("Введите пароль.");
+                  return;
+                }
 
-                  setStatus("");
-                  setBusy(true);
-                  const r = await adminLogin(p);
-                  setBusy(false);
+                setStatus("");
+                setBusy(true);
+                const r = await adminLogin(p);
+                setBusy(false);
 
-                  if (r.ok) {
-                    setAuthed(true);
-                    setPassword("");
-                    return;
-                  }
+                if (r.ok) {
+                  setAuthed(true);
+                  setPassword("");
+                  return;
+                }
 
-                  setAuthed(false);
-                  setStatus(r.message);
+                setAuthed(false);
+                setStatus(r.message);
+              }}
+              style={{ marginTop: 12, display: "grid", gap: 10 }}
+            >
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                style={{
+                  height: 44,
+                  borderRadius: 14,
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  background: "rgba(255,255,255,0.06)",
+                  color: "rgba(255,255,255,0.92)",
+                  padding: "0 12px",
+                  fontWeight: 800,
+                  outline: "none",
                 }}
-                style={{ marginTop: 12, display: "grid", gap: 10 }}
+              />
+
+              {/* ВАЖНО: submit внутри form — на iOS кликается стабильнее всего */}
+              <button
+                type="submit"
+                className="bcAccountPill"
+                disabled={busy}
+                style={{
+                  opacity: busy ? 0.7 : 1,
+                  cursor: busy ? "default" : "pointer",
+                }}
               >
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Password"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  style={{
-                    height: 44,
-                    borderRadius: 14,
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    background: "rgba(255,255,255,0.06)",
-                    color: "rgba(255,255,255,0.92)",
-                    padding: "0 12px",
-                    fontWeight: 800,
-                    outline: "none",
-                  }}
-                />
+                {busy ? "Signing in…" : "Sign in"}
+              </button>
 
-                {/* submit внутри form — на iOS кликается стабильнее всего */}
-                <button
-                  type="submit"
-                  className="bcAccountPill"
-                  disabled={busy}
-                  style={{ opacity: busy ? 0.7 : 1, cursor: busy ? "default" : "pointer" }}
-                >
-                  {busy ? "Signing in…" : "Sign in"}
-                </button>
-
-                {status ? <div style={{ opacity: 0.82, fontWeight: 800 }}>{status}</div> : null}
-              </form>
-            </SpringGlow>
-          </Reveal>
+              {status ? <div style={{ opacity: 0.82, fontWeight: 800 }}>{status}</div> : null}
+            </form>
+          </SpringGlow>
         </div>
       </div>
     );
@@ -223,7 +226,6 @@ export function Admin() {
         <SpringGlow className="glassStrong bc-motion" style={{ padding: 18 }}>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ fontWeight: 950 }}>Content blocks</div>
-
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <Pressable as="button" className="bcAccountPill" onClick={reload}>
                 {busy ? "Loading…" : "Reload"}
@@ -338,7 +340,6 @@ export function Admin() {
                       setStatus("");
                       // eslint-disable-next-line @typescript-eslint/no-explicit-any
                       let data: any = null;
-
                       try {
                         data = JSON.parse(editor);
                       } catch {
