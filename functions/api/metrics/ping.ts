@@ -1,7 +1,21 @@
 // functions/api/metrics/ping.ts
 import { Env, getMetricsKV } from "../_lib/auth";
 
-type PingBody = { clientId?: string; app?: "site" | "lobby" | "game" };
+type Body = {
+  clientId?: string;
+  area?: "site" | "lobby" | "game";
+  ttl?: number;
+};
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+    },
+  });
+}
 
 function dayUTC(d = new Date()) {
   const y = d.getUTCFullYear();
@@ -10,42 +24,49 @@ function dayUTC(d = new Date()) {
   return `${y}-${m}-${dd}`;
 }
 
+function safeId(s: string) {
+  return s
+    .trim()
+    .slice(0, 160)
+    .replace(/[^a-zA-Z0-9_\-:.@]/g, "_");
+}
+
+function clampInt(v: unknown, min: number, max: number, def: number) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return def;
+  return Math.min(max, Math.max(min, Math.trunc(n)));
+}
+
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const kv = getMetricsKV(env);
-  if (!kv) {
-    return new Response(JSON.stringify({ ok: true, kv: false }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
+  if (!kv) return json({ ok: true, kv: false });
 
-  let body: PingBody = {};
+  let body: Body = {};
   try {
-    body = (await request.json()) as PingBody;
+    body = (await request.json()) as Body;
   } catch {
     body = {};
   }
 
-  const clientId = String(body.clientId || "").trim();
-  const app = (body.app || "site") as "site" | "lobby" | "game";
-
-  if (!clientId) {
-    return new Response(JSON.stringify({ ok: false, reason: "missing_clientId" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+  const area = (body.area || "site") as "site" | "lobby" | "game";
+  if (area !== "site" && area !== "lobby" && area !== "game") {
+    return json({ ok: false, reason: "bad_area" }, 400);
   }
 
+  const ip = request.headers.get("cf-connecting-ip") || "0.0.0.0";
+  const clientId = safeId(String(body.clientId || ip));
+  const ttl = clampInt(body.ttl, 30, 600, 90);
+
+  // ONLINE
+  await kv.put(`o:${area}:${clientId}`, "1", { expirationTtl: ttl });
+
+  // UNIQUE (UTC day)
   const d = dayUTC();
+  const uniqKey = `u:${d}:${area}:${clientId}`;
+  const existed = await kv.get(uniqKey);
+  if (!existed) {
+    await kv.put(uniqKey, "1", { expirationTtl: 2 * 24 * 60 * 60 });
+  }
 
-  // online TTL (2 minutes)
-  await kv.put(`o:${app}:${clientId}`, String(Date.now()), { expirationTtl: 120 });
-
-  // unique per UTC day (keep 3 days)
-  await kv.put(`u:${d}:${app}:${clientId}`, "1", { expirationTtl: 3 * 24 * 60 * 60 });
-
-  return new Response(JSON.stringify({ ok: true, kv: true }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
+  return json({ ok: true, kv: true, area, ttl, uniqueNew: !existed });
 };
