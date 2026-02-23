@@ -8,9 +8,10 @@ export type Env = {
   ADMIN_PASSWORD?: string;
   ADMIN_SECRET?: string;
 
-  // optional metrics KV binding (recommended)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  BC_METRICS_KV?: any;
+  // KV bindings (any name variants)
+  BC_KV?: KVNamespace;
+  METRICS_KV?: KVNamespace;
+  KV?: KVNamespace;
 
   // allow any other env fields without TS pain
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -52,8 +53,7 @@ export function setCookie(name: string, value: string, opts: CookieOpts = {}): s
 }
 
 export function clearCookie(name: string, opts: CookieOpts = {}): string {
-  // immediate expiry
-  return setCookie(name, "", { ...opts, maxAgeSec: 0, path: opts.path || "/" });
+  return setCookie(name, "", { ...opts, maxAgeSec: 0 });
 }
 
 function parseCookieHeader(cookieHeader: string | null): Record<string, string> {
@@ -181,7 +181,14 @@ export async function verifyAdminToken(request: Request, env: Env): Promise<Admi
   return claims;
 }
 
+/** compat wrapper used by functions/api/admin/session.ts */
 export async function verifyAdmin(request: Request, env: Env): Promise<boolean> {
   const claims = await verifyAdminToken(request, env);
   return !!claims;
+}
+
+/** KV helper */
+export function getMetricsKV(env: Env): KVNamespace | null {
+  // try several binding names without breaking existing env typing
+  return (env.BC_KV || env.METRICS_KV || env.KV || null) as any;
 }
