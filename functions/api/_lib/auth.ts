@@ -47,6 +47,20 @@ export function setCookie(name: string, value: string, opts: CookieOpts = {}): s
   return parts.join("; ");
 }
 
+/**
+ * Удаление cookie через Set-Cookie.
+ * Используй в logout endpoint: headers: { "Set-Cookie": clearCookie("bc_admin") }
+ */
+export function clearCookie(name: string, opts: Pick<CookieOpts, "path" | "httpOnly" | "sameSite" | "secure"> = {}): string {
+  return setCookie(name, "", {
+    path: opts.path || "/",
+    maxAgeSec: 0,
+    httpOnly: opts.httpOnly ?? true,
+    sameSite: opts.sameSite || "Lax",
+    secure: opts.secure ?? true,
+  });
+}
+
 function parseCookieHeader(cookieHeader: string | null): Record<string, string> {
   const out: Record<string, string> = {};
   if (!cookieHeader) return out;
@@ -170,4 +184,13 @@ export async function verifyAdminToken(request: Request, env: Env): Promise<Admi
   if (!Number.isFinite(claims.exp) || claims.exp <= now) return null;
 
   return claims;
+}
+
+/**
+ * Совместимый экспорт для endpoints, которые ожидают verifyAdmin().
+ * Возвращает true/false (без claims).
+ */
+export async function verifyAdmin(request: Request, env: Env): Promise<boolean> {
+  const claims = await verifyAdminToken(request, env);
+  return !!claims;
 }
