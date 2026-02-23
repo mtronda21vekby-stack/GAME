@@ -1,5 +1,5 @@
 // functions/api/admin/login.ts
-import { Env, setCookie, signAdminToken } from "../_lib/auth";
+import { Env, getAdminPassword, getAdminSecret, setCookie, signAdminToken } from "../_lib/auth";
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   let password = "";
@@ -10,18 +10,19 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     password = "";
   }
 
-  const expected = env.BC_ADMIN_PASSWORD || "";
-  const secret = env.BC_ADMIN_SECRET || "";
+  const expected = getAdminPassword(env);
+  const secret = getAdminSecret(env);
 
+  // если нет пароля/секрета — админка не настроена
   if (!expected || !secret) {
-    return new Response(JSON.stringify({ ok: false }), {
+    return new Response(JSON.stringify({ ok: false, reason: "not_configured" }), {
       status: 503,
       headers: { "Content-Type": "application/json" },
     });
   }
 
   if (!password || password !== expected) {
-    return new Response(JSON.stringify({ ok: false }), {
+    return new Response(JSON.stringify({ ok: false, reason: "bad_password" }), {
       status: 401,
       headers: { "Content-Type": "application/json" },
     });
@@ -29,7 +30,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
   const token = await signAdminToken(env, 24 * 60 * 60); // 24h
   if (!token) {
-    return new Response(JSON.stringify({ ok: false }), {
+    return new Response(JSON.stringify({ ok: false, reason: "token_failed" }), {
       status: 503,
       headers: { "Content-Type": "application/json" },
     });
