@@ -76,7 +76,7 @@ export function Router() {
         e.preventDefault();
         window.history.pushState(null, "", u.pathname + u.search + u.hash);
         setPath(normPath(window.location.pathname));
-        window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+        window.scrollTo({ top: 0, behavior: "auto" });
         return;
       }
 
@@ -94,7 +94,7 @@ export function Router() {
       e.preventDefault();
       window.history.pushState(null, "", href);
       setPath(normPath(window.location.pathname));
-      window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+      window.scrollTo({ top: 0, behavior: "auto" });
     };
 
     document.addEventListener("click", onClick);
