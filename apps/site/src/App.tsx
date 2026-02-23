@@ -7,6 +7,46 @@ function syncAppVh() {
   document.documentElement.style.setProperty("--app-vh", `${Math.round(h)}px`);
 }
 
+function safeId() {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const anyCrypto = crypto as any;
+    if (anyCrypto?.randomUUID) return anyCrypto.randomUUID();
+  } catch {
+    // ignore
+  }
+  return `c_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
+}
+
+function getClientId(): string {
+  try {
+    const k = "bc.clientId.v1";
+    const ex = localStorage.getItem(k);
+    if (ex) return ex;
+    const id = safeId();
+    localStorage.setItem(k, id);
+    return id;
+  } catch {
+    return safeId();
+  }
+}
+
+async function pingSite() {
+  const clientId = getClientId();
+  try {
+    await fetch("/api/metrics/ping", {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify({ clientId, area: "site" }),
+      credentials: "include",
+      keepalive: true,
+      cache: "no-store",
+    });
+  } catch {
+    // ignore
+  }
+}
+
 export function App() {
   React.useEffect(() => {
     syncAppVh();
@@ -16,14 +56,39 @@ export function App() {
 
     window.addEventListener("resize", onResize);
     window.addEventListener("orientationchange", onResize);
-
-    // iOS Safari: этого достаточно, scroll НЕ нужен (он убивает производительность)
     vv?.addEventListener("resize", onResize);
 
     return () => {
       window.removeEventListener("resize", onResize);
       window.removeEventListener("orientationchange", onResize);
       vv?.removeEventListener("resize", onResize);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    let alive = true;
+
+    // immediate ping
+    pingSite();
+
+    // periodic ping
+    const t = window.setInterval(() => {
+      if (!alive) return;
+      if (document.visibilityState === "visible") pingSite();
+    }, 20000);
+
+    const onVis = () => {
+      if (document.visibilityState === "visible") pingSite();
+    };
+
+    window.addEventListener("focus", onVis);
+    document.addEventListener("visibilitychange", onVis);
+
+    return () => {
+      alive = false;
+      window.clearInterval(t);
+      window.removeEventListener("focus", onVis);
+      document.removeEventListener("visibilitychange", onVis);
     };
   }, []);
 
@@ -39,3 +104,5 @@ export function App() {
     </div>
   );
 }
+
+export default App;
