@@ -15,7 +15,7 @@
   --bc-glass-strong: rgba(255, 255, 255, 0.085);
   --bc-stroke: rgba(255, 255, 255, 0.10);
 
-  /* Premium highlight (ты хотел ярко-оранжевый hover/press) */
+  /* Premium highlight */
   --bc-accent: rgba(255, 140, 0, 0.95);
   --bc-accent-soft: rgba(255, 140, 0, 0.22);
 
@@ -41,8 +41,11 @@ body {
   background: var(--bc-bg);
 }
 
-/* Shell */
-.bcShell {
+/* === SHELL CONTAINERS === */
+/* Support both naming schemes: bcShell* and bcAppShell* */
+
+.bcShell,
+.bcAppShell {
   position: relative;
   min-height: var(--bc-vh);
   width: 100%;
@@ -52,7 +55,8 @@ body {
 }
 
 /* Background layer (matrix etc.) */
-.bcShellBg {
+.bcShellBg,
+.bcMatrixLayer {
   position: fixed;
   inset: 0;
   z-index: 0;
@@ -78,7 +82,7 @@ body {
     radial-gradient(900px 700px at 80% 80%, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.75));
 }
 
-/* Premium noise without images (CSS-only, very cheap) */
+/* Premium noise without images (CSS-only, cheap) */
 .bcShellNoise {
   position: absolute;
   inset: 0;
@@ -90,7 +94,8 @@ body {
 }
 
 /* Content layer */
-.bcShellContent {
+.bcShellContent,
+.bcAppContent {
   position: relative;
   z-index: 2;
   min-height: var(--bc-vh);
