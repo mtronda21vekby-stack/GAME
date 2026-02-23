@@ -4,9 +4,11 @@ import { trackPresence } from "./_lib";
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   let id = "";
+  let app = "site";
   try {
-    const body = (await request.json()) as { id?: string };
+    const body = (await request.json()) as { id?: string; app?: string };
     id = String(body?.id || "").trim();
+    app = String(body?.app || "site").trim();
   } catch {
     id = "";
   }
@@ -18,7 +20,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     });
   }
 
-  await trackPresence(env, id);
+  await trackPresence(env, app, id);
 
   return new Response(JSON.stringify({ ok: true }), {
     status: 200,
