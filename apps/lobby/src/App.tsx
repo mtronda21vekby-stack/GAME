@@ -1,33 +1,39 @@
 import React from "react";
 import { Lobby } from "./routes/Lobby";
 
-function getOrCreateVisitorId(): string {
+function safeId() {
   try {
-    const k = "bc.visitor.id";
-    const existing = localStorage.getItem(k);
-    if (existing && existing.length > 6) return existing;
-
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const anyCrypto = crypto as any;
-    const id = anyCrypto?.randomUUID
-      ? anyCrypto.randomUUID()
-      : `v_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
+    if (anyCrypto?.randomUUID) return anyCrypto.randomUUID();
+  } catch {
+    // ignore
+  }
+  return `c_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
+}
 
+function getClientId(): string {
+  try {
+    const k = "bc.clientId.v1";
+    const ex = localStorage.getItem(k);
+    if (ex) return ex;
+    const id = safeId();
     localStorage.setItem(k, id);
     return id;
   } catch {
-    return `v_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
+    return safeId();
   }
 }
 
-async function pingPresence() {
+async function ping() {
+  const clientId = getClientId();
   try {
-    const id = getOrCreateVisitorId();
     await fetch("/api/metrics/ping", {
       method: "POST",
       headers: { "content-type": "application/json", accept: "application/json" },
-      body: JSON.stringify({ id, app: "lobby" }),
+      body: JSON.stringify({ clientId, area: "lobby" }),
       credentials: "include",
+      keepalive: true,
     });
   } catch {
     // ignore
@@ -38,24 +44,26 @@ export function App() {
   React.useEffect(() => {
     let alive = true;
 
-    pingPresence();
+    // immediate ping
+    ping();
 
+    // periodic ping
     const t = window.setInterval(() => {
       if (!alive) return;
-      pingPresence();
-    }, 30_000);
+      if (document.visibilityState === "visible") ping();
+    }, 20000);
 
     const onVis = () => {
-      if (document.visibilityState === "visible") pingPresence();
+      if (document.visibilityState === "visible") ping();
     };
 
-    window.addEventListener("focus", pingPresence);
+    window.addEventListener("focus", onVis);
     document.addEventListener("visibilitychange", onVis);
 
     return () => {
       alive = false;
       window.clearInterval(t);
-      window.removeEventListener("focus", pingPresence);
+      window.removeEventListener("focus", onVis);
       document.removeEventListener("visibilitychange", onVis);
     };
   }, []);
