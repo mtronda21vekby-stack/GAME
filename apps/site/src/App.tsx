@@ -1,8 +1,6 @@
 import React from "react";
 import MatrixBackground from "./components/MatrixBackground";
 import { Router } from "./routes/Router";
-import PremiumShell from "./components/PremiumShell";
-import RouteMotion from "./components/RouteMotion";
 
 function syncAppVh() {
   const h = window.visualViewport?.height ?? window.innerHeight;
@@ -33,16 +31,16 @@ function getClientId(): string {
   }
 }
 
-async function pingSite() {
+async function ensureGuestUser() {
   const clientId = getClientId();
   try {
-    await fetch("/api/metrics/ping", {
+    await fetch("/api/auth/guest", {
       method: "POST",
       headers: { "content-type": "application/json", accept: "application/json" },
-      body: JSON.stringify({ clientId, area: "site" }),
+      body: JSON.stringify({ clientId }),
       credentials: "include",
-      keepalive: true,
       cache: "no-store",
+      keepalive: true,
     });
   } catch {
     // ignore
@@ -50,7 +48,6 @@ async function pingSite() {
 }
 
 export function App() {
-  // stable vh for iOS
   React.useEffect(() => {
     syncAppVh();
 
@@ -68,38 +65,21 @@ export function App() {
     };
   }, []);
 
-  // online ping (site)
   React.useEffect(() => {
-    let alive = true;
-
-    pingSite();
-
-    const t = window.setInterval(() => {
-      if (!alive) return;
-      if (document.visibilityState === "visible") pingSite();
-    }, 20000);
-
-    const onVis = () => {
-      if (document.visibilityState === "visible") pingSite();
-    };
-
-    window.addEventListener("focus", onVis);
-    document.addEventListener("visibilitychange", onVis);
-
-    return () => {
-      alive = false;
-      window.clearInterval(t);
-      window.removeEventListener("focus", onVis);
-      document.removeEventListener("visibilitychange", onVis);
-    };
+    // user bootstrap (guest)
+    ensureGuestUser();
   }, []);
 
   return (
-    <PremiumShell background={<MatrixBackground />}>
-      <RouteMotion>
+    <div className="bcAppShell">
+      <div className="bcMatrixLayer" aria-hidden="true">
+        <MatrixBackground />
+      </div>
+
+      <div className="bcAppContent">
         <Router />
-      </RouteMotion>
-    </PremiumShell>
+      </div>
+    </div>
   );
 }
 
