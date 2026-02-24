@@ -25,6 +25,22 @@ function getClientId(): string {
   }
 }
 
+async function ensureGuestUser() {
+  const clientId = getClientId();
+  try {
+    await fetch("/api/auth/guest", {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify({ clientId }),
+      credentials: "include",
+      cache: "no-store",
+      keepalive: true,
+    });
+  } catch {
+    // ignore
+  }
+}
+
 async function ping() {
   const clientId = getClientId();
   try {
@@ -34,6 +50,7 @@ async function ping() {
       body: JSON.stringify({ clientId, area: "lobby" }),
       credentials: "include",
       keepalive: true,
+      cache: "no-store",
     });
   } catch {
     // ignore
@@ -43,6 +60,9 @@ async function ping() {
 export function App() {
   React.useEffect(() => {
     let alive = true;
+
+    // ensure user first
+    ensureGuestUser();
 
     // immediate ping
     ping();
