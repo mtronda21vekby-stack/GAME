@@ -42,7 +42,6 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     } catch {}
   }
 
-  // защита от дублей
   if (!items.find((x) => x.id === clientMsgId)) {
     items.push({
       id: clientMsgId,
