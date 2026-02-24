@@ -152,11 +152,12 @@ export function Lobby() {
   /**
    * CRITICAL (iOS):
    * 1) Любой fixed/canvas/overlay наверху убивает клики.
-   * 2) Контент лобби поднимаем сверх-высоко по z-index и делаем его отдельным "UI-слоем".
+   * 2) Лобби поднимаем в отдельный "UI-слой" с огромным z-index.
+   * 3) Фон/матрица/оверлеи принудительно не ловят pointer events.
    */
   const ClickFix = (
     <style>{`
-      /* Kill taps interception by any background/canvas/overlays */
+      /* 1) Disable any background/overlay/canvas from intercepting taps */
       canvas,
       .MatrixBackground,
       .matrixCanvas,
@@ -172,15 +173,28 @@ export function Lobby() {
         touch-action: none !important;
       }
 
-      /* Make lobby an isolated top layer (above anything with backdrop/filter/fixed) */
+      /* Extra hardening: common "full-screen overlay" patterns */
+      [data-overlay="true"],
+      [data-bg="true"],
+      .overlay,
+      .backdrop,
+      .noise,
+      .vignette,
+      .aurora {
+        pointer-events: none !important;
+        touch-action: none !important;
+      }
+
+      /* 2) Make root an isolated stacking context so z-index is predictable */
       .bcSiteRoot {
         position: relative;
         isolation: isolate;
       }
 
+      /* 3) UI layer sits above everything */
       .bcLobbyUiLayer {
         position: relative;
-        z-index: 9999;
+        z-index: 2147483647; /* max int-like */
         pointer-events: auto;
       }
 
@@ -188,11 +202,16 @@ export function Lobby() {
         pointer-events: auto;
       }
 
-      /* Glass wrappers sometimes become stacking contexts; keep them interactive */
+      /* Ensure glass containers are interactive even if some parent had pointer-events rules */
       .glassStrong {
         position: relative;
-        z-index: 1;
         pointer-events: auto;
+      }
+
+      /* Inputs/buttons must always accept taps */
+      button, a, input, textarea, select {
+        pointer-events: auto !important;
+        touch-action: manipulation;
       }
     `}</style>
   );
@@ -363,9 +382,7 @@ export function Lobby() {
         return;
       }
 
-      if (data.t === "error") {
-        return;
-      }
+      if (data.t === "error") return;
     };
 
     ws.onerror = () => {
