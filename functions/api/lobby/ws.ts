@@ -1,37 +1,39 @@
 // functions/api/lobby/ws.ts
-import { Env } from "../_lib/auth";
+// WebSocket proxy: Pages Functions -> Service Binding (blackcrown-lobby-ws)
+// Route: /api/lobby/ws?room=main
 
-function okUpgrade(req: Request) {
-  return req.headers.get("Upgrade")?.toLowerCase() === "websocket";
+export interface Env {
+  LOBBY_WS?: Fetcher;
 }
 
-/**
- * AAA WS proxy:
- * Browser -> Pages Function (/api/lobby/ws) -> Service binding (blackcrown-lobby-ws) -> DO
- *
- * Требование: в Pages Settings добавить Service Binding:
- *   Name: LOBBY_WS
- *   Service: blackcrown-lobby-ws
- */
+function isWebSocketUpgrade(req: Request): boolean {
+  return (req.headers.get("Upgrade") || "").toLowerCase() === "websocket";
+}
+
+function safeRoom(raw: string | null): string {
+  const r = String(raw || "main").trim();
+  const clean = r.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 32);
+  return clean || "main";
+}
+
 export const onRequest: PagesFunction<Env> = async ({ request, env }) => {
-  if (!okUpgrade(request)) {
-    return new Response("Expected WebSocket", { status: 426 });
+  if (!env.LOBBY_WS) {
+    return new Response("Missing service binding LOBBY_WS", { status: 500 });
   }
 
-  const svc = env.LOBBY_WS as Fetcher | undefined;
-  if (!svc) {
-    // fallback: можно сделать через env.LOBBY_WS_URL, но Service Binding надёжнее
-    return new Response("Missing service binding: LOBBY_WS", { status: 500 });
+  if (!isWebSocketUpgrade(request)) {
+    // удобный ответ для ручной проверки в браузере
+    return new Response("Expected WebSocket Upgrade", { status: 426 });
   }
 
-  // На worker'е вход: /ws или /ws/<room>
-  // У нас здесь: /api/lobby/ws?room=main
-  // Перепишем путь на /ws, query оставим.
+  // ВАЖНО: твой WS worker слушает /ws (см. apps/ws-lobby/src/index.ts)
+  // а Pages route у нас /api/lobby/ws — поэтому переписываем pathname на /ws
   const url = new URL(request.url);
+  const room = safeRoom(url.searchParams.get("room"));
   url.pathname = "/ws";
+  url.searchParams.set("room", room);
 
-  // ВАЖНО: создаём новый Request с теми же заголовками (Upgrade/Sec-WebSocket-*)
+  // Проксируем Upgrade как есть
   const nextReq = new Request(url.toString(), request);
-
-  return svc.fetch(nextReq);
+  return env.LOBBY_WS.fetch(nextReq);
 };
