@@ -1,29 +1,35 @@
 /* ==============================
    Matrix background (Safari/iOS)
    - убираем “горизонт” сверху/снизу
-   - делаем монолитный фон (overscan)
+   - монолитный фон (overscan)
    - без blur (не лагает)
    ============================== */
 
 /* если раньше были body::before/after — глушим */
 body::before,
-body::after{
-  display:none !important;
-  content:none !important;
+body::after {
+  display: none !important;
+  content: none !important;
 }
 
-/* В Safari важно: html/body прозрачные, фон — это fixed layer */
-html, body{
-  background: transparent !important;
+/* ВАЖНО: НЕ делаем html/body прозрачными — иначе iOS может дать белые просветы */
+html,
+body {
+  background: #000 !important;
 }
 
-/* Глобальный слой фона */
-.bcMatrixLayer{
+/*
+  Поддерживаем обе схемы:
+  - старая: .bcMatrixLayer + .bcMatrixBg
+  - новая PremiumShell: .bcShellBg (внутри background компонент)
+*/
+.bcMatrixLayer,
+.bcShellBg {
   position: fixed !important;
   left: 0 !important;
   right: 0 !important;
 
-  /* КЛЮЧ: overscan по вертикали, чтобы Safari не показывал “стык” */
+  /* overscan по вертикали, чтобы Safari не показывал “стык” */
   top: calc(-160px - env(safe-area-inset-top, 0px)) !important;
   bottom: calc(-240px - env(safe-area-inset-bottom, 0px)) !important;
 
@@ -31,13 +37,14 @@ html, body{
   z-index: 0 !important;
   pointer-events: none !important;
 
-  background: #000 !important; /* fallback */
+  background: #000 !important;
   transform: translateZ(0);
   will-change: transform;
 }
 
 /* Canvas занимает ВЕСЬ слой */
-.bcMatrixBg{
+.bcMatrixBg,
+.bcShellBg canvas {
   position: absolute !important;
   inset: 0 !important;
   width: 100vw !important;
@@ -47,36 +54,40 @@ html, body{
   background: transparent !important;
 }
 
-/* Мягкая дымка сверху/снизу (как “прозрачные бары”), без рамок */
+/* Мягкая дымка сверху/снизу — без рамок */
 .bcMatrixLayer::before,
-.bcMatrixLayer::after{
-  content:"";
-  position:absolute;
-  left:0;
-  width:100%;
-  pointer-events:none;
+.bcMatrixLayer::after,
+.bcShellBg::before,
+.bcShellBg::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
 }
 
-.bcMatrixLayer::before{
-  top:0;
+.bcMatrixLayer::before,
+.bcShellBg::before {
+  top: 0;
   height: clamp(140px, 22vh, 340px);
   background: linear-gradient(
     180deg,
-    rgba(0,0,0,0.16) 0%,
-    rgba(0,0,0,0.08) 28%,
-    rgba(0,0,0,0.03) 58%,
-    rgba(0,0,0,0.00) 100%
+    rgba(0, 0, 0, 0.16) 0%,
+    rgba(0, 0, 0, 0.08) 28%,
+    rgba(0, 0, 0, 0.03) 58%,
+    rgba(0, 0, 0, 0.00) 100%
   );
 }
 
-.bcMatrixLayer::after{
-  bottom:0;
+.bcMatrixLayer::after,
+.bcShellBg::after {
+  bottom: 0;
   height: clamp(170px, 24vh, 380px);
   background: linear-gradient(
     0deg,
-    rgba(0,0,0,0.16) 0%,
-    rgba(0,0,0,0.08) 28%,
-    rgba(0,0,0,0.03) 58%,
-    rgba(0,0,0,0.00) 100%
+    rgba(0, 0, 0, 0.16) 0%,
+    rgba(0, 0, 0, 0.08) 28%,
+    rgba(0, 0, 0, 0.03) 58%,
+    rgba(0, 0, 0, 0.00) 100%
   );
 }
