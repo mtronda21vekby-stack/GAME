@@ -14,7 +14,12 @@ export type Env = {
   KV?: KVNamespace;
 
   // Durable Objects (Lobby WS)
+  // поддерживаем оба имени, чтобы не ломать текущие деплои/конфиги
+  LOBBY_ROOM?: DurableObjectNamespace;
   LOBBY_ROOMS?: DurableObjectNamespace;
+
+  // D1 (если используешь для истории/матчей)
+  LOBBY_DB?: D1Database;
 
   // allow any other env fields without TS pain
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -190,9 +195,19 @@ export async function verifyAdmin(request: Request, env: Env): Promise<boolean> 
   return !!claims;
 }
 
-// KV helper
+// KV helper (metrics / general)
 export function getMetricsKV(env: Env): KVNamespace | null {
   return (env.BC_KV || env.METRICS_KV || env.KV || null) as any;
+}
+
+/**
+ * Durable Object helper (Lobby).
+ * Важно: имя биндинга в Cloudflare Pages/Functions должно совпадать:
+ * - LOBBY_ROOM (если один класс-объект по комнате)
+ * - или LOBBY_ROOMS (если так назвал биндинг)
+ */
+export function getLobbyDO(env: Env): DurableObjectNamespace | null {
+  return (env.LOBBY_ROOM || env.LOBBY_ROOMS || null) as any;
 }
 
 /* =========================
