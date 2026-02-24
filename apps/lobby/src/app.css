@@ -28,3 +28,31 @@ input,
 textarea {
   pointer-events: auto;
 }
+
+/* Lobby click/tap hardening (iOS + overlays) */
+canvas,
+.MatrixBackground,
+.matrixCanvas,
+#matrix,
+.bcHeroBg,
+.bcHeroAurora,
+.bcHeroVignette,
+.bcHeroNoise,
+.bcBg,
+.bcBackground,
+.bcBackdrop {
+  pointer-events: none !important;
+  touch-action: none !important;
+}
+
+.bcSiteRoot {
+  position: relative;
+  isolation: isolate;
+}
+
+/* Make lobby UI always interactive */
+.bcSiteRoot *,
+.glassStrong,
+.bcSection {
+  pointer-events: auto;
+}
