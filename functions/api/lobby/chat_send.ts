@@ -1,19 +1,13 @@
-// functions/api/lobby/chat_send.ts
-import { Env } from "../_lib/auth";
-import { json, getLobbyKV, safeId, clampText, now } from "./_lib";
+import { Env } from "../api/_lib/auth";
+import { json, getLobbyKV, safeId, clampText, now } from "../api/lobby/_lib";
 
 type Body = {
   roomId?: string;
   clientId?: string;
   nick?: string;
   text?: string;
+  clientMsgId?: string;
 };
-
-type ChatItem = { id: string; t: number; nick: string; text: string };
-
-function makeId() {
-  return `m_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
-}
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const kv = getLobbyKV(env);
@@ -21,38 +15,51 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
   let body: Body = {};
   try {
-    body = (await request.json()) as Body;
+    body = await request.json();
   } catch {
-    body = {};
+    return json({ ok: false }, 400);
   }
 
   const roomId = safeId(body.roomId || "main") || "main";
   const clientId = safeId(body.clientId || "");
   const nick = clampText(body.nick || "Player", 18);
-  const text = clampText(body.text || "", 280);
+  const text = clampText(body.text || "", 400);
+  const clientMsgId = safeId(body.clientMsgId || "");
 
-  if (!clientId) return json({ ok: false, reason: "missing_clientId" }, 400);
-  if (!text) return json({ ok: false, reason: "empty_text" }, 400);
-
-  const item: ChatItem = { id: makeId(), t: now(), nick, text };
-  const key = `l:room:${roomId}:chat:last`;
-
-  // best-effort “append last 60”
-  const curRaw = await kv.get(key);
-  let arr: ChatItem[] = [];
-  if (curRaw) {
-    try {
-      const v = JSON.parse(curRaw);
-      if (Array.isArray(v)) arr = v as ChatItem[];
-    } catch {
-      // ignore
-    }
+  if (!clientId || !text || !clientMsgId) {
+    return json({ ok: false, reason: "bad_payload" }, 400);
   }
 
-  arr.push(item);
-  if (arr.length > 60) arr = arr.slice(arr.length - 60);
+  const key = `l:room:${roomId}:chat:last`;
 
-  await kv.put(key, JSON.stringify(arr), { expirationTtl: 7 * 24 * 60 * 60 });
+  const raw = await kv.get(key);
+  let items: any[] = [];
 
-  return json({ ok: true, kv: true, item });
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) items = parsed;
+    } catch {}
+  }
+
+  // 🧠 КРИТИЧНО: если уже есть такое сообщение — не добавляем повторно
+  if (!items.find((x) => x.id === clientMsgId)) {
+    items.push({
+      id: clientMsgId,
+      t: now(),
+      nick,
+      text,
+    });
+  }
+
+  // ограничиваем историю
+  if (items.length > 80) {
+    items = items.slice(items.length - 80);
+  }
+
+  await kv.put(key, JSON.stringify(items), {
+    expirationTtl: 60 * 60 * 6,
+  });
+
+  return json({ ok: true, kv: true });
 };
