@@ -1,11 +1,14 @@
-name = "blackcrown"
+name = "blackcrown-lobby"
+main = "src/index.ts"
 compatibility_date = "2026-02-15"
 
 [durable_objects]
 bindings = [
-  { name = "LOBBY_ROOMS", class_name = "LobbyRoom" }
+  { name = "LOBBY_ROOM", class_name = "LobbyRoom" },
+  { name = "LOBBY_ROOMS", class_name = "LobbyRooms" }
 ]
 
-[[migrations]]
-tag = "v1"
-new_classes = ["LobbyRoom"]
+[[d1_databases]]
+binding = "LOBBY_DB"
+database_name = "lobbyroom"
+database_id = "<ваш D1 database ID>"
