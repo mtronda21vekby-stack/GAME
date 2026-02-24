@@ -1,3 +1,12 @@
+/* apps/ws-lobby/src/index.ts
+   BlackCrown Lobby WS (Durable Objects)
+   - Stable clientId (passed from client)
+   - seq + serverTime authority
+   - dedupe by clientMsgId
+   - match state machine (waiting -> countdown -> started)
+   - rate limit chat
+*/
+
 type ServerMsg =
   | {
       t: "hello";
@@ -5,19 +14,24 @@ type ServerMsg =
       clientId: string;
       serverTime: number;
       seq: number;
+      match: MatchState;
       you: Player;
       players: Player[];
       history: ChatMsg[];
     }
-  | { t: "players"; seq: number; players: Player[] }
-  | { t: "chat"; seq: number; msg: ChatMsg }
+  | { t: "players"; seq: number; serverTime: number; match: MatchState; players: Player[] }
+  | { t: "chat"; seq: number; serverTime: number; msg: ChatMsg }
+  | { t: "match"; seq: number; serverTime: number; match: MatchState }
+  | { t: "start"; seq: number; serverTime: number; matchId: string; seed: number; players: Player[] }
   | { t: "error"; code: string; message: string };
 
 type ClientMsg =
-  | { t: "join"; name: string }
+  | { t: "join"; clientId?: string; name: string }
   | { t: "ready"; ready: boolean }
-  | { t: "chat"; text: string }
+  | { t: "chat"; text: string; clientMsgId?: string }
   | { t: "ping"; at: number };
+
+type MatchState = { s: "waiting" } | { s: "countdown"; endsAt: number } | { s: "started"; matchId: string; seed: number };
 
 type Player = {
   id: string;
@@ -25,7 +39,6 @@ type Player = {
   ready: boolean;
   joinedAt: number;
   lastSeen: number;
-  online: boolean;
 };
 
 type ChatMsg = { id: string; at: number; fromId: string; fromName: string; text: string };
@@ -37,20 +50,31 @@ const HISTORY_LIMIT = 60;
 const SPAM_WINDOW_MS = 2500;
 const SPAM_MAX_MSG = 3;
 
-const PRESENCE_GRACE_MS = 45_000; // не выкидываем сразу при мобильных реконнектах
-const CLEANUP_TICK_MS = 15_000;
+const PING_TIMEOUT_MS = 45_000; // если нет активности — считаем отвалился
+const COUNTDOWN_MS = 5000;
 
-const json = (x: any) => JSON.stringify(x);
+const json = (x: unknown) => JSON.stringify(x);
 
 function safeName(raw: string): string {
-  const s = (raw || "").trim().replace(/\s+/g, " ");
+  const s = String(raw || "").trim().replace(/\s+/g, " ");
   if (!s) return "Игрок";
   return s.slice(0, MAX_NAME);
 }
 
 function safeText(raw: string): string {
-  const s = (raw || "").trim().replace(/\s+/g, " ");
+  const s = String(raw || "").trim().replace(/\s+/g, " ");
   return s.slice(0, MAX_TEXT);
+}
+
+function safeRoom(raw: string): string {
+  const r = String(raw || "main").trim();
+  return r.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 32) || "main";
+}
+
+function safeClientId(raw: string): string {
+  const s = String(raw || "").trim();
+  const v = s.replace(/[^a-zA-Z0-9_\-:.]/g, "").slice(0, 96);
+  return v || "";
 }
 
 function uid(): string {
@@ -62,20 +86,11 @@ function okUpgrade(request: Request): boolean {
 }
 
 function roomFromUrl(url: URL): string {
-  // /api/lobby/ws/<room>
+  // /ws/<room> или ?room=
   const parts = url.pathname.split("/").filter(Boolean);
-  const idx = parts.findIndex((x) => x === "ws");
-  const byPath = idx >= 0 && parts[idx + 1] ? parts[idx + 1] : "";
+  const byPath = parts[0] === "ws" && parts[1] ? parts[1] : "";
   const byQuery = url.searchParams.get("room") || "";
-  const r = (byPath || byQuery || "main").trim();
-  return r.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 32) || "main";
-}
-
-function clientIdFromUrl(url: URL): string {
-  const cid = (url.searchParams.get("cid") || "").trim();
-  // allow: letters/numbers/_-:. (как у тебя в других safeId)
-  const cleaned = cid.replace(/[^a-zA-Z0-9_\-:.]/g, "").slice(0, 96);
-  return cleaned || `c_${uid()}`;
+  return safeRoom(byPath || byQuery || "main");
 }
 
 export interface Env {
@@ -88,7 +103,8 @@ export default {
 
     if (url.pathname === "/health") return new Response("ok", { status: 200 });
 
-    if (url.pathname.startsWith("/api/lobby/ws")) {
+    // WebSocket entrypoint: /ws or /ws/<room>
+    if (url.pathname === "/ws" || url.pathname.startsWith("/ws/")) {
       if (!okUpgrade(request)) return new Response("Expected WebSocket", { status: 426 });
 
       const room = roomFromUrl(url);
@@ -105,153 +121,104 @@ export default {
   },
 };
 
-type Snapshot = {
-  seq: number;
-  players: Player[];
-  history: ChatMsg[];
-};
-
 export class LobbyRoom {
   private state: DurableObjectState;
-  private room: string = "main";
+  private room = "main";
 
-  private seq = 0;
+  private seq = 1;
 
-  // online sockets
-  private sockets = new Map<WebSocket, string>(); // ws -> clientId
-  private byClient = new Map<string, WebSocket>(); // clientId -> ws (последний)
+  // socket -> playerId
+  private sockets = new Map<WebSocket, string>();
 
-  // player state
-  private players = new Map<string, Player>(); // clientId -> Player
+  // playerId -> Player
+  private players = new Map<string, Player>();
+
   private history: ChatMsg[] = [];
 
-  // anti-spam
-  private spam = new Map<string, number[]>(); // clientId -> timestamps
+  // anti-spam: playerId -> timestamps[]
+  private spam = new Map<string, number[]>();
+
+  // dedupe chat per player: playerId -> set(clientMsgId)
+  private dedupe = new Map<string, Set<string>>();
+
+  private match: MatchState = { s: "waiting" };
+  private countdownTimer: number | null = null;
 
   constructor(state: DurableObjectState) {
     this.state = state;
 
     this.state.blockConcurrencyWhile(async () => {
-      const snap = await this.state.storage.get<Snapshot>("snapshot");
-      if (snap?.seq) this.seq = snap.seq;
-      if (snap?.players?.length) {
-        for (const p of snap.players) {
-          // после рестарта DO считаем всех offline до реального коннекта
-          this.players.set(p.id, { ...p, online: false });
-        }
-      }
-      if (snap?.history?.length) this.history = snap.history.slice(-HISTORY_LIMIT);
+      const saved = await this.state.storage.get<{
+        seq?: number;
+        players?: Player[];
+        history?: ChatMsg[];
+        match?: MatchState;
+      }>("snapshot");
 
-      // запускаем периодическую уборку
-      await this.armCleanupAlarm();
+      if (typeof saved?.seq === "number" && Number.isFinite(saved.seq)) this.seq = Math.max(1, Math.floor(saved.seq));
+
+      if (Array.isArray(saved?.players)) {
+        for (const p of saved.players) this.players.set(p.id, p);
+      }
+
+      if (Array.isArray(saved?.history)) this.history = saved.history.slice(-HISTORY_LIMIT);
+
+      if (saved?.match && typeof saved.match === "object") {
+        this.match = saved.match as MatchState;
+      }
+
+      // если матч был в countdown при рестарте DO — сбросим в waiting (безопасно)
+      if (this.match.s === "countdown") this.match = { s: "waiting" };
+
+      // cleanup “мертвых” игроков (по lastSeen)
+      const now = Date.now();
+      for (const [id, p] of this.players) {
+        if (now - (p.lastSeen || 0) > PING_TIMEOUT_MS) this.players.delete(id);
+      }
+
+      await this.persist();
     });
   }
 
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
-    this.room = url.searchParams.get("room") || this.room;
+    this.room = safeRoom(url.searchParams.get("room") || this.room);
 
     if (!okUpgrade(request)) return new Response("Expected WebSocket", { status: 426 });
-
-    const clientId = clientIdFromUrl(url);
-    const initialName = safeName(url.searchParams.get("name") || "");
 
     const pair = new WebSocketPair();
     const client = pair[0];
     const server = pair[1];
     server.accept();
 
-    // если уже был сокет на этот clientId — закрываем старый (reconnect)
-    const prevWs = this.byClient.get(clientId);
-    if (prevWs && prevWs !== server) {
-      try {
-        prevWs.close(1000, "replaced");
-      } catch {}
-      this.sockets.delete(prevWs);
-    }
-
-    this.byClient.set(clientId, server);
-    this.sockets.set(server, clientId);
+    // temporary id (will be replaced on join if client provides stable clientId)
+    const tempId = uid();
+    this.sockets.set(server, tempId);
 
     const now = Date.now();
-
-    const existed = this.players.get(clientId);
-    const player: Player = existed
-      ? {
-          ...existed,
-          name: existed.name || initialName || "Игрок",
-          lastSeen: now,
-          online: true,
-        }
-      : {
-          id: clientId,
-          name: initialName || "Игрок",
-          ready: false,
-          joinedAt: now,
-          lastSeen: now,
-          online: true,
-        };
-
-    this.players.set(clientId, player);
+    const player: Player = {
+      id: tempId,
+      name: "Игрок",
+      ready: false,
+      joinedAt: now,
+      lastSeen: now,
+    };
+    this.players.set(tempId, player);
 
     // hello
-    this.send(server, {
-      t: "hello",
-      room: this.room,
-      clientId,
-      serverTime: now,
-      seq: this.nextSeq(),
-      you: player,
-      players: this.sortedPlayers(),
-      history: this.history.slice(-HISTORY_LIMIT),
-    });
+    this.send(server, this.buildHello(tempId));
 
+    // broadcast presence
     this.broadcastPlayers();
 
     server.addEventListener("message", (ev) => this.onMessage(server, ev));
     server.addEventListener("close", () => this.onClose(server));
     server.addEventListener("error", () => this.onClose(server));
 
-    void this.persist();
-    void this.armCleanupAlarm();
-
     return new Response(null, { status: 101, webSocket: client });
   }
 
-  async alarm() {
-    // cleanup offline players after grace window
-    const now = Date.now();
-    let changed = false;
-
-    for (const [id, p] of this.players) {
-      if (p.online) continue;
-      if (now - p.lastSeen > PRESENCE_GRACE_MS) {
-        this.players.delete(id);
-        this.spam.delete(id);
-        changed = true;
-      }
-    }
-
-    if (changed) {
-      this.broadcastPlayers();
-      void this.persist();
-    }
-
-    // re-arm
-    await this.armCleanupAlarm();
-  }
-
-  private async armCleanupAlarm() {
-    // Durable Objects alarm is single timestamp; keep it ticking
-    const when = Date.now() + CLEANUP_TICK_MS;
-    try {
-      await this.state.storage.setAlarm(when);
-    } catch {
-      // ignore
-    }
-  }
-
-  private nextSeq() {
+  private nextSeq(): number {
     this.seq += 1;
     return this.seq;
   }
@@ -259,7 +226,9 @@ export class LobbyRoom {
   private send(ws: WebSocket, msg: ServerMsg) {
     try {
       ws.send(json(msg));
-    } catch {}
+    } catch {
+      // ignore
+    }
   }
 
   private broadcast(msg: ServerMsg) {
@@ -267,25 +236,51 @@ export class LobbyRoom {
   }
 
   private sortedPlayers(): Player[] {
-    // AAA-поведение: online сверху, затем ready, затем joinedAt
     return Array.from(this.players.values()).sort((a, b) => {
-      if (a.online !== b.online) return a.online ? -1 : 1;
+      // ready first, then joinedAt
       if (a.ready !== b.ready) return a.ready ? -1 : 1;
-      return a.joinedAt - b.joinedAt;
+      return (a.joinedAt || 0) - (b.joinedAt || 0);
     });
   }
 
+  private buildHello(playerId: string): ServerMsg {
+    const now = Date.now();
+    const p = this.players.get(playerId)!;
+    return {
+      t: "hello",
+      room: this.room,
+      clientId: playerId,
+      serverTime: now,
+      seq: this.seq,
+      match: this.match,
+      you: p,
+      players: this.sortedPlayers(),
+      history: this.history.slice(-HISTORY_LIMIT),
+    };
+  }
+
   private async persist() {
-    const snap: Snapshot = {
+    const snap = {
       seq: this.seq,
       players: this.sortedPlayers().map((p) => ({ ...p })),
       history: this.history.slice(-HISTORY_LIMIT),
+      match: this.match,
     };
     await this.state.storage.put("snapshot", snap);
   }
 
   private broadcastPlayers() {
-    this.broadcast({ t: "players", seq: this.nextSeq(), players: this.sortedPlayers() });
+    const now = Date.now();
+    const seq = this.nextSeq();
+    this.broadcast({ t: "players", seq, serverTime: now, match: this.match, players: this.sortedPlayers() });
+    void this.persist();
+  }
+
+  private broadcastMatch() {
+    const now = Date.now();
+    const seq = this.nextSeq();
+    this.broadcast({ t: "match", seq, serverTime: now, match: this.match });
+    void this.persist();
   }
 
   private spamAllow(id: string, now: number): boolean {
@@ -296,18 +291,125 @@ export class LobbyRoom {
     return next.length <= SPAM_MAX_MSG;
   }
 
-  private onMessage(ws: WebSocket, ev: MessageEvent) {
-    const id = this.sockets.get(ws);
-    if (!id) return;
+  private dedupeAllow(id: string, clientMsgId: string): boolean {
+    const key = safeClientId(clientMsgId);
+    if (!key) return true;
+    let s = this.dedupe.get(id);
+    if (!s) {
+      s = new Set<string>();
+      this.dedupe.set(id, s);
+    }
+    if (s.has(key)) return false;
+    s.add(key);
+    // keep small
+    if (s.size > 64) {
+      const arr = Array.from(s);
+      s.clear();
+      for (const k of arr.slice(-40)) s.add(k);
+    }
+    return true;
+  }
 
-    const p = this.players.get(id);
-    if (!p) return;
+  private cleanupDead(now: number) {
+    for (const [id, p] of this.players) {
+      if (now - (p.lastSeen || 0) > PING_TIMEOUT_MS) {
+        this.players.delete(id);
+        this.spam.delete(id);
+        this.dedupe.delete(id);
+      }
+    }
+  }
+
+  private countReady(): { total: number; ready: number } {
+    const vals = Array.from(this.players.values());
+    const total = vals.length;
+    const ready = vals.filter((p) => p.ready).length;
+    return { total, ready };
+  }
+
+  private maybeStartCountdown() {
+    if (this.match.s !== "waiting") return;
+
+    const { total, ready } = this.countReady();
+
+    // match rules: 2..8 and all ready
+    if (total >= 2 && total <= 8 && ready === total) {
+      const endsAt = Date.now() + COUNTDOWN_MS;
+      this.match = { s: "countdown", endsAt };
+      this.broadcastMatch();
+
+      // schedule start (single)
+      if (this.countdownTimer != null) {
+        clearTimeout(this.countdownTimer);
+        this.countdownTimer = null;
+      }
+
+      this.countdownTimer = setTimeout(() => {
+        this.countdownTimer = null;
+        void this.startMatchIfStillValid();
+      }, COUNTDOWN_MS) as unknown as number;
+    }
+  }
+
+  private cancelCountdownIfNeeded() {
+    if (this.match.s !== "countdown") return;
+
+    const { total, ready } = this.countReady();
+    if (total < 2 || ready !== total) {
+      this.match = { s: "waiting" };
+      if (this.countdownTimer != null) {
+        clearTimeout(this.countdownTimer);
+        this.countdownTimer = null;
+      }
+      this.broadcastMatch();
+    }
+  }
+
+  private async startMatchIfStillValid() {
+    // re-check
+    if (this.match.s !== "countdown") return;
+    const now = Date.now();
+    if (now < this.match.endsAt - 50) return;
+
+    const { total, ready } = this.countReady();
+    if (total < 2 || total > 8 || ready !== total) {
+      this.match = { s: "waiting" };
+      this.broadcastMatch();
+      return;
+    }
+
+    const matchId = `m_${uid()}`;
+    const seed = Math.floor(Math.random() * 1_000_000_000);
+
+    this.match = { s: "started", matchId, seed };
+    const seq = this.nextSeq();
+    const players = this.sortedPlayers();
+
+    this.broadcast({ t: "start", seq, serverTime: Date.now(), matchId, seed, players });
+    await this.persist();
+
+    // after start — reset readiness (safe) and return to waiting for next match
+    for (const p of this.players.values()) p.ready = false;
+    this.match = { s: "waiting" };
+    this.broadcastPlayers();
+    this.broadcastMatch();
+  }
+
+  private onMessage(ws: WebSocket, ev: MessageEvent) {
+    const currentId = this.sockets.get(ws);
+    if (!currentId) return;
 
     const now = Date.now();
-    p.lastSeen = now;
-    p.online = true;
 
-    let data: any = null;
+    // cleanup dead
+    this.cleanupDead(now);
+
+    const p = this.players.get(currentId);
+    if (!p) return;
+
+    p.lastSeen = now;
+
+    let data: unknown = null;
     try {
       data = typeof ev.data === "string" ? JSON.parse(ev.data) : null;
     } catch {
@@ -316,36 +418,69 @@ export class LobbyRoom {
     }
 
     const msg = data as ClientMsg;
-    if (!msg || typeof msg.t !== "string") return;
+    if (!msg || typeof (msg as any).t !== "string") return;
 
     if (msg.t === "ping") {
-      // keepalive
-      this.send(ws, {
-        t: "hello",
-        room: this.room,
-        clientId: id,
-        serverTime: now,
-        seq: this.nextSeq(),
-        you: p,
-        players: this.sortedPlayers(),
-        history: this.history.slice(-HISTORY_LIMIT),
-      });
+      // light response: players/match only (no full history every ping)
+      const seq = this.nextSeq();
+      this.send(ws, { t: "players", seq, serverTime: now, match: this.match, players: this.sortedPlayers() });
       return;
     }
 
     if (msg.t === "join") {
-      p.name = safeName(msg.name);
-      this.players.set(id, p);
+      const wanted = safeClientId(msg.clientId || "");
+      const name = safeName(msg.name);
+
+      // if client provides stable id and it's different from temp:
+      if (wanted && wanted !== currentId) {
+        // migrate player record
+        const existing = this.players.get(wanted);
+        if (existing) {
+          // if already exists, just attach this socket to existing player
+          existing.name = name;
+          existing.lastSeen = now;
+          this.players.set(wanted, existing);
+        } else {
+          const migrated: Player = { ...p, id: wanted, name, lastSeen: now };
+          this.players.set(wanted, migrated);
+        }
+
+        // detach old temp player
+        this.players.delete(currentId);
+        this.spam.delete(currentId);
+        this.dedupe.delete(currentId);
+
+        // remap socket to wanted id
+        this.sockets.set(ws, wanted);
+
+        // hello again with authoritative id
+        this.send(ws, this.buildHello(wanted));
+        this.broadcastPlayers();
+        this.cancelCountdownIfNeeded();
+        this.maybeStartCountdown();
+        return;
+      }
+
+      // normal join
+      p.name = name;
+      p.lastSeen = now;
+      this.players.set(currentId, p);
+
+      this.send(ws, this.buildHello(currentId));
       this.broadcastPlayers();
-      void this.persist();
+      this.cancelCountdownIfNeeded();
+      this.maybeStartCountdown();
       return;
     }
 
     if (msg.t === "ready") {
       p.ready = !!msg.ready;
-      this.players.set(id, p);
+      p.lastSeen = now;
+      this.players.set(currentId, p);
+
       this.broadcastPlayers();
-      void this.persist();
+      this.cancelCountdownIfNeeded();
+      this.maybeStartCountdown();
       return;
     }
 
@@ -353,15 +488,18 @@ export class LobbyRoom {
       const text = safeText(msg.text);
       if (!text) return;
 
-      if (!this.spamAllow(id, now)) {
+      const clientMsgId = safeClientId(msg.clientMsgId || "");
+      if (!this.dedupeAllow(currentId, clientMsgId)) return;
+
+      if (!this.spamAllow(currentId, now)) {
         this.send(ws, { t: "error", code: "rate_limited", message: "Слишком быстро" });
         return;
       }
 
       const chat: ChatMsg = {
-        id: uid(),
+        id: `c_${uid()}`,
         at: now,
-        fromId: id,
+        fromId: currentId,
         fromName: p.name,
         text,
       };
@@ -369,7 +507,8 @@ export class LobbyRoom {
       this.history.push(chat);
       this.history = this.history.slice(-HISTORY_LIMIT);
 
-      this.broadcast({ t: "chat", seq: this.nextSeq(), msg: chat });
+      const seq = this.nextSeq();
+      this.broadcast({ t: "chat", seq, serverTime: now, msg: chat });
       void this.persist();
       return;
     }
@@ -381,19 +520,23 @@ export class LobbyRoom {
 
     this.sockets.delete(ws);
 
-    const cur = this.byClient.get(id);
-    if (cur === ws) this.byClient.delete(id);
+    // player stays for a bit by lastSeen; but for UX — remove immediately if no sockets for that id
+    // check if any socket still mapped to id
+    let stillConnected = false;
+    for (const v of this.sockets.values()) {
+      if (v === id) {
+        stillConnected = true;
+        break;
+      }
+    }
 
-    const p = this.players.get(id);
-    if (p) {
-      // не удаляем сразу — grace window
-      p.online = false;
-      p.lastSeen = Date.now();
-      this.players.set(id, p);
+    if (!stillConnected) {
+      this.players.delete(id);
+      this.spam.delete(id);
+      this.dedupe.delete(id);
     }
 
     this.broadcastPlayers();
-    void this.persist();
-    void this.armCleanupAlarm();
+    this.cancelCountdownIfNeeded();
   }
 }
