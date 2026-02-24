@@ -1,54 +1,85 @@
-import { json, badRequest, methodNotAllowed } from "../../_lib/http";
-import type { Env } from "../../_lib/db";
-import { levelFromXp, nextLevelXp, statusFromXp } from "../../_shared/xp";
-import type { XpEvent } from "@blackcrown/core";
+import { Env, getMetricsKV } from "../_lib/auth";
+import { getOrSetUserId } from "../_lib/user";
 
-export const onRequest: PagesFunction<Env> = async (ctx) => {
-  if (ctx.request.method !== "POST") return methodNotAllowed();
+type Body = { event?: string };
 
-  const gid = ctx.request.headers.get("x-bc-guest");
-  if (!gid) return badRequest("Missing guest id");
+function json(body: unknown, status = 200, extraHeaders?: Record<string, string>) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+      ...(extraHeaders || {}),
+    },
+  });
+}
 
-  let body: any = null;
+function safeEvent(s: string) {
+  return String(s || "")
+    .trim()
+    .slice(0, 40)
+    .replace(/[^a-zA-Z0-9_\-:.]/g, "_");
+}
+
+function clampInt(v: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, Math.floor(v)));
+}
+
+/**
+ * Server-authoritative XP table (MVP).
+ * Если event не в allowlist — ничего не начисляем.
+ * Cooldown enforced in KV via ttl.
+ */
+const XP_TABLE: Record<string, { add: number; cdSec: number }> = {
+  visit_account: { add: 12, cdSec: 12 * 60 * 60 },
+  save_profile: { add: 18, cdSec: 10 * 60 },
+  save_prefs: { add: 10, cdSec: 7 * 60 },
+  equip_skin: { add: 6, cdSec: 5 * 60 },
+  equip_badge: { add: 6, cdSec: 5 * 60 },
+  pick_avatar: { add: 6, cdSec: 10 * 60 },
+};
+
+export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+  const kv = getMetricsKV(env);
+  if (!kv) return json({ ok: true, kv: false, xp: 0 });
+
+  let body: Body = {};
   try {
-    body = await ctx.request.json();
+    body = (await request.json()) as Body;
   } catch {
-    return badRequest("Invalid JSON");
+    body = {};
   }
 
-  const event = body?.event as XpEvent | undefined;
-  if (!event || typeof event.type !== "string") return badRequest("event required");
+  const event = safeEvent(String(body.event || ""));
+  const rule = XP_TABLE[event];
+  if (!rule) return json({ ok: true, kv: true, xp: null, applied: false, reason: "unknown_event" });
 
-  const amount = xpForEvent(event);
-  if (amount <= 0) return badRequest("Invalid event");
+  const { uid, setCookieHeader } = getOrSetUserId(request, env);
 
-  const cooldown = cooldownMsForEvent(event);
-  const bucket = Math.floor(Date.now() / Math.max(1000, cooldown));
-  const dedupe = dedupeKeyForEvent(event, bucket);
-
-  const now = Date.now();
-
-  // ensure user exists
-  await ctx.env.DB.prepare(
-    "INSERT INTO users (id, created_at, last_seen, xp) VALUES (?1, ?2, ?3, 0) ON CONFLICT(id) DO UPDATE SET last_seen=?3"
-  ).bind(gid, now, now).run();
-
-  // insert XP event with unique(user_id, dedupe_key)
-  const inserted = await ctx.env.DB.prepare(
-    "INSERT OR IGNORE INTO xp_events (user_id, type, ekey, amount, ts, dedupe_key) VALUES (?1, ?2, ?3, ?4, ?5, ?6)"
-  ).bind(gid, event.type, event.key ?? null, amount, now, dedupe).run();
-
-  if ((inserted.meta?.changes ?? 0) > 0) {
-    await ctx.env.DB.prepare("UPDATE users SET xp = xp + ?1, last_seen=?2 WHERE id=?3").bind(amount, now, gid).run();
-  } else {
-    await ctx.env.DB.prepare("UPDATE users SET last_seen=?1 WHERE id=?2").bind(now, gid).run();
+  // Cooldown gate
+  const cdKey = `xp_cd:v1:${uid}:${event}`;
+  const cd = await kv.get(cdKey);
+  if (cd) {
+    const headers: Record<string, string> = {};
+    if (setCookieHeader) headers["Set-Cookie"] = setCookieHeader;
+    return json({ ok: true, kv: true, applied: false, cooldown: true }, 200, headers);
   }
 
-  const row = await ctx.env.DB.prepare("SELECT xp FROM users WHERE id=?1").bind(gid).first<any>();
-  const xp = Number(row?.xp ?? 0);
-  const level = levelFromXp(xp);
-  const status = statusFromXp(xp);
-  const nxl = nextLevelXp(level + 1);
+  // Read current XP
+  const xpKey = `xp:v1:${uid}`;
+  const raw = await kv.get(xpKey);
+  const curN = Number(raw || "0");
+  const cur = Number.isFinite(curN) ? clampInt(curN, 0, 2_000_000_000) : 0;
 
-  return json({ xp, level, status, nextLevelXp: nxl });
+  const next = clampInt(cur + rule.add, 0, 2_000_000_000);
+
+  await Promise.all([
+    kv.put(xpKey, String(next)),
+    kv.put(cdKey, "1", { expirationTtl: Math.max(30, Math.floor(rule.cdSec)) }),
+  ]);
+
+  const headers: Record<string, string> = {};
+  if (setCookieHeader) headers["Set-Cookie"] = setCookieHeader;
+
+  return json({ ok: true, kv: true, applied: true, xp: next, add: rule.add, event }, 200, headers);
 };
