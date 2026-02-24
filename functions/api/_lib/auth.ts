@@ -10,12 +10,7 @@ export type Env = {
 
   // KV bindings (any name variants)
   BC_KV?: KVNamespace;
-
-  // metrics kv variants
-  BC_METRICS_KV?: KVNamespace;
   METRICS_KV?: KVNamespace;
-
-  // generic
   KV?: KVNamespace;
 
   // allow any other env fields without TS pain
@@ -192,10 +187,29 @@ export async function verifyAdmin(request: Request, env: Env): Promise<boolean> 
   return !!claims;
 }
 
-/**
- * Metrics KV helper (Production Safe)
- * Supports common Cloudflare Pages binding names.
- */
+// KV helper
 export function getMetricsKV(env: Env): KVNamespace | null {
-  return (env.BC_METRICS_KV || env.METRICS_KV || env.BC_KV || env.KV || null) as any;
+  return (env.BC_KV || env.METRICS_KV || env.KV || null) as any;
+}
+
+/* =========================
+   User cookie helpers (v1)
+   ========================= */
+
+export function getUserIdCookie(request: Request): string | null {
+  return readCookie(request, "bc_uid");
+}
+
+export function setUserIdCookie(userId: string, maxAgeSec = 180 * 24 * 60 * 60): string {
+  return setCookie("bc_uid", userId, {
+    path: "/",
+    httpOnly: true,
+    sameSite: "Lax",
+    secure: true,
+    maxAgeSec,
+  });
+}
+
+export function clearUserIdCookie(): string {
+  return clearCookie("bc_uid", { path: "/" });
 }
