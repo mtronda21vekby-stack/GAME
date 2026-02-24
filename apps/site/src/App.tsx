@@ -1,6 +1,7 @@
 import React from "react";
 import MatrixBackground from "./components/MatrixBackground";
 import { Router } from "./routes/Router";
+import PremiumShell from "./components/PremiumShell";
 import RouteMotion from "./components/RouteMotion";
 
 function syncAppVh() {
@@ -49,6 +50,7 @@ async function pingSite() {
 }
 
 export function App() {
+  // stable vh for iOS
   React.useEffect(() => {
     syncAppVh();
 
@@ -66,6 +68,7 @@ export function App() {
     };
   }, []);
 
+  // online ping (site)
   React.useEffect(() => {
     let alive = true;
 
@@ -92,22 +95,11 @@ export function App() {
   }, []);
 
   return (
-    <div className="bcAppShell">
-      <div className="bcMatrixLayer" aria-hidden="true">
-        <MatrixBackground />
-      </div>
-
-      <div className="bcShellFx" aria-hidden="true">
-        <div className="bcShellVignette" />
-        <div className="bcShellNoise" />
-      </div>
-
-      <div className="bcAppContent">
-        <RouteMotion>
-          <Router />
-        </RouteMotion>
-      </div>
-    </div>
+    <PremiumShell background={<MatrixBackground />}>
+      <RouteMotion>
+        <Router />
+      </RouteMotion>
+    </PremiumShell>
   );
 }
 
