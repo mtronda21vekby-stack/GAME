@@ -1,9 +1,8 @@
-import { Env } from "../_lib/auth";
+export const onRequest: PagesFunction = async ({ request, env }) => {
+  const url = new URL(request.url);
+  const room = url.searchParams.get("room") || "main";
 
-export const onRequest: PagesFunction<Env> = async ({ request, env }) => {
-  const roomId = new URL(request.url).searchParams.get("room") || "main";
-
-  const id = env.LOBBY_ROOMS.idFromName(roomId);
+  const id = env.LOBBY_ROOMS.idFromName(room);
   const stub = env.LOBBY_ROOMS.get(id);
 
   return stub.fetch(request);
