@@ -118,8 +118,7 @@ function uniqChat(items: ChatMsg[], limit = 80) {
 
 /**
  * ВАЖНО:
- * Если WS у тебя проксируется через Pages Functions на /api/lobby/ws — оставляем так.
- * (У тебя это уже было и “работает”)
+ * WS проксируется через Pages Functions на /api/lobby/ws — оставляем так.
  */
 function wsUrl(roomId: string) {
   const proto = location.protocol === "https:" ? "wss:" : "ws:";
@@ -150,10 +149,14 @@ export function Lobby() {
   const clientIdRef = React.useRef<string>(getClientId());
   const desiredReadyRef = React.useRef(false);
 
-  // CLICK FIX (iOS): фон/канвас не должен перехватывать тапы
+  /**
+   * CRITICAL (iOS):
+   * 1) Любой fixed/canvas/overlay наверху убивает клики.
+   * 2) Контент лобби поднимаем сверх-высоко по z-index и делаем его отдельным "UI-слоем".
+   */
   const ClickFix = (
     <style>{`
-      /* If any fixed canvas/overlay sits on top – it kills taps on iOS. Disable it. */
+      /* Kill taps interception by any background/canvas/overlays */
       canvas,
       .MatrixBackground,
       .matrixCanvas,
@@ -161,21 +164,34 @@ export function Lobby() {
       .bcHeroBg,
       .bcHeroAurora,
       .bcHeroVignette,
-      .bcHeroNoise {
+      .bcHeroNoise,
+      .bcBg,
+      .bcBackground,
+      .bcBackdrop {
         pointer-events: none !important;
         touch-action: none !important;
       }
 
-      /* Ensure lobby UI is above any background */
-      .bcSiteRoot,
-      .bcSection,
-      .glassStrong {
+      /* Make lobby an isolated top layer (above anything with backdrop/filter/fixed) */
+      .bcSiteRoot {
         position: relative;
-        z-index: 2;
+        isolation: isolate;
       }
 
-      /* Defensive: sometimes some wrapper uses pointer-events:none */
-      button, a, input {
+      .bcLobbyUiLayer {
+        position: relative;
+        z-index: 9999;
+        pointer-events: auto;
+      }
+
+      .bcLobbyUiLayer * {
+        pointer-events: auto;
+      }
+
+      /* Glass wrappers sometimes become stacking contexts; keep them interactive */
+      .glassStrong {
+        position: relative;
+        z-index: 1;
         pointer-events: auto;
       }
     `}</style>
@@ -271,9 +287,7 @@ export function Lobby() {
       } satisfies WsClientJoin);
 
       const desired = desiredReadyRef.current;
-      if (desired) {
-        sendWs({ t: "ready", ready: true } satisfies WsClientReady);
-      }
+      if (desired) sendWs({ t: "ready", ready: true } satisfies WsClientReady);
     };
 
     ws.onopen = () => {
@@ -297,10 +311,8 @@ export function Lobby() {
       if (data.t === "hello") {
         const h = data as WsServerHello;
 
-        // players
         if (Array.isArray(h.players)) setPlayers(h.players.slice(0, 8));
 
-        // history
         if (Array.isArray(h.history)) {
           const mapped: ChatMsg[] = h.history.map((m) => ({
             id: m.id,
@@ -311,7 +323,6 @@ export function Lobby() {
           setHistory((prev) => uniqChat([...prev, ...mapped], 80));
         }
 
-        // match label
         const ms = h.match?.s;
         if (ms === "countdown") setMatchLabel("старт");
         else if (ms === "started") setMatchLabel("запущен");
@@ -348,13 +359,11 @@ export function Lobby() {
       }
 
       if (data.t === "start") {
-        // авто-вход в игру (как ты хотел)
         nav("/game/");
         return;
       }
 
       if (data.t === "error") {
-        // не ломаем UX, но можно дернуть reconnect если rate-limit не при чем
         return;
       }
     };
@@ -439,7 +448,6 @@ export function Lobby() {
 
     setText("");
 
-    // optimistic append
     const optimistic: ChatMsg = {
       id: `local_${Date.now().toString(16)}_${Math.random().toString(16).slice(2)}`,
       from: myNickRef.current,
@@ -456,161 +464,175 @@ export function Lobby() {
     <main className="bcSiteRoot">
       {ClickFix}
 
-      <section className="bcSection" style={{ paddingTop: 14 }}>
-        <div style={{ maxWidth: 980, margin: "0 auto" }}>
-          <div
-            className="glassStrong"
-            style={{
-              borderRadius: 22,
-              padding: 14,
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 10,
-              flexWrap: "wrap",
-            }}
-          >
-            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-              <div style={{ fontWeight: 980 }}>Lobby</div>
-              <div style={{ opacity: 0.75, fontWeight: 850 }}>Комната: {room}</div>
-              <div style={{ opacity: 0.75, fontWeight: 850 }}>Игроки: {onlineCount}/8</div>
-              <div style={{ opacity: 0.75, fontWeight: 850 }}>
-                Статус: {status === "online" ? "онлайн" : status === "connecting" ? "подключение" : "офлайн"}
-              </div>
-              <div style={{ opacity: 0.75, fontWeight: 850 }}>Матч: {matchLabel}</div>
-            </div>
-
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <Button variant="secondary" onClick={() => nav("/game/")}>
-                Игры
-              </Button>
-              <Button variant="ghost" onClick={() => nav("/")}>
-                Главная
-              </Button>
-            </div>
-          </div>
-
-          <div style={{ height: 12 }} />
-
-          <div style={{ display: "grid", gap: 12 }}>
-            <div className="glassStrong" style={{ borderRadius: 22, padding: 14 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-                <div style={{ fontWeight: 950 }}>Игроки</div>
-
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-                  <Button variant={ready ? "primary" : "secondary"} onClick={toggleReady} disabled={!isOnline || !canReady}>
-                    {ready ? "Готов" : "Не готов"}
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      connect();
-                    }}
-                  >
-                    Переподключить
-                  </Button>
-
-                  <Button variant="secondary" onClick={() => nav("/game/")} disabled={!isOnline}>
-                    В игру
-                  </Button>
+      {/* UI layer explicitly above any background overlays */}
+      <div className="bcLobbyUiLayer">
+        <section className="bcSection" style={{ paddingTop: 14 }}>
+          <div style={{ maxWidth: 980, margin: "0 auto" }}>
+            <div
+              className="glassStrong"
+              style={{
+                borderRadius: 22,
+                padding: 14,
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 10,
+                flexWrap: "wrap",
+              }}
+            >
+              <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                <div style={{ fontWeight: 980 }}>Lobby</div>
+                <div style={{ opacity: 0.75, fontWeight: 850 }}>Комната: {room}</div>
+                <div style={{ opacity: 0.75, fontWeight: 850 }}>Игроки: {onlineCount}/8</div>
+                <div style={{ opacity: 0.75, fontWeight: 850 }}>
+                  Статус: {status === "online" ? "онлайн" : status === "connecting" ? "подключение" : "офлайн"}
                 </div>
+                <div style={{ opacity: 0.75, fontWeight: 850 }}>Матч: {matchLabel}</div>
               </div>
 
-              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-                {players.slice(0, 8).map((p) => (
-                  <div
-                    key={p.id}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: 10,
-                      padding: 10,
-                      borderRadius: 16,
-                      border: "1px solid rgba(255,255,255,0.10)",
-                      background: "rgba(255,255,255,0.04)",
-                      alignItems: "center",
-                    }}
-                  >
-                    <div style={{ fontWeight: 900 }}>{p.name}</div>
-                    <div style={{ opacity: 0.78, fontWeight: 900 }}>{p.ready ? "ready" : "…"}</div>
-                  </div>
-                ))}
-              </div>
-
-              {!canReady ? (
-                <div style={{ marginTop: 10, opacity: 0.78, fontWeight: 850, lineHeight: 1.45 }}>Комната заполнена.</div>
-              ) : null}
-            </div>
-
-            <div className="glassStrong" style={{ borderRadius: 22, padding: 14 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-                <div style={{ fontWeight: 950 }}>Чат</div>
-                <div style={{ opacity: 0.72, fontWeight: 850, fontSize: 12 }}>{isOnline ? "live" : "offline"}</div>
-              </div>
-
-              <div
-                ref={listRef}
-                style={{
-                  marginTop: 10,
-                  height: 280,
-                  overflow: "auto",
-                  borderRadius: 16,
-                  border: "1px solid rgba(255,255,255,0.10)",
-                  background: "rgba(0,0,0,0.16)",
-                  padding: 10,
-                }}
-              >
-                {history.map((m) => (
-                  <div key={m.id} style={{ padding: "6px 0", display: "grid", gap: 4 }}>
-                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "baseline" }}>
-                      <div style={{ fontWeight: 950 }}>{m.from}</div>
-                      <div style={{ opacity: 0.68, fontWeight: 850, fontSize: 12 }}>{fmtTime(m.t)}</div>
-                    </div>
-                    <div style={{ opacity: 0.88, lineHeight: 1.4, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{m.text}</div>
-                  </div>
-                ))}
-                {history.length === 0 ? <div style={{ opacity: 0.72, fontWeight: 850 }}>Сообщений пока нет.</div> : null}
-              </div>
-
-              <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <input
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  placeholder={isOnline ? "Написать сообщение" : "Чат офлайн"}
-                  disabled={!isOnline}
-                  onKeyDown={(e) => {
-                    if (!isOnline) return;
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      sendChat();
-                    }
-                  }}
-                  style={{
-                    flex: "1 1 240px",
-                    height: 44,
-                    borderRadius: 14,
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    background: "rgba(255,255,255,0.06)",
-                    color: "var(--text)",
-                    padding: "0 12px",
-                    outline: "none",
-                    fontWeight: 850,
-                    opacity: isOnline ? 1 : 0.65,
-                  }}
-                />
-
-                <Button variant="primary" onClick={sendChat} disabled={!isOnline}>
-                  Отправить
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <Button variant="secondary" onClick={() => nav("/game/")}>
+                  Игры
+                </Button>
+                <Button variant="ghost" onClick={() => nav("/")}>
+                  Главная
                 </Button>
               </div>
+            </div>
 
-              <div style={{ marginTop: 10, opacity: 0.72, fontWeight: 850, fontSize: 12, lineHeight: 1.45 }}>
-                AAA v1: WebSocket (Durable Objects) + авто-reconnect + ping keepalive.
+            <div style={{ height: 12 }} />
+
+            <div style={{ display: "grid", gap: 12 }}>
+              <div className="glassStrong" style={{ borderRadius: 22, padding: 14 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 10,
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                  }}
+                >
+                  <div style={{ fontWeight: 950 }}>Игроки</div>
+
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                    <Button variant={ready ? "primary" : "secondary"} onClick={toggleReady} disabled={!isOnline || !canReady}>
+                      {ready ? "Готов" : "Не готов"}
+                    </Button>
+
+                    <Button variant="ghost" onClick={connect}>
+                      Переподключить
+                    </Button>
+
+                    <Button variant="secondary" onClick={() => nav("/game/")} disabled={!isOnline}>
+                      В игру
+                    </Button>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                  {players.slice(0, 8).map((p) => (
+                    <div
+                      key={p.id}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: 10,
+                        padding: 10,
+                        borderRadius: 16,
+                        border: "1px solid rgba(255,255,255,0.10)",
+                        background: "rgba(255,255,255,0.04)",
+                        alignItems: "center",
+                      }}
+                    >
+                      <div style={{ fontWeight: 900 }}>{p.name}</div>
+                      <div style={{ opacity: 0.78, fontWeight: 900 }}>{p.ready ? "ready" : "…"}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {!canReady ? (
+                  <div style={{ marginTop: 10, opacity: 0.78, fontWeight: 850, lineHeight: 1.45 }}>Комната заполнена.</div>
+                ) : null}
+              </div>
+
+              <div className="glassStrong" style={{ borderRadius: 22, padding: 14 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 10,
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                  }}
+                >
+                  <div style={{ fontWeight: 950 }}>Чат</div>
+                  <div style={{ opacity: 0.72, fontWeight: 850, fontSize: 12 }}>{isOnline ? "live" : "offline"}</div>
+                </div>
+
+                <div
+                  ref={listRef}
+                  style={{
+                    marginTop: 10,
+                    height: 280,
+                    overflow: "auto",
+                    borderRadius: 16,
+                    border: "1px solid rgba(255,255,255,0.10)",
+                    background: "rgba(0,0,0,0.16)",
+                    padding: 10,
+                  }}
+                >
+                  {history.map((m) => (
+                    <div key={m.id} style={{ padding: "6px 0", display: "grid", gap: 4 }}>
+                      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "baseline" }}>
+                        <div style={{ fontWeight: 950 }}>{m.from}</div>
+                        <div style={{ opacity: 0.68, fontWeight: 850, fontSize: 12 }}>{fmtTime(m.t)}</div>
+                      </div>
+                      <div style={{ opacity: 0.88, lineHeight: 1.4, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{m.text}</div>
+                    </div>
+                  ))}
+                  {history.length === 0 ? <div style={{ opacity: 0.72, fontWeight: 850 }}>Сообщений пока нет.</div> : null}
+                </div>
+
+                <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <input
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    placeholder={isOnline ? "Написать сообщение" : "Чат офлайн"}
+                    disabled={!isOnline}
+                    onKeyDown={(e) => {
+                      if (!isOnline) return;
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        sendChat();
+                      }
+                    }}
+                    style={{
+                      flex: "1 1 240px",
+                      height: 44,
+                      borderRadius: 14,
+                      border: "1px solid rgba(255,255,255,0.12)",
+                      background: "rgba(255,255,255,0.06)",
+                      color: "var(--text)",
+                      padding: "0 12px",
+                      outline: "none",
+                      fontWeight: 850,
+                      opacity: isOnline ? 1 : 0.65,
+                    }}
+                  />
+
+                  <Button variant="primary" onClick={sendChat} disabled={!isOnline}>
+                    Отправить
+                  </Button>
+                </div>
+
+                <div style={{ marginTop: 10, opacity: 0.72, fontWeight: 850, fontSize: 12, lineHeight: 1.45 }}>
+                  AAA v1: WebSocket (Durable Objects) + авто-reconnect + ping keepalive.
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
     </main>
   );
 }
