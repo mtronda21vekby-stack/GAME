@@ -1,55 +1,83 @@
 import React from "react";
-import { useLocation } from "react-router-dom";
+
+type RouteMotionProps = {
+  children: React.ReactNode;
+  /** Опционально: можно передать вручную ключ (если где-то используется) */
+  routeKey?: string;
+};
 
 /**
- * Premium route transitions without deps.
- * - Cross-fade + subtle blur
- * - Keeps previous screen for a short time to avoid flashes
- * - Respects prefers-reduced-motion via CSS
+ * Lightweight route wrapper WITHOUT react-router-dom.
+ * Tracks route changes via popstate + patched pushState/replaceState.
+ * Keeps build stable and does not require extra deps.
  */
-export function RouteMotion(props: { children: React.ReactNode }) {
-  const loc = useLocation();
+export function RouteMotion(props: RouteMotionProps) {
+  const { children, routeKey } = props;
 
-  const [prevKey, setPrevKey] = React.useState<string | null>(null);
-  const [prevNode, setPrevNode] = React.useState<React.ReactNode | null>(null);
-  const [phase, setPhase] = React.useState<"idle" | "swap">("idle");
+  const getKey = React.useCallback(() => {
+    if (routeKey) return routeKey;
+    try {
+      return `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    } catch {
+      return "route";
+    }
+  }, [routeKey]);
 
-  const currentKey = `${loc.pathname}${loc.search}${loc.hash}`;
+  const [key, setKey] = React.useState<string>(() => getKey());
 
   React.useEffect(() => {
-    // If first mount — no animation layer
-    if (prevKey === null) {
-      setPrevKey(currentKey);
-      return;
+    // Prevent double-patch in dev/hmr
+    const w = window as any;
+    if (!w.__bc_routeMotionPatched) {
+      w.__bc_routeMotionPatched = true;
+
+      const notify = () => {
+        try {
+          window.dispatchEvent(new Event("bc:locationchange"));
+        } catch {
+          // ignore
+        }
+      };
+
+      try {
+        const { pushState, replaceState } = window.history;
+
+        window.history.pushState = function (...args: any[]) {
+          const r = pushState.apply(this, args as any);
+          notify();
+          return r;
+        } as any;
+
+        window.history.replaceState = function (...args: any[]) {
+          const r = replaceState.apply(this, args as any);
+          notify();
+          return r;
+        } as any;
+      } catch {
+        // ignore
+      }
+
+      window.addEventListener("popstate", notify);
+      window.addEventListener("hashchange", notify);
     }
 
-    if (prevKey === currentKey) return;
+    const onChange = () => setKey(getKey());
 
-    // Capture previous render as "outgoing" layer
-    setPrevNode(props.children);
-    setPhase("swap");
+    window.addEventListener("bc:locationchange", onChange);
+    window.addEventListener("popstate", onChange);
+    window.addEventListener("hashchange", onChange);
 
-    // Let outgoing exist briefly, then drop it
-    const t = window.setTimeout(() => {
-      setPrevNode(null);
-      setPhase("idle");
-    }, 220);
+    return () => {
+      window.removeEventListener("bc:locationchange", onChange);
+      window.removeEventListener("popstate", onChange);
+      window.removeEventListener("hashchange", onChange);
+    };
+  }, [getKey]);
 
-    setPrevKey(currentKey);
-
-    return () => window.clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentKey]);
-
+  // Key forces remount on route changes (useful for transitions if you have CSS animations).
   return (
-    <div className={`bcRouteStage ${phase === "swap" ? "bcRouteStageSwap" : ""}`}>
-      {/* outgoing */}
-      {prevNode ? <div className="bcRouteLayer bcRouteOut">{prevNode}</div> : null}
-
-      {/* incoming */}
-      <div className="bcRouteLayer bcRouteIn" key={currentKey}>
-        {props.children}
-      </div>
+    <div key={key} data-route={key} style={{ width: "100%" }}>
+      {children}
     </div>
   );
 }
