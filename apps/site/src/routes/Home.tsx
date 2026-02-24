@@ -20,7 +20,7 @@ function getName() {
 }
 
 /* =========================
-   Public content (MVP)
+   Public content (KV → /api/content) + cache
    ========================= */
 
 type ContentLinkKind = "site" | "external";
@@ -76,7 +76,6 @@ function safeArray<T = unknown>(v: unknown): T[] {
   return Array.isArray(v) ? (v as T[]) : [];
 }
 
-/** Ничего не “обещаем”: просто безопасно парсим то, что пришло */
 function normalizeContent(payload: unknown): PublicContentResponse {
   if (!isObject(payload)) return {};
 
@@ -127,7 +126,7 @@ function normalizeContent(payload: unknown): PublicContentResponse {
 
     if (type === "cta") {
       const buttonsRaw = safeArray(b.buttons);
-      const buttons: NonNullable<ContentBlock & { type: "cta" }>["buttons"] = [];
+      const buttons: NonNullable<Extract<ContentBlock, { type: "cta" }>["buttons"]> = [];
 
       for (const bt of buttonsRaw) {
         if (!isObject(bt)) continue;
@@ -158,7 +157,6 @@ function normalizeContent(payload: unknown): PublicContentResponse {
       continue;
     }
 
-    // text
     blocks.push({
       id,
       type: "text",
@@ -170,8 +168,35 @@ function normalizeContent(payload: unknown): PublicContentResponse {
   return { blocks };
 }
 
+const CONTENT_CACHE_KEY = "bc.publicContent.v1";
+const CONTENT_CACHE_TTL = 60_000;
+
+function readContentCache(): { at: number; payload: PublicContentResponse } | null {
+  try {
+    const raw = localStorage.getItem(CONTENT_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { at: number; payload: PublicContentResponse };
+    if (!parsed?.at || !parsed?.payload) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeContentCache(payload: PublicContentResponse) {
+  try {
+    localStorage.setItem(CONTENT_CACHE_KEY, JSON.stringify({ at: Date.now(), payload }));
+  } catch {
+    // ignore
+  }
+}
+
 function usePublicContent() {
-  const [content, setContent] = React.useState<PublicContentResponse>({});
+  const [content, setContent] = React.useState<PublicContentResponse>(() => {
+    const cached = readContentCache();
+    if (cached?.payload) return cached.payload;
+    return {};
+  });
   const [ready, setReady] = React.useState(false);
 
   React.useEffect(() => {
@@ -179,10 +204,18 @@ function usePublicContent() {
 
     (async () => {
       try {
+        const cached = readContentCache();
+        if (cached && Date.now() - cached.at < CONTENT_CACHE_TTL) {
+          setReady(true);
+          return;
+        }
+
         const res = await fetch("/api/content", {
           method: "GET",
           signal: ac.signal,
-          headers: { Accept: "application/json" },
+          headers: { accept: "application/json" },
+          credentials: "include",
+          cache: "no-store",
         });
 
         if (!res.ok) {
@@ -191,7 +224,9 @@ function usePublicContent() {
         }
 
         const json = (await res.json()) as unknown;
-        setContent(normalizeContent(json));
+        const normalized = normalizeContent(json);
+        setContent(normalized);
+        writeContentCache(normalized);
         setReady(true);
       } catch {
         setReady(true);
@@ -341,7 +376,6 @@ function renderBlocks(blocks: ContentBlock[]) {
                 const actionLabel = c.actionLabel ?? "Открыть";
                 const kind: ContentLinkKind = c.kind ?? "site";
 
-                // если href нет — просто карта без перехода (но без “заглушек”)
                 if (!c.href) {
                   return (
                     <div
@@ -429,14 +463,11 @@ function renderBlocks(blocks: ContentBlock[]) {
       );
     }
 
-    // text
     if (!b.title && !b.body) return null;
 
     return (
       <section key={b.id} className="bcSection">
-        <div className="bcSectionHead">
-          {b.title ? <div className="bcSectionTitle">{b.title}</div> : null}
-        </div>
+        <div className="bcSectionHead">{b.title ? <div className="bcSectionTitle">{b.title}</div> : null}</div>
         {b.body ? (
           <div style={{ maxWidth: 980, margin: "0 auto", color: "rgba(255,255,255,0.78)", lineHeight: 1.55, whiteSpace: "pre-wrap" }}>
             {b.body}
@@ -445,6 +476,21 @@ function renderBlocks(blocks: ContentBlock[]) {
       </section>
     );
   });
+}
+
+function NavLink(props: { href: string; children: React.ReactNode }) {
+  return (
+    <a
+      className="bcLink bcHotLink"
+      href={props.href}
+      onClick={(e) => {
+        e.preventDefault();
+        navSite(props.href);
+      }}
+    >
+      {props.children}
+    </a>
+  );
 }
 
 export function Home() {
@@ -469,21 +515,11 @@ export function Home() {
           </button>
 
           <nav className="bcNav" aria-label="Навигация">
-            <a className="bcLink bcHotLink" href="/about">
-              О проекте
-            </a>
-            <a className="bcLink bcHotLink" href="/support">
-              Поддержка
-            </a>
-            <a className="bcLink bcHotLink" href="/store">
-              Магазин
-            </a>
-            <a className="bcLink bcHotLink" href="/privacy">
-              Privacy
-            </a>
-            <a className="bcLink bcHotLink" href="/terms">
-              Terms
-            </a>
+            <NavLink href="/about">О проекте</NavLink>
+            <NavLink href="/support">Поддержка</NavLink>
+            <NavLink href="/store">Магазин</NavLink>
+            <NavLink href="/privacy">Privacy</NavLink>
+            <NavLink href="/terms">Terms</NavLink>
           </nav>
 
           <div className="bcRight">
@@ -591,8 +627,6 @@ export function Home() {
         </div>
       </section>
 
-      {/* Если /api/content отдаёт blocks — рендерим их.
-          Если пусто/не готово — показываем твой текущий раздел "Экосистема". */}
       {hasBlocks ? (
         <>{renderBlocks(blocks)}</>
       ) : (
@@ -648,18 +682,10 @@ export function Home() {
 
           <div style={{ maxWidth: 980, margin: "16px auto 0", opacity: 0.78 }}>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <a className="bcLink bcHotLink" href="/privacy">
-                Privacy
-              </a>
-              <a className="bcLink bcHotLink" href="/terms">
-                Terms
-              </a>
-              <a className="bcLink bcHotLink" href="/support">
-                Поддержка
-              </a>
-              <a className="bcLink bcHotLink" href="/store">
-                Магазин
-              </a>
+              <NavLink href="/privacy">Privacy</NavLink>
+              <NavLink href="/terms">Terms</NavLink>
+              <NavLink href="/support">Поддержка</NavLink>
+              <NavLink href="/store">Магазин</NavLink>
             </div>
           </div>
         </section>
@@ -668,7 +694,12 @@ export function Home() {
   );
 }
 
-// ВАЖНО: это фиксит билд — main.tsx импортирует { App } из "./routes/Home"
+/**
+ * ВАЖНО: это фиксит билд — main.tsx импортирует { App } из "./routes/Home"
+ * App должен возвращать Router, а Home — быть страницей внутри Router.
+ */
 export function App() {
   return <Router />;
 }
+
+export default Home;
