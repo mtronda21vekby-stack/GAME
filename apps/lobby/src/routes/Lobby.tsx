@@ -18,7 +18,7 @@ function fmtTime(ts: number) {
   return `${hh}:${mm}`;
 }
 
-function clampText(s: string, max = 360) {
+function clampText(s: string, max = 180) {
   const t = String(s || "").replace(/\s+/g, " ").trim();
   return t.length > max ? t.slice(0, max) : t;
 }
@@ -31,56 +31,33 @@ function safeId() {
   } catch {
     // ignore
   }
-  return `m_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
+  return `bc_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
+}
+
+function getClientId(): string {
+  try {
+    const k = "bc.lobby.clientId.v1";
+    const ex = localStorage.getItem(k);
+    if (ex) return ex;
+    const id = safeId();
+    localStorage.setItem(k, id);
+    return id;
+  } catch {
+    return safeId();
+  }
 }
 
 type LobbyStatus = "connecting" | "online" | "offline";
 
-type Player = {
-  id: string;
-  name: string;
-  ready: boolean;
-  joinedAt?: number;
-};
+type LobbyUser = { clientId: string; nick: string; ready: boolean; seenAt: number };
+type LobbyStateResp = { ok: boolean; kv?: boolean; roomId?: string; users?: LobbyUser[] };
 
-type ChatMsg = {
-  id: string;
-  from: string;
-  text: string;
-  t: number;
-  local?: boolean;
-};
+type ChatItem = { id: string; t: number; nick: string; text: string };
+type ChatResp = { ok: boolean; kv?: boolean; roomId?: string; items?: ChatItem[]; serverTime?: number };
 
-type WsServerState = {
-  type: "state";
-  players?: Player[];
-  matchState?: "waiting" | "countdown" | "started";
-  serverTime?: number;
-};
-
-type WsServerChat = {
-  type: "chat";
-  msg?: { id: string; from: string; text: string; t: number };
-};
-
-type WsServerStart = {
-  type: "start";
-  matchId?: string;
-  seed?: number;
-  players?: Player[];
-  serverTime?: number;
-};
-
-type WsServerAny = WsServerState | WsServerChat | WsServerStart | { type: string; [k: string]: unknown };
-
-type WsClientJoin = { type: "join"; name: string };
-type WsClientReady = { type: "ready"; value: boolean };
-type WsClientChat = { type: "chat"; text: string; clientMsgId?: string };
-type WsClientAny = WsClientJoin | WsClientReady | WsClientChat | { type: string; [k: string]: unknown };
-
-function uniqChat(items: ChatMsg[], limit = 80) {
+function uniqChat(items: ChatItem[], limit = 80) {
   const seen = new Set<string>();
-  const out: ChatMsg[] = [];
+  const out: ChatItem[] = [];
   for (const it of items) {
     if (!it?.id) continue;
     if (seen.has(it.id)) continue;
@@ -91,37 +68,92 @@ function uniqChat(items: ChatMsg[], limit = 80) {
   return out;
 }
 
-function wsUrl(roomId: string) {
-  const proto = location.protocol === "https:" ? "wss:" : "ws:";
-  const base = `${proto}//${location.host}`;
-  return `${base}/api/lobby/ws?room=${encodeURIComponent(roomId)}`;
+async function postHeartbeat(payload: { roomId: string; clientId: string; nick: string; ready: boolean }) {
+  try {
+    const res = await fetch("/api/lobby/heartbeat", {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify({ ...payload, ttl: 60 }),
+      credentials: "include",
+      cache: "no-store",
+      keepalive: true,
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function fetchState(roomId: string): Promise<LobbyUser[] | null> {
+  try {
+    const res = await fetch(`/api/lobby/state?roomId=${encodeURIComponent(roomId)}`, {
+      method: "GET",
+      headers: { accept: "application/json" },
+      credentials: "include",
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as LobbyStateResp;
+    if (!json?.ok) return null;
+    return Array.isArray(json.users) ? (json.users as LobbyUser[]) : [];
+  } catch {
+    return null;
+  }
+}
+
+async function fetchChat(roomId: string): Promise<ChatItem[] | null> {
+  try {
+    const res = await fetch(`/api/lobby/chat?roomId=${encodeURIComponent(roomId)}`, {
+      method: "GET",
+      headers: { accept: "application/json" },
+      credentials: "include",
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as ChatResp;
+    if (!json?.ok) return null;
+    return Array.isArray(json.items) ? (json.items as ChatItem[]) : [];
+  } catch {
+    return null;
+  }
+}
+
+async function sendChat(payload: { roomId: string; clientId: string; nick: string; text: string }) {
+  try {
+    const res = await fetch("/api/lobby/chat/send", {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify(payload),
+      credentials: "include",
+      cache: "no-store",
+      keepalive: true,
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
 
 export function Lobby() {
   const [room] = React.useState("main");
 
   const [status, setStatus] = React.useState<LobbyStatus>("connecting");
-  const [players, setPlayers] = React.useState<Player[]>([]);
-  const [history, setHistory] = React.useState<ChatMsg[]>([]);
+  const [players, setPlayers] = React.useState<LobbyUser[]>([]);
+  const [history, setHistory] = React.useState<ChatItem[]>([]);
   const [ready, setReady] = React.useState(false);
   const [text, setText] = React.useState("");
 
-  const [matchState, setMatchState] = React.useState<"waiting" | "countdown" | "started">("waiting");
+  const [busySend, setBusySend] = React.useState(false);
 
   const listRef = React.useRef<HTMLDivElement | null>(null);
 
-  const wsRef = React.useRef<WebSocket | null>(null);
-  const aliveRef = React.useRef(true);
-  const joinSentRef = React.useRef(false);
-  const reconnectTimerRef = React.useRef<number | null>(null);
+  const clientIdRef = React.useRef<string>(getClientId());
+  const nickRef = React.useRef<string>(getNick());
 
-  const myNickRef = React.useRef(getNick());
-  const desiredReadyRef = React.useRef(false);
-
-  // keep nick fresh (account page edits)
+  // keep nick fresh
   React.useEffect(() => {
     const sync = () => {
-      myNickRef.current = getNick();
+      nickRef.current = getNick();
     };
     sync();
     window.addEventListener("focus", sync);
@@ -139,210 +171,122 @@ export function Lobby() {
     el.scrollTop = el.scrollHeight;
   }, [history.length]);
 
-  const closeWs = React.useCallback(() => {
-    const ws = wsRef.current;
-    wsRef.current = null;
-    joinSentRef.current = false;
-
-    if (reconnectTimerRef.current != null) {
-      window.clearTimeout(reconnectTimerRef.current);
-      reconnectTimerRef.current = null;
-    }
-
-    if (ws) {
-      try {
-        ws.onopen = null;
-        ws.onmessage = null;
-        ws.onclose = null;
-        ws.onerror = null;
-        ws.close();
-      } catch {
-        // ignore
-      }
-    }
-  }, []);
-
-  const sendWs = React.useCallback((msg: WsClientAny) => {
-    const ws = wsRef.current;
-    if (!ws || ws.readyState !== WebSocket.OPEN) return false;
-    try {
-      ws.send(JSON.stringify(msg));
-      return true;
-    } catch {
-      return false;
-    }
-  }, []);
-
-  const scheduleReconnect = React.useCallback(
-    (attempt: number) => {
-      if (!aliveRef.current) return;
-      if (reconnectTimerRef.current != null) return;
-
-      const backoff = Math.min(7000, 350 + attempt * 450);
-      reconnectTimerRef.current = window.setTimeout(() => {
-        reconnectTimerRef.current = null;
-        // connect() is defined below; called via ref
-        connectRef.current?.();
-      }, backoff) as unknown as number;
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
-  );
-
-  const connectRef = React.useRef<(() => void) | null>(null);
-
-  const connect = React.useCallback(() => {
-    closeWs();
-    setStatus("connecting");
-
-    const url = wsUrl(room);
-    const ws = new WebSocket(url);
-    wsRef.current = ws;
-
-    let attempt = 0;
-
-    const doJoin = () => {
-      if (joinSentRef.current) return;
-      joinSentRef.current = true;
-      sendWs({ type: "join", name: myNickRef.current } satisfies WsClientJoin);
-
-      // re-apply ready state if user already toggled
-      const desired = desiredReadyRef.current;
-      if (desired) {
-        sendWs({ type: "ready", value: true } satisfies WsClientReady);
-      }
-    };
-
-    ws.onopen = () => {
-      if (!aliveRef.current) return;
-      setStatus("online");
-      attempt = 0;
-      doJoin();
-    };
-
-    ws.onmessage = (ev) => {
-      if (!aliveRef.current) return;
-
-      let data: WsServerAny | null = null;
-      try {
-        data = JSON.parse(String(ev.data)) as WsServerAny;
-      } catch {
-        data = null;
-      }
-      if (!data || typeof data.type !== "string") return;
-
-      if (data.type === "state") {
-        const s = data as WsServerState;
-        if (Array.isArray(s.players)) setPlayers(s.players.slice(0, 8));
-        if (s.matchState === "waiting" || s.matchState === "countdown" || s.matchState === "started") {
-          setMatchState(s.matchState);
-        }
-        // server is authoritative, but keep local ready consistent with our intent where possible
-        // if server list contains us (same name), we can infer; otherwise keep local toggle as-is
-        return;
-      }
-
-      if (data.type === "chat") {
-        const c = data as WsServerChat;
-        const m = c.msg;
-        if (!m?.id || !m.from || !m.text || !m.t) return;
-
-        setHistory((prev) => uniqChat([...prev, { id: m.id, from: m.from, text: m.text, t: m.t }], 80));
-        return;
-      }
-
-      if (data.type === "start") {
-        const st = data as WsServerStart;
-        // MVP: auto-open game route (match can be used later)
-        // Keep it production-safe: open /game/ without breaking existing container
-        nav("/game/");
-        return;
-      }
-    };
-
-    ws.onerror = () => {
-      // errors are followed by close in most browsers
-    };
-
-    ws.onclose = () => {
-      if (!aliveRef.current) return;
-      setStatus("offline");
-      joinSentRef.current = false;
-      attempt += 1;
-      scheduleReconnect(attempt);
-    };
-  }, [room, closeWs, sendWs, scheduleReconnect]);
-
-  connectRef.current = connect;
-
-  // lifecycle
+  // heartbeat + polling loop
   React.useEffect(() => {
-    aliveRef.current = true;
-    connect();
+    let alive = true;
+
+    const heartbeat = async () => {
+      const ok = await postHeartbeat({
+        roomId: room,
+        clientId: clientIdRef.current,
+        nick: nickRef.current,
+        ready,
+      });
+      if (!alive) return;
+      setStatus(ok ? "online" : "offline");
+    };
+
+    const pullState = async () => {
+      const s = await fetchState(room);
+      if (!alive) return;
+      if (s) setPlayers(s.slice(0, 8));
+    };
+
+    const pullChat = async () => {
+      const c = await fetchChat(room);
+      if (!alive) return;
+      if (c) setHistory((prev) => uniqChat([...prev, ...c], 80));
+    };
+
+    // initial
+    setStatus("connecting");
+    void heartbeat();
+    void pullState();
+    void pullChat();
+
+    // intervals (MVP stable)
+    const tHeartbeat = window.setInterval(() => {
+      if (!alive) return;
+      if (document.visibilityState !== "visible") return;
+      void heartbeat();
+    }, 15_000);
+
+    const tState = window.setInterval(() => {
+      if (!alive) return;
+      if (document.visibilityState !== "visible") return;
+      void pullState();
+    }, 1_800);
+
+    const tChat = window.setInterval(() => {
+      if (!alive) return;
+      if (document.visibilityState !== "visible") return;
+      void pullChat();
+    }, 1_100);
 
     const onVis = () => {
       if (document.visibilityState !== "visible") return;
-      // if offline, reconnect immediately
-      const ws = wsRef.current;
-      if (!ws || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) {
-        connect();
-        return;
-      }
-      // ensure join exists
-      if (ws.readyState === WebSocket.OPEN) {
-        if (!joinSentRef.current) {
-          joinSentRef.current = true;
-          sendWs({ type: "join", name: myNickRef.current } satisfies WsClientJoin);
-        }
-      }
+      void heartbeat();
+      void pullState();
+      void pullChat();
     };
 
     window.addEventListener("focus", onVis);
     document.addEventListener("visibilitychange", onVis);
 
     return () => {
-      aliveRef.current = false;
+      alive = false;
+      window.clearInterval(tHeartbeat);
+      window.clearInterval(tState);
+      window.clearInterval(tChat);
       window.removeEventListener("focus", onVis);
       document.removeEventListener("visibilitychange", onVis);
-      closeWs();
     };
-  }, [connect, closeWs, sendWs]);
+  }, [room, ready]);
 
+  const isOnline = status === "online";
   const onlineCount = players.length;
   const canReady = onlineCount <= 8;
-  const isOnline = status === "online";
 
-  const toggleReady = React.useCallback(() => {
+  const toggleReady = React.useCallback(async () => {
     if (!canReady) return;
-
-    const next = !desiredReadyRef.current;
-    desiredReadyRef.current = next;
+    const next = !ready;
     setReady(next);
 
-    if (!isOnline) return;
-    sendWs({ type: "ready", value: next } satisfies WsClientReady);
-  }, [canReady, isOnline, sendWs]);
+    // push instantly (fast UI)
+    await postHeartbeat({
+      roomId: room,
+      clientId: clientIdRef.current,
+      nick: nickRef.current,
+      ready: next,
+    });
+  }, [canReady, ready, room]);
 
-  const sendChat = React.useCallback(() => {
+  const doSend = React.useCallback(async () => {
     if (!isOnline) return;
+    if (busySend) return;
 
-    const msg = clampText(text);
+    const msg = clampText(text, 180);
     if (!msg) return;
 
+    setBusySend(true);
     setText("");
 
-    // optimistic append (local id is unique and will not duplicate server ids)
-    const optimistic: ChatMsg = {
-      id: `local_${Date.now().toString(16)}_${Math.random().toString(16).slice(2)}`,
-      from: myNickRef.current,
+    const ok = await sendChat({
+      roomId: room,
+      clientId: clientIdRef.current,
+      nick: nickRef.current,
       text: msg,
-      t: Date.now(),
-      local: true,
-    };
-    setHistory((prev) => uniqChat([...prev, optimistic], 80));
+    });
 
-    sendWs({ type: "chat", text: msg, clientMsgId: safeId() } satisfies WsClientChat);
-  }, [isOnline, sendWs, text]);
+    // сразу подтягиваем чат, чтобы “как вебсокет”
+    const c = await fetchChat(room);
+    if (c) setHistory(uniqChat(c, 80));
+
+    setBusySend(false);
+
+    // если отправка провалилась — просто покажем, что мы offline
+    if (!ok) setStatus("offline");
+  }, [isOnline, busySend, text, room]);
 
   return (
     <main className="bcSiteRoot">
@@ -365,9 +309,6 @@ export function Lobby() {
               <div style={{ opacity: 0.75, fontWeight: 850 }}>Игроки: {onlineCount}/8</div>
               <div style={{ opacity: 0.75, fontWeight: 850 }}>
                 Статус: {status === "online" ? "онлайн" : status === "connecting" ? "подключение" : "офлайн"}
-              </div>
-              <div style={{ opacity: 0.75, fontWeight: 850 }}>
-                Матч: {matchState === "waiting" ? "ожидание" : matchState === "countdown" ? "старт" : "запущен"}
               </div>
             </div>
 
@@ -395,9 +336,18 @@ export function Lobby() {
 
                   <Button
                     variant="ghost"
-                    onClick={() => {
-                      // hard reconnect (useful if user’s network is weird)
-                      connect();
+                    onClick={async () => {
+                      setStatus("connecting");
+                      await postHeartbeat({
+                        roomId: room,
+                        clientId: clientIdRef.current,
+                        nick: nickRef.current,
+                        ready,
+                      });
+                      const s = await fetchState(room);
+                      const c = await fetchChat(room);
+                      if (s) setPlayers(s.slice(0, 8));
+                      if (c) setHistory(uniqChat(c, 80));
                     }}
                   >
                     Переподключить
@@ -408,7 +358,7 @@ export function Lobby() {
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 {players.slice(0, 8).map((p) => (
                   <div
-                    key={p.id}
+                    key={p.clientId}
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
@@ -420,15 +370,13 @@ export function Lobby() {
                       alignItems: "center",
                     }}
                   >
-                    <div style={{ fontWeight: 900 }}>{p.name}</div>
+                    <div style={{ fontWeight: 900 }}>{p.nick}</div>
                     <div style={{ opacity: 0.78, fontWeight: 900 }}>{p.ready ? "ready" : "…"}</div>
                   </div>
                 ))}
               </div>
 
-              {!canReady ? (
-                <div style={{ marginTop: 10, opacity: 0.78, fontWeight: 850, lineHeight: 1.45 }}>Комната заполнена.</div>
-              ) : null}
+              {!canReady ? <div style={{ marginTop: 10, opacity: 0.78, fontWeight: 850 }}>Комната заполнена.</div> : null}
             </div>
 
             <div className="glassStrong" style={{ borderRadius: 22, padding: 14 }}>
@@ -452,7 +400,7 @@ export function Lobby() {
                 {history.map((m) => (
                   <div key={m.id} style={{ padding: "6px 0", display: "grid", gap: 4 }}>
                     <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "baseline" }}>
-                      <div style={{ fontWeight: 950 }}>{m.from}</div>
+                      <div style={{ fontWeight: 950 }}>{m.nick}</div>
                       <div style={{ opacity: 0.68, fontWeight: 850, fontSize: 12 }}>{fmtTime(m.t)}</div>
                     </div>
                     <div style={{ opacity: 0.88, lineHeight: 1.4, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{m.text}</div>
@@ -466,12 +414,12 @@ export function Lobby() {
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   placeholder={isOnline ? "Написать сообщение" : "Чат офлайн"}
-                  disabled={!isOnline}
+                  disabled={!isOnline || busySend}
                   onKeyDown={(e) => {
-                    if (!isOnline) return;
+                    if (!isOnline || busySend) return;
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      sendChat();
+                      void doSend();
                     }
                   }}
                   style={{
@@ -488,9 +436,13 @@ export function Lobby() {
                   }}
                 />
 
-                <Button variant="primary" onClick={sendChat} disabled={!isOnline}>
-                  Отправить
+                <Button variant="primary" onClick={() => void doSend()} disabled={!isOnline || busySend}>
+                  {busySend ? "Отправка..." : "Отправить"}
                 </Button>
+              </div>
+
+              <div style={{ marginTop: 10, opacity: 0.72, fontWeight: 850, fontSize: 12, lineHeight: 1.45 }}>
+                MVP (stable): presence/ready через heartbeat + чат через polling. Следующий этап — WebSocket на отдельном Worker-сервисе.
               </div>
             </div>
           </div>
