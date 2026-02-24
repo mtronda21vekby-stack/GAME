@@ -10,7 +10,12 @@ export type Env = {
 
   // KV bindings (any name variants)
   BC_KV?: KVNamespace;
+
+  // metrics kv variants
+  BC_METRICS_KV?: KVNamespace;
   METRICS_KV?: KVNamespace;
+
+  // generic
   KV?: KVNamespace;
 
   // allow any other env fields without TS pain
@@ -187,7 +192,10 @@ export async function verifyAdmin(request: Request, env: Env): Promise<boolean> 
   return !!claims;
 }
 
-// KV helper
+/**
+ * Metrics KV helper (Production Safe)
+ * Supports common Cloudflare Pages binding names.
+ */
 export function getMetricsKV(env: Env): KVNamespace | null {
-  return (env.BC_KV || env.METRICS_KV || env.KV || null) as any;
+  return (env.BC_METRICS_KV || env.METRICS_KV || env.BC_KV || env.KV || null) as any;
 }
