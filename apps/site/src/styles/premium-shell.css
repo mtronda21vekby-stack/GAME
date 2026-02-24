@@ -1,28 +1,22 @@
 /* Premium Shell (Production Safe) */
 
 :root {
-  /* Safe-area with fallback */
   --bc-safe-top: env(safe-area-inset-top, 0px);
   --bc-safe-right: env(safe-area-inset-right, 0px);
   --bc-safe-bottom: env(safe-area-inset-bottom, 0px);
   --bc-safe-left: env(safe-area-inset-left, 0px);
 
-  /* Shell sizing */
   --bc-vh: var(--app-vh, 100vh);
 
-  /* Glass tuning */
   --bc-glass: rgba(255, 255, 255, 0.06);
   --bc-glass-strong: rgba(255, 255, 255, 0.085);
   --bc-stroke: rgba(255, 255, 255, 0.10);
 
-  /* Premium highlight */
   --bc-accent: rgba(255, 140, 0, 0.95);
   --bc-accent-soft: rgba(255, 140, 0, 0.22);
 
-  /* Background base */
   --bc-bg: #000000;
 
-  /* Motion tuning */
   --bc-ease: cubic-bezier(0.2, 0.9, 0.2, 1);
   --bc-fast: 140ms;
   --bc-mid: 220ms;
@@ -54,7 +48,7 @@ body {
   min-height: var(--bc-vh);
   width: 100%;
   background: var(--bc-bg);
-  overflow: clip; /* compositor-friendly */
+  overflow: clip;
   isolation: isolate;
 }
 
@@ -66,6 +60,10 @@ body {
   z-index: 0;
   pointer-events: none;
   transform: translateZ(0);
+  will-change: transform;
+
+  /* Brightness booster for Matrix (cheap & effective) */
+  filter: brightness(1.16) contrast(1.04) saturate(1.04);
 }
 
 /* FX layer: vignette + noise */
@@ -77,24 +75,25 @@ body {
   transform: translateZ(0);
 }
 
+/* мягче, чтобы не "убивать" матрицу */
 .bcShellVignette {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(1200px 900px at 50% 25%, rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.80)),
-    radial-gradient(900px 700px at 20% 80%, rgba(0, 0, 0, 0.20), rgba(0, 0, 0, 0.75)),
-    radial-gradient(900px 700px at 80% 80%, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.75));
+    radial-gradient(1200px 900px at 50% 25%, rgba(0, 0, 0, 0.10), rgba(0, 0, 0, 0.55)),
+    radial-gradient(900px 700px at 20% 80%, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.50)),
+    radial-gradient(900px 700px at 80% 80%, rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.50));
 }
 
-/* Premium noise without images (CSS-only, cheap) */
+/* noise без overlay — overlay на черном часто ощущается как затемнение */
 .bcShellNoise {
   position: absolute;
   inset: 0;
-  opacity: 0.06;
+  opacity: 0.035;
   background-image:
     repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.06) 0px, rgba(255, 255, 255, 0.00) 1px, rgba(255, 255, 255, 0.00) 2px),
     repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0px, rgba(255, 255, 255, 0.00) 1px, rgba(255, 255, 255, 0.00) 3px);
-  mix-blend-mode: overlay;
+  mix-blend-mode: normal;
 }
 
 /* Content layer */
@@ -109,7 +108,7 @@ body {
   padding-left: var(--bc-safe-left);
 }
 
-/* Premium glass helpers (optional) */
+/* Premium glass helpers */
 .bcGlass {
   background: var(--bc-glass);
   border: 1px solid var(--bc-stroke);
@@ -126,7 +125,7 @@ body {
   -webkit-backdrop-filter: blur(22px);
 }
 
-/* Accent interactions: orange premium */
+/* Accent interactions */
 .bcAccentHover {
   transition:
     box-shadow var(--bc-fast) var(--bc-ease),
@@ -135,19 +134,22 @@ body {
     filter var(--bc-fast) var(--bc-ease);
   will-change: transform, box-shadow, border-color, filter;
 }
+
 .bcAccentHover:hover {
   box-shadow: 0 0 0 1px var(--bc-accent-soft), 0 0 26px rgba(255, 140, 0, 0.18);
   border-color: rgba(255, 140, 0, 0.30);
   filter: saturate(1.05);
 }
+
 .bcAccentHover:active {
   transform: translateY(1px) scale(0.99);
 }
 
-/* Premium appear for sections/cards (opt-in class) */
+/* Premium appear */
 .bcAppear {
   animation: bcAppear var(--bc-slow) var(--bc-ease) both;
 }
+
 @keyframes bcAppear {
   from {
     opacity: 0;
@@ -161,7 +163,7 @@ body {
   }
 }
 
-/* ROUTE TRANSITIONS (the missing premium feel) */
+/* ROUTE TRANSITIONS */
 .bcRouteStage {
   position: relative;
   min-height: inherit;
@@ -205,7 +207,7 @@ body {
   }
 }
 
-/* Reduced motion compliance */
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .bcAccentHover,
   .bcRouteOut {
