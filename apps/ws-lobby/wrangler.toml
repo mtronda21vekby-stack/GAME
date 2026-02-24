@@ -1,4 +1,4 @@
-name = "blackcrown-lobby-ws"
+name = "blackcrown-lobby"
 main = "src/index.ts"
 compatibility_date = "2026-02-15"
 
