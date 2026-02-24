@@ -1,11 +1,10 @@
 /* apps/ws-lobby/src/index.ts
-   BlackCrown Lobby WS (Durable Objects) v2
-   - Stable clientId (passed from client in join)
+   BlackCrown Lobby WS (Durable Objects)
+   - Stable clientId (passed from client)
    - seq + serverTime authority
    - dedupe by clientMsgId
-   - matchmaking state machine (waiting -> countdown -> started)
+   - match state machine (waiting -> countdown -> started)
    - rate limit chat
-   - countdown via Durable Object alarm (no setTimeout fragility)
 */
 
 type ServerMsg =
@@ -90,12 +89,8 @@ function okUpgrade(request: Request): boolean {
 }
 
 function roomFromUrl(url: URL): string {
-  // supports:
-  // - /api/lobby/ws?room=main
-  // - /api/lobby/ws/main
   const parts = url.pathname.split("/").filter(Boolean);
-  // e.g. ["api","lobby","ws","main"]
-  const byPath = parts.length >= 4 && parts[0] === "api" && parts[1] === "lobby" && parts[2] === "ws" ? parts[3] : "";
+  const byPath = parts[0] === "ws" && parts[1] ? parts[1] : "";
   const byQuery = url.searchParams.get("room") || "";
   return safeRoom(byPath || byQuery || "main");
 }
@@ -110,10 +105,7 @@ export default {
 
     if (url.pathname === "/health") return new Response("ok", { status: 200 });
 
-    // IMPORTANT:
-    // Route this Worker ONLY on /api/lobby/ws*
-    // so Pages Functions continue to serve /api/lobby/* (REST fallback).
-    if (url.pathname === "/api/lobby/ws" || url.pathname.startsWith("/api/lobby/ws/")) {
+    if (url.pathname === "/ws" || url.pathname.startsWith("/ws/")) {
       if (!okUpgrade(request)) return new Response("Expected WebSocket", { status: 426 });
 
       const room = roomFromUrl(url);
@@ -136,24 +128,15 @@ export class LobbyRoom {
 
   private seq = 1;
 
-  // socket -> playerId
   private sockets = new Map<WebSocket, string>();
-
-  // playerId -> Player
   private players = new Map<string, Player>();
-
   private history: ChatMsg[] = [];
 
-  // anti-spam: playerId -> timestamps[]
   private spam = new Map<string, number[]>();
-
-  // dedupe chat per player: playerId -> set(clientMsgId)
   private dedupe = new Map<string, Set<string>>();
 
   private match: MatchState = { s: "waiting" };
-
-  // persist debounce
-  private persistScheduled = false;
+  private countdownTimer: number | null = null;
 
   constructor(state: DurableObjectState) {
     this.state = state;
@@ -176,14 +159,14 @@ export class LobbyRoom {
 
       if (saved?.match && typeof saved.match === "object") this.match = saved.match as MatchState;
 
-      // safety: if DO restarted in countdown, revert to waiting (no phantom starts)
       if (this.match.s === "countdown") this.match = { s: "waiting" };
 
-      // cleanup dead
       const now = Date.now();
-      this.cleanupDead(now);
+      for (const [id, p] of this.players) {
+        if (now - (p.lastSeen || 0) > PING_TIMEOUT_MS) this.players.delete(id);
+      }
 
-      await this.persistNow();
+      await this.persist();
     });
   }
 
@@ -198,8 +181,7 @@ export class LobbyRoom {
     const server = pair[1];
     server.accept();
 
-    // temp player until join with stable clientId
-    const tempId = `tmp_${uid()}`;
+    const tempId = uid();
     this.sockets.set(server, tempId);
 
     const now = Date.now();
@@ -212,7 +194,6 @@ export class LobbyRoom {
     };
     this.players.set(tempId, player);
 
-    // hello
     this.send(server, this.buildHello(tempId));
     this.broadcastPlayers();
 
@@ -221,20 +202,6 @@ export class LobbyRoom {
     server.addEventListener("error", () => this.onClose(server));
 
     return new Response(null, { status: 101, webSocket: client });
-  }
-
-  async alarm(): Promise<void> {
-    // countdown alarm fired
-    if (this.match.s !== "countdown") return;
-
-    const now = Date.now();
-    // guard: if fired early, re-arm
-    if (now + 10 < this.match.endsAt) {
-      await this.state.storage.setAlarm(this.match.endsAt);
-      return;
-    }
-
-    await this.startMatchIfStillValid();
   }
 
   private nextSeq(): number {
@@ -277,17 +244,7 @@ export class LobbyRoom {
     };
   }
 
-  private schedulePersist() {
-    if (this.persistScheduled) return;
-    this.persistScheduled = true;
-    // micro-debounce within the DO tick
-    queueMicrotask(() => {
-      this.persistScheduled = false;
-      void this.persistNow();
-    });
-  }
-
-  private async persistNow() {
+  private async persist() {
     const snap = {
       seq: this.seq,
       players: this.sortedPlayers().map((p) => ({ ...p })),
@@ -301,14 +258,14 @@ export class LobbyRoom {
     const now = Date.now();
     const seq = this.nextSeq();
     this.broadcast({ t: "players", seq, serverTime: now, match: this.match, players: this.sortedPlayers() });
-    this.schedulePersist();
+    void this.persist();
   }
 
   private broadcastMatch() {
     const now = Date.now();
     const seq = this.nextSeq();
     this.broadcast({ t: "match", seq, serverTime: now, match: this.match });
-    this.schedulePersist();
+    void this.persist();
   }
 
   private spamAllow(id: string, now: number): boolean {
@@ -322,6 +279,7 @@ export class LobbyRoom {
   private dedupeAllow(id: string, clientMsgId: string): boolean {
     const key = safeClientId(clientMsgId);
     if (!key) return true;
+
     let s = this.dedupe.get(id);
     if (!s) {
       s = new Set<string>();
@@ -329,6 +287,7 @@ export class LobbyRoom {
     }
     if (s.has(key)) return false;
     s.add(key);
+
     if (s.size > 64) {
       const arr = Array.from(s);
       s.clear();
@@ -354,7 +313,7 @@ export class LobbyRoom {
     return { total, ready };
   }
 
-  private async maybeStartCountdown() {
+  private maybeStartCountdown() {
     if (this.match.s !== "waiting") return;
 
     const { total, ready } = this.countReady();
@@ -363,17 +322,28 @@ export class LobbyRoom {
       this.match = { s: "countdown", endsAt };
       this.broadcastMatch();
 
-      await this.state.storage.setAlarm(endsAt);
+      if (this.countdownTimer != null) {
+        clearTimeout(this.countdownTimer);
+        this.countdownTimer = null;
+      }
+
+      this.countdownTimer = setTimeout(() => {
+        this.countdownTimer = null;
+        void this.startMatchIfStillValid();
+      }, COUNTDOWN_MS) as unknown as number;
     }
   }
 
-  private async cancelCountdownIfNeeded() {
+  private cancelCountdownIfNeeded() {
     if (this.match.s !== "countdown") return;
 
     const { total, ready } = this.countReady();
     if (total < 2 || ready !== total) {
       this.match = { s: "waiting" };
-      await this.state.storage.deleteAlarm();
+      if (this.countdownTimer != null) {
+        clearTimeout(this.countdownTimer);
+        this.countdownTimer = null;
+      }
       this.broadcastMatch();
     }
   }
@@ -382,34 +352,27 @@ export class LobbyRoom {
     if (this.match.s !== "countdown") return;
 
     const now = Date.now();
-    if (now + 10 < this.match.endsAt) {
-      await this.state.storage.setAlarm(this.match.endsAt);
-      return;
-    }
+    if (now < this.match.endsAt - 50) return;
 
     const { total, ready } = this.countReady();
     if (total < 2 || total > 8 || ready !== total) {
       this.match = { s: "waiting" };
-      await this.state.storage.deleteAlarm();
       this.broadcastMatch();
       return;
     }
 
     const matchId = `m_${uid()}`;
     const seed = Math.floor(Math.random() * 1_000_000_000);
-    this.match = { s: "started", matchId, seed };
 
+    this.match = { s: "started", matchId, seed };
     const seq = this.nextSeq();
     const players = this.sortedPlayers();
 
     this.broadcast({ t: "start", seq, serverTime: Date.now(), matchId, seed, players });
-    await this.persistNow();
+    await this.persist();
 
-    // reset for next round
     for (const p of this.players.values()) p.ready = false;
-
     this.match = { s: "waiting" };
-    await this.state.storage.deleteAlarm();
     this.broadcastPlayers();
     this.broadcastMatch();
   }
@@ -447,10 +410,8 @@ export class LobbyRoom {
       const wanted = safeClientId(msg.clientId || "");
       const name = safeName(msg.name);
 
-      // migrate to stable clientId
       if (wanted && wanted !== currentId) {
         const existing = this.players.get(wanted);
-
         if (existing) {
           existing.name = name;
           existing.lastSeen = now;
@@ -460,7 +421,6 @@ export class LobbyRoom {
           this.players.set(wanted, migrated);
         }
 
-        // cleanup old temp
         this.players.delete(currentId);
         this.spam.delete(currentId);
         this.dedupe.delete(currentId);
@@ -469,8 +429,8 @@ export class LobbyRoom {
 
         this.send(ws, this.buildHello(wanted));
         this.broadcastPlayers();
-        void this.cancelCountdownIfNeeded();
-        void this.maybeStartCountdown();
+        this.cancelCountdownIfNeeded();
+        this.maybeStartCountdown();
         return;
       }
 
@@ -480,8 +440,8 @@ export class LobbyRoom {
 
       this.send(ws, this.buildHello(currentId));
       this.broadcastPlayers();
-      void this.cancelCountdownIfNeeded();
-      void this.maybeStartCountdown();
+      this.cancelCountdownIfNeeded();
+      this.maybeStartCountdown();
       return;
     }
 
@@ -491,8 +451,8 @@ export class LobbyRoom {
       this.players.set(currentId, p);
 
       this.broadcastPlayers();
-      void this.cancelCountdownIfNeeded();
-      void this.maybeStartCountdown();
+      this.cancelCountdownIfNeeded();
+      this.maybeStartCountdown();
       return;
     }
 
@@ -500,7 +460,8 @@ export class LobbyRoom {
       const text = safeText(msg.text);
       if (!text) return;
 
-      if (!this.dedupeAllow(currentId, safeClientId(msg.clientMsgId || ""))) return;
+      const clientMsgId = safeClientId(msg.clientMsgId || "");
+      if (!this.dedupeAllow(currentId, clientMsgId)) return;
 
       if (!this.spamAllow(currentId, now)) {
         this.send(ws, { t: "error", code: "rate_limited", message: "Слишком быстро" });
@@ -520,7 +481,7 @@ export class LobbyRoom {
 
       const seq = this.nextSeq();
       this.broadcast({ t: "chat", seq, serverTime: now, msg: chat });
-      this.schedulePersist();
+      void this.persist();
       return;
     }
   }
@@ -531,7 +492,6 @@ export class LobbyRoom {
 
     this.sockets.delete(ws);
 
-    // remove player if no sockets left with that id
     let stillConnected = false;
     for (const v of this.sockets.values()) {
       if (v === id) {
@@ -547,6 +507,6 @@ export class LobbyRoom {
     }
 
     this.broadcastPlayers();
-    void this.cancelCountdownIfNeeded();
+    this.cancelCountdownIfNeeded();
   }
 }
