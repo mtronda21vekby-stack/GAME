@@ -1,10 +1,8 @@
-name = "blackcrown-lobby-ws"
-main = "src/index.ts"
+name = "blackcrown"
 compatibility_date = "2026-02-15"
 
 [durable_objects]
 bindings = [
-  { name = "LOBBY_ROOM", class_name = "LobbyRoom" },
   { name = "LOBBY_ROOMS", class_name = "LobbyRoom" }
 ]
 
