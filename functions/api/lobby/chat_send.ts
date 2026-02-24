@@ -1,5 +1,5 @@
-import { Env } from "../api/_lib/auth";
-import { json, getLobbyKV, safeId, clampText, now } from "../api/lobby/_lib";
+import { Env } from "../_lib/auth";
+import { json, getLobbyKV, safeId, clampText, now } from "./_lib";
 
 type Body = {
   roomId?: string;
@@ -42,7 +42,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     } catch {}
   }
 
-  // 🧠 КРИТИЧНО: если уже есть такое сообщение — не добавляем повторно
+  // защита от дублей
   if (!items.find((x) => x.id === clientMsgId)) {
     items.push({
       id: clientMsgId,
@@ -52,7 +52,6 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     });
   }
 
-  // ограничиваем историю
   if (items.length > 80) {
     items = items.slice(items.length - 80);
   }
