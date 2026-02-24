@@ -21,6 +21,10 @@ export type Env = {
   // D1 (если используешь для истории/матчей)
   LOBBY_DB?: D1Database;
 
+  // Service binding to WS worker (Pages -> Settings -> Functions -> Bindings)
+  // Name: LOBBY_WS, Service: blackcrown-lobby-ws
+  LOBBY_WS?: Fetcher;
+
   // allow any other env fields without TS pain
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
@@ -208,6 +212,16 @@ export function getMetricsKV(env: Env): KVNamespace | null {
  */
 export function getLobbyDO(env: Env): DurableObjectNamespace | null {
   return (env.LOBBY_ROOM || env.LOBBY_ROOMS || null) as any;
+}
+
+/**
+ * Service binding helper (Lobby WS Worker).
+ * Pages -> Settings -> Functions -> Bindings:
+ * - Service binding name: LOBBY_WS
+ * - Service: blackcrown-lobby-ws
+ */
+export function getLobbyWsService(env: Env): Fetcher | null {
+  return (env.LOBBY_WS || null) as any;
 }
 
 /* =========================
