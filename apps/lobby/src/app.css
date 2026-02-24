@@ -1,1 +1,30 @@
-html,body{height:100%;margin:0}*{box-sizing:border-box}
+/* === Lobby: guarantee clickable UI on top of any background === */
+.bcSiteRoot,
+.bcSection {
+  position: relative;
+  z-index: 5;
+}
+
+/* Any canvas / background layers must not intercept taps */
+canvas,
+.MatrixBackground,
+.matrixCanvas,
+#matrix,
+.bcHeroBg,
+.bcHeroAurora,
+.bcHeroVignette,
+.bcHeroNoise,
+.bcBg,
+.bcBackground,
+.bcBackdrop {
+  pointer-events: none !important;
+  touch-action: none !important;
+}
+
+/* Defensive: keep interactive controls clickable */
+button,
+a,
+input,
+textarea {
+  pointer-events: auto;
+}
