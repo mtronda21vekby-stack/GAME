@@ -1,6 +1,7 @@
 import React from "react";
 import MatrixBackground from "./components/MatrixBackground";
 import { Router } from "./routes/Router";
+import RouteMotion from "./components/RouteMotion";
 
 function syncAppVh() {
   const h = window.visualViewport?.height ?? window.innerHeight;
@@ -96,14 +97,15 @@ export function App() {
         <MatrixBackground />
       </div>
 
-      {/* premium FX layers (CSS only) */}
       <div className="bcShellFx" aria-hidden="true">
         <div className="bcShellVignette" />
         <div className="bcShellNoise" />
       </div>
 
       <div className="bcAppContent">
-        <Router />
+        <RouteMotion>
+          <Router />
+        </RouteMotion>
       </div>
     </div>
   );
