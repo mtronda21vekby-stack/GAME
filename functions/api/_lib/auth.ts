@@ -13,6 +13,9 @@ export type Env = {
   METRICS_KV?: KVNamespace;
   KV?: KVNamespace;
 
+  // Durable Objects (Lobby WS)
+  LOBBY_ROOMS?: DurableObjectNamespace;
+
   // allow any other env fields without TS pain
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
