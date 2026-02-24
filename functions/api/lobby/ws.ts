@@ -1,34 +1,37 @@
 // functions/api/lobby/ws.ts
 import { Env } from "../_lib/auth";
 
+function okUpgrade(req: Request) {
+  return req.headers.get("Upgrade")?.toLowerCase() === "websocket";
+}
+
 /**
- * Pages Function WS proxy:
- * Client connects to: wss://blackcrown.work/api/lobby/ws?room=main
- * This function proxies Upgrade to the dedicated Worker (ws-lobby).
+ * AAA WS proxy:
+ * Browser -> Pages Function (/api/lobby/ws) -> Service binding (blackcrown-lobby-ws) -> DO
  *
- * REQUIRED env var on Pages project:
- *   LOBBY_WS_ORIGIN = "https://<your-worker-subdomain>.workers.dev"
- * Example:
- *   "https://blackcrown-lobby-ws.yourname.workers.dev"
+ * Требование: в Pages Settings добавить Service Binding:
+ *   Name: LOBBY_WS
+ *   Service: blackcrown-lobby-ws
  */
-export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
-  const upgrade = request.headers.get("Upgrade") || "";
-  if (upgrade.toLowerCase() !== "websocket") {
+export const onRequest: PagesFunction<Env> = async ({ request, env }) => {
+  if (!okUpgrade(request)) {
     return new Response("Expected WebSocket", { status: 426 });
   }
 
-  const url = new URL(request.url);
-  const room = (url.searchParams.get("room") || "main").trim() || "main";
-
-  const origin = String(env.LOBBY_WS_ORIGIN || env.BC_LOBBY_WS_ORIGIN || "").trim();
-  if (!origin) {
-    return new Response("Missing env LOBBY_WS_ORIGIN", { status: 500 });
+  const svc = env.LOBBY_WS as Fetcher | undefined;
+  if (!svc) {
+    // fallback: можно сделать через env.LOBBY_WS_URL, но Service Binding надёжнее
+    return new Response("Missing service binding: LOBBY_WS", { status: 500 });
   }
 
-  const target = new URL(origin);
-  target.pathname = "/ws";
-  target.searchParams.set("room", room);
+  // На worker'е вход: /ws или /ws/<room>
+  // У нас здесь: /api/lobby/ws?room=main
+  // Перепишем путь на /ws, query оставим.
+  const url = new URL(request.url);
+  url.pathname = "/ws";
 
-  // Proxy the websocket upgrade to worker
-  return fetch(target.toString(), request);
+  // ВАЖНО: создаём новый Request с теми же заголовками (Upgrade/Sec-WebSocket-*)
+  const nextReq = new Request(url.toString(), request);
+
+  return svc.fetch(nextReq);
 };
