@@ -117,13 +117,23 @@ function uniqChat(items: ChatMsg[], limit = 80) {
 }
 
 /**
- * ВАЖНО:
- * WS проксируется через Pages Functions на /api/lobby/ws — оставляем так.
+ * ✅ КРИТИЧНО:
+ * UI может жить на *.pages.dev, но WS-воркер у тебя на blackcrown.work.
+ * Поэтому:
+ * - если домен pages.dev => WS всегда на blackcrown.work
+ * - иначе => WS на текущем домене (prod)
  */
 function wsUrl(roomId: string) {
-  const proto = location.protocol === "https:" ? "wss:" : "ws:";
-  const base = `${proto}//${location.host}`;
-  return `${base}/api/lobby/ws?room=${encodeURIComponent(roomId)}`;
+  const isHttps = location.protocol === "https:";
+  const proto = isHttps ? "wss:" : "ws:";
+
+  const host = location.host;
+  const hostname = location.hostname;
+
+  // если открыто на preview pages.dev — лобби должно ходить в прод домен
+  const targetHost = hostname.endsWith("pages.dev") ? "blackcrown.work" : host;
+
+  return `${proto}//${targetHost}/api/lobby/ws?room=${encodeURIComponent(roomId)}`;
 }
 
 export function Lobby() {
@@ -149,15 +159,8 @@ export function Lobby() {
   const clientIdRef = React.useRef<string>(getClientId());
   const desiredReadyRef = React.useRef(false);
 
-  /**
-   * CRITICAL (iOS):
-   * 1) Любой fixed/canvas/overlay наверху убивает клики.
-   * 2) Лобби поднимаем в отдельный "UI-слой" с огромным z-index.
-   * 3) Фон/матрица/оверлеи принудительно не ловят pointer events.
-   */
   const ClickFix = (
     <style>{`
-      /* 1) Disable any background/overlay/canvas from intercepting taps */
       canvas,
       .MatrixBackground,
       .matrixCanvas,
@@ -173,50 +176,13 @@ export function Lobby() {
         touch-action: none !important;
       }
 
-      /* Extra hardening: common "full-screen overlay" patterns */
-      [data-overlay="true"],
-      [data-bg="true"],
-      .overlay,
-      .backdrop,
-      .noise,
-      .vignette,
-      .aurora {
-        pointer-events: none !important;
-        touch-action: none !important;
-      }
-
-      /* 2) Make root an isolated stacking context so z-index is predictable */
-      .bcSiteRoot {
-        position: relative;
-        isolation: isolate;
-      }
-
-      /* 3) UI layer sits above everything */
-      .bcLobbyUiLayer {
-        position: relative;
-        z-index: 2147483647; /* max int-like */
-        pointer-events: auto;
-      }
-
-      .bcLobbyUiLayer * {
-        pointer-events: auto;
-      }
-
-      /* Ensure glass containers are interactive even if some parent had pointer-events rules */
-      .glassStrong {
-        position: relative;
-        pointer-events: auto;
-      }
-
-      /* Inputs/buttons must always accept taps */
-      button, a, input, textarea, select {
-        pointer-events: auto !important;
-        touch-action: manipulation;
-      }
+      .bcSiteRoot { position: relative; isolation: isolate; }
+      .bcLobbyUiLayer { position: relative; z-index: 9999; pointer-events: auto; }
+      .bcLobbyUiLayer * { pointer-events: auto; }
+      .glassStrong { position: relative; z-index: 1; pointer-events: auto; }
     `}</style>
   );
 
-  // keep nick fresh
   React.useEffect(() => {
     const sync = () => {
       myNickRef.current = getNick();
@@ -230,7 +196,6 @@ export function Lobby() {
     };
   }, []);
 
-  // autoscroll chat
   React.useEffect(() => {
     const el = listRef.current;
     if (!el) return;
@@ -292,6 +257,13 @@ export function Lobby() {
     setStatus("connecting");
 
     const url = wsUrl(room);
+
+    // диагностика (сразу увидишь, куда реально подключается)
+    try {
+      // eslint-disable-next-line no-console
+      console.log("[Lobby] WS connect =>", url, "pageHost=", location.host);
+    } catch {}
+
     const ws = new WebSocket(url);
     wsRef.current = ws;
 
@@ -381,8 +353,6 @@ export function Lobby() {
         nav("/game/");
         return;
       }
-
-      if (data.t === "error") return;
     };
 
     ws.onerror = () => {
@@ -399,7 +369,6 @@ export function Lobby() {
 
   connectRef.current = connect;
 
-  // keepalive ping
   React.useEffect(() => {
     if (status !== "online") return;
 
@@ -412,7 +381,6 @@ export function Lobby() {
     return () => window.clearInterval(t);
   }, [status, sendWs]);
 
-  // lifecycle
   React.useEffect(() => {
     aliveRef.current = true;
     connect();
@@ -481,7 +449,6 @@ export function Lobby() {
     <main className="bcSiteRoot">
       {ClickFix}
 
-      {/* UI layer explicitly above any background overlays */}
       <div className="bcLobbyUiLayer">
         <section className="bcSection" style={{ paddingTop: 14 }}>
           <div style={{ maxWidth: 980, margin: "0 auto" }}>
@@ -520,15 +487,7 @@ export function Lobby() {
 
             <div style={{ display: "grid", gap: 12 }}>
               <div className="glassStrong" style={{ borderRadius: 22, padding: 14 }}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: 10,
-                    flexWrap: "wrap",
-                    alignItems: "center",
-                  }}
-                >
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
                   <div style={{ fontWeight: 950 }}>Игроки</div>
 
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
@@ -567,21 +526,11 @@ export function Lobby() {
                   ))}
                 </div>
 
-                {!canReady ? (
-                  <div style={{ marginTop: 10, opacity: 0.78, fontWeight: 850, lineHeight: 1.45 }}>Комната заполнена.</div>
-                ) : null}
+                {!canReady ? <div style={{ marginTop: 10, opacity: 0.78, fontWeight: 850, lineHeight: 1.45 }}>Комната заполнена.</div> : null}
               </div>
 
               <div className="glassStrong" style={{ borderRadius: 22, padding: 14 }}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: 10,
-                    flexWrap: "wrap",
-                    alignItems: "center",
-                  }}
-                >
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
                   <div style={{ fontWeight: 950 }}>Чат</div>
                   <div style={{ opacity: 0.72, fontWeight: 850, fontSize: 12 }}>{isOnline ? "live" : "offline"}</div>
                 </div>
