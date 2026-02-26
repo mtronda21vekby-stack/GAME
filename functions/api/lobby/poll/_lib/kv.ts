@@ -1,5 +1,5 @@
 // functions/api/lobby/poll/_lib/kv.ts
-import { getMetricsKV } from "../../../_lib/auth";
+
 
 export function safeRoom(raw: string): string {
   const r = String(raw || "main").trim();
