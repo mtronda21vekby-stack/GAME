@@ -28,9 +28,7 @@ function safeId() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const anyCrypto = crypto as any;
     if (anyCrypto?.randomUUID) return anyCrypto.randomUUID();
-  } catch {
-    // ignore
-  }
+  } catch {}
   return `bc_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
 }
 
@@ -48,6 +46,7 @@ function getClientId(): string {
 }
 
 type LobbyStatus = "connecting" | "online" | "offline";
+type NetMode = "ws" | "poll";
 
 type Player = {
   id: string;
@@ -103,6 +102,20 @@ type WsClientReady = { t: "ready"; ready: boolean };
 type WsClientChat = { t: "chat"; text: string; clientMsgId?: string };
 type WsClientPing = { t: "ping"; at: number };
 
+type PollStateResp = {
+  ok: boolean;
+  room: string;
+  serverTime: number;
+  players: Player[];
+};
+
+type PollChatResp = {
+  ok: boolean;
+  room: string;
+  serverTime: number;
+  items: { id: string; at: number; fromName: string; text: string }[];
+};
+
 function uniqChat(items: ChatMsg[], limit = 80) {
   const seen = new Set<string>();
   const out: ChatMsg[] = [];
@@ -116,30 +129,86 @@ function uniqChat(items: ChatMsg[], limit = 80) {
   return out;
 }
 
-/**
- * ✅ КРИТИЧНО:
- * UI может жить на *.pages.dev, но WS-воркер у тебя на blackcrown.work.
- * Поэтому:
- * - если домен pages.dev => WS всегда на blackcrown.work
- * - иначе => WS на текущем домене (prod)
- */
 function wsUrl(roomId: string) {
-  const isHttps = location.protocol === "https:";
-  const proto = isHttps ? "wss:" : "ws:";
+  const proto = location.protocol === "https:" ? "wss:" : "ws:";
+  const base = `${proto}//${location.host}`;
+  return `${base}/api/lobby/ws?room=${encodeURIComponent(roomId)}`;
+}
 
-  const host = location.host;
-  const hostname = location.hostname;
+/* ---------- POLL API ---------- */
 
-  // если открыто на preview pages.dev — лобби должно ходить в прод домен
-  const targetHost = hostname.endsWith("pages.dev") ? "blackcrown.work" : host;
+async function pollHeartbeat(payload: { room: string; clientId: string; name: string; ready: boolean }) {
+  try {
+    const res = await fetch("/api/lobby/poll/heartbeat", {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify(payload),
+      credentials: "include",
+      cache: "no-store",
+      keepalive: true,
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
 
-  return `${proto}//${targetHost}/api/lobby/ws?room=${encodeURIComponent(roomId)}`;
+async function pollState(room: string): Promise<PollStateResp | null> {
+  try {
+    const res = await fetch(`/api/lobby/poll/state?room=${encodeURIComponent(room)}`, {
+      method: "GET",
+      headers: { accept: "application/json" },
+      credentials: "include",
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as PollStateResp;
+    if (!json?.ok) return null;
+    return json;
+  } catch {
+    return null;
+  }
+}
+
+async function pollChat(room: string): Promise<PollChatResp | null> {
+  try {
+    const res = await fetch(`/api/lobby/poll/chat?room=${encodeURIComponent(room)}`, {
+      method: "GET",
+      headers: { accept: "application/json" },
+      credentials: "include",
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as PollChatResp;
+    if (!json?.ok) return null;
+    return json;
+  } catch {
+    return null;
+  }
+}
+
+async function pollSendChat(payload: { room: string; clientId: string; name: string; text: string }) {
+  try {
+    const res = await fetch("/api/lobby/poll/chat/send", {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify(payload),
+      credentials: "include",
+      cache: "no-store",
+      keepalive: true,
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
 
 export function Lobby() {
   const [room] = React.useState("main");
 
   const [status, setStatus] = React.useState<LobbyStatus>("connecting");
+  const [mode, setMode] = React.useState<NetMode>("ws");
+
   const [players, setPlayers] = React.useState<Player[]>([]);
   const [history, setHistory] = React.useState<ChatMsg[]>([]);
   const [ready, setReady] = React.useState(false);
@@ -161,6 +230,12 @@ export function Lobby() {
 
   const ClickFix = (
     <style>{`
+      /* make lobby UI top-most and always clickable */
+      .bcSiteRoot { position: relative; isolation: isolate; }
+      .bcLobbyUiLayer { position: relative; z-index: 2147483647; pointer-events: auto; }
+      .bcLobbyUiLayer * { pointer-events: auto; }
+
+      /* kill any background overlays/canvas capturing touches */
       canvas,
       .MatrixBackground,
       .matrixCanvas,
@@ -175,11 +250,6 @@ export function Lobby() {
         pointer-events: none !important;
         touch-action: none !important;
       }
-
-      .bcSiteRoot { position: relative; isolation: isolate; }
-      .bcLobbyUiLayer { position: relative; z-index: 9999; pointer-events: auto; }
-      .bcLobbyUiLayer * { pointer-events: auto; }
-      .glassStrong { position: relative; z-index: 1; pointer-events: auto; }
     `}</style>
   );
 
@@ -219,9 +289,7 @@ export function Lobby() {
         ws.onclose = null;
         ws.onerror = null;
         ws.close();
-      } catch {
-        // ignore
-      }
+      } catch {}
     }
   }, []);
 
@@ -240,7 +308,7 @@ export function Lobby() {
     if (!aliveRef.current) return;
     if (reconnectTimerRef.current != null) return;
 
-    const attempt = Math.min(12, attemptRef.current + 1);
+    const attempt = Math.min(8, attemptRef.current + 1);
     attemptRef.current = attempt;
 
     const backoff = Math.min(9000, 350 + attempt * 650);
@@ -252,20 +320,16 @@ export function Lobby() {
 
   const connectRef = React.useRef<(() => void) | null>(null);
 
-  const connect = React.useCallback(() => {
+  const connectWs = React.useCallback(() => {
+    setMode("ws");
     closeWs();
     setStatus("connecting");
 
     const url = wsUrl(room);
-
-    // диагностика (сразу увидишь, куда реально подключается)
-    try {
-      // eslint-disable-next-line no-console
-      console.log("[Lobby] WS connect =>", url, "pageHost=", location.host);
-    } catch {}
-
     const ws = new WebSocket(url);
     wsRef.current = ws;
+
+    let opened = false;
 
     const doJoin = () => {
       if (joinSentRef.current) return;
@@ -281,7 +345,19 @@ export function Lobby() {
       if (desired) sendWs({ t: "ready", ready: true } satisfies WsClientReady);
     };
 
+    // If WS doesn't open quickly (WebView), auto-fallback to polling
+    const fallbackTimer = window.setTimeout(() => {
+      if (!aliveRef.current) return;
+      if (opened) return;
+      try {
+        ws.close();
+      } catch {}
+      setMode("poll");
+    }, 2200);
+
     ws.onopen = () => {
+      opened = true;
+      window.clearTimeout(fallbackTimer);
       if (!aliveRef.current) return;
       setStatus("online");
       attemptRef.current = 0;
@@ -318,14 +394,12 @@ export function Lobby() {
         if (ms === "countdown") setMatchLabel("старт");
         else if (ms === "started") setMatchLabel("запущен");
         else setMatchLabel("ожидание");
-
         return;
       }
 
       if (data.t === "players") {
         const p = data as WsServerPlayers;
         if (Array.isArray(p.players)) setPlayers(p.players.slice(0, 8));
-
         const ms = p.match?.s;
         if (ms === "countdown") setMatchLabel("старт");
         else if (ms === "started") setMatchLabel("запущен");
@@ -356,20 +430,32 @@ export function Lobby() {
     };
 
     ws.onerror = () => {
-      // usually followed by close
+      // handled by close / fallback
     };
 
     ws.onclose = () => {
+      window.clearTimeout(fallbackTimer);
       if (!aliveRef.current) return;
+
+      // If we were in WS mode and it closes, try reconnect a few times, then fallback to poll.
       setStatus("offline");
       joinSentRef.current = false;
-      scheduleReconnect();
+
+      if (mode === "ws") {
+        if (attemptRef.current >= 3) {
+          setMode("poll");
+          return;
+        }
+        scheduleReconnect();
+      }
     };
-  }, [room, closeWs, sendWs, scheduleReconnect]);
+  }, [room, closeWs, sendWs, scheduleReconnect, mode]);
 
-  connectRef.current = connect;
+  connectRef.current = connectWs;
 
+  // keepalive ping for WS
   React.useEffect(() => {
+    if (mode !== "ws") return;
     if (status !== "online") return;
 
     const t = window.setInterval(() => {
@@ -379,23 +465,79 @@ export function Lobby() {
     }, 18_000);
 
     return () => window.clearInterval(t);
-  }, [status, sendWs]);
+  }, [mode, status, sendWs]);
 
+  // POLLING loop (fallback)
   React.useEffect(() => {
-    aliveRef.current = true;
-    connect();
+    if (mode !== "poll") return;
+
+    let alive = true;
+
+    const tick = async () => {
+      const ok = await pollHeartbeat({
+        room,
+        clientId: clientIdRef.current,
+        name: myNickRef.current,
+        ready: desiredReadyRef.current,
+      });
+
+      if (!alive) return;
+      setStatus(ok ? "online" : "offline");
+
+      const s = await pollState(room);
+      if (!alive) return;
+      if (s?.ok) {
+        setPlayers(Array.isArray(s.players) ? s.players.slice(0, 8) : []);
+        setMatchLabel("ожидание");
+      }
+
+      const c = await pollChat(room);
+      if (!alive) return;
+      if (c?.ok && Array.isArray(c.items)) {
+        const mapped: ChatMsg[] = c.items.map((m) => ({ id: m.id, from: m.fromName, text: m.text, t: m.at }));
+        setHistory((prev) => uniqChat([...prev, ...mapped], 80));
+      }
+    };
+
+    setStatus("connecting");
+    void tick();
+
+    const tHeart = window.setInterval(() => {
+      if (!alive) return;
+      if (document.visibilityState !== "visible") return;
+      void tick();
+    }, 1100);
 
     const onVis = () => {
       if (document.visibilityState !== "visible") return;
-      const ws = wsRef.current;
+      void tick();
+    };
 
-      if (!ws || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) {
-        connect();
-        return;
-      }
-      if (ws.readyState === WebSocket.OPEN && !joinSentRef.current) {
-        joinSentRef.current = true;
-        sendWs({ t: "join", clientId: clientIdRef.current, name: myNickRef.current } satisfies WsClientJoin);
+    window.addEventListener("focus", onVis);
+    document.addEventListener("visibilitychange", onVis);
+
+    return () => {
+      alive = false;
+      window.clearInterval(tHeart);
+      window.removeEventListener("focus", onVis);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [mode, room]);
+
+  // lifecycle start: try WS first
+  React.useEffect(() => {
+    aliveRef.current = true;
+    connectWs();
+
+    const onVis = () => {
+      if (document.visibilityState !== "visible") return;
+
+      // if in WS mode but socket dead -> reconnect
+      if (mode === "ws") {
+        const ws = wsRef.current;
+        if (!ws || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) {
+          connectWs();
+        }
       }
     };
 
@@ -408,24 +550,35 @@ export function Lobby() {
       document.removeEventListener("visibilitychange", onVis);
       closeWs();
     };
-  }, [connect, closeWs, sendWs]);
+  }, [connectWs, closeWs, mode]);
 
   const onlineCount = players.length;
   const canReady = onlineCount <= 8;
   const isOnline = status === "online";
 
-  const toggleReady = React.useCallback(() => {
+  const toggleReady = React.useCallback(async () => {
     if (!canReady) return;
 
     const next = !desiredReadyRef.current;
     desiredReadyRef.current = next;
     setReady(next);
 
-    if (!isOnline) return;
-    sendWs({ t: "ready", ready: next } satisfies WsClientReady);
-  }, [canReady, isOnline, sendWs]);
+    if (mode === "ws") {
+      if (!isOnline) return;
+      sendWs({ t: "ready", ready: next } satisfies WsClientReady);
+      return;
+    }
 
-  const sendChat = React.useCallback(() => {
+    // poll mode: push immediately
+    await pollHeartbeat({
+      room,
+      clientId: clientIdRef.current,
+      name: myNickRef.current,
+      ready: next,
+    });
+  }, [canReady, isOnline, mode, room, sendWs]);
+
+  const sendChat = React.useCallback(async () => {
     if (!isOnline) return;
 
     const msg = clampText(text, 180);
@@ -442,8 +595,35 @@ export function Lobby() {
     };
     setHistory((prev) => uniqChat([...prev, optimistic], 80));
 
-    sendWs({ t: "chat", text: msg, clientMsgId: safeId() } satisfies WsClientChat);
-  }, [isOnline, sendWs, text]);
+    if (mode === "ws") {
+      sendWs({ t: "chat", text: msg, clientMsgId: safeId() } satisfies WsClientChat);
+      return;
+    }
+
+    // poll
+    await pollSendChat({
+      room,
+      clientId: clientIdRef.current,
+      name: myNickRef.current,
+      text: msg,
+    });
+
+    const c = await pollChat(room);
+    if (c?.ok && Array.isArray(c.items)) {
+      const mapped: ChatMsg[] = c.items.map((m) => ({ id: m.id, from: m.fromName, text: m.text, t: m.at }));
+      setHistory((prev) => uniqChat([...prev, ...mapped], 80));
+    }
+  }, [isOnline, mode, room, sendWs, text]);
+
+  const hardReconnect = React.useCallback(() => {
+    attemptRef.current = 0;
+    if (mode === "ws") {
+      connectWs();
+      return;
+    }
+    // poll mode: just re-run tick by switching mode briefly
+    setMode("poll");
+  }, [connectWs, mode]);
 
   return (
     <main className="bcSiteRoot">
@@ -491,11 +671,11 @@ export function Lobby() {
                   <div style={{ fontWeight: 950 }}>Игроки</div>
 
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-                    <Button variant={ready ? "primary" : "secondary"} onClick={toggleReady} disabled={!isOnline || !canReady}>
+                    <Button variant={ready ? "primary" : "secondary"} onClick={() => void toggleReady()} disabled={!isOnline || !canReady}>
                       {ready ? "Готов" : "Не готов"}
                     </Button>
 
-                    <Button variant="ghost" onClick={connect}>
+                    <Button variant="ghost" onClick={hardReconnect}>
                       Переподключить
                     </Button>
 
@@ -569,7 +749,7 @@ export function Lobby() {
                       if (!isOnline) return;
                       if (e.key === "Enter") {
                         e.preventDefault();
-                        sendChat();
+                        void sendChat();
                       }
                     }}
                     style={{
@@ -586,13 +766,9 @@ export function Lobby() {
                     }}
                   />
 
-                  <Button variant="primary" onClick={sendChat} disabled={!isOnline}>
+                  <Button variant="primary" onClick={() => void sendChat()} disabled={!isOnline}>
                     Отправить
                   </Button>
-                </div>
-
-                <div style={{ marginTop: 10, opacity: 0.72, fontWeight: 850, fontSize: 12, lineHeight: 1.45 }}>
-                  AAA v1: WebSocket (Durable Objects) + авто-reconnect + ping keepalive.
                 </div>
               </div>
             </div>
