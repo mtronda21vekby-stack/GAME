@@ -1,5 +1,5 @@
 // functions/api/lobby/poll/_lib/kv.ts
-import { getMetricsKV } from "../../_lib/auth";
+import { getMetricsKV } from "../../../_lib/auth";
 
 export function safeRoom(raw: string): string {
   const r = String(raw || "main").trim();
@@ -47,7 +47,6 @@ export async function listPlayers(env: any, room: string): Promise<Player[]> {
     const v = await kv.get(k.name, "json");
     const p = v as Player | null;
     if (!p?.id) continue;
-    // remove dead (TTL should do it, but keep safe)
     if (now - (p.lastSeen || 0) > 90_000) continue;
     out.push(p);
   }
@@ -66,7 +65,6 @@ export async function upsertPlayer(env: any, room: string, p: Player) {
 
   const { pfxPlayers } = keys(room);
   const key = `${pfxPlayers}${p.id}`;
-  // keep presence alive (seconds)
   await kv.put(key, JSON.stringify(p), { expirationTtl: 75 });
   return true;
 }
@@ -90,6 +88,6 @@ export async function addChat(env: any, room: string, item: ChatItem) {
   arr.push(item);
   const next = arr.slice(-60);
 
-  await kv.put(keyChat, JSON.stringify(next), { expirationTtl: 60 * 60 * 24 }); // 24h history
+  await kv.put(keyChat, JSON.stringify(next), { expirationTtl: 60 * 60 * 24 });
   return true;
 }
