@@ -31,10 +31,7 @@ type ClientMsg =
   | { t: "chat"; text: string; clientMsgId?: string }
   | { t: "ping"; at: number };
 
-type MatchState =
-  | { s: "waiting" }
-  | { s: "countdown"; endsAt: number }
-  | { s: "started"; matchId: string; seed: number };
+type MatchState = { s: "waiting" } | { s: "countdown"; endsAt: number } | { s: "started"; matchId: string; seed: number };
 
 type Player = {
   id: string;
@@ -90,7 +87,20 @@ function okUpgrade(request: Request): boolean {
 
 function roomFromUrl(url: URL): string {
   const parts = url.pathname.split("/").filter(Boolean);
-  const byPath = parts[0] === "ws" && parts[1] ? parts[1] : "";
+
+  // поддержка:
+  // /ws
+  // /ws/<room>
+  // /api/lobby/ws
+  // /api/lobby/ws/<room>
+  let byPath = "";
+
+  if (parts[0] === "ws") {
+    byPath = parts[1] || "";
+  } else if (parts[0] === "api" && parts[1] === "lobby" && parts[2] === "ws") {
+    byPath = parts[3] || "";
+  }
+
   const byQuery = url.searchParams.get("room") || "";
   return safeRoom(byPath || byQuery || "main");
 }
@@ -105,7 +115,13 @@ export default {
 
     if (url.pathname === "/health") return new Response("ok", { status: 200 });
 
-    if (url.pathname === "/ws" || url.pathname.startsWith("/ws/")) {
+    const isWsPath =
+      url.pathname === "/ws" ||
+      url.pathname.startsWith("/ws/") ||
+      url.pathname === "/api/lobby/ws" ||
+      url.pathname.startsWith("/api/lobby/ws/");
+
+    if (isWsPath) {
       if (!okUpgrade(request)) return new Response("Expected WebSocket", { status: 426 });
 
       const room = roomFromUrl(url);
@@ -125,13 +141,11 @@ export default {
 export class LobbyRoom {
   private state: DurableObjectState;
   private room = "main";
-
   private seq = 1;
 
   private sockets = new Map<WebSocket, string>();
   private players = new Map<string, Player>();
   private history: ChatMsg[] = [];
-
   private spam = new Map<string, number[]>();
   private dedupe = new Map<string, Set<string>>();
 
@@ -150,13 +164,8 @@ export class LobbyRoom {
       }>("snapshot");
 
       if (typeof saved?.seq === "number" && Number.isFinite(saved.seq)) this.seq = Math.max(1, Math.floor(saved.seq));
-
-      if (Array.isArray(saved?.players)) {
-        for (const p of saved.players) this.players.set(p.id, p);
-      }
-
+      if (Array.isArray(saved?.players)) for (const p of saved.players) this.players.set(p.id, p);
       if (Array.isArray(saved?.history)) this.history = saved.history.slice(-HISTORY_LIMIT);
-
       if (saved?.match && typeof saved.match === "object") this.match = saved.match as MatchState;
 
       if (this.match.s === "countdown") this.match = { s: "waiting" };
@@ -185,13 +194,7 @@ export class LobbyRoom {
     this.sockets.set(server, tempId);
 
     const now = Date.now();
-    const player: Player = {
-      id: tempId,
-      name: "Игрок",
-      ready: false,
-      joinedAt: now,
-      lastSeen: now,
-    };
+    const player: Player = { id: tempId, name: "Игрок", ready: false, joinedAt: now, lastSeen: now };
     this.players.set(tempId, player);
 
     this.send(server, this.buildHello(tempId));
@@ -212,9 +215,7 @@ export class LobbyRoom {
   private send(ws: WebSocket, msg: ServerMsg) {
     try {
       ws.send(json(msg));
-    } catch {
-      // ignore
-    }
+    } catch {}
   }
 
   private broadcast(msg: ServerMsg) {
@@ -245,13 +246,12 @@ export class LobbyRoom {
   }
 
   private async persist() {
-    const snap = {
+    await this.state.storage.put("snapshot", {
       seq: this.seq,
       players: this.sortedPlayers().map((p) => ({ ...p })),
       history: this.history.slice(-HISTORY_LIMIT),
       match: this.match,
-    };
-    await this.state.storage.put("snapshot", snap);
+    });
   }
 
   private broadcastPlayers() {
@@ -279,7 +279,6 @@ export class LobbyRoom {
   private dedupeAllow(id: string, clientMsgId: string): boolean {
     const key = safeClientId(clientMsgId);
     if (!key) return true;
-
     let s = this.dedupe.get(id);
     if (!s) {
       s = new Set<string>();
@@ -287,7 +286,6 @@ export class LobbyRoom {
     }
     if (s.has(key)) return false;
     s.add(key);
-
     if (s.size > 64) {
       const arr = Array.from(s);
       s.clear();
@@ -308,9 +306,7 @@ export class LobbyRoom {
 
   private countReady(): { total: number; ready: number } {
     const vals = Array.from(this.players.values());
-    const total = vals.length;
-    const ready = vals.filter((p) => p.ready).length;
-    return { total, ready };
+    return { total: vals.length, ready: vals.filter((p) => p.ready).length };
   }
 
   private maybeStartCountdown() {
@@ -336,7 +332,6 @@ export class LobbyRoom {
 
   private cancelCountdownIfNeeded() {
     if (this.match.s !== "countdown") return;
-
     const { total, ready } = this.countReady();
     if (total < 2 || ready !== total) {
       this.match = { s: "waiting" };
@@ -350,7 +345,6 @@ export class LobbyRoom {
 
   private async startMatchIfStillValid() {
     if (this.match.s !== "countdown") return;
-
     const now = Date.now();
     if (now < this.match.endsAt - 50) return;
 
@@ -386,7 +380,6 @@ export class LobbyRoom {
 
     const p = this.players.get(currentId);
     if (!p) return;
-
     p.lastSeen = now;
 
     let data: unknown = null;
@@ -468,13 +461,7 @@ export class LobbyRoom {
         return;
       }
 
-      const chat: ChatMsg = {
-        id: `c_${uid()}`,
-        at: now,
-        fromId: currentId,
-        fromName: p.name,
-        text,
-      };
+      const chat: ChatMsg = { id: `c_${uid()}`, at: now, fromId: currentId, fromName: p.name, text };
 
       this.history.push(chat);
       this.history = this.history.slice(-HISTORY_LIMIT);
