@@ -3,10 +3,10 @@ import type { NextEngineState } from "../core/engineTypes";
 import { awardNextAccountRun, calculateRunAccountXp } from "../content/account";
 import { getMutationBonus } from "../content/mutations";
 import { xpToNextLevel, xpToNextTier } from "../content/progression";
-import { damageFromForm, hpFromForm, massFromForm, radiusFromForm, speedFromForm } from "./createWorld";
+import { damageFromForm, enemyThreatLevel, hpFromForm, makeEnemy, massFromForm, radiusFromForm, safePlayerSpawn, speedFromForm } from "./createWorld";
 
 const REVIVE_DELAY = 2.4;
-const REVIVE_INVULN = 2.2;
+const REVIVE_INVULN = 4.5;
 const RESET_FORM: EvoFishFormId = "fish";
 
 function addFloat(state: NextEngineState, x: number, y: number, text: string) {
@@ -110,10 +110,22 @@ function startDowned(state: NextEngineState) {
   addFloat(state, player.x, player.y - player.radius * 2.8, `ACCOUNT +${runXp} XP`);
 }
 
+function clearSpawnDanger(state: NextEngineState) {
+  const player = state.player;
+  const threat = enemyThreatLevel(player.level, player.tier, player.mass);
+
+  for (let index = 0; index < state.enemies.length; index += 1) {
+    const enemy = state.enemies[index];
+    const distance = Math.hypot(enemy.x - player.x, enemy.y - player.y);
+    if (distance < 820 || enemy.aiType === "apex" || enemy.aiType === "leviathan") {
+      state.enemies[index] = makeEnemy(8000 + state.frame + index, state.config, threat, player.mass, player.x, player.y, 920);
+    }
+  }
+}
+
 function revive(state: NextEngineState) {
   const player = state.player;
-  const safeX = state.config.width / 2;
-  const safeY = state.config.height / 2;
+  const spawn = safePlayerSpawn(state.config, state.enemies);
 
   player.downed = false;
   player.dead = false;
@@ -121,19 +133,20 @@ function revive(state: NextEngineState) {
   player.deathT = 0;
   player.reviveT = 0;
   player.respawnT = 0;
-  player.x = safeX;
-  player.y = safeY;
+  player.x = spawn.x;
+  player.y = spawn.y;
   player.vx = 0;
   player.vy = 0;
   resetFishRun(state);
   player.invulnT = REVIVE_INVULN;
+  clearSpawnDanger(state);
 
   state.stats.downed = false;
   state.stats.dead = false;
   state.stats.reviveTime = 0;
   state.stats.respawnTime = 0;
-  state.stats.lastEvent = `Fish reset · Account LV ${state.account.level}`;
-  addFloat(state, player.x, player.y - player.radius * 2.8, "FISH RESET");
+  state.stats.lastEvent = `Safe respawn · Account LV ${state.account.level}`;
+  addFloat(state, player.x, player.y - player.radius * 2.8, "SAFE SPAWN");
 }
 
 export function updateSurvivalSystem(state: NextEngineState, dt: number) {
