@@ -13,10 +13,27 @@ function isElite(enemy: NextFishEntity) {
   return enemy.aiType === "apex" || enemy.aiType === "leviathan" || enemy.aiType === "stalker";
 }
 
+function isPredator(enemy: NextFishEntity) {
+  return enemy.aiType === "hunter" || enemy.aiType === "brute" || isElite(enemy);
+}
+
+function normalize(x: number, y: number) {
+  const length = Math.hypot(x, y) || 1;
+  return { x: x / length, y: y / length, length };
+}
+
 function setWanderTarget(state: NextEngineState, enemy: NextFishEntity) {
-  enemy.wanderX = 180 + Math.random() * (state.config.width - 360);
-  enemy.wanderY = 180 + Math.random() * (state.config.height - 360);
-  enemy.wanderT = isElite(enemy) ? 0.7 + Math.random() * 1.4 : 1.2 + Math.random() * 3.2;
+  const lane = enemy.id % 12;
+  const ring = 0.22 + (lane % 4) * 0.18;
+  const angle = ((lane / 12) * Math.PI * 2) + Math.random() * 0.55;
+  const centerX = state.config.width * 0.5;
+  const centerY = state.config.height * 0.5;
+  const rx = state.config.width * ring * 0.95;
+  const ry = state.config.height * ring * 0.9;
+
+  enemy.wanderX = clamp(centerX + Math.cos(angle) * rx + (Math.random() - 0.5) * 260, 160, state.config.width - 160);
+  enemy.wanderY = clamp(centerY + Math.sin(angle) * ry + (Math.random() - 0.5) * 220, 160, state.config.height - 160);
+  enemy.wanderT = isElite(enemy) ? 0.7 + Math.random() * 1.4 : 1.4 + Math.random() * 3.4;
 }
 
 function wanderTarget(state: NextEngineState, enemy: NextFishEntity) {
@@ -24,8 +41,71 @@ function wanderTarget(state: NextEngineState, enemy: NextFishEntity) {
   const wx = enemy.wanderX - enemy.x;
   const wy = enemy.wanderY - enemy.y;
   const wDistance = Math.hypot(wx, wy) || 1;
-  if (enemy.wanderT <= 0 || wDistance < 80) setWanderTarget(state, enemy);
-  return { x: wx / wDistance, y: wy / wDistance, distance: wDistance };
+  if (enemy.wanderT <= 0 || wDistance < 90) setWanderTarget(state, enemy);
+  return { x: wx / wDistance, y: wy / wDistance, distance: wDistance, playerDistance: Infinity };
+}
+
+function attackSlotTarget(state: NextEngineState, enemy: NextFishEntity, playerDistance: number) {
+  const player = state.player;
+  const slots = enemy.aiType === "leviathan" ? 4 : enemy.aiType === "apex" ? 5 : enemy.aiType === "stalker" ? 7 : 9;
+  const slot = enemy.id % slots;
+  const drift = (state.frame % 360) * 0.0025 * (enemy.id % 2 === 0 ? 1 : -1);
+  const angle = (slot / slots) * Math.PI * 2 + drift;
+  const ring = player.radius + enemy.radius + (enemy.aiType === "leviathan" ? 150 : enemy.aiType === "apex" ? 118 : enemy.aiType === "stalker" ? 82 : 64);
+  const targetX = clamp(player.x + Math.cos(angle) * ring, 120, state.config.width - 120);
+  const targetY = clamp(player.y + Math.sin(angle) * ring, 120, state.config.height - 120);
+  const dx = targetX - enemy.x;
+  const dy = targetY - enemy.y;
+  const n = normalize(dx, dy);
+
+  return { x: n.x, y: n.y, distance: n.length, playerDistance };
+}
+
+function countPredatorsNearPlayer(state: NextEngineState) {
+  const player = state.player;
+  let count = 0;
+
+  for (const enemy of state.enemies) {
+    if (!isPredator(enemy)) continue;
+    if (Math.hypot(enemy.x - player.x, enemy.y - player.y) < 360) count += 1;
+  }
+
+  return count;
+}
+
+function localSeparation(state: NextEngineState, enemy: NextFishEntity) {
+  let ax = 0;
+  let ay = 0;
+  let crowd = 0;
+
+  for (const other of state.enemies) {
+    if (other === enemy) continue;
+    const dx = enemy.x - other.x;
+    const dy = enemy.y - other.y;
+    const distance = Math.hypot(dx, dy) || 1;
+    const desired = enemy.radius + other.radius + (isElite(enemy) || isElite(other) ? 145 : 78);
+    if (distance >= desired) continue;
+
+    const force = (desired - distance) / desired;
+    ax += (dx / distance) * force;
+    ay += (dy / distance) * force;
+    crowd += 1;
+  }
+
+  const player = state.player;
+  const pdx = enemy.x - player.x;
+  const pdy = enemy.y - player.y;
+  const playerDistance = Math.hypot(pdx, pdy) || 1;
+  const minPlayerGap = enemy.aiState === "attack" ? enemy.radius + player.radius + 24 : enemy.radius + player.radius + 96;
+  if (playerDistance < minPlayerGap && !isElite(enemy)) {
+    const force = (minPlayerGap - playerDistance) / minPlayerGap;
+    ax += (pdx / playerDistance) * force * 0.65;
+    ay += (pdy / playerDistance) * force * 0.65;
+    crowd += 1;
+  }
+
+  const n = normalize(ax, ay);
+  return { x: crowd > 0 ? n.x : 0, y: crowd > 0 ? n.y : 0, crowd };
 }
 
 function aiTarget(state: NextEngineState, enemy: NextFishEntity) {
@@ -40,27 +120,28 @@ function aiTarget(state: NextEngineState, enemy: NextFishEntity) {
   const dy = player.y - enemy.y;
   const distance = Math.hypot(dx, dy) || 1;
   const playerCanEat = canDevour(player.mass, enemy.mass);
-  const enemyCanThreaten = canDevour(enemy.mass * 1.08, player.mass) || enemy.aiType === "hunter" || enemy.aiType === "brute" || isElite(enemy);
+  const enemyCanThreaten = canDevour(enemy.mass * 1.08, player.mass) || isPredator(enemy);
+  const predatorPressure = countPredatorsNearPlayer(state);
 
   enemy.thinkT -= 1 / 60;
   if (enemy.thinkT <= 0) {
-    enemy.thinkT = isElite(enemy) ? 0.1 + Math.random() * 0.16 : 0.18 + Math.random() * 0.28;
-    if (playerCanEat && !isElite(enemy) && distance < enemy.aggroRadius * 1.25) enemy.aiState = "flee";
-    else if (enemyCanThreaten && distance < enemy.attackRange + player.radius) enemy.aiState = "attack";
+    enemy.thinkT = isElite(enemy) ? 0.12 + Math.random() * 0.18 : 0.2 + Math.random() * 0.34;
+    if (playerCanEat && !isElite(enemy) && distance < enemy.aggroRadius * 1.22) enemy.aiState = "flee";
+    else if (enemyCanThreaten && distance < enemy.attackRange + player.radius && predatorPressure <= 5) enemy.aiState = "attack";
     else if (enemyCanThreaten && distance < enemy.aggroRadius) enemy.aiState = "hunt";
     else enemy.aiState = "wander";
   }
 
-  if (enemy.aiState === "flee") return { x: -dx / distance, y: -dy / distance, distance };
-  if (enemy.aiState === "hunt" || enemy.aiState === "attack") return { x: dx / distance, y: dy / distance, distance };
+  if (enemy.aiState === "flee") return { x: -dx / distance, y: -dy / distance, distance, playerDistance: distance };
+  if (enemy.aiState === "hunt" || enemy.aiState === "attack") return attackSlotTarget(state, enemy, distance);
 
   return wanderTarget(state, enemy);
 }
 
-function attackPlayer(state: NextEngineState, enemy: NextFishEntity, distance: number) {
+function attackPlayer(state: NextEngineState, enemy: NextFishEntity, playerDistance: number) {
   const player = state.player;
   enemy.attackCd = Math.max(0, enemy.attackCd - 1 / 60);
-  if (player.downed || player.dead || distance > enemy.attackRange + player.radius || enemy.attackCd > 0 || player.invulnT > 0) return;
+  if (player.downed || player.dead || playerDistance > enemy.attackRange + player.radius || enemy.attackCd > 0 || player.invulnT > 0) return;
 
   const damage = Math.round(enemy.damage);
   player.hp = Math.max(0, player.hp - damage);
@@ -86,21 +167,34 @@ export function updateEnemySystem(state: NextEngineState, dt: number) {
     enemy.wanderT = Math.max(0, enemy.wanderT - dt);
 
     const target = aiTarget(state, enemy);
-    const huntBoost = enemy.aiType === "leviathan" ? 1.12 : enemy.aiType === "apex" ? 1.18 : enemy.aiType === "stalker" ? 1.24 : 1.08;
-    const impulse = enemy.aiType === "leviathan" ? 2.15 : enemy.aiType === "apex" ? 2.45 : enemy.aiType === "stalker" ? 2.7 : 2.2;
-    const stateSpeed = enemy.aiState === "flee" ? enemy.speed * 1.16 : enemy.aiState === "hunt" ? enemy.speed * huntBoost : enemy.speed * 0.72;
-    enemy.vx += target.x * stateSpeed * dt * impulse;
-    enemy.vy += target.y * stateSpeed * dt * impulse;
+    const separation = localSeparation(state, enemy);
+    const crowdPenalty = separation.crowd >= 5 ? 0.78 : separation.crowd >= 3 ? 0.9 : 1;
+    const huntBoost = enemy.aiType === "leviathan" ? 1.12 : enemy.aiType === "apex" ? 1.16 : enemy.aiType === "stalker" ? 1.22 : 1.06;
+    const impulse = enemy.aiType === "leviathan" ? 1.9 : enemy.aiType === "apex" ? 2.1 : enemy.aiType === "stalker" ? 2.35 : 2.0;
+    const stateSpeed = enemy.aiState === "flee" ? enemy.speed * 1.14 : enemy.aiState === "hunt" ? enemy.speed * huntBoost : enemy.aiState === "attack" ? enemy.speed * 0.94 : enemy.speed * 0.72;
+    const separationWeight = isElite(enemy) ? 1.25 : enemy.aiState === "attack" ? 1.55 : enemy.aiState === "hunt" ? 1.35 : 1.05;
+    const moveX = target.x + separation.x * separationWeight;
+    const moveY = target.y + separation.y * separationWeight;
+    const move = normalize(moveX, moveY);
 
-    const maxSpeed = enemy.aiState === "flee" ? enemy.speed * 1.36 : isElite(enemy) ? enemy.speed * 1.25 : enemy.speed * 1.12;
+    enemy.vx += move.x * stateSpeed * dt * impulse * crowdPenalty;
+    enemy.vy += move.y * stateSpeed * dt * impulse * crowdPenalty;
+
+    if (separation.crowd >= 4 && enemy.aiState !== "attack") {
+      enemy.vx += separation.x * enemy.speed * dt * 2.4;
+      enemy.vy += separation.y * enemy.speed * dt * 2.4;
+      enemy.wanderT = Math.min(enemy.wanderT, 0.35);
+    }
+
+    const maxSpeed = enemy.aiState === "flee" ? enemy.speed * 1.34 : isElite(enemy) ? enemy.speed * 1.18 : enemy.speed * 1.08;
     const speed = Math.hypot(enemy.vx, enemy.vy) || 1;
     if (speed > maxSpeed) {
       enemy.vx = (enemy.vx / speed) * maxSpeed;
       enemy.vy = (enemy.vy / speed) * maxSpeed;
     }
 
-    enemy.vx *= enemy.aiState === "attack" ? 0.94 : 0.97;
-    enemy.vy *= enemy.aiState === "attack" ? 0.94 : 0.97;
+    enemy.vx *= enemy.aiState === "attack" ? 0.92 : 0.965;
+    enemy.vy *= enemy.aiState === "attack" ? 0.92 : 0.965;
     enemy.x = clamp(enemy.x + enemy.vx * dt, 80, state.config.width - 80);
     enemy.y = clamp(enemy.y + enemy.vy * dt, 80, state.config.height - 80);
 
@@ -108,6 +202,6 @@ export function updateEnemySystem(state: NextEngineState, dt: number) {
     if (enemy.y <= 82 || enemy.y >= state.config.height - 82) enemy.vy *= -0.72;
 
     enemy.angle = Math.atan2(enemy.vy, enemy.vx);
-    if (enemy.aiState === "attack") attackPlayer(state, enemy, target.distance);
+    if (enemy.aiState === "attack") attackPlayer(state, enemy, target.playerDistance);
   }
 }
