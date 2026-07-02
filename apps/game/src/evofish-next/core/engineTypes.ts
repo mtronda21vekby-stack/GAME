@@ -125,8 +125,8 @@ export type NextEngineStats = {
   craftBarrierT: number;
   craftBiteBoostT: number;
   craftSonarT: number;
-  resourcesCollected: number;
-  activeResources: number;
+  resourcesCollected?: number;
+  activeResources?: number;
   zoneId: NextZoneId;
   zoneName: string;
   zoneEffect: string;
