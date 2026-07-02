@@ -1,5 +1,6 @@
 import type { NextQuestState } from "../core/engineTypes";
 import type { EvoFishEconomyState, EvoFishFormId, SkinLoadoutState } from "../core/types";
+import { defaultMutationState, type NextMutationState } from "../content/mutations";
 import { xpToNextLevel, xpToNextTier } from "../content/progression";
 import { EVOFISH_SKIN_BY_ID, getDefaultSkinId } from "../content/skins";
 
@@ -40,6 +41,7 @@ export type EvoFishNextSkinSave = {
   loadout: SkinLoadoutState;
   progress: EvoFishNextProgressState;
   quests: NextQuestState;
+  mutations: NextMutationState;
 };
 
 export function defaultNextProgress(): EvoFishNextProgressState {
@@ -103,7 +105,8 @@ export function migrateLegacySkinSave(legacy: LegacyEvoFishSave | null | undefin
       kills: 0,
       deaths: Math.max(0, Math.floor(legacy?.deaths || 0))
     },
-    quests: defaultNextQuests()
+    quests: defaultNextQuests(),
+    mutations: defaultMutationState()
   };
 }
 
