@@ -151,12 +151,12 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
     autoHideUi();
   };
 
-  const openNextGame = (event?: React.SyntheticEvent) => {
+  const openLobby = (event?: React.SyntheticEvent) => {
     event?.preventDefault();
     event?.stopPropagation();
     clearHideTimer();
     setUiHidden(true);
-    navigate("/game/next");
+    navigate("/game");
   };
 
   const openSkinLab = (event?: React.SyntheticEvent) => {
@@ -197,7 +197,7 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
   };
 
   useEffect(() => {
-    document.title = `EvoFish ${EVOFISH_VERSION}`;
+    document.title = `EvoFish Classic ${EVOFISH_VERSION}`;
     document.documentElement.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
     document.body.style.touchAction = "none";
@@ -255,12 +255,12 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
       <button
         className="bcNextQuick"
         type="button"
-        onPointerDown={openNextGame}
-        onTouchStart={openNextGame}
-        onClick={openNextGame}
-        aria-label="Открыть EvoFish Next"
+        onPointerDown={openLobby}
+        onTouchStart={openLobby}
+        onClick={openLobby}
+        aria-label="Открыть общее лобби"
       >
-        NEXT GAME<span>{EVOFISH_NEXT_VERSION}</span>
+        LOBBY<span>Next {EVOFISH_NEXT_VERSION}</span>
       </button>
 
       <InstallAppHint />
@@ -268,11 +268,11 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
       <div className={`bcOverlay ${fullscreen && uiHidden ? "bcOverlayHidden" : ""}`}>
         <div className="bcOverlayInner">
           <div className="bcMenuHeader">
-            EvoFish
-            <span>Playable {EVOFISH_VERSION}</span>
-            <span>Next {EVOFISH_NEXT_VERSION}</span>
+            EvoFish Classic
+            <span>Classic {EVOFISH_VERSION}</span>
+            <span>Lobby / Next {EVOFISH_NEXT_VERSION}</span>
           </div>
-          <button className="bcPill bcPillNext" onPointerDown={openNextGame} onClick={openNextGame}>NEXT GAME — новая версия</button>
+          <button className="bcPill bcPillNext" onPointerDown={openLobby} onClick={openLobby}>LOBBY — общее меню</button>
           <button className="bcPill bcPillNextGhost" onPointerDown={openSkinLab} onClick={openSkinLab}>Skin Lab — скины Next</button>
           <button className="bcPill bcPillPrimary" onClick={() => openGameTab("tHud")}>Игра</button>
           <button className="bcPill" onClick={() => openGameTab("tShop")}>Магазин</button>
@@ -292,7 +292,7 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
       <div style={{ height: frameHeight }}>
         <iframe
           ref={iframeRef}
-          title="EvoFish"
+          title="EvoFish Classic"
           src={props.src}
           onLoad={() => {
             applyRuntime(iframeRef.current);
