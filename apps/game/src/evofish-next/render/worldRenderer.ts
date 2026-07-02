@@ -143,6 +143,88 @@ function drawFloatText(ctx: CanvasRenderingContext2D, state: NextEngineState) {
   ctx.globalAlpha = 1;
 }
 
+function mapX(state: NextEngineState, x: number, left: number, width: number) {
+  return left + (x / state.config.width) * width;
+}
+
+function mapY(state: NextEngineState, y: number, top: number, height: number) {
+  return top + (y / state.config.height) * height;
+}
+
+function drawMapDot(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, fill: string, stroke?: string) {
+  ctx.fillStyle = fill;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fill();
+  if (stroke) {
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+}
+
+function drawMiniMap(ctx: CanvasRenderingContext2D, state: NextEngineState, camera: NextCameraState, viewport: NextViewport) {
+  const mapW = Math.min(176, Math.max(132, viewport.width * 0.22));
+  const mapH = Math.round(mapW * (state.config.height / state.config.width));
+  const left = Math.max(12, viewport.width - mapW - 12);
+  const top = Math.min(Math.max(58, viewport.height - mapH - 112), viewport.height - mapH - 16);
+  const apex = state.enemies.find((enemy) => enemy.aiType === "apex");
+
+  ctx.save();
+  ctx.fillStyle = "rgba(2,16,27,.68)";
+  ctx.strokeStyle = "rgba(150,230,255,.18)";
+  ctx.lineWidth = 1;
+  ctx.fillRect(left, top, mapW, mapH);
+  ctx.strokeRect(left, top, mapW, mapH);
+
+  ctx.fillStyle = "rgba(150,230,255,.06)";
+  for (let gx = 1; gx < 4; gx += 1) ctx.fillRect(left + (mapW / 4) * gx, top, 1, mapH);
+  for (let gy = 1; gy < 3; gy += 1) ctx.fillRect(left, top + (mapH / 3) * gy, mapW, 1);
+
+  const camX = left + (camera.x / state.config.width) * mapW;
+  const camY = top + (camera.y / state.config.height) * mapH;
+  const camW = (camera.width / state.config.width) * mapW;
+  const camH = (camera.height / state.config.height) * mapH;
+  ctx.strokeStyle = "rgba(255,255,255,.24)";
+  ctx.strokeRect(camX, camY, camW, camH);
+
+  const threatDots = state.enemies
+    .filter((enemy) => enemy.aiType !== "apex")
+    .sort((a, b) => Math.hypot(a.x - state.player.x, a.y - state.player.y) - Math.hypot(b.x - state.player.x, b.y - state.player.y))
+    .slice(0, 18);
+
+  for (const enemy of threatDots) {
+    const ex = mapX(state, enemy.x, left, mapW);
+    const ey = mapY(state, enemy.y, top, mapH);
+    const fill = enemy.aiType === "brute" ? "rgba(255,110,110,.78)" : enemy.aiType === "hunter" ? "rgba(255,180,90,.74)" : "rgba(150,230,255,.48)";
+    drawMapDot(ctx, ex, ey, enemy.aiType === "brute" ? 3 : 2.2, fill);
+  }
+
+  if (apex) {
+    const ax = mapX(state, apex.x, left, mapW);
+    const ay = mapY(state, apex.y, top, mapH);
+    const px = mapX(state, state.player.x, left, mapW);
+    const py = mapY(state, state.player.y, top, mapH);
+    ctx.strokeStyle = "rgba(255,220,120,.42)";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(px, py);
+    ctx.lineTo(ax, ay);
+    ctx.stroke();
+    drawMapDot(ctx, ax, ay, 5, "rgba(255,220,120,.95)", "rgba(255,90,90,.85)");
+  }
+
+  const px = mapX(state, state.player.x, left, mapW);
+  const py = mapY(state, state.player.y, top, mapH);
+  drawMapDot(ctx, px, py, 4.5, "rgba(110,255,180,.95)", "rgba(255,255,255,.72)");
+
+  ctx.textAlign = "left";
+  ctx.font = "900 10px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.fillStyle = "rgba(231,242,255,.78)";
+  ctx.fillText(apex ? "MAP · APEX TRACK" : "MAP · CLEAR", left + 8, top + 14);
+  ctx.restore();
+}
+
 export function renderNextWorld(ctx: CanvasRenderingContext2D, state: NextEngineState, viewport: NextViewport) {
   const camera = getNextCamera(state, viewport);
   const playerDowned = Boolean(state.player.downed || state.player.dead);
@@ -182,4 +264,5 @@ export function renderNextWorld(ctx: CanvasRenderingContext2D, state: NextEngine
   drawFloatText(ctx, state);
 
   ctx.restore();
+  drawMiniMap(ctx, state, camera, viewport);
 }
