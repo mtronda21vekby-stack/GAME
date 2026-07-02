@@ -29,8 +29,9 @@ function killEnemy(state: NextEngineState, enemy: NextFishEntity, index: number,
 
 function findBiteTarget(state: NextEngineState, camera: NextCameraState, input: NextInputState) {
   const player = state.player;
-  const aimX = input.down ? camera.x + input.pointerX - player.x : Math.cos(player.angle);
-  const aimY = input.down ? camera.y + input.pointerY - player.y : Math.sin(player.angle);
+  const scale = camera.scale || 1;
+  const aimX = input.down ? camera.x + input.pointerX / scale - player.x : Math.cos(player.angle);
+  const aimY = input.down ? camera.y + input.pointerY / scale - player.y : Math.sin(player.angle);
   const aimLen = Math.hypot(aimX, aimY) || 1;
   const nx = aimX / aimLen;
   const ny = aimY / aimLen;
