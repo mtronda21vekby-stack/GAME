@@ -2,6 +2,7 @@ import type { NextEngineState, NextInputState, NextViewport } from "../core/engi
 import { getNextCamera } from "./cameraSystem";
 import { updateCollisionSystem } from "./collisionSystem";
 import { updateCombatSystem } from "./combatSystem";
+import { updateCraftSystem } from "./craftSystem";
 import { updateEnemySystem } from "./enemySystem";
 import { updateFeedbackSystem } from "./feedbackSystem";
 import { syncProgressionStats } from "./progressionSystem";
@@ -12,6 +13,7 @@ import { updateSurvivalSystem } from "./survivalSystem";
 export function stepNextEngine(state: NextEngineState, input: NextInputState, viewport: NextViewport, dt: number) {
   const camera = getNextCamera(state, viewport);
 
+  updateCraftSystem(state, dt);
   updateSurvivalSystem(state, dt);
 
   if (!state.player.downed) {
@@ -26,6 +28,7 @@ export function stepNextEngine(state: NextEngineState, input: NextInputState, vi
     updateEnemySystem(state, dt);
   }
 
+  updateCraftSystem(state, dt);
   updateSurvivalSystem(state, dt);
   updateFeedbackSystem(state, dt);
   syncProgressionStats(state);
