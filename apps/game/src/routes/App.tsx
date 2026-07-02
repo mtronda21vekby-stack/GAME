@@ -94,12 +94,14 @@ export function App() {
   return (
     <Router
       routes={[
-        { path: "/", element: <Game /> },
-        { path: "/game", element: <Game /> },
+        { path: "/", element: <NextLobby /> },
+        { path: "/game", element: <NextLobby /> },
+        { path: "/game/classic", element: <Game /> },
         { path: "/game/next", element: <NextLobby /> },
         { path: "/game/next/lobby", element: <NextLobby /> },
         { path: "/game/next/skins", element: <SkinLab /> },
         { path: "/game/next/play", element: <NextPlaytest /> },
+        { path: "/classic", element: <Game /> },
         { path: "/next", element: <NextLobby /> },
         { path: "/next/lobby", element: <NextLobby /> },
         { path: "/next/skins", element: <SkinLab /> },
