@@ -4,6 +4,7 @@ import { updateCollisionSystem } from "./collisionSystem";
 import { updateCombatSystem } from "./combatSystem";
 import { updateEnemySystem } from "./enemySystem";
 import { updateFeedbackSystem } from "./feedbackSystem";
+import { syncProgressionStats } from "./progressionSystem";
 import { updatePlayerSystem } from "./playerSystem";
 
 export function stepNextEngine(state: NextEngineState, input: NextInputState, viewport: NextViewport, dt: number) {
@@ -14,12 +15,8 @@ export function stepNextEngine(state: NextEngineState, input: NextInputState, vi
   updateEnemySystem(state, dt);
   updateCollisionSystem(state);
   updateFeedbackSystem(state, dt);
+  syncProgressionStats(state);
 
   state.frame += 1;
-  state.stats.mass = state.player.mass;
-  state.stats.hp = state.player.hp;
-  state.stats.hpMax = state.player.hpMax;
-  state.stats.skinName = state.player.skin.name;
-
   return state;
 }
