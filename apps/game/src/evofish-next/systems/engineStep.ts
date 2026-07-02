@@ -7,14 +7,26 @@ import { updateFeedbackSystem } from "./feedbackSystem";
 import { syncProgressionStats } from "./progressionSystem";
 import { updateQuestSystem } from "./questSystem";
 import { updatePlayerSystem } from "./playerSystem";
+import { updateSurvivalSystem } from "./survivalSystem";
 
 export function stepNextEngine(state: NextEngineState, input: NextInputState, viewport: NextViewport, dt: number) {
   const camera = getNextCamera(state, viewport);
 
-  updatePlayerSystem(state, input, camera, dt);
-  updateCombatSystem(state, input, camera);
-  updateEnemySystem(state, dt);
-  updateCollisionSystem(state);
+  updateSurvivalSystem(state, dt);
+
+  if (!state.player.downed) {
+    updatePlayerSystem(state, input, camera, dt);
+    updateCombatSystem(state, input, camera);
+    updateEnemySystem(state, dt);
+    updateCollisionSystem(state);
+  } else {
+    input.bite = false;
+    input.dash = false;
+    input.down = false;
+    updateEnemySystem(state, dt);
+  }
+
+  updateSurvivalSystem(state, dt);
   updateFeedbackSystem(state, dt);
   syncProgressionStats(state);
   updateQuestSystem(state);
