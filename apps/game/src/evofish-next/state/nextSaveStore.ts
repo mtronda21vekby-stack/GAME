@@ -1,5 +1,6 @@
 import type { NextEngineState, NextQuestState } from "../core/engineTypes";
 import type { EvoFishCurrency } from "../core/types";
+import { defaultMutationState, NEXT_MUTATIONS, type NextMutationState } from "../content/mutations";
 import { xpToNextLevel, xpToNextTier } from "../content/progression";
 import { canUnlockSkinInNext, canUseSkinInNext } from "../content/skinUnlockRules";
 import { EVOFISH_SKIN_BY_ID, getDefaultSkinId } from "../content/skins";
@@ -64,6 +65,17 @@ function normalizeQuests(quests: Partial<NextQuestState> | null | undefined): Ne
   };
 }
 
+function normalizeMutations(mutations: Partial<NextMutationState> | null | undefined): NextMutationState {
+  const levels: Record<string, number> = {};
+  const input = mutations?.levels || {};
+
+  for (const mutation of NEXT_MUTATIONS) {
+    levels[mutation.id] = Math.max(0, Math.min(mutation.maxLevel, Math.floor(input[mutation.id] || 0)));
+  }
+
+  return { ...defaultMutationState(), levels };
+}
+
 function normalizeSave(save: EvoFishNextSkinSave): EvoFishNextSkinSave {
   const equipped = EVOFISH_SKIN_BY_ID[save.loadout.equippedSkinId]
     ? save.loadout.equippedSkinId
@@ -83,7 +95,8 @@ function normalizeSave(save: EvoFishNextSkinSave): EvoFishNextSkinSave {
       }
     },
     progress: normalizeProgress(save.progress),
-    quests: normalizeQuests(save.quests)
+    quests: normalizeQuests(save.quests),
+    mutations: normalizeMutations(save.mutations)
   };
 }
 
@@ -122,6 +135,7 @@ export function saveEvoFishNextProgress(engine: NextEngineState) {
     deaths: engine.stats.deaths
   });
   save.quests = normalizeQuests(engine.quests);
+  save.mutations = normalizeMutations(engine.mutations || save.mutations);
   saveEvoFishNextSave(save);
 }
 
@@ -171,4 +185,24 @@ export function equipSkin(save: EvoFishNextSkinSave, skinId: string): EvoFishNex
       equippedSkinId: skinId
     }
   });
+}
+
+export function canBuyMutation(save: EvoFishNextSkinSave, mutationId: string) {
+  const next = normalizeSave(save);
+  const mutation = NEXT_MUTATIONS.find((item) => item.id === mutationId);
+  if (!mutation) return false;
+  const current = next.mutations.levels[mutationId] || 0;
+  if (current >= mutation.maxLevel) return false;
+  return next.economy.corals >= mutation.coralCost;
+}
+
+export function buyMutation(save: EvoFishNextSkinSave, mutationId: string): EvoFishNextSkinSave {
+  if (!canBuyMutation(save, mutationId)) return save;
+  const next = normalizeSave(save);
+  const mutation = NEXT_MUTATIONS.find((item) => item.id === mutationId);
+  if (!mutation) return save;
+
+  next.economy.corals -= mutation.coralCost;
+  next.mutations.levels[mutationId] = Math.min(mutation.maxLevel, (next.mutations.levels[mutationId] || 0) + 1);
+  return normalizeSave(next);
 }
