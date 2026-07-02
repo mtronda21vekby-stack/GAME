@@ -1,4 +1,4 @@
-export const EVOFISH_VERSION = "v0.00.33 alpha";
+export const EVOFISH_VERSION = "v0.00.34 alpha";
 
 function numberFromText(value: string | null | undefined) {
   const n = Number(String(value || "").replace(/[^0-9.\-]/g, ""));
@@ -11,6 +11,36 @@ function xpFromText(value: string | null | undefined) {
     current: numberFromText(parts[0]),
     max: Math.max(1, numberFromText(parts[1]))
   };
+}
+
+function ensureClassicAutoStart(doc: Document) {
+  const start = doc.getElementById("start") as HTMLElement | null;
+  if (!start) return;
+
+  const root = doc.documentElement;
+  const btn = doc.getElementById("btnStart") as HTMLElement | null;
+  const alreadyStarted = root.getAttribute("data-bc-classic-autostart") === "1";
+
+  start.style.display = "none";
+  start.style.pointerEvents = "none";
+
+  if (alreadyStarted) return;
+  root.setAttribute("data-bc-classic-autostart", "1");
+
+  window.setTimeout(() => {
+    try {
+      btn?.click();
+      start.style.display = "none";
+      start.style.pointerEvents = "none";
+    } catch {
+      // Classic start overlay is optional after the unified lobby.
+    }
+  }, 0);
+
+  window.setTimeout(() => {
+    start.style.display = "none";
+    start.style.pointerEvents = "none";
+  }, 180);
 }
 
 function ensureVisualScaleGuard(doc: Document) {
@@ -158,6 +188,7 @@ export function applyEvoFishRuntime(frame: HTMLIFrameElement | null) {
 
     const root = doc.documentElement;
     root.setAttribute("data-evofish-version", EVOFISH_VERSION);
+    ensureClassicAutoStart(doc);
     ensureVisualScaleGuard(doc);
     ensureProgressFeedback(doc);
 
