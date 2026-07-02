@@ -1,4 +1,4 @@
-export type NextEnemyArchetypeId = "prey" | "neutral" | "hunter" | "brute";
+export type NextEnemyArchetypeId = "prey" | "neutral" | "hunter" | "brute" | "apex";
 
 export type NextEnemyArchetype = {
   id: NextEnemyArchetypeId;
@@ -51,10 +51,21 @@ export const NEXT_ENEMY_ARCHETYPES: Record<NextEnemyArchetypeId, NextEnemyArchet
     courage: 1.35,
     damageMultiplier: 1.45,
     description: "Large predator. Slow but dangerous on contact."
+  },
+  apex: {
+    id: "apex",
+    name: "Apex",
+    baseSpeed: 108,
+    aggroRadius: 560,
+    attackRange: 96,
+    courage: 1.85,
+    damageMultiplier: 2.2,
+    description: "Rare apex predator. High HP, high rewards, and strong map pressure."
   }
 };
 
 export function chooseEnemyArchetype(id: number): NextEnemyArchetype {
+  if (id % 31 === 0) return NEXT_ENEMY_ARCHETYPES.apex;
   if (id % 7 === 0) return NEXT_ENEMY_ARCHETYPES.brute;
   if (id % 5 === 0) return NEXT_ENEMY_ARCHETYPES.hunter;
   if (id % 3 === 0) return NEXT_ENEMY_ARCHETYPES.neutral;
