@@ -118,6 +118,7 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const hideTimer = useRef<number | null>(null);
+  const holdTimer = useRef<number | null>(null);
 
   const [pseudoFullscreen, setPseudoFullscreen] = useState(true);
   const [nativeFullscreen, setNativeFullscreen] = useState(false);
@@ -131,15 +132,34 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
     hideTimer.current = null;
   };
 
+  const clearHoldTimer = () => {
+    if (!holdTimer.current) return;
+    window.clearTimeout(holdTimer.current);
+    holdTimer.current = null;
+  };
+
   const autoHideUi = () => {
     clearHideTimer();
     if (!fullscreen) return;
-    hideTimer.current = window.setTimeout(() => setUiHidden(true), 2400);
+    hideTimer.current = window.setTimeout(() => setUiHidden(true), 2600);
   };
 
   const openMenu = () => {
-    setUiHidden((value) => !value);
+    setUiHidden(false);
     autoHideUi();
+  };
+
+  const startMenuHold = (event: React.PointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    clearHoldTimer();
+    holdTimer.current = window.setTimeout(openMenu, 520);
+  };
+
+  const cancelMenuHold = (event?: React.PointerEvent<HTMLDivElement>) => {
+    event?.preventDefault();
+    event?.stopPropagation();
+    clearHoldTimer();
   };
 
   const openGameTab = (tabId: string) => {
@@ -180,6 +200,8 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
       document.documentElement.style.overflow = "";
       document.body.style.overflow = "";
       document.body.style.touchAction = "";
+      clearHideTimer();
+      clearHoldTimer();
     };
   }, []);
 
@@ -187,7 +209,7 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
     const onFullscreenChange = () => {
       setNativeFullscreen(isNativeFullscreenActive());
       setUiHidden(true);
-      autoHideUi();
+      clearHideTimer();
     };
 
     document.addEventListener("fullscreenchange", onFullscreenChange);
@@ -201,8 +223,7 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
       document.removeEventListener("mozfullscreenchange" as any, onFullscreenChange);
       document.removeEventListener("MSFullscreenChange" as any, onFullscreenChange);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fullscreen]);
+  }, []);
 
   useEffect(() => {
     const t = window.setInterval(() => injectMobileCss(iframeRef.current), 800);
@@ -222,9 +243,16 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
         background: "#031827"
       }}
     >
-      <button className="bcQuickMenu" type="button" onClick={openMenu} aria-label="Меню игры">
-        ☰
-      </button>
+      <div
+        className="bcMenuHoldZone"
+        onPointerDown={startMenuHold}
+        onPointerUp={cancelMenuHold}
+        onPointerCancel={cancelMenuHold}
+        onPointerLeave={cancelMenuHold}
+        aria-label="Удерживать для меню игры"
+      >
+        <span>MENU</span>
+      </div>
 
       <div className={`bcOverlay ${fullscreen && uiHidden ? "bcOverlayHidden" : ""}`}>
         <div className="bcOverlayInner">
@@ -248,7 +276,10 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
           ref={iframeRef}
           title="EvoFish"
           src={props.src}
-          onLoad={() => injectMobileCss(iframeRef.current)}
+          onLoad={() => {
+            injectMobileCss(iframeRef.current);
+            setUiHidden(true);
+          }}
           style={{
             width: "100%",
             height: frameHeight,
@@ -265,12 +296,13 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
       <style>{`
         .bcPseudoFs{position:fixed!important;inset:0!important;z-index:9999!important}
         .bcImmersive{width:var(--app-vw,100vw)!important;height:var(--app-vh,100vh)!important;background:#031827!important}
-        .bcQuickMenu{position:absolute;right:max(12px,env(safe-area-inset-right));top:max(10px,env(safe-area-inset-top));z-index:36;width:46px;height:46px;border-radius:999px;border:1px solid rgba(150,230,255,.18);background:rgba(2,16,27,.62);color:#e7f2ff;font-size:22px;font-weight:900;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 12px 30px rgba(0,0,0,.22)}
-        .bcOverlay{position:absolute;left:0;right:0;top:0;z-index:35;padding:calc(max(10px,env(safe-area-inset-top)) + 54px) 10px 10px;transition:opacity 160ms ease,transform 160ms ease;pointer-events:none}
+        .bcMenuHoldZone{position:absolute;left:max(10px,env(safe-area-inset-left));top:max(10px,env(safe-area-inset-top));z-index:36;width:106px;height:54px;border-radius:16px;touch-action:none;display:flex;align-items:flex-start;justify-content:flex-end;box-sizing:border-box;padding:5px 7px;pointer-events:auto}
+        .bcMenuHoldZone span{font-size:9px;font-weight:900;letter-spacing:.08em;color:rgba(231,242,255,.38);background:rgba(2,16,27,.16);border-radius:999px;padding:2px 5px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+        .bcOverlay{position:absolute;left:0;right:0;top:0;z-index:35;padding:calc(max(10px,env(safe-area-inset-top)) + 64px) 10px 10px;transition:opacity 160ms ease,transform 160ms ease;pointer-events:none}
         .bcOverlayHidden{opacity:0;transform:translateY(-12px)}
-        .bcOverlayInner{margin-left:auto;width:min(320px,calc(100vw - 20px));display:grid;grid-template-columns:1fr;gap:8px;padding:10px;border-radius:22px;background:rgba(2,16,27,.94);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(150,230,255,.14);box-shadow:0 18px 50px rgba(0,0,0,.30);pointer-events:auto}
+        .bcOverlayInner{margin-left:max(10px,env(safe-area-inset-left));width:min(320px,calc(100vw - 20px));display:grid;grid-template-columns:1fr;gap:8px;padding:10px;border-radius:22px;background:rgba(2,16,27,.94);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(150,230,255,.14);box-shadow:0 18px 50px rgba(0,0,0,.30);pointer-events:auto}
         .bcPill{min-height:42px;padding:0 13px;border-radius:15px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.07);color:#e7f2ff;font-weight:900;text-align:left}.bcPillPrimary{border-color:rgba(120,240,255,.28);background:linear-gradient(180deg,rgba(120,240,255,.22),rgba(90,160,255,.13))}
-        @media(orientation:landscape){.bcQuickMenu{width:42px;height:42px;font-size:20px}.bcOverlay{padding-top:calc(max(10px,env(safe-area-inset-top)) + 50px)}.bcOverlayInner{width:250px}}
+        @media(orientation:landscape){.bcMenuHoldZone{width:98px;height:48px}.bcOverlay{padding-top:calc(max(10px,env(safe-area-inset-top)) + 54px)}.bcOverlayInner{width:250px}}
       `}</style>
     </div>
   );
