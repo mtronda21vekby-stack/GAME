@@ -1,5 +1,6 @@
 import type { EvoFishEconomyState, EvoFishFormId, EvoFishSkinDefinition } from "./types";
 import type { NextEnemyArchetypeId } from "../content/enemyArchetypes";
+import type { NextCraftState } from "../content/craft";
 import type { NextMutationState } from "../content/mutations";
 
 export type NextViewport = {
@@ -105,6 +106,9 @@ export type NextEngineStats = {
   pearls: number;
   corals: number;
   mutationLevel: number;
+  craftBarrierT: number;
+  craftBiteBoostT: number;
+  craftSonarT: number;
   completedQuests: number;
   activeQuestTitle: string;
   activeQuestProgress: number;
@@ -125,6 +129,7 @@ export type NextEngineStats = {
 export type NextEngineState = {
   config: NextWorldConfig;
   economy: EvoFishEconomyState;
+  craft: NextCraftState;
   mutations: NextMutationState;
   quests: NextQuestState;
   player: NextPlayerState;
