@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import type { GameSettings } from "./SettingsPanel";
 import { EVOFISH_MOBILE_CSS } from "./evoFishMobileCss";
 import { InstallAppHint } from "./InstallAppHint";
+import { applyEvoFishRuntime, EVOFISH_VERSION } from "./evoFishRuntime";
 
 type EvoFishFrameProps = {
   src: string;
@@ -113,6 +114,11 @@ function injectMobileCss(frame: HTMLIFrameElement | null) {
   }
 }
 
+function applyRuntime(frame: HTMLIFrameElement | null) {
+  injectMobileCss(frame);
+  applyEvoFishRuntime(frame);
+}
+
 export function EvoFishFrame(props: EvoFishFrameProps) {
   useAppViewportHeightVar();
 
@@ -173,6 +179,7 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
   };
 
   useEffect(() => {
+    document.title = `EvoFish ${EVOFISH_VERSION}`;
     document.documentElement.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
     document.body.style.touchAction = "none";
@@ -206,7 +213,7 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
   }, []);
 
   useEffect(() => {
-    const t = window.setInterval(() => injectMobileCss(iframeRef.current), 800);
+    const t = window.setInterval(() => applyRuntime(iframeRef.current), 800);
     return () => window.clearInterval(t);
   }, []);
 
@@ -231,6 +238,7 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
 
       <div className={`bcOverlay ${fullscreen && uiHidden ? "bcOverlayHidden" : ""}`}>
         <div className="bcOverlayInner">
+          <div className="bcMenuHeader">EvoFish <span>{EVOFISH_VERSION}</span></div>
           <button className="bcPill bcPillPrimary" onClick={() => openGameTab("tHud")}>Игра</button>
           <button className="bcPill" onClick={() => openGameTab("tShop")}>Магазин</button>
           <button className="bcPill" onClick={() => openGameTab("tCraft")}>Мутации</button>
@@ -252,7 +260,7 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
           title="EvoFish"
           src={props.src}
           onLoad={() => {
-            injectMobileCss(iframeRef.current);
+            applyRuntime(iframeRef.current);
             setUiHidden(true);
           }}
           style={{
@@ -276,6 +284,7 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
         .bcOverlayHidden{opacity:0;transform:translateY(-12px);visibility:hidden}
         .bcOverlayHidden .bcOverlayInner{pointer-events:none!important}
         .bcOverlayInner{margin-left:max(10px,env(safe-area-inset-left));width:min(320px,calc(100vw - 20px));display:grid;grid-template-columns:1fr;gap:8px;padding:10px;border-radius:22px;background:rgba(2,16,27,.95);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(150,230,255,.16);box-shadow:0 18px 50px rgba(0,0,0,.32);pointer-events:auto}
+        .bcMenuHeader{padding:4px 4px 7px;color:#e7f2ff;font-weight:950;font-size:13px}.bcMenuHeader span{display:block;margin-top:2px;font-size:11px;color:rgba(231,242,255,.62);font-weight:850}
         .bcPill{min-height:42px;padding:0 13px;border-radius:15px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.07);color:#e7f2ff;font-weight:950;text-align:left}.bcPillPrimary{border-color:rgba(120,240,255,.30);background:linear-gradient(180deg,rgba(120,240,255,.24),rgba(90,160,255,.14))}
         @media(orientation:landscape){.bcMenuButton{left:max(118px,calc(env(safe-area-inset-left) + 118px));width:54px;height:28px;font-size:10px}.bcOverlay{padding-top:calc(max(10px,env(safe-area-inset-top)) + 42px)}.bcOverlayInner{width:250px}}
       `}</style>
