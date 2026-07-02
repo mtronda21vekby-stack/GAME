@@ -1,4 +1,5 @@
 import type { EvoFishFormId, EvoFishSkinDefinition } from "./types";
+import type { NextEnemyArchetypeId } from "../content/enemyArchetypes";
 
 export type NextViewport = {
   width: number;
@@ -29,6 +30,8 @@ export type NextDamageFloat = {
   kind: "damage" | "kill" | "danger";
 };
 
+export type NextAIState = "wander" | "hunt" | "flee" | "attack";
+
 export type NextFishEntity = {
   id: number;
   x: number;
@@ -40,14 +43,23 @@ export type NextFishEntity = {
   hp: number;
   hpMax: number;
   damage: number;
+  speed: number;
   form: EvoFishFormId;
   skin: EvoFishSkinDefinition;
   angle: number;
   hitT: number;
+  aiType: NextEnemyArchetypeId;
+  aiState: NextAIState;
+  aggroRadius: number;
+  attackRange: number;
+  attackCd: number;
+  thinkT: number;
+  wanderX: number;
+  wanderY: number;
+  wanderT: number;
 };
 
 export type NextPlayerState = NextFishEntity & {
-  speed: number;
   biteCd: number;
   dashCd: number;
   dashT: number;
