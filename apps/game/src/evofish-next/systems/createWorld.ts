@@ -1,10 +1,10 @@
 import type { EvoFishEconomyState, EvoFishFormId, EvoFishSkinDefinition } from "../core/types";
-import type { NextEngineState, NextFishEntity, NextWorldConfig } from "../core/engineTypes";
+import type { NextEngineState, NextFishEntity, NextQuestState, NextWorldConfig } from "../core/engineTypes";
 import { chooseEnemyArchetype } from "../content/enemyArchetypes";
 import { EVOFISH_FORMS } from "../content/forms";
 import { xpToNextLevel, xpToNextTier } from "../content/progression";
 import { EVOFISH_SKIN_BY_ID } from "../content/skins";
-import type { EvoFishNextProgressState } from "../state/skinSaveAdapter";
+import { defaultNextQuests, type EvoFishNextProgressState } from "../state/skinSaveAdapter";
 
 export const NEXT_WORLD_CONFIG: NextWorldConfig = {
   width: 2800,
@@ -63,6 +63,15 @@ function wanderPoint(config: NextWorldConfig) {
   };
 }
 
+function normalizeQuestState(quests?: NextQuestState): NextQuestState {
+  return {
+    completed: {
+      ...defaultNextQuests().completed,
+      ...(quests?.completed || {})
+    }
+  };
+}
+
 export function makeEnemy(id: number, config: NextWorldConfig = NEXT_WORLD_CONFIG): NextFishEntity {
   const archetype = chooseEnemyArchetype(id);
   const big = archetype.id === "brute";
@@ -99,7 +108,12 @@ export function makeEnemy(id: number, config: NextWorldConfig = NEXT_WORLD_CONFI
   };
 }
 
-export function createNextWorld(playerSkin: EvoFishSkinDefinition, savedProgress?: EvoFishNextProgressState, savedEconomy?: EvoFishEconomyState): NextEngineState {
+export function createNextWorld(
+  playerSkin: EvoFishSkinDefinition,
+  savedProgress?: EvoFishNextProgressState,
+  savedEconomy?: EvoFishEconomyState,
+  savedQuests?: NextQuestState
+): NextEngineState {
   const form = savedProgress?.form || formFromSkin(playerSkin);
   const config = NEXT_WORLD_CONFIG;
   const level = Math.max(1, Math.floor(savedProgress?.level || 1));
@@ -112,10 +126,13 @@ export function createNextWorld(playerSkin: EvoFishSkinDefinition, savedProgress
     pearls: Math.max(0, Math.floor(savedEconomy?.pearls || 0)),
     corals: Math.max(0, Math.floor(savedEconomy?.corals || 0))
   };
+  const quests = normalizeQuestState(savedQuests);
+  const completedQuests = Object.keys(quests.completed).length;
 
   return {
     config,
     economy,
+    quests,
     frame: 0,
     nextFloatId: 1,
     player: {
@@ -169,6 +186,10 @@ export function createNextWorld(playerSkin: EvoFishSkinDefinition, savedProgress
       levelXpToNext: Math.max(1, Math.floor(savedProgress?.levelXpToNext || xpToNextLevel(level))),
       pearls: economy.pearls,
       corals: economy.corals,
+      completedQuests,
+      activeQuestTitle: "—",
+      activeQuestProgress: 0,
+      activeQuestTarget: 1,
       skinName: playerSkin.name,
       formName: EVOFISH_FORMS[form].name,
       lastEvent: savedProgress ? "Сейв загружен" : "Готов"
