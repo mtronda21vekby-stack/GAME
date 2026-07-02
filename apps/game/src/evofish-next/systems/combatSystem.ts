@@ -1,6 +1,7 @@
 import type { NextEngineState, NextFishEntity, NextInputState, NextCameraState } from "../core/engineTypes";
 import { makeEnemy } from "./createWorld";
 import { canDevour } from "./collisionSystem";
+import { awardKillProgression } from "./progressionSystem";
 
 function addFloat(state: NextEngineState, x: number, y: number, text: string, kind: "damage" | "kill" | "danger") {
   state.floats.push({ id: state.nextFloatId++, x, y, text, ttl: 0.75, kind });
@@ -9,14 +10,15 @@ function addFloat(state: NextEngineState, x: number, y: number, text: string, ki
 function killEnemy(state: NextEngineState, enemy: NextFishEntity, index: number, source: "bite" | "devour") {
   const player = state.player;
   const massGain = enemy.mass * (source === "devour" ? 0.08 : 0.045);
+  const xp = awardKillProgression(state, enemy, source);
 
   player.mass += massGain;
   player.radius = Math.min(player.radius + enemy.radius * 0.014, 58);
   player.hp = Math.min(player.hpMax, player.hp + player.hpMax * 0.06);
 
   state.stats.kills += 1;
-  state.stats.lastEvent = `Убийство +${massGain.toFixed(2)} Mass`;
-  addFloat(state, enemy.x, enemy.y, "KILL", "kill");
+  state.stats.lastEvent = `Убийство +${xp} XP +${massGain.toFixed(2)} Mass`;
+  addFloat(state, enemy.x, enemy.y, `KILL +${xp}XP`, "kill");
   state.enemies.splice(index, 1, makeEnemy(1000 + state.stats.kills, state.config));
 }
 
