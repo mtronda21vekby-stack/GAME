@@ -95,8 +95,10 @@ export function App() {
       routes={[
         { path: "/", element: <Game /> },
         { path: "/game", element: <Game /> },
+        { path: "/game/next", element: <NextPlaytest /> },
         { path: "/game/next/skins", element: <SkinLab /> },
         { path: "/game/next/play", element: <NextPlaytest /> },
+        { path: "/next", element: <NextPlaytest /> },
         { path: "/next/skins", element: <SkinLab /> },
         { path: "/next/play", element: <NextPlaytest /> },
       ]}
