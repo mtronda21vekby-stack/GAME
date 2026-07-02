@@ -1,16 +1,19 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link } from "../../router";
 import type { NextEngineStats, NextInputState } from "../core/engineTypes";
+import { getMutationLevel, NEXT_MUTATIONS } from "../content/mutations";
 import { EVOFISH_SKIN_BY_ID } from "../content/skins";
 import { renderNextWorld } from "../render/worldRenderer";
 import { createNextWorld } from "../systems/createWorld";
 import { stepNextEngine } from "../systems/engineStep";
-import { loadEvoFishNextSave, saveEvoFishNextProgress } from "../state/nextSaveStore";
+import { buyMutation, canBuyMutation, loadEvoFishNextSave, saveEvoFishNextProgress, saveEvoFishNextSave } from "../state/nextSaveStore";
 import { EVOFISH_NEXT_VERSION } from "../version";
 
 export function NextPlaytest() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const inputRef = useRef<NextInputState>({ pointerX: 0, pointerY: 0, down: false, bite: false, dash: false });
+  const [saveState, setSaveState] = useState(() => loadEvoFishNextSave());
+  const [mutationsOpen, setMutationsOpen] = useState(false);
   const [stats, setStats] = useState<NextEngineStats>({
     mass: 1,
     kills: 0,
@@ -26,6 +29,7 @@ export function NextPlaytest() {
     levelXpToNext: 1,
     pearls: 0,
     corals: 0,
+    mutationLevel: 0,
     completedQuests: 0,
     activeQuestTitle: "—",
     activeQuestProgress: 0,
@@ -43,8 +47,7 @@ export function NextPlaytest() {
     lastEvent: "Готов"
   });
 
-  const save = useMemo(() => loadEvoFishNextSave(), []);
-  const skin = EVOFISH_SKIN_BY_ID[save.loadout.equippedSkinId] || EVOFISH_SKIN_BY_ID.default;
+  const skin = EVOFISH_SKIN_BY_ID[saveState.loadout.equippedSkinId] || EVOFISH_SKIN_BY_ID.default;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -56,7 +59,7 @@ export function NextPlaytest() {
     let last = performance.now();
     let saveTimer = 0;
     const input = inputRef.current;
-    const engine = createNextWorld(skin, save.progress, save.economy, save.quests);
+    const engine = createNextWorld(skin, saveState.progress, saveState.economy, saveState.quests, saveState.mutations);
 
     const resize = () => {
       const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
@@ -122,7 +125,14 @@ export function NextPlaytest() {
       canvas.removeEventListener("pointerup", onUp);
       canvas.removeEventListener("pointercancel", onUp);
     };
-  }, [skin, save.progress, save.economy, save.quests]);
+  }, [skin, saveState]);
+
+  const buyMutationLevel = (id: string) => {
+    const next = buyMutation(saveState, id);
+    if (next === saveState) return;
+    setSaveState(next);
+    saveEvoFishNextSave(next);
+  };
 
   const hpPct = Math.max(0, Math.min(1, stats.hp / Math.max(1, stats.hpMax)));
   const xpPct = Math.max(0, Math.min(1, stats.xp / Math.max(1, stats.xpToNext)));
@@ -142,7 +152,7 @@ export function NextPlaytest() {
         <span>LV {stats.level} · Tier {stats.tier} · {stats.formName}</span>
         <span>{stats.skinName}</span>
         <span>Mass {stats.mass.toFixed(2)} · Kills {stats.kills} · Downs {downs}</span>
-        <span>Жемчуг {stats.pearls} · Кораллы {stats.corals}</span>
+        <span>Жемчуг {stats.pearls} · Кораллы {stats.corals} · Mut {stats.mutationLevel}</span>
         {stats.apexAlive ? (
           <>
             <span>APEX {stats.apexName} {Math.round(stats.apexHp)} / {Math.round(stats.apexHpMax)}</span>
@@ -162,18 +172,40 @@ export function NextPlaytest() {
         <i><em className="quest" style={{ width: `${questPct * 100}%` }} /></i>
         <span>{stats.lastEvent}</span>
       </div>
+
+      {mutationsOpen ? (
+        <div className="efMutPanel">
+          <div className="efMutHead">
+            <b>Mutations</b>
+            <button onClick={() => setMutationsOpen(false)}>×</button>
+          </div>
+          {NEXT_MUTATIONS.map((mutation) => {
+            const level = getMutationLevel(saveState.mutations, mutation.id);
+            const canBuy = canBuyMutation(saveState, mutation.id);
+            return (
+              <button key={mutation.id} className="efMutItem" disabled={!canBuy} onClick={() => buyMutationLevel(mutation.id)}>
+                <b>{mutation.name} <span>LV {level}/{mutation.maxLevel}</span></b>
+                <small>{mutation.description}</small>
+                <em>{level >= mutation.maxLevel ? "MAX" : `${mutation.coralCost} коралл`}</em>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+
       {downed ? <div className="efNextRevive">Возрождение через {reviveTime.toFixed(1)} сек</div> : null}
-      <div className="efNextHelp">Найди APEX-хищника: много HP, сильный урон, крупная награда. После падения — revive и временный щит.</div>
+      <div className="efNextHelp">Next теперь имеет Apex, мини-карту, quests, revive и mutations. Остальные системы старой игры переносим слоями.</div>
       <div className="efNextControls">
         <button disabled={downed} onPointerDown={(event) => { event.preventDefault(); inputRef.current.bite = true; }}>BITE</button>
         <button disabled={downed} onPointerDown={(event) => { event.preventDefault(); inputRef.current.dash = true; }}>DASH</button>
       </div>
       <div className="efNextLinks">
+        <button onClick={() => setMutationsOpen((value) => !value)}>Mutations</button>
         <Link to="/game/next/skins">Skin Lab</Link>
-        <Link to="/game">Playable EvoFish</Link>
+        <Link to="/game">Playable</Link>
       </div>
       <style>{`
-        .efNextPlay{position:fixed;inset:0;overflow:hidden;background:#031827;color:#e7f2ff;touch-action:none}.efNextCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}.efNextHud{position:absolute;left:max(12px,env(safe-area-inset-left));top:max(12px,env(safe-area-inset-top));z-index:3;display:grid;gap:3px;padding:12px 14px;border-radius:20px;background:rgba(2,16,27,.62);border:1px solid rgba(150,230,255,.15);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 14px 40px rgba(0,0,0,.26)}.efNextHud b{font-size:13px}.efNextHud span{font-size:11px;color:rgba(231,242,255,.76)}.efNextHud i{display:block;width:166px;height:5px;border-radius:999px;background:rgba(255,255,255,.10);overflow:hidden}.efNextHud em{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,rgba(110,255,180,.95),rgba(120,240,255,.85))}.efNextHud em.apex{background:linear-gradient(90deg,rgba(255,90,90,.95),rgba(255,220,120,.92))}.efNextHud em.xp{background:linear-gradient(90deg,rgba(255,220,120,.95),rgba(255,160,90,.85))}.efNextHud em.level{background:linear-gradient(90deg,rgba(180,140,255,.95),rgba(120,240,255,.85))}.efNextHud em.quest{background:linear-gradient(90deg,rgba(255,240,160,.95),rgba(180,140,255,.85))}.efNextRevive{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;padding:18px 22px;border-radius:24px;background:rgba(2,16,27,.78);border:1px solid rgba(255,120,120,.22);box-shadow:0 22px 70px rgba(0,0,0,.34);font-size:18px;font-weight:1000;color:#ffd0d0;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}.efNextHelp{position:absolute;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:3;max-width:min(640px,calc(100vw - 24px));padding:10px 13px;border-radius:999px;background:rgba(2,16,27,.48);border:1px solid rgba(150,230,255,.12);font-size:12px;text-align:center;color:rgba(231,242,255,.76);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}.efNextLinks{position:absolute;right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));z-index:4;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.efNextLinks a{min-height:34px;display:inline-flex;align-items:center;padding:0 12px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(150,230,255,.14);color:#e7f2ff;text-decoration:none;font-size:12px;font-weight:900}.efNextControls{position:absolute;right:max(16px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));z-index:5;display:flex;gap:10px}.efNextControls button{width:78px;height:78px;border-radius:999px;border:1px solid rgba(150,230,255,.22);background:linear-gradient(180deg,rgba(120,240,255,.22),rgba(90,160,255,.12));box-shadow:0 14px 38px rgba(0,0,0,.28);color:#e7f2ff;font-weight:1000;letter-spacing:.04em;touch-action:manipulation}.efNextControls button:first-child{background:linear-gradient(180deg,rgba(255,110,110,.24),rgba(255,90,90,.12))}.efNextControls button:disabled{opacity:.45}@media(max-width:760px){.efNextLinks{top:auto;bottom:calc(max(18px,env(safe-area-inset-bottom)) + 92px)}.efNextHelp{left:max(12px,env(safe-area-inset-left));right:max(112px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));transform:none;text-align:left;font-size:11px}.efNextHud{max-width:214px}.efNextControls button{width:74px;height:74px}.efNextRevive{font-size:15px;white-space:nowrap}}
+        .efNextPlay{position:fixed;inset:0;overflow:hidden;background:#031827;color:#e7f2ff;touch-action:none}.efNextCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}.efNextHud{position:absolute;left:max(12px,env(safe-area-inset-left));top:max(12px,env(safe-area-inset-top));z-index:3;display:grid;gap:3px;padding:12px 14px;border-radius:20px;background:rgba(2,16,27,.62);border:1px solid rgba(150,230,255,.15);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 14px 40px rgba(0,0,0,.26);max-width:min(330px,calc(100vw - 24px));max-height:58vh;overflow:auto;box-sizing:border-box}.efNextHud b{font-size:13px}.efNextHud span{font-size:11px;color:rgba(231,242,255,.76)}.efNextHud i{display:block;width:166px;max-width:100%;height:5px;border-radius:999px;background:rgba(255,255,255,.10);overflow:hidden}.efNextHud em{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,rgba(110,255,180,.95),rgba(120,240,255,.85))}.efNextHud em.apex{background:linear-gradient(90deg,rgba(255,90,90,.95),rgba(255,220,120,.92))}.efNextHud em.xp{background:linear-gradient(90deg,rgba(255,220,120,.95),rgba(255,160,90,.85))}.efNextHud em.level{background:linear-gradient(90deg,rgba(180,140,255,.95),rgba(120,240,255,.85))}.efNextHud em.quest{background:linear-gradient(90deg,rgba(255,240,160,.95),rgba(180,140,255,.85))}.efNextRevive{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;padding:18px 22px;border-radius:24px;background:rgba(2,16,27,.78);border:1px solid rgba(255,120,120,.22);box-shadow:0 22px 70px rgba(0,0,0,.34);font-size:18px;font-weight:1000;color:#ffd0d0;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}.efNextHelp{position:absolute;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:3;max-width:min(640px,calc(100vw - 24px));padding:10px 13px;border-radius:999px;background:rgba(2,16,27,.48);border:1px solid rgba(150,230,255,.12);font-size:12px;text-align:center;color:rgba(231,242,255,.76);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}.efNextLinks{position:absolute;right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));z-index:8;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.efNextLinks a,.efNextLinks button{min-height:34px;display:inline-flex;align-items:center;padding:0 12px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(150,230,255,.14);color:#e7f2ff;text-decoration:none;font-size:12px;font-weight:900}.efNextControls{position:absolute;right:max(16px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));z-index:5;display:flex;gap:10px}.efNextControls button{width:78px;height:78px;border-radius:999px;border:1px solid rgba(150,230,255,.22);background:linear-gradient(180deg,rgba(120,240,255,.22),rgba(90,160,255,.12));box-shadow:0 14px 38px rgba(0,0,0,.28);color:#e7f2ff;font-weight:1000;letter-spacing:.04em;touch-action:manipulation}.efNextControls button:first-child{background:linear-gradient(180deg,rgba(255,110,110,.24),rgba(255,90,90,.12))}.efNextControls button:disabled{opacity:.45}.efMutPanel{position:absolute;right:max(12px,env(safe-area-inset-right));top:calc(max(12px,env(safe-area-inset-top)) + 46px);z-index:9;width:min(310px,calc(100vw - 24px));max-height:58vh;overflow:auto;padding:12px;border-radius:22px;background:rgba(2,16,27,.86);border:1px solid rgba(150,230,255,.18);box-shadow:0 22px 70px rgba(0,0,0,.34);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}.efMutHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}.efMutHead b{font-size:14px}.efMutHead button{width:30px;height:30px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.08);color:#e7f2ff;font-size:18px}.efMutItem{width:100%;display:grid;gap:4px;text-align:left;margin-top:8px;padding:10px;border-radius:16px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);color:#e7f2ff}.efMutItem:disabled{opacity:.52}.efMutItem b{display:flex;justify-content:space-between;font-size:12px}.efMutItem b span{color:rgba(120,240,255,.86)}.efMutItem small{color:rgba(231,242,255,.66);line-height:1.3}.efMutItem em{font-style:normal;color:#fff3a0;font-size:11px;font-weight:950}@media(max-width:760px){.efNextHud{max-width:min(232px,calc(100vw - 24px));max-height:48vh;padding:10px 12px}.efNextLinks{left:max(12px,env(safe-area-inset-left));right:auto;top:auto;bottom:calc(max(18px,env(safe-area-inset-bottom)) + 96px);justify-content:flex-start;max-width:calc(100vw - 212px)}.efNextLinks a,.efNextLinks button{min-height:32px;padding:0 10px;font-size:11px}.efNextHelp{left:max(12px,env(safe-area-inset-left));right:max(190px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));transform:none;text-align:left;font-size:11px;line-height:1.35;border-radius:22px}.efNextControls button{width:74px;height:74px}.efNextRevive{font-size:15px;white-space:nowrap}.efMutPanel{top:calc(max(12px,env(safe-area-inset-top)) + 44px);right:max(10px,env(safe-area-inset-right));width:min(284px,calc(100vw - 20px));max-height:54vh}}
       `}</style>
     </main>
   );
