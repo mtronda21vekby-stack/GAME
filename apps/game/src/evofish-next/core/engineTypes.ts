@@ -68,6 +68,9 @@ export type NextPlayerState = NextFishEntity & {
   dashCd: number;
   dashT: number;
   invulnT: number;
+  dead: boolean;
+  deathT: number;
+  respawnT: number;
   level: number;
   tier: number;
   xp: number;
@@ -85,6 +88,7 @@ export type NextWorldConfig = {
 export type NextEngineStats = {
   mass: number;
   kills: number;
+  deaths: number;
   hp: number;
   hpMax: number;
   level: number;
@@ -99,6 +103,8 @@ export type NextEngineStats = {
   activeQuestTitle: string;
   activeQuestProgress: number;
   activeQuestTarget: number;
+  dead: boolean;
+  respawnTime: number;
   skinName: string;
   formName: string;
   lastEvent: string;
