@@ -1,0 +1,133 @@
+export type NextResourceKind = "pearls" | "coral" | "plankton" | "heal" | "boost";
+
+export type NextResourceNode = {
+  id: number;
+  kind: NextResourceKind;
+  x: number;
+  y: number;
+  radius: number;
+  value: number;
+  respawnT: number;
+  pulse: number;
+};
+
+export type NextResourceDefinition = {
+  kind: NextResourceKind;
+  name: string;
+  color: string;
+  glow: string;
+  radius: number;
+  valueMin: number;
+  valueMax: number;
+  weight: number;
+  respawnMin: number;
+  respawnMax: number;
+};
+
+export const NEXT_RESOURCE_DEFS: NextResourceDefinition[] = [
+  {
+    kind: "pearls",
+    name: "Pearl Cluster",
+    color: "#fff3a0",
+    glow: "rgba(255,220,120,.32)",
+    radius: 16,
+    valueMin: 8,
+    valueMax: 18,
+    weight: 36,
+    respawnMin: 14,
+    respawnMax: 26
+  },
+  {
+    kind: "plankton",
+    name: "XP Plankton",
+    color: "#78f0ff",
+    glow: "rgba(120,240,255,.28)",
+    radius: 15,
+    valueMin: 18,
+    valueMax: 42,
+    weight: 28,
+    respawnMin: 10,
+    respawnMax: 20
+  },
+  {
+    kind: "heal",
+    name: "Healing Bubble",
+    color: "#6effb4",
+    glow: "rgba(110,255,180,.28)",
+    radius: 17,
+    valueMin: 16,
+    valueMax: 34,
+    weight: 18,
+    respawnMin: 18,
+    respawnMax: 32
+  },
+  {
+    kind: "coral",
+    name: "Coral Shard",
+    color: "#ff9ec8",
+    glow: "rgba(255,120,190,.28)",
+    radius: 18,
+    valueMin: 1,
+    valueMax: 2,
+    weight: 10,
+    respawnMin: 26,
+    respawnMax: 44
+  },
+  {
+    kind: "boost",
+    name: "Current Spark",
+    color: "#b48cff",
+    glow: "rgba(180,140,255,.28)",
+    radius: 15,
+    valueMin: 1,
+    valueMax: 1,
+    weight: 8,
+    respawnMin: 24,
+    respawnMax: 38
+  }
+];
+
+export function resourceDef(kind: NextResourceKind) {
+  return NEXT_RESOURCE_DEFS.find((item) => item.kind === kind) || NEXT_RESOURCE_DEFS[0];
+}
+
+function weightedResourceKind(): NextResourceKind {
+  const total = NEXT_RESOURCE_DEFS.reduce((sum, item) => sum + item.weight, 0);
+  let roll = Math.random() * total;
+
+  for (const def of NEXT_RESOURCE_DEFS) {
+    roll -= def.weight;
+    if (roll <= 0) return def.kind;
+  }
+
+  return "pearls";
+}
+
+function randomInt(min: number, max: number) {
+  return Math.floor(min + Math.random() * (max - min + 1));
+}
+
+export function makeResourceNode(id: number, worldWidth: number, worldHeight: number, forcedKind?: NextResourceKind): NextResourceNode {
+  const kind = forcedKind || weightedResourceKind();
+  const def = resourceDef(kind);
+  return {
+    id,
+    kind,
+    x: 120 + Math.random() * (worldWidth - 240),
+    y: 120 + Math.random() * (worldHeight - 240),
+    radius: def.radius,
+    value: randomInt(def.valueMin, def.valueMax),
+    respawnT: 0,
+    pulse: Math.random() * Math.PI * 2
+  };
+}
+
+export function createResourceField(count: number, worldWidth: number, worldHeight: number) {
+  const forced: NextResourceKind[] = ["pearls", "plankton", "heal", "coral", "boost"];
+  return Array.from({ length: count }, (_, index) => makeResourceNode(index + 1, worldWidth, worldHeight, forced[index]));
+}
+
+export function resourceRespawnDelay(kind: NextResourceKind) {
+  const def = resourceDef(kind);
+  return def.respawnMin + Math.random() * (def.respawnMax - def.respawnMin);
+}
