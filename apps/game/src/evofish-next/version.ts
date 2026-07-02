@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-worldmap-1.9.2";
+export const EVOFISH_NEXT_VERSION = "next-map-1.9.3";
