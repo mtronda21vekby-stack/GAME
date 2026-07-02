@@ -31,6 +31,18 @@ export function speedFromForm(form: EvoFishFormId) {
   return 330;
 }
 
+export function hpFromForm(form: EvoFishFormId) {
+  if (form === "fish") return 120;
+  if (form === "shark") return 220;
+  return 420;
+}
+
+export function damageFromForm(form: EvoFishFormId) {
+  if (form === "fish") return 28;
+  if (form === "shark") return 46;
+  return 76;
+}
+
 function enemySkin(id: number) {
   const skins = [
     EVOFISH_SKIN_BY_ID.premium_fish,
@@ -43,7 +55,10 @@ function enemySkin(id: number) {
 
 export function makeEnemy(id: number, config: NextWorldConfig = NEXT_WORLD_CONFIG): NextFishEntity {
   const big = id % 7 === 0;
-  const skin = big ? EVOFISH_SKIN_BY_ID.shark_classic : enemySkin(id);
+  const form: EvoFishFormId = big ? "shark" : "fish";
+  const mass = big ? 2.4 : 0.45 + Math.random() * 0.7;
+  const hp = Math.round((big ? 140 : 45 + Math.random() * 38) * Math.max(0.75, mass));
+
   return {
     id,
     x: 180 + Math.random() * (config.width - 360),
@@ -51,20 +66,26 @@ export function makeEnemy(id: number, config: NextWorldConfig = NEXT_WORLD_CONFI
     vx: -50 + Math.random() * 100,
     vy: -50 + Math.random() * 100,
     radius: big ? 22 : 14 + Math.random() * 8,
-    mass: big ? 2.4 : 0.45 + Math.random() * 0.7,
-    form: big ? "shark" : "fish",
-    skin,
-    angle: 0
+    mass,
+    hp,
+    hpMax: hp,
+    damage: big ? 22 : 8 + Math.random() * 8,
+    form,
+    skin: big ? EVOFISH_SKIN_BY_ID.shark_classic : enemySkin(id),
+    angle: 0,
+    hitT: 0
   };
 }
 
 export function createNextWorld(playerSkin: EvoFishSkinDefinition): NextEngineState {
   const form = formFromSkin(playerSkin);
   const config = NEXT_WORLD_CONFIG;
+  const hp = hpFromForm(form);
 
   return {
     config,
     frame: 0,
+    nextFloatId: 1,
     player: {
       id: 0,
       x: config.width / 2,
@@ -73,17 +94,29 @@ export function createNextWorld(playerSkin: EvoFishSkinDefinition): NextEngineSt
       vy: 0,
       radius: radiusFromForm(form),
       mass: massFromForm(form),
+      hp,
+      hpMax: hp,
+      damage: damageFromForm(form),
       speed: speedFromForm(form),
+      biteCd: 0,
+      dashCd: 0,
+      dashT: 0,
+      invulnT: 0,
       form,
       skin: playerSkin,
-      angle: 0
+      angle: 0,
+      hitT: 0
     },
     enemies: Array.from({ length: config.enemyTarget }, (_, index) => makeEnemy(index + 1, config)),
+    floats: [],
     stats: {
       mass: massFromForm(form),
       kills: 0,
+      hp,
+      hpMax: hp,
       skinName: playerSkin.name,
-      formName: EVOFISH_FORMS[form].name
+      formName: EVOFISH_FORMS[form].name,
+      lastEvent: "Готов"
     }
   };
 }
