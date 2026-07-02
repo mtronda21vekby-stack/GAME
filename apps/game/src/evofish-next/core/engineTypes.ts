@@ -1,4 +1,5 @@
 import type { EvoFishEconomyState, EvoFishFormId, EvoFishSkinDefinition } from "./types";
+import type { NextAccountState } from "../content/account";
 import type { NextEnemyArchetypeId } from "../content/enemyArchetypes";
 import type { NextCraftState } from "../content/craft";
 import type { NextMutationState } from "../content/mutations";
@@ -100,6 +101,11 @@ export type NextEngineStats = {
   kills: number;
   deaths?: number;
   downs?: number;
+  accountName: string;
+  accountLevel: number;
+  accountXp: number;
+  accountXpToNext: number;
+  lastRunAccountXp: number;
   hp: number;
   hpMax: number;
   level: number;
@@ -138,6 +144,7 @@ export type NextEngineStats = {
 
 export type NextEngineState = {
   config: NextWorldConfig;
+  account: NextAccountState;
   economy: EvoFishEconomyState;
   craft: NextCraftState;
   mutations: NextMutationState;
