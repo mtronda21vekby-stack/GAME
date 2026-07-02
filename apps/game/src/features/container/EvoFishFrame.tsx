@@ -118,7 +118,6 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const hideTimer = useRef<number | null>(null);
-  const lastTap = useRef(0);
 
   const [pseudoFullscreen, setPseudoFullscreen] = useState(true);
   const [nativeFullscreen, setNativeFullscreen] = useState(false);
@@ -135,13 +134,22 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
   const autoHideUi = () => {
     clearHideTimer();
     if (!fullscreen) return;
-    hideTimer.current = window.setTimeout(() => setUiHidden(true), 1100);
+    hideTimer.current = window.setTimeout(() => setUiHidden(true), 2400);
   };
 
-  const showUi = () => {
-    if (!fullscreen) return;
-    setUiHidden(false);
+  const openMenu = () => {
+    setUiHidden((value) => !value);
     autoHideUi();
+  };
+
+  const openGameTab = (tabId: string) => {
+    try {
+      const tab = iframeRef.current?.contentDocument?.getElementById(tabId) as HTMLElement | null;
+      tab?.click();
+      setUiHidden(true);
+    } catch {
+      // keep game running
+    }
   };
 
   const enterFullscreen = async () => {
@@ -201,17 +209,6 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
     return () => window.clearInterval(t);
   }, []);
 
-  const onFrameTap = () => {
-    const now = Date.now();
-    if (now - lastTap.current < 260) {
-      setUiHidden((v) => !v);
-      autoHideUi();
-    } else {
-      showUi();
-    }
-    lastTap.current = now;
-  };
-
   const frameHeight = fullscreen ? "var(--app-vh)" : "72vh";
 
   return (
@@ -225,26 +222,28 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
         background: "#031827"
       }}
     >
+      <button className="bcQuickMenu" type="button" onClick={openMenu} aria-label="Меню игры">
+        ☰
+      </button>
+
       <div className={`bcOverlay ${fullscreen && uiHidden ? "bcOverlayHidden" : ""}`}>
         <div className="bcOverlayInner">
-          <div>
-            <div className="bcTitle">EvoFish</div>
-            <div className="bcSub">Mobile app mode</div>
-          </div>
-
-          <div className="bcActions">
-            <button className="bcPill" onClick={reload}>Reload</button>
-            {props.onOpenSettings ? <button className="bcPill" onClick={props.onOpenSettings}>Settings</button> : null}
-            {fullscreen ? (
-              <button className="bcPill bcPillPrimary" onClick={exitFullscreen}>Close</button>
-            ) : (
-              <button className="bcPill bcPillPrimary" onClick={enterFullscreen}>Fullscreen</button>
-            )}
-          </div>
+          <button className="bcPill bcPillPrimary" onClick={() => openGameTab("tHud")}>Игра</button>
+          <button className="bcPill" onClick={() => openGameTab("tShop")}>Магазин</button>
+          <button className="bcPill" onClick={() => openGameTab("tCraft")}>Мутации</button>
+          <button className="bcPill" onClick={() => openGameTab("tQuests")}>Задания</button>
+          <button className="bcPill" onClick={() => openGameTab("tSettings")}>Настройки</button>
+          <button className="bcPill" onClick={reload}>Reload</button>
+          {props.onOpenSettings ? <button className="bcPill" onClick={props.onOpenSettings}>App</button> : null}
+          {fullscreen ? (
+            <button className="bcPill" onClick={exitFullscreen}>Close</button>
+          ) : (
+            <button className="bcPill" onClick={enterFullscreen}>Fullscreen</button>
+          )}
         </div>
       </div>
 
-      <div onClick={onFrameTap} style={{ height: frameHeight }}>
+      <div style={{ height: frameHeight }}>
         <iframe
           ref={iframeRef}
           title="EvoFish"
@@ -263,17 +262,15 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
         />
       </div>
 
-      {fullscreen && uiHidden ? <div className="bcHint">Тап — меню · двойной тап — UI</div> : null}
-
       <style>{`
         .bcPseudoFs{position:fixed!important;inset:0!important;z-index:9999!important}
         .bcImmersive{width:var(--app-vw,100vw)!important;height:var(--app-vh,100vh)!important;background:#031827!important}
-        .bcOverlay{position:absolute;left:0;right:0;top:0;z-index:30;padding:max(10px,env(safe-area-inset-top)) 10px 10px;transition:opacity 160ms ease,transform 160ms ease}
-        .bcOverlayHidden{opacity:0;transform:translateY(-12px);pointer-events:none}
-        .bcOverlayInner{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:18px;background:rgba(2,16,27,.46);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(150,230,255,.12)}
-        .bcTitle{font-weight:900;color:#e7f2ff}.bcSub{font-size:12px;color:rgba(231,242,255,.72);margin-top:2px}.bcActions{display:flex;gap:8px}.bcPill{height:34px;padding:0 11px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.07);color:#e7f2ff;font-weight:850}.bcPillPrimary{border-color:rgba(120,240,255,.28);background:linear-gradient(180deg,rgba(120,240,255,.26),rgba(90,160,255,.16))}
-        .bcHint{position:absolute;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:25;padding:9px 12px;border-radius:999px;background:rgba(0,0,0,.24);color:#e7f2ff;font-size:12px;text-align:center;pointer-events:none;opacity:.72;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
-        @media(max-width:760px){.bcSub{display:none}.bcPill{height:32px;font-size:12px;padding:0 10px}}
+        .bcQuickMenu{position:absolute;right:max(12px,env(safe-area-inset-right));top:max(10px,env(safe-area-inset-top));z-index:36;width:46px;height:46px;border-radius:999px;border:1px solid rgba(150,230,255,.18);background:rgba(2,16,27,.62);color:#e7f2ff;font-size:22px;font-weight:900;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 12px 30px rgba(0,0,0,.22)}
+        .bcOverlay{position:absolute;left:0;right:0;top:0;z-index:35;padding:calc(max(10px,env(safe-area-inset-top)) + 54px) 10px 10px;transition:opacity 160ms ease,transform 160ms ease;pointer-events:none}
+        .bcOverlayHidden{opacity:0;transform:translateY(-12px)}
+        .bcOverlayInner{margin-left:auto;width:min(320px,calc(100vw - 20px));display:grid;grid-template-columns:1fr;gap:8px;padding:10px;border-radius:22px;background:rgba(2,16,27,.94);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(150,230,255,.14);box-shadow:0 18px 50px rgba(0,0,0,.30);pointer-events:auto}
+        .bcPill{min-height:42px;padding:0 13px;border-radius:15px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.07);color:#e7f2ff;font-weight:900;text-align:left}.bcPillPrimary{border-color:rgba(120,240,255,.28);background:linear-gradient(180deg,rgba(120,240,255,.22),rgba(90,160,255,.13))}
+        @media(orientation:landscape){.bcQuickMenu{width:42px;height:42px;font-size:20px}.bcOverlay{padding-top:calc(max(10px,env(safe-area-inset-top)) + 50px)}.bcOverlayInner{width:250px}}
       `}</style>
     </div>
   );
