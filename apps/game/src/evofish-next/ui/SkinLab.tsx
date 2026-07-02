@@ -30,7 +30,10 @@ export function SkinLab() {
   const [selectedId, setSelectedId] = useState("premium_fish");
 
   const skins = useMemo(() => getSkinsForForm(form), [form]);
-  const selected = useMemo(() => EVOFISH_SKINS.find((skin) => skin.id === selectedId) || skins[0], [selectedId, skins]);
+  const selected = useMemo<EvoFishSkinDefinition>(
+    () => skins.find((skin) => skin.id === selectedId) ?? skins[0] ?? EVOFISH_SKINS[0],
+    [selectedId, skins]
+  );
   const selectedForm = selected.form === "any" ? form : selected.form;
 
   return (
