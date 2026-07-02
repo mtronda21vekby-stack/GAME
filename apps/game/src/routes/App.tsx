@@ -39,13 +39,23 @@ async function ping() {
       cache: "no-store",
     });
   } catch {
-    // ignore
+    // metrics are optional
   }
+}
+
+function registerGameServiceWorker() {
+  if (!("serviceWorker" in navigator)) return;
+  if (location.protocol !== "https:" && location.hostname !== "localhost") return;
+
+  navigator.serviceWorker.register("/game/sw.js", { scope: "/game/" }).catch(() => {
+    // PWA install remains optional; never block the game.
+  });
 }
 
 export function App() {
   useEffect(() => attachConsoleAnalytics(), []);
   useEffect(() => track({ type: "page_view", path: window.location.pathname }), []);
+  useEffect(() => registerGameServiceWorker(), []);
 
   // metrics ping (online + unique через server /api/metrics/ping)
   useEffect(() => {
