@@ -1,15 +1,91 @@
+import type { EvoFishFormId } from "../core/types";
 import type { NextEngineState } from "../core/engineTypes";
+import { awardNextAccountRun, calculateRunAccountXp } from "../content/account";
+import { getMutationBonus } from "../content/mutations";
+import { xpToNextLevel, xpToNextTier } from "../content/progression";
+import { damageFromForm, hpFromForm, massFromForm, radiusFromForm, speedFromForm } from "./createWorld";
 
 const REVIVE_DELAY = 2.4;
 const REVIVE_INVULN = 2.2;
+const RESET_FORM: EvoFishFormId = "fish";
 
 function addFloat(state: NextEngineState, x: number, y: number, text: string) {
   state.floats.push({ id: state.nextFloatId++, x, y, text, ttl: 1.1, kind: "danger" });
 }
 
+function syncAccountStats(state: NextEngineState) {
+  state.stats.accountName = state.account.name;
+  state.stats.accountLevel = state.account.level;
+  state.stats.accountXp = state.account.xp;
+  state.stats.accountXpToNext = state.account.xpToNext;
+  state.stats.lastRunAccountXp = state.account.lastRunXp;
+}
+
+function awardRunToAccount(state: NextEngineState) {
+  const player = state.player;
+  const runXp = calculateRunAccountXp({
+    kills: state.stats.kills,
+    mass: player.mass,
+    level: player.level,
+    tier: player.tier,
+    zoneRisk: state.stats.zoneRisk
+  });
+
+  state.account = awardNextAccountRun(state.account, {
+    xp: runXp,
+    kills: state.stats.kills,
+    mass: player.mass
+  });
+
+  syncAccountStats(state);
+  return runXp;
+}
+
+function resetFishRun(state: NextEngineState) {
+  const player = state.player;
+  const hpBonus = getMutationBonus(state.mutations, "hp");
+  const damageBonus = getMutationBonus(state.mutations, "damage");
+  const speedBonus = getMutationBonus(state.mutations, "speed");
+  const hpMax = Math.round(hpFromForm(RESET_FORM) * (1 + hpBonus));
+
+  player.form = RESET_FORM;
+  player.mass = massFromForm(RESET_FORM);
+  player.radius = radiusFromForm(RESET_FORM);
+  player.hpMax = hpMax;
+  player.hp = hpMax;
+  player.damage = Math.round(damageFromForm(RESET_FORM) * (1 + damageBonus));
+  player.speed = speedFromForm(RESET_FORM) * (1 + speedBonus);
+  player.level = 1;
+  player.tier = 1;
+  player.xp = 0;
+  player.xpToNext = xpToNextTier(1);
+  player.levelXp = 0;
+  player.levelXpToNext = xpToNextLevel(1);
+  player.hitT = 0;
+  player.biteCd = 0;
+  player.dashCd = 0;
+  player.dashT = 0;
+
+  state.stats.kills = 0;
+  state.stats.deaths = 0;
+  state.stats.downs = 0;
+  state.stats.mass = player.mass;
+  state.stats.hp = player.hp;
+  state.stats.hpMax = player.hpMax;
+  state.stats.level = player.level;
+  state.stats.tier = player.tier;
+  state.stats.xp = player.xp;
+  state.stats.xpToNext = player.xpToNext;
+  state.stats.levelXp = player.levelXp;
+  state.stats.levelXpToNext = player.levelXpToNext;
+  state.stats.formName = "Рыба";
+}
+
 function startDowned(state: NextEngineState) {
   const player = state.player;
   if (player.downed) return;
+
+  const runXp = awardRunToAccount(state);
 
   player.downed = true;
   player.dead = true;
@@ -30,8 +106,8 @@ function startDowned(state: NextEngineState) {
   state.stats.dead = true;
   state.stats.reviveTime = REVIVE_DELAY;
   state.stats.respawnTime = REVIVE_DELAY;
-  state.stats.lastEvent = "Ты упал. Возрождение...";
-  addFloat(state, player.x, player.y - player.radius * 2.8, "DOWNED");
+  state.stats.lastEvent = `Run ended: +${runXp} account XP`;
+  addFloat(state, player.x, player.y - player.radius * 2.8, `ACCOUNT +${runXp} XP`);
 }
 
 function revive(state: NextEngineState) {
@@ -49,18 +125,15 @@ function revive(state: NextEngineState) {
   player.y = safeY;
   player.vx = 0;
   player.vy = 0;
-  player.hp = Math.max(1, Math.floor(player.hpMax * 0.68));
+  resetFishRun(state);
   player.invulnT = REVIVE_INVULN;
-  player.mass = Math.max(1, player.mass * 0.94);
 
   state.stats.downed = false;
   state.stats.dead = false;
   state.stats.reviveTime = 0;
   state.stats.respawnTime = 0;
-  state.stats.hp = player.hp;
-  state.stats.mass = player.mass;
-  state.stats.lastEvent = "Возрождение: щит 2 сек";
-  addFloat(state, player.x, player.y - player.radius * 2.8, "REVIVE");
+  state.stats.lastEvent = `Fish reset · Account LV ${state.account.level}`;
+  addFloat(state, player.x, player.y - player.radius * 2.8, "FISH RESET");
 }
 
 export function updateSurvivalSystem(state: NextEngineState, dt: number) {
