@@ -42,7 +42,7 @@ function collectResource(state: NextEngineState, index: number) {
     addFloat(state, "SPARK", node.x, node.y);
   }
 
-  state.stats.resourcesCollected += 1;
+  state.stats.resourcesCollected = (state.stats.resourcesCollected || 0) + 1;
   state.resources[index] = {
     ...node,
     respawnT: resourceRespawnDelay(node.kind),
