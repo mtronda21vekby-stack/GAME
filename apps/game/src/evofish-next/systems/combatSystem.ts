@@ -62,7 +62,7 @@ export function updateCombatSystem(state: NextEngineState, input: NextInputState
   input.bite = false;
 
   if (player.biteCd > 0) return;
-  player.biteCd = 0.34;
+  player.biteCd = state.craft.biteBoostT > 0 ? 0.25 : 0.34;
 
   const targetIndex = findBiteTarget(state, camera, input);
   if (targetIndex < 0) {
@@ -72,12 +72,13 @@ export function updateCombatSystem(state: NextEngineState, input: NextInputState
   }
 
   const enemy = state.enemies[targetIndex];
-  const damage = Math.round(player.damage * (player.dashT > 0 ? 1.35 : 1));
+  const craftBoost = state.craft.biteBoostT > 0 ? 1.35 : 1;
+  const damage = Math.round(player.damage * (player.dashT > 0 ? 1.35 : 1) * craftBoost);
   enemy.hp -= damage;
   enemy.hitT = 0.18;
   enemy.vx += Math.cos(player.angle) * 120;
   enemy.vy += Math.sin(player.angle) * 120;
-  state.stats.lastEvent = `Укус -${damage}`;
+  state.stats.lastEvent = state.craft.biteBoostT > 0 ? `Укус BOOST -${damage}` : `Укус -${damage}`;
   addFloat(state, enemy.x, enemy.y - enemy.radius * 1.8, `-${damage}`, "damage");
 
   if (enemy.hp <= 0 || canDevour(player.mass, enemy.mass)) {
