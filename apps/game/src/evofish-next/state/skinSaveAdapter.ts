@@ -1,5 +1,6 @@
 import type { NextQuestState } from "../core/engineTypes";
 import type { EvoFishEconomyState, EvoFishFormId, SkinLoadoutState } from "../core/types";
+import { defaultNextAccount, type NextAccountState } from "../content/account";
 import { defaultMutationState, type NextMutationState } from "../content/mutations";
 import { xpToNextLevel, xpToNextTier } from "../content/progression";
 import { EVOFISH_SKIN_BY_ID, getDefaultSkinId } from "../content/skins";
@@ -37,6 +38,7 @@ export type EvoFishNextProgressState = {
 
 export type EvoFishNextSkinSave = {
   schemaVersion: 1;
+  account: NextAccountState;
   economy: EvoFishEconomyState;
   loadout: SkinLoadoutState;
   progress: EvoFishNextProgressState;
@@ -83,6 +85,7 @@ export function migrateLegacySkinSave(legacy: LegacyEvoFishSave | null | undefin
 
   return {
     schemaVersion: 1,
+    account: defaultNextAccount(),
     economy: {
       pearls: Math.max(0, Math.floor(legacy?.pearls || 0)),
       corals: Math.max(0, Math.floor(legacy?.corals || 0))
