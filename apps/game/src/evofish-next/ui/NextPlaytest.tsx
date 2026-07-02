@@ -125,7 +125,7 @@ export function NextPlaytest() {
         <i><em style={{ width: `${hpPct * 100}%` }} /></i>
         <span>Tier XP {Math.round(stats.xp)} / {Math.round(stats.xpToNext)}</span>
         <i><em className="xp" style={{ width: `${xpPct * 100}%` }} /></i>
-        <span>Level XP {Math.round(stats.levelXp)} / {Math.round(stats.levelXpToNext}</span>
+        <span>Level XP {Math.round(stats.levelXp)} / {Math.round(stats.levelXpToNext)}</span>
         <i><em className="level" style={{ width: `${levelPct * 100}%` }} /></i>
         <span>{stats.lastEvent}</span>
       </div>
