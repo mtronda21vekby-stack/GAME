@@ -101,11 +101,11 @@ export type NextEngineStats = {
   kills: number;
   deaths?: number;
   downs?: number;
-  accountName: string;
-  accountLevel: number;
-  accountXp: number;
-  accountXpToNext: number;
-  lastRunAccountXp: number;
+  accountName?: string;
+  accountLevel?: number;
+  accountXp?: number;
+  accountXpToNext?: number;
+  lastRunAccountXp?: number;
   hp: number;
   hpMax: number;
   level: number;
