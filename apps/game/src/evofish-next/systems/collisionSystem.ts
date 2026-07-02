@@ -11,8 +11,9 @@ function addFloat(state: NextEngineState, x: number, y: number, text: string, ki
 }
 
 function respawnEnemy(state: NextEngineState) {
-  const threat = enemyThreatLevel(state.player.level, state.player.tier, state.player.mass);
-  return makeEnemy(1000 + state.stats.kills + state.frame, state.config, threat, state.player.mass);
+  const player = state.player;
+  const threat = enemyThreatLevel(player.level, player.tier, player.mass);
+  return makeEnemy(1000 + state.stats.kills + state.frame, state.config, threat, player.mass, player.x, player.y, 720);
 }
 
 function devourEnemy(state: NextEngineState, enemy: NextFishEntity, index: number) {
