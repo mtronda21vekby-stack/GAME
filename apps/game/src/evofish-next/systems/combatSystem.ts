@@ -1,5 +1,5 @@
 import type { NextEngineState, NextFishEntity, NextInputState, NextCameraState } from "../core/engineTypes";
-import { makeEnemy } from "./createWorld";
+import { enemyThreatLevel, makeEnemy } from "./createWorld";
 import { canDevour } from "./collisionSystem";
 import { awardKillReward } from "./progressionSystem";
 
@@ -11,20 +11,25 @@ function rewardText(reward: { xp: number; pearls: number; corals: number }) {
   return `+${reward.xp} XP +${reward.pearls} жемчуг${reward.corals ? ` +${reward.corals} коралл` : ""}`;
 }
 
+function respawnEnemy(state: NextEngineState) {
+  const threat = enemyThreatLevel(state.player.level, state.player.tier, state.player.mass);
+  return makeEnemy(1000 + state.stats.kills + state.frame, state.config, threat, state.player.mass);
+}
+
 function killEnemy(state: NextEngineState, enemy: NextFishEntity, index: number, source: "bite" | "devour") {
   const player = state.player;
-  const massGain = enemy.mass * (source === "devour" ? 0.08 : 0.045);
+  const massGain = enemy.mass * (source === "devour" ? 0.055 : 0.032);
   const reward = awardKillReward(state, enemy, source);
 
   player.mass += massGain;
-  player.radius = Math.min(player.radius + enemy.radius * 0.014, 58);
-  player.hp = Math.min(player.hpMax, player.hp + player.hpMax * 0.06);
+  player.radius = Math.min(player.radius + enemy.radius * 0.009, 58);
+  player.hp = Math.min(player.hpMax, player.hp + player.hpMax * 0.045);
 
   state.stats.kills += 1;
   state.stats.lastEvent = `Убийство ${rewardText(reward)} +${massGain.toFixed(2)} Mass`;
   addFloat(state, enemy.x, enemy.y, `KILL +${reward.xp}XP +${reward.pearls}P`, "kill");
   if (reward.corals) addFloat(state, enemy.x, enemy.y - enemy.radius * 2.5, `+${reward.corals} CORAL`, "kill");
-  state.enemies.splice(index, 1, makeEnemy(1000 + state.stats.kills, state.config));
+  state.enemies.splice(index, 1, respawnEnemy(state));
 }
 
 function findBiteTarget(state: NextEngineState, camera: NextCameraState, input: NextInputState) {
