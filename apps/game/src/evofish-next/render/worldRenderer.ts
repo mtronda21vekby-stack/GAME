@@ -1,4 +1,5 @@
 import type { NextAIState, NextCameraState, NextEngineState, NextFishEntity, NextViewport } from "../core/engineTypes";
+import { NEXT_MAP_ZONES } from "../content/zones";
 import { drawEvoFishSkin } from "./canvasSkinRenderer";
 import { getNextCamera } from "../systems/cameraSystem";
 import { canDevour } from "../systems/collisionSystem";
@@ -27,6 +28,21 @@ function drawWorldBackground(ctx: CanvasRenderingContext2D, state: NextEngineSta
     ctx.moveTo(0, y);
     ctx.lineTo(state.config.width, y);
     ctx.stroke();
+  }
+
+  for (const zone of NEXT_MAP_ZONES) {
+    ctx.fillStyle = zone.color;
+    ctx.strokeStyle = zone.id === state.stats.zoneId ? "rgba(255,255,255,.34)" : "rgba(255,255,255,.12)";
+    ctx.lineWidth = zone.id === state.stats.zoneId ? 4 : 2;
+    ctx.beginPath();
+    ctx.arc(zone.x, zone.y, zone.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.textAlign = "center";
+    ctx.font = "900 24px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.fillStyle = "rgba(231,242,255,.30)";
+    ctx.fillText(zone.name.toUpperCase(), zone.x, zone.y - zone.radius * 0.12);
   }
 
   ctx.strokeStyle = "rgba(150,230,255,.16)";
@@ -190,6 +206,12 @@ function drawMiniMap(ctx: CanvasRenderingContext2D, state: NextEngineState, came
   for (let gx = 1; gx < 4; gx += 1) ctx.fillRect(left + (mapW / 4) * gx, top, 1, mapH);
   for (let gy = 1; gy < 3; gy += 1) ctx.fillRect(left, top + (mapH / 3) * gy, mapW, 1);
 
+  for (const zone of NEXT_MAP_ZONES) {
+    const zx = mapX(state, zone.x, left, mapW);
+    const zy = mapY(state, zone.y, top, mapH);
+    drawMapDot(ctx, zx, zy, zone.id === state.stats.zoneId ? 3.6 : 2.6, zone.color, zone.id === state.stats.zoneId ? "rgba(255,255,255,.68)" : undefined);
+  }
+
   const camX = left + (camera.x / state.config.width) * mapW;
   const camY = top + (camera.y / state.config.height) * mapH;
   const camW = (camera.width / state.config.width) * mapW;
@@ -230,7 +252,7 @@ function drawMiniMap(ctx: CanvasRenderingContext2D, state: NextEngineState, came
   ctx.textAlign = "left";
   ctx.font = "900 10px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
   ctx.fillStyle = "rgba(231,242,255,.78)";
-  ctx.fillText(sonar ? "SONAR · APEX" : apex ? "MAP · APEX" : "MAP · CLEAR", left + 8, top + 14);
+  ctx.fillText(sonar ? `SONAR · ${state.stats.zoneName}` : state.stats.zoneName || "MAP", left + 8, top + 14);
   ctx.restore();
 }
 
