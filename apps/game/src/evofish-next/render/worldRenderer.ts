@@ -164,10 +164,10 @@ function drawMapDot(ctx: CanvasRenderingContext2D, x: number, y: number, r: numb
 }
 
 function drawMiniMap(ctx: CanvasRenderingContext2D, state: NextEngineState, camera: NextCameraState, viewport: NextViewport) {
-  const mapW = Math.min(176, Math.max(132, viewport.width * 0.22));
+  const mapW = Math.min(150, Math.max(112, viewport.width * 0.18));
   const mapH = Math.round(mapW * (state.config.height / state.config.width));
   const left = Math.max(12, viewport.width - mapW - 12);
-  const top = Math.min(Math.max(58, viewport.height - mapH - 112), viewport.height - mapH - 16);
+  const top = Math.min(Math.max(58, viewport.height * 0.08), viewport.height - mapH - 16);
   const apex = state.enemies.find((enemy) => enemy.aiType === "apex");
 
   ctx.save();
@@ -221,7 +221,7 @@ function drawMiniMap(ctx: CanvasRenderingContext2D, state: NextEngineState, came
   ctx.textAlign = "left";
   ctx.font = "900 10px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
   ctx.fillStyle = "rgba(231,242,255,.78)";
-  ctx.fillText(apex ? "MAP · APEX TRACK" : "MAP · CLEAR", left + 8, top + 14);
+  ctx.fillText(apex ? "MAP · APEX" : "MAP · CLEAR", left + 8, top + 14);
   ctx.restore();
 }
 
