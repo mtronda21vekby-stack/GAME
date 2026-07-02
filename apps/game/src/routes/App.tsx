@@ -47,9 +47,59 @@ function registerGameServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
   if (location.protocol !== "https:" && location.hostname !== "localhost") return;
 
-  navigator.serviceWorker.register("/game/sw.js", { scope: "/game/" }).catch(() => {
-    // PWA install remains optional; never block the game.
+  let refreshing = false;
+
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (refreshing) return;
+    refreshing = true;
+    window.location.reload();
   });
+
+  navigator.serviceWorker
+    .register("/game/sw.js", {
+      scope: "/game/",
+      updateViaCache: "none"
+    })
+    .then((registration) => {
+      const activateWaiting = () => {
+        if (registration.waiting) {
+          registration.waiting.postMessage({ type: "SKIP_WAITING" });
+        }
+      };
+
+      registration.addEventListener("updatefound", () => {
+        const worker = registration.installing;
+        if (!worker) return;
+        worker.addEventListener("statechange", () => {
+          if (worker.state === "installed" && navigator.serviceWorker.controller) {
+            worker.postMessage({ type: "SKIP_WAITING" });
+          }
+        });
+      });
+
+      activateWaiting();
+      registration.update().catch(() => undefined);
+
+      const updateTimer = window.setInterval(() => {
+        registration.update().catch(() => undefined);
+      }, 60_000);
+
+      const onVisible = () => {
+        if (document.visibilityState === "visible") registration.update().catch(() => undefined);
+      };
+
+      document.addEventListener("visibilitychange", onVisible);
+      window.addEventListener("focus", onVisible);
+
+      window.addEventListener("beforeunload", () => {
+        window.clearInterval(updateTimer);
+        document.removeEventListener("visibilitychange", onVisible);
+        window.removeEventListener("focus", onVisible);
+      });
+    })
+    .catch(() => {
+      // PWA install remains optional; never block the game.
+    });
 }
 
 export function App() {
