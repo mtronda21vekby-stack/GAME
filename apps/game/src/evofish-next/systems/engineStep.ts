@@ -5,6 +5,7 @@ import { updateCombatSystem } from "./combatSystem";
 import { updateCraftSystem } from "./craftSystem";
 import { updateDirectorSystem } from "./directorSystem";
 import { updateEnemySystem } from "./enemySystem";
+import { updateEventSystem } from "./eventSystem";
 import { updateFeedbackSystem } from "./feedbackSystem";
 import { syncProgressionStats } from "./progressionSystem";
 import { updateQuestSystem } from "./questSystem";
@@ -42,6 +43,7 @@ export function stepNextEngine(state: NextEngineState, input: NextInputState, vi
   updateFeedbackSystem(state, dt);
   syncProgressionStats(state);
   updateQuestSystem(state);
+  updateEventSystem(state, dt);
 
   state.frame += 1;
   return state;
