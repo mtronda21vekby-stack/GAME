@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { GameSettings } from "./SettingsPanel";
 import { EVOFISH_MOBILE_CSS } from "./evoFishMobileCss";
+import { InstallAppHint } from "./InstallAppHint";
 
 type EvoFishFrameProps = {
   src: string;
@@ -225,6 +226,8 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
       <button className="bcMenuButton" type="button" onClick={toggleMenu} aria-label="Меню игры">
         Меню
       </button>
+
+      <InstallAppHint />
 
       <div className={`bcOverlay ${fullscreen && uiHidden ? "bcOverlayHidden" : ""}`}>
         <div className="bcOverlayInner">
