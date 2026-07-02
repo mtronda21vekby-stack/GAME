@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-nav-0.9.2";
+export const EVOFISH_NEXT_VERSION = "next-shop-1.0.0";
