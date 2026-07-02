@@ -1,6 +1,7 @@
 import type { EvoFishFormId } from "../core/types";
 import type { NextEngineState, NextFishEntity } from "../core/engineTypes";
 import { EVOFISH_FORMS } from "../content/forms";
+import { getMutationBonus, getMutationTotalLevel } from "../content/mutations";
 import { formForLevel, NEXT_MAX_TIER, tierMassBonus, xpToNextLevel, xpToNextTier } from "../content/progression";
 import { damageFromForm, hpFromForm, radiusFromForm, speedFromForm } from "./createWorld";
 
@@ -12,6 +13,18 @@ export type NextKillReward = {
 
 function addFloat(state: NextEngineState, x: number, y: number, text: string, kind: "damage" | "kill" | "danger") {
   state.floats.push({ id: state.nextFloatId++, x, y, text, ttl: 0.9, kind });
+}
+
+function hpWithMutations(state: NextEngineState, form: EvoFishFormId, tier: number) {
+  return Math.round((hpFromForm(form) + tier * 12) * (1 + getMutationBonus(state.mutations, "hp")));
+}
+
+function damageWithMutations(state: NextEngineState, form: EvoFishFormId, tier: number) {
+  return Math.round((damageFromForm(form) + tier * 3) * (1 + getMutationBonus(state.mutations, "damage")));
+}
+
+function speedWithMutations(state: NextEngineState, form: EvoFishFormId) {
+  return speedFromForm(form) * (1 + getMutationBonus(state.mutations, "speed"));
 }
 
 function syncApexStats(state: NextEngineState) {
@@ -29,9 +42,9 @@ function applyPlayerForm(state: NextEngineState, nextForm: EvoFishFormId) {
   const hpRatio = player.hp / Math.max(1, player.hpMax);
   player.form = nextForm;
   player.radius = Math.max(player.radius, radiusFromForm(nextForm));
-  player.speed = speedFromForm(nextForm);
-  player.damage = damageFromForm(nextForm) + player.tier * 3;
-  player.hpMax = hpFromForm(nextForm) + player.tier * 12;
+  player.speed = speedWithMutations(state, nextForm);
+  player.damage = damageWithMutations(state, nextForm, player.tier);
+  player.hpMax = hpWithMutations(state, nextForm, player.tier);
   player.hp = Math.max(1, Math.round(player.hpMax * Math.max(0.55, hpRatio)));
 
   state.stats.formName = EVOFISH_FORMS[nextForm].name;
@@ -52,6 +65,7 @@ export function syncProgressionStats(state: NextEngineState) {
   state.stats.levelXpToNext = player.levelXpToNext;
   state.stats.pearls = state.economy.pearls;
   state.stats.corals = state.economy.corals;
+  state.stats.mutationLevel = getMutationTotalLevel(state.mutations);
   state.stats.downs = state.stats.downs || state.stats.deaths || 0;
   state.stats.deaths = state.stats.downs;
   state.stats.downed = Boolean(player.downed);
@@ -61,6 +75,16 @@ export function syncProgressionStats(state: NextEngineState) {
   state.stats.skinName = player.skin.name;
   state.stats.formName = EVOFISH_FORMS[player.form].name;
   syncApexStats(state);
+}
+
+export function refreshMutationStats(state: NextEngineState) {
+  const player = state.player;
+  const hpRatio = player.hp / Math.max(1, player.hpMax);
+  player.hpMax = hpWithMutations(state, player.form, player.tier);
+  player.hp = Math.max(1, Math.round(player.hpMax * Math.max(0.35, hpRatio)));
+  player.damage = damageWithMutations(state, player.form, player.tier);
+  player.speed = speedWithMutations(state, player.form);
+  syncProgressionStats(state);
 }
 
 export function awardNextXp(state: NextEngineState, amount: number) {
@@ -84,8 +108,8 @@ export function awardNextXp(state: NextEngineState, amount: number) {
     player.tier = Math.min(NEXT_MAX_TIER, player.tier + 1);
     player.xpToNext = xpToNextTier(player.tier);
     player.mass += tierMassBonus(player.tier);
-    player.damage = damageFromForm(player.form) + player.tier * 3;
-    player.hpMax = hpFromForm(player.form) + player.tier * 12;
+    player.damage = damageWithMutations(state, player.form, player.tier);
+    player.hpMax = hpWithMutations(state, player.form, player.tier);
     player.hp = player.hpMax;
     tiered = true;
     if (player.tier >= NEXT_MAX_TIER) break;
@@ -108,8 +132,9 @@ export function awardNextXp(state: NextEngineState, amount: number) {
 
 function awardKillEconomy(state: NextEngineState, enemy: NextFishEntity, source: "bite" | "devour") {
   const sourceBonus = source === "devour" ? 1.15 : 1;
+  const mutationBonus = 1 + getMutationBonus(state.mutations, "reward");
   const archetypeBonus = enemy.aiType === "apex" ? 5.2 : enemy.aiType === "brute" ? 2.2 : enemy.aiType === "hunter" ? 1.55 : enemy.aiType === "neutral" ? 1.15 : 1;
-  const pearls = Math.max(1, Math.round((1 + enemy.mass * 1.65) * sourceBonus * archetypeBonus));
+  const pearls = Math.max(1, Math.round((1 + enemy.mass * 1.65) * sourceBonus * archetypeBonus * mutationBonus));
   const coralChance = enemy.aiType === "apex" ? 1 : Math.min(0.22, 0.015 + enemy.mass * 0.012 + (enemy.aiType === "brute" ? 0.08 : 0));
   const corals = enemy.aiType === "apex" ? 5 : Math.random() < coralChance ? 1 : 0;
 
