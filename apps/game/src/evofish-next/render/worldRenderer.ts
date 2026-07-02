@@ -70,6 +70,23 @@ function drawHpBar(ctx: CanvasRenderingContext2D, entity: NextFishEntity, width:
 function drawCombatAura(ctx: CanvasRenderingContext2D, state: NextEngineState) {
   const player = state.player;
 
+  if (player.downed || player.dead) {
+    ctx.strokeStyle = "rgba(255,120,120,.42)";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, player.radius * 2.35, 0, Math.PI * 2);
+    ctx.stroke();
+    return;
+  }
+
+  if (player.invulnT > 0) {
+    ctx.strokeStyle = "rgba(120,240,255,.38)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, player.radius * 2.05, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
   if (player.dashT > 0) {
     ctx.strokeStyle = "rgba(120,240,255,.42)";
     ctx.lineWidth = 4;
@@ -103,6 +120,7 @@ function drawFloatText(ctx: CanvasRenderingContext2D, state: NextEngineState) {
 
 export function renderNextWorld(ctx: CanvasRenderingContext2D, state: NextEngineState, viewport: NextViewport) {
   const camera = getNextCamera(state, viewport);
+  const playerDowned = Boolean(state.player.downed || state.player.dead);
 
   drawWorldBackground(ctx, state, camera, viewport);
 
@@ -133,7 +151,7 @@ export function renderNextWorld(ctx: CanvasRenderingContext2D, state: NextEngine
     y: state.player.y,
     radius: state.player.radius,
     angle: state.player.angle,
-    alpha: state.player.hitT > 0 ? 0.68 : 1
+    alpha: playerDowned ? 0.34 : state.player.hitT > 0 ? 0.68 : 1
   });
   drawHpBar(ctx, state.player, state.player.radius * 3.2);
   drawFloatText(ctx, state);
