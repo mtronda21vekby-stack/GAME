@@ -118,7 +118,6 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const hideTimer = useRef<number | null>(null);
-  const holdTimer = useRef<number | null>(null);
 
   const [pseudoFullscreen, setPseudoFullscreen] = useState(true);
   const [nativeFullscreen, setNativeFullscreen] = useState(false);
@@ -132,34 +131,15 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
     hideTimer.current = null;
   };
 
-  const clearHoldTimer = () => {
-    if (!holdTimer.current) return;
-    window.clearTimeout(holdTimer.current);
-    holdTimer.current = null;
-  };
-
   const autoHideUi = () => {
     clearHideTimer();
     if (!fullscreen) return;
     hideTimer.current = window.setTimeout(() => setUiHidden(true), 2600);
   };
 
-  const openMenu = () => {
-    setUiHidden(false);
+  const toggleMenu = () => {
+    setUiHidden((value) => !value);
     autoHideUi();
-  };
-
-  const startMenuHold = (event: React.PointerEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    clearHoldTimer();
-    holdTimer.current = window.setTimeout(openMenu, 520);
-  };
-
-  const cancelMenuHold = (event?: React.PointerEvent<HTMLDivElement>) => {
-    event?.preventDefault();
-    event?.stopPropagation();
-    clearHoldTimer();
   };
 
   const openGameTab = (tabId: string) => {
@@ -201,7 +181,6 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
       document.body.style.overflow = "";
       document.body.style.touchAction = "";
       clearHideTimer();
-      clearHoldTimer();
     };
   }, []);
 
@@ -243,16 +222,9 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
         background: "#031827"
       }}
     >
-      <div
-        className="bcMenuHoldZone"
-        onPointerDown={startMenuHold}
-        onPointerUp={cancelMenuHold}
-        onPointerCancel={cancelMenuHold}
-        onPointerLeave={cancelMenuHold}
-        aria-label="Удерживать для меню игры"
-      >
-        <span>MENU</span>
-      </div>
+      <button className="bcMenuButton" type="button" onClick={toggleMenu} aria-label="Меню игры">
+        Меню
+      </button>
 
       <div className={`bcOverlay ${fullscreen && uiHidden ? "bcOverlayHidden" : ""}`}>
         <div className="bcOverlayInner">
@@ -296,13 +268,13 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
       <style>{`
         .bcPseudoFs{position:fixed!important;inset:0!important;z-index:9999!important}
         .bcImmersive{width:var(--app-vw,100vw)!important;height:var(--app-vh,100vh)!important;background:#031827!important}
-        .bcMenuHoldZone{position:absolute;left:max(10px,env(safe-area-inset-left));top:max(10px,env(safe-area-inset-top));z-index:36;width:106px;height:54px;border-radius:16px;touch-action:none;display:flex;align-items:flex-start;justify-content:flex-end;box-sizing:border-box;padding:5px 7px;pointer-events:auto}
-        .bcMenuHoldZone span{font-size:9px;font-weight:900;letter-spacing:.08em;color:rgba(231,242,255,.38);background:rgba(2,16,27,.16);border-radius:999px;padding:2px 5px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-        .bcOverlay{position:absolute;left:0;right:0;top:0;z-index:35;padding:calc(max(10px,env(safe-area-inset-top)) + 64px) 10px 10px;transition:opacity 160ms ease,transform 160ms ease;pointer-events:none}
-        .bcOverlayHidden{opacity:0;transform:translateY(-12px)}
+        .bcMenuButton{position:absolute;left:max(124px,calc(env(safe-area-inset-left) + 124px));top:max(10px,env(safe-area-inset-top));z-index:36;width:56px;height:28px;border-radius:999px;border:1px solid rgba(150,230,255,.18);background:rgba(2,16,27,.62);color:rgba(231,242,255,.90);font-size:11px;font-weight:900;letter-spacing:.02em;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 8px 22px rgba(0,0,0,.18);pointer-events:auto;touch-action:manipulation}
+        .bcOverlay{position:absolute;left:0;right:0;top:0;z-index:35;padding:calc(max(10px,env(safe-area-inset-top)) + 44px) 10px 10px;transition:opacity 160ms ease,transform 160ms ease;pointer-events:none}
+        .bcOverlayHidden{opacity:0;transform:translateY(-12px);visibility:hidden}
+        .bcOverlayHidden .bcOverlayInner{pointer-events:none!important}
         .bcOverlayInner{margin-left:max(10px,env(safe-area-inset-left));width:min(320px,calc(100vw - 20px));display:grid;grid-template-columns:1fr;gap:8px;padding:10px;border-radius:22px;background:rgba(2,16,27,.94);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(150,230,255,.14);box-shadow:0 18px 50px rgba(0,0,0,.30);pointer-events:auto}
         .bcPill{min-height:42px;padding:0 13px;border-radius:15px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.07);color:#e7f2ff;font-weight:900;text-align:left}.bcPillPrimary{border-color:rgba(120,240,255,.28);background:linear-gradient(180deg,rgba(120,240,255,.22),rgba(90,160,255,.13))}
-        @media(orientation:landscape){.bcMenuHoldZone{width:98px;height:48px}.bcOverlay{padding-top:calc(max(10px,env(safe-area-inset-top)) + 54px)}.bcOverlayInner{width:250px}}
+        @media(orientation:landscape){.bcMenuButton{left:max(116px,calc(env(safe-area-inset-left) + 116px));width:52px;height:26px;font-size:10px}.bcOverlay{padding-top:calc(max(10px,env(safe-area-inset-top)) + 40px)}.bcOverlayInner{width:250px}}
       `}</style>
     </div>
   );
