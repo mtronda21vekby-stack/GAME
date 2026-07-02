@@ -5,4 +5,6 @@ export * from "./content/skins";
 export * from "./state/skinSaveAdapter";
 export * from "./state/nextSaveStore";
 export * from "./render/SkinPreview";
+export * from "./render/canvasSkinRenderer";
 export * from "./ui/SkinLab";
+export * from "./ui/NextPlaytest";
