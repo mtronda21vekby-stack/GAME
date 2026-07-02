@@ -1,60 +1,39 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type { GameSettings } from "./SettingsPanel";
+import { EVOFISH_MOBILE_CSS } from "./evoFishMobileCss";
 
-type AnyEl = HTMLElement & {
+type FullscreenElement = HTMLElement & {
   requestFullscreen?: () => Promise<void>;
   webkitRequestFullscreen?: () => Promise<void>;
   mozRequestFullScreen?: () => Promise<void>;
   msRequestFullscreen?: () => Promise<void>;
 };
 
-type AnyDoc = Document & {
+type FullscreenDocument = Document & {
   webkitExitFullscreen?: () => Promise<void>;
   mozCancelFullScreen?: () => Promise<void>;
   msExitFullscreen?: () => Promise<void>;
 };
 
-function getReq(el: AnyEl | null): (() => Promise<void>) | null {
-  if (!el) return null;
-  return (
-    el.requestFullscreen ||
-    el.webkitRequestFullscreen ||
-    el.mozRequestFullScreen ||
-    el.msRequestFullscreen ||
-    null
-  );
+function useAppViewportHeightVar() {
+  useEffect(() => {
+    const set = () => {
+      document.documentElement.style.setProperty("--app-vh", `${window.innerHeight}px`);
+      document.documentElement.style.setProperty("--app-vw", `${window.innerWidth}px`);
+    };
+
+    set();
+    window.addEventListener("resize", set, { passive: true });
+    window.addEventListener("orientationchange", set as any, { passive: true });
+
+    return () => {
+      window.removeEventListener("resize", set as any);
+      window.removeEventListener("orientationchange", set as any);
+    };
+  }, []);
 }
 
-async function tryEnter(el: AnyEl | null): Promise<boolean> {
-  const req = getReq(el);
-  if (!req) return false;
-  try {
-    await req.call(el);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function tryExit(): Promise<boolean> {
-  const d = document as AnyDoc;
-  const exit =
-    document.exitFullscreen ||
-    d.webkitExitFullscreen ||
-    d.mozCancelFullScreen ||
-    d.msExitFullscreen ||
-    null;
-
-  if (!exit) return false;
-  try {
-    await exit.call(document);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function isNativeFullscreenActive(): boolean {
+function isNativeFullscreenActive() {
   const d = document as any;
   return Boolean(
     document.fullscreenElement ||
@@ -64,335 +43,230 @@ function isNativeFullscreenActive(): boolean {
   );
 }
 
-function useAppViewportHeightVar() {
-  useEffect(() => {
-    const set = () => {
-      document.documentElement.style.setProperty("--app-vh", `${window.innerHeight}px`);
-      document.documentElement.style.setProperty("--app-vw", `${window.innerWidth}px`);
-    };
-    set();
-    window.addEventListener("resize", set, { passive: true });
-    window.addEventListener("orientationchange", set as any, { passive: true });
-    return () => {
-      window.removeEventListener("resize", set as any);
-      window.removeEventListener("orientationchange", set as any);
-    };
-  }, []);
+async function requestFullscreen(el: FullscreenElement | null) {
+  if (!el) return false;
+  const fn =
+    el.requestFullscreen ||
+    el.webkitRequestFullscreen ||
+    el.mozRequestFullScreen ||
+    el.msRequestFullscreen ||
+    null;
+
+  if (!fn) return false;
+
+  try {
+    await fn.call(el);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
-export function EvoFishFrame(props: { src: string; settings: GameSettings }) {
+async function exitNativeFullscreen() {
+  const d = document as FullscreenDocument;
+  const fn =
+    document.exitFullscreen ||
+    d.webkitExitFullscreen ||
+    d.mozCancelFullScreen ||
+    d.msExitFullscreen ||
+    null;
+
+  if (!fn) return false;
+
+  try {
+    await fn.call(document);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function injectMobileCss(frame: HTMLIFrameElement | null) {
+  try {
+    const doc = frame?.contentDocument;
+    if (!doc) return;
+
+    const old = doc.getElementById("bc-mobile-game-css");
+    if (old) old.remove();
+
+    const style = doc.createElement("style");
+    style.id = "bc-mobile-game-css";
+    style.textContent = EVOFISH_MOBILE_CSS;
+    doc.head.appendChild(style);
+
+    const viewport = doc.querySelector('meta[name="viewport"]');
+    if (viewport) {
+      viewport.setAttribute(
+        "content",
+        "width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"
+      );
+    }
+  } catch {
+    // EvoFish is same-origin in production. If injection fails, keep original game playable.
+  }
+}
+
+export function EvoFishFrame(_props: { src: string; settings: GameSettings }) {
   useAppViewportHeightVar();
 
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
-
-  const [pseudoFs, setPseudoFs] = useState(false);
-  const [nativeFs, setNativeFs] = useState(false);
-
-  const [uiHidden, setUiHidden] = useState(false);
   const hideTimer = useRef<number | null>(null);
+  const lastTap = useRef(0);
 
-  const inFullscreen = nativeFs || pseudoFs;
+  const [pseudoFullscreen, setPseudoFullscreen] = useState(true);
+  const [nativeFullscreen, setNativeFullscreen] = useState(false);
+  const [uiHidden, setUiHidden] = useState(true);
 
-  const meta = useMemo(() => {
-    const s = props.settings;
-    return `Качество: ${s.quality}, Ввод: ${s.inputMode}, FPS: ${
-      s.fpsCounter ? "ON" : "OFF"
-    }, Звук: ${s.sound ? "ON" : "OFF"}`;
-  }, [props.settings]);
+  const fullscreen = pseudoFullscreen || nativeFullscreen;
 
   const clearHideTimer = () => {
-    if (hideTimer.current) {
-      window.clearTimeout(hideTimer.current);
-      hideTimer.current = null;
-    }
+    if (!hideTimer.current) return;
+    window.clearTimeout(hideTimer.current);
+    hideTimer.current = null;
   };
 
-  const scheduleAutoHide = () => {
+  const autoHideUi = () => {
     clearHideTimer();
-    if (!inFullscreen) return;
-    hideTimer.current = window.setTimeout(() => setUiHidden(true), 1700);
+    if (!fullscreen) return;
+    hideTimer.current = window.setTimeout(() => setUiHidden(true), 1100);
   };
 
-  const showUiNow = () => {
-    if (!inFullscreen) return;
+  const showUi = () => {
+    if (!fullscreen) return;
     setUiHidden(false);
-    scheduleAutoHide();
-  };
-
-  useEffect(() => {
-    const onFs = () => {
-      const active = isNativeFullscreenActive();
-      setNativeFs(active);
-
-      if (active || pseudoFs) {
-        setUiHidden(false);
-        scheduleAutoHide();
-      } else {
-        setUiHidden(false);
-        clearHideTimer();
-      }
-    };
-
-    document.addEventListener("fullscreenchange", onFs);
-    document.addEventListener("webkitfullscreenchange" as any, onFs);
-    document.addEventListener("mozfullscreenchange" as any, onFs);
-    document.addEventListener("MSFullscreenChange" as any, onFs);
-    onFs();
-
-    return () => {
-      document.removeEventListener("fullscreenchange", onFs);
-      document.removeEventListener("webkitfullscreenchange" as any, onFs);
-      document.removeEventListener("mozfullscreenchange" as any, onFs);
-      document.removeEventListener("MSFullscreenChange" as any, onFs);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pseudoFs]);
-
-  useEffect(() => {
-    const onKey = async (e: KeyboardEvent) => {
-      if (e.key === "Escape") await exitFullscreen();
-      if (e.key === "f" || e.key === "F") {
-        e.preventDefault();
-        if (inFullscreen) await exitFullscreen();
-        else await enterFullscreen();
-      }
-      if (e.key === "u" || e.key === "U") {
-        if (!inFullscreen) return;
-        setUiHidden((v) => !v);
-        if (uiHidden) scheduleAutoHide();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inFullscreen, uiHidden]);
-
-  useEffect(() => {
-    const onMove = () => {
-      if (!inFullscreen) return;
-      showUiNow();
-    };
-    window.addEventListener("mousemove", onMove, { passive: true });
-    window.addEventListener("touchstart", onMove, { passive: true });
-    window.addEventListener("pointerdown", onMove, { passive: true });
-    return () => {
-      window.removeEventListener("mousemove", onMove as any);
-      window.removeEventListener("touchstart", onMove as any);
-      window.removeEventListener("pointerdown", onMove as any);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inFullscreen]);
-
-  const lastTap = useRef<number>(0);
-  const onFrameTap = () => {
-    if (!inFullscreen) return;
-    const now = Date.now();
-    if (now - lastTap.current < 260) {
-      setUiHidden((v) => !v);
-      if (uiHidden) scheduleAutoHide();
-    } else {
-      showUiNow();
-    }
-    lastTap.current = now;
+    autoHideUi();
   };
 
   const enterFullscreen = async () => {
-    const iframe = iframeRef.current as unknown as AnyEl | null;
-    const okIframe = await tryEnter(iframe);
-    if (okIframe) {
-      setUiHidden(false);
-      scheduleAutoHide();
-      return;
-    }
-
-    const wrap = wrapRef.current as unknown as AnyEl | null;
-    const okWrap = await tryEnter(wrap);
-    if (okWrap) {
-      setUiHidden(false);
-      scheduleAutoHide();
-      return;
-    }
-
-    setPseudoFs(true);
-    setUiHidden(false);
-    scheduleAutoHide();
+    const ok = await requestFullscreen(wrapRef.current as FullscreenElement | null);
+    if (!ok) setPseudoFullscreen(true);
+    setUiHidden(true);
+    autoHideUi();
   };
 
   const exitFullscreen = async () => {
-    await tryExit();
-    setPseudoFs(false);
+    await exitNativeFullscreen();
+    setPseudoFullscreen(false);
     setUiHidden(false);
     clearHideTimer();
   };
 
   const reload = () => {
-    const fr = iframeRef.current;
-    if (!fr) return;
-    fr.src = fr.src;
+    const frame = iframeRef.current;
+    if (frame) frame.src = frame.src;
   };
 
-  const cardMode = !inFullscreen;
+  useEffect(() => {
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+
+    return () => {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+      document.body.style.touchAction = "";
+    };
+  }, []);
+
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      setNativeFullscreen(isNativeFullscreenActive());
+      setUiHidden(true);
+      autoHideUi();
+    };
+
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    document.addEventListener("webkitfullscreenchange" as any, onFullscreenChange);
+    document.addEventListener("mozfullscreenchange" as any, onFullscreenChange);
+    document.addEventListener("MSFullscreenChange" as any, onFullscreenChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", onFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange" as any, onFullscreenChange);
+      document.removeEventListener("mozfullscreenchange" as any, onFullscreenChange);
+      document.removeEventListener("MSFullscreenChange" as any, onFullscreenChange);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fullscreen]);
+
+  useEffect(() => {
+    const t = window.setInterval(() => injectMobileCss(iframeRef.current), 800);
+    return () => window.clearInterval(t);
+  }, []);
+
+  const onFrameTap = () => {
+    const now = Date.now();
+    if (now - lastTap.current < 260) {
+      setUiHidden((v) => !v);
+      autoHideUi();
+    } else {
+      showUi();
+    }
+    lastTap.current = now;
+  };
+
+  const frameHeight = fullscreen ? "var(--app-vh)" : "72vh";
 
   return (
     <div
       ref={wrapRef}
-      className={`${pseudoFs ? "bcPseudoFs" : ""} ${inFullscreen ? "bcImmersive" : ""}`}
+      className={`${pseudoFullscreen ? "bcPseudoFs" : ""} ${fullscreen ? "bcImmersive" : ""}`}
       style={{
-        padding: cardMode ? 0 : 0,
-        borderRadius: cardMode ? 22 : 0,
-        overflow: "hidden",
         position: "relative",
-        border: "none", // <- никаких белых рамок
-        background: cardMode ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.94)",
-        boxShadow: cardMode ? "0 30px 120px rgba(0,0,0,0.28)" : "none"
+        overflow: "hidden",
+        borderRadius: fullscreen ? 0 : 22,
+        background: "#031827"
       }}
     >
-      {/* Overlay */}
-      <div className={`bcOverlay ${inFullscreen && uiHidden ? "bcOverlayHidden" : ""}`}>
+      <div className={`bcOverlay ${fullscreen && uiHidden ? "bcOverlayHidden" : ""}`}>
         <div className="bcOverlayInner">
-          <div className="bcOverlayLeft">
+          <div>
             <div className="bcTitle">EvoFish</div>
-            <div className="bcSub">{meta}</div>
+            <div className="bcSub">Mobile app mode</div>
           </div>
 
-          <div className="bcOverlayRight">
+          <div className="bcActions">
             <button className="bcPill" onClick={reload}>Reload</button>
-
-            {!inFullscreen ? (
-              <button className="bcPill bcPillPrimary" onClick={enterFullscreen}>
-                Fullscreen (F)
-              </button>
+            {fullscreen ? (
+              <button className="bcPill bcPillPrimary" onClick={exitFullscreen}>Close</button>
             ) : (
-              <>
-                <button
-                  className="bcPill"
-                  onClick={() => {
-                    setUiHidden((v) => !v);
-                    if (uiHidden) scheduleAutoHide();
-                  }}
-                >
-                  UI (U)
-                </button>
-                <button className="bcPill bcPillPrimary" onClick={exitFullscreen}>
-                  Закрыть (Esc)
-                </button>
-              </>
+              <button className="bcPill bcPillPrimary" onClick={enterFullscreen}>Fullscreen</button>
             )}
           </div>
         </div>
       </div>
 
-      {/* Frame */}
-      <div onClick={onFrameTap} style={{ borderRadius: cardMode ? 22 : 0, overflow: "hidden" }}>
+      <div onClick={onFrameTap} style={{ height: frameHeight }}>
         <iframe
           ref={iframeRef}
           title="EvoFish"
-          src={props.src}
+          src={_props.src}
+          onLoad={() => injectMobileCss(iframeRef.current)}
           style={{
             width: "100%",
-            height: cardMode ? "62vh" : "var(--app-vh)",
-            minHeight: cardMode ? "520px" : "var(--app-vh)",
+            height: frameHeight,
+            minHeight: frameHeight,
             border: 0,
-            display: "block"
+            display: "block",
+            background: "#031827"
           }}
           allow="fullscreen; gamepad; autoplay"
           allowFullScreen
         />
       </div>
 
-      {inFullscreen && uiHidden ? (
-        <div className="bcHint">
-          Тапни чтобы показать меню · Double tap — UI
-        </div>
-      ) : null}
+      {fullscreen && uiHidden ? <div className="bcHint">Тап — меню · двойной тап — UI</div> : null}
 
       <style>{`
-        .bcPseudoFs{
-          position: fixed !important;
-          inset: 0 !important;
-          z-index: 9999 !important;
-        }
-
-        .bcImmersive{
-          width: var(--app-vw, 100vw) !important;
-          height: var(--app-vh, 100vh) !important;
-          background: rgba(0,0,0,0.94) !important;
-        }
-
-        .bcOverlay{
-          position: ${cardMode ? "relative" : "absolute"};
-          top: 0;
-          left: 0;
-          right: 0;
-          z-index: 20;
-          padding: ${cardMode ? "12px 12px 10px" : "max(10px, env(safe-area-inset-top)) 10px 10px"};
-          transition: transform 160ms ease, opacity 160ms ease;
-          will-change: transform, opacity;
-        }
-
-        .bcOverlayHidden{
-          transform: translate3d(0,-10px,0);
-          opacity: 0;
-          pointer-events: none;
-        }
-
-        .bcOverlayInner{
-          display:flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 12px;
-          padding: ${cardMode ? "0" : "10px 12px"};
-          border-radius: ${cardMode ? "0" : "18px"};
-          border: none;
-          background: ${cardMode ? "transparent" : "rgba(0,0,0,0.22)"};
-          backdrop-filter: ${cardMode ? "none" : "blur(14px)"};
-          -webkit-backdrop-filter: ${cardMode ? "none" : "blur(14px)"};
-        }
-
-        .bcOverlayLeft{ min-width: 0; }
-        .bcTitle{ font-weight: 900; letter-spacing: -0.01em; }
-        .bcSub{ margin-top: 2px; font-size: 12px; opacity: 0.8; }
-
-        .bcOverlayRight{ display:flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
-
-        .bcPill{
-          height: 40px;
-          padding: 0 14px;
-          border-radius: 999px;
-          border: 1px solid rgba(255,255,255,0.10);
-          background: rgba(255,255,255,0.07);
-          color: var(--text);
-          cursor: pointer;
-          font-weight: 850;
-        }
-        .bcPillPrimary{
-          border: 1px solid rgba(120,160,255,0.26);
-          background: linear-gradient(180deg, rgba(120,160,255,0.38), rgba(120,160,255,0.16));
-        }
-
-        .bcHint{
-          position: absolute;
-          left: 12px;
-          right: 12px;
-          bottom: max(12px, env(safe-area-inset-bottom));
-          z-index: 30;
-          padding: 10px 12px;
-          border-radius: 999px;
-          border: none;
-          background: rgba(0,0,0,0.28);
-          color: var(--text);
-          font-size: 12px;
-          opacity: 0.86;
-          text-align: center;
-          pointer-events: none;
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-        }
-
-        @media (prefers-reduced-motion: reduce){
-          .bcOverlay{ transition: none !important; }
-        }
+        .bcPseudoFs{position:fixed!important;inset:0!important;z-index:9999!important}
+        .bcImmersive{width:var(--app-vw,100vw)!important;height:var(--app-vh,100vh)!important;background:#031827!important}
+        .bcOverlay{position:absolute;left:0;right:0;top:0;z-index:30;padding:max(10px,env(safe-area-inset-top)) 10px 10px;transition:opacity 160ms ease,transform 160ms ease}
+        .bcOverlayHidden{opacity:0;transform:translateY(-12px);pointer-events:none}
+        .bcOverlayInner{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:18px;background:rgba(2,16,27,.46);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(150,230,255,.12)}
+        .bcTitle{font-weight:900;color:#e7f2ff}.bcSub{font-size:12px;color:rgba(231,242,255,.72);margin-top:2px}.bcActions{display:flex;gap:8px}.bcPill{height:34px;padding:0 11px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.07);color:#e7f2ff;font-weight:850}.bcPillPrimary{border-color:rgba(120,240,255,.28);background:linear-gradient(180deg,rgba(120,240,255,.26),rgba(90,160,255,.16))}
+        .bcHint{position:absolute;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:25;padding:9px 12px;border-radius:999px;background:rgba(0,0,0,.24);color:#e7f2ff;font-size:12px;text-align:center;pointer-events:none;opacity:.72;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+        @media(max-width:760px){.bcSub{display:none}.bcPill{height:32px;font-size:12px;padding:0 10px}}
       `}</style>
     </div>
   );
