@@ -16,6 +16,7 @@ export * from "./systems/collisionSystem";
 export * from "./systems/combatSystem";
 export * from "./systems/feedbackSystem";
 export * from "./systems/progressionSystem";
+export * from "./systems/survivalSystem";
 export * from "./systems/engineStep";
 export * from "./render/SkinPreview";
 export * from "./render/canvasSkinRenderer";
