@@ -1,21 +1,36 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "../../router";
 import type { NextEngineState, NextEngineStats, NextInputState } from "../core/engineTypes";
+import { getCraftCostLabel, NEXT_CRAFT_RECIPES } from "../content/craft";
 import { getMutationLevel, NEXT_MUTATIONS } from "../content/mutations";
+import { NEXT_QUESTS, type NextQuestDefinition } from "../content/quests";
 import { EVOFISH_SKIN_BY_ID } from "../content/skins";
 import { renderNextWorld } from "../render/worldRenderer";
+import { applyCraftRecipe, canCraftRecipe } from "../systems/craftSystem";
 import { createNextWorld } from "../systems/createWorld";
 import { stepNextEngine } from "../systems/engineStep";
 import { refreshMutationStats } from "../systems/progressionSystem";
 import { buyMutation, canBuyMutation, loadEvoFishNextSave, saveEvoFishNextProgress, saveEvoFishNextSave } from "../state/nextSaveStore";
 import { EVOFISH_NEXT_VERSION } from "../version";
 
+type NextPanel = "craft" | "mutations" | "quests" | "shop" | null;
+
+function questValue(stats: NextEngineStats, quest: NextQuestDefinition) {
+  if (quest.metric === "kills") return stats.kills;
+  if (quest.metric === "mass") return stats.mass;
+  if (quest.metric === "level") return stats.level;
+  if (quest.metric === "tier") return stats.tier;
+  if (quest.metric === "pearls") return stats.pearls;
+  if (quest.metric === "corals") return stats.corals;
+  return 0;
+}
+
 export function NextPlaytest() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<NextEngineState | null>(null);
   const inputRef = useRef<NextInputState>({ pointerX: 0, pointerY: 0, down: false, bite: false, dash: false });
   const [saveState, setSaveState] = useState(() => loadEvoFishNextSave());
-  const [mutationsOpen, setMutationsOpen] = useState(false);
+  const [activePanel, setActivePanel] = useState<NextPanel>(null);
   const [stats, setStats] = useState<NextEngineStats>({
     mass: 1,
     kills: 0,
@@ -32,6 +47,9 @@ export function NextPlaytest() {
     pearls: 0,
     corals: 0,
     mutationLevel: 0,
+    craftBarrierT: 0,
+    craftBiteBoostT: 0,
+    craftSonarT: 0,
     completedQuests: 0,
     activeQuestTitle: "—",
     activeQuestProgress: 0,
@@ -131,12 +149,18 @@ export function NextPlaytest() {
     };
   }, [skin, saveState]);
 
+  const togglePanel = (panel: Exclude<NextPanel, null>) => {
+    setActivePanel((current) => current === panel ? null : panel);
+  };
+
   const buyMutationLevel = (id: string) => {
+    const engine = engineRef.current;
+    if (engine) saveEvoFishNextProgress(engine);
+
     const fresh = loadEvoFishNextSave();
     const next = buyMutation(fresh, id);
     if (next === fresh) return;
 
-    const engine = engineRef.current;
     if (engine) {
       engine.economy = next.economy;
       engine.mutations = next.mutations;
@@ -150,6 +174,14 @@ export function NextPlaytest() {
     setSaveState(next);
   };
 
+  const craftRecipe = (id: string) => {
+    const engine = engineRef.current;
+    if (!engine) return;
+    if (!applyCraftRecipe(engine, id)) return;
+    saveEvoFishNextProgress(engine);
+    setStats({ ...engine.stats });
+  };
+
   const hpPct = Math.max(0, Math.min(1, stats.hp / Math.max(1, stats.hpMax)));
   const xpPct = Math.max(0, Math.min(1, stats.xp / Math.max(1, stats.xpToNext)));
   const levelPct = Math.max(0, Math.min(1, stats.levelXp / Math.max(1, stats.levelXpToNext)));
@@ -158,6 +190,7 @@ export function NextPlaytest() {
   const downed = Boolean(stats.downed || stats.dead);
   const reviveTime = stats.reviveTime || stats.respawnTime || 0;
   const downs = stats.downs || stats.deaths || 0;
+  const engine = engineRef.current;
 
   return (
     <main className="efNextPlay">
@@ -169,6 +202,9 @@ export function NextPlaytest() {
         <span>{stats.skinName}</span>
         <span>Mass {stats.mass.toFixed(2)} · Kills {stats.kills} · Downs {downs}</span>
         <span>Жемчуг {stats.pearls} · Кораллы {stats.corals} · Mut {stats.mutationLevel}</span>
+        {stats.craftBarrierT > 0 || stats.craftBiteBoostT > 0 || stats.craftSonarT > 0 ? (
+          <span>Craft: BARRIER {stats.craftBarrierT.toFixed(0)} · BITE {stats.craftBiteBoostT.toFixed(0)} · SONAR {stats.craftSonarT.toFixed(0)}</span>
+        ) : null}
         {stats.apexAlive ? (
           <>
             <span>APEX {stats.apexName} {Math.round(stats.apexHp)} / {Math.round(stats.apexHpMax)}</span>
@@ -189,39 +225,73 @@ export function NextPlaytest() {
         <span>{stats.lastEvent}</span>
       </div>
 
-      {mutationsOpen ? (
-        <div className="efMutPanel">
-          <div className="efMutHead">
-            <b>Mutations</b>
-            <button onClick={() => setMutationsOpen(false)}>×</button>
+      {activePanel ? (
+        <div className="efGamePanel">
+          <div className="efPanelHead">
+            <b>{activePanel === "craft" ? "Craft" : activePanel === "mutations" ? "Mutations" : activePanel === "quests" ? "Quests" : "Shop"}</b>
+            <button onClick={() => setActivePanel(null)}>×</button>
           </div>
-          {NEXT_MUTATIONS.map((mutation) => {
+
+          {activePanel === "craft" ? NEXT_CRAFT_RECIPES.map((recipe) => {
+            const canUse = engine ? canCraftRecipe(engine, recipe.id) : false;
+            return (
+              <button key={recipe.id} className="efPanelItem" disabled={!canUse} onClick={() => craftRecipe(recipe.id)}>
+                <b>{recipe.name}<span>{getCraftCostLabel(recipe.cost)}</span></b>
+                <small>{recipe.description}</small>
+                <em>{recipe.duration ? `${recipe.duration} сек` : "instant"}</em>
+              </button>
+            );
+          }) : null}
+
+          {activePanel === "mutations" ? NEXT_MUTATIONS.map((mutation) => {
             const level = getMutationLevel(saveState.mutations, mutation.id);
             const canBuy = canBuyMutation(saveState, mutation.id);
             return (
-              <button key={mutation.id} className="efMutItem" disabled={!canBuy} onClick={() => buyMutationLevel(mutation.id)}>
-                <b>{mutation.name} <span>LV {level}/{mutation.maxLevel}</span></b>
+              <button key={mutation.id} className="efPanelItem" disabled={!canBuy} onClick={() => buyMutationLevel(mutation.id)}>
+                <b>{mutation.name}<span>LV {level}/{mutation.maxLevel}</span></b>
                 <small>{mutation.description}</small>
                 <em>{level >= mutation.maxLevel ? "MAX" : `${mutation.coralCost} коралл`}</em>
               </button>
             );
-          })}
+          }) : null}
+
+          {activePanel === "quests" ? NEXT_QUESTS.map((quest) => {
+            const current = Math.min(quest.target, questValue(stats, quest));
+            const done = current >= quest.target || Boolean(saveState.quests.completed[quest.id]);
+            return (
+              <div key={quest.id} className={`efQuestItem ${done ? "done" : ""}`}>
+                <b>{quest.title}<span>{Math.floor(current)} / {quest.target}</span></b>
+                <small>{quest.description}</small>
+                <em>Reward: {quest.reward.xp} XP · {quest.reward.pearls} жемчуг{quest.reward.corals ? ` · ${quest.reward.corals} коралл` : ""}</em>
+              </div>
+            );
+          }) : null}
+
+          {activePanel === "shop" ? (
+            <div className="efShopPanel">
+              <p>Shop в Next завязан на Skin Lab: скины покупаются за валюту, открываются по LV/Tier/Form и сразу влияют на внешний вид.</p>
+              <p>Баланс: {stats.pearls} жемчуг · {stats.corals} кораллы</p>
+              <Link to="/game/next/skins">Открыть Skin Lab</Link>
+            </div>
+          ) : null}
         </div>
       ) : null}
 
       {downed ? <div className="efNextRevive">Возрождение через {reviveTime.toFixed(1)} сек</div> : null}
-      <div className="efNextHelp">Next теперь имеет Apex, мини-карту, quests, revive и mutations. Остальные системы старой игры переносим слоями.</div>
+      <div className="efNextHelp">Next: Craft, Mutations, Quests, Shop, Apex, mini-map и revive. Старую логику переносим слоями.</div>
       <div className="efNextControls">
         <button disabled={downed} onPointerDown={(event) => { event.preventDefault(); inputRef.current.bite = true; }}>BITE</button>
         <button disabled={downed} onPointerDown={(event) => { event.preventDefault(); inputRef.current.dash = true; }}>DASH</button>
       </div>
       <div className="efNextLinks">
-        <button onClick={() => setMutationsOpen((value) => !value)}>Mutations</button>
-        <Link to="/game/next/skins">Skin Lab</Link>
+        <button onClick={() => togglePanel("craft")}>Craft</button>
+        <button onClick={() => togglePanel("mutations")}>Mut</button>
+        <button onClick={() => togglePanel("quests")}>Quests</button>
+        <button onClick={() => togglePanel("shop")}>Shop</button>
         <Link to="/game">Playable</Link>
       </div>
       <style>{`
-        .efNextPlay{position:fixed;inset:0;overflow:hidden;background:#031827;color:#e7f2ff;touch-action:none}.efNextCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}.efNextHud{position:absolute;left:max(12px,env(safe-area-inset-left));top:max(12px,env(safe-area-inset-top));z-index:3;display:grid;gap:3px;padding:12px 14px;border-radius:20px;background:rgba(2,16,27,.62);border:1px solid rgba(150,230,255,.15);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 14px 40px rgba(0,0,0,.26);max-width:min(330px,calc(100vw - 24px));max-height:58vh;overflow:auto;box-sizing:border-box}.efNextHud b{font-size:13px}.efNextHud span{font-size:11px;color:rgba(231,242,255,.76)}.efNextHud i{display:block;width:166px;max-width:100%;height:5px;border-radius:999px;background:rgba(255,255,255,.10);overflow:hidden}.efNextHud em{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,rgba(110,255,180,.95),rgba(120,240,255,.85))}.efNextHud em.apex{background:linear-gradient(90deg,rgba(255,90,90,.95),rgba(255,220,120,.92))}.efNextHud em.xp{background:linear-gradient(90deg,rgba(255,220,120,.95),rgba(255,160,90,.85))}.efNextHud em.level{background:linear-gradient(90deg,rgba(180,140,255,.95),rgba(120,240,255,.85))}.efNextHud em.quest{background:linear-gradient(90deg,rgba(255,240,160,.95),rgba(180,140,255,.85))}.efNextRevive{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;padding:18px 22px;border-radius:24px;background:rgba(2,16,27,.78);border:1px solid rgba(255,120,120,.22);box-shadow:0 22px 70px rgba(0,0,0,.34);font-size:18px;font-weight:1000;color:#ffd0d0;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}.efNextHelp{position:absolute;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:3;max-width:min(640px,calc(100vw - 24px));padding:10px 13px;border-radius:999px;background:rgba(2,16,27,.48);border:1px solid rgba(150,230,255,.12);font-size:12px;text-align:center;color:rgba(231,242,255,.76);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}.efNextLinks{position:absolute;right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));z-index:8;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.efNextLinks a,.efNextLinks button{min-height:34px;display:inline-flex;align-items:center;padding:0 12px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(150,230,255,.14);color:#e7f2ff;text-decoration:none;font-size:12px;font-weight:900}.efNextControls{position:absolute;right:max(16px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));z-index:5;display:flex;gap:10px}.efNextControls button{width:78px;height:78px;border-radius:999px;border:1px solid rgba(150,230,255,.22);background:linear-gradient(180deg,rgba(120,240,255,.22),rgba(90,160,255,.12));box-shadow:0 14px 38px rgba(0,0,0,.28);color:#e7f2ff;font-weight:1000;letter-spacing:.04em;touch-action:manipulation}.efNextControls button:first-child{background:linear-gradient(180deg,rgba(255,110,110,.24),rgba(255,90,90,.12))}.efNextControls button:disabled{opacity:.45}.efMutPanel{position:absolute;right:max(12px,env(safe-area-inset-right));top:calc(max(12px,env(safe-area-inset-top)) + 46px);z-index:9;width:min(310px,calc(100vw - 24px));max-height:58vh;overflow:auto;padding:12px;border-radius:22px;background:rgba(2,16,27,.86);border:1px solid rgba(150,230,255,.18);box-shadow:0 22px 70px rgba(0,0,0,.34);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}.efMutHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}.efMutHead b{font-size:14px}.efMutHead button{width:30px;height:30px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.08);color:#e7f2ff;font-size:18px}.efMutItem{width:100%;display:grid;gap:4px;text-align:left;margin-top:8px;padding:10px;border-radius:16px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);color:#e7f2ff}.efMutItem:disabled{opacity:.52}.efMutItem b{display:flex;justify-content:space-between;font-size:12px}.efMutItem b span{color:rgba(120,240,255,.86)}.efMutItem small{color:rgba(231,242,255,.66);line-height:1.3}.efMutItem em{font-style:normal;color:#fff3a0;font-size:11px;font-weight:950}@media(max-width:760px){.efNextHud{max-width:min(232px,calc(100vw - 24px));max-height:48vh;padding:10px 12px}.efNextLinks{left:max(12px,env(safe-area-inset-left));right:auto;top:auto;bottom:calc(max(18px,env(safe-area-inset-bottom)) + 96px);justify-content:flex-start;max-width:calc(100vw - 212px)}.efNextLinks a,.efNextLinks button{min-height:32px;padding:0 10px;font-size:11px}.efNextHelp{left:max(12px,env(safe-area-inset-left));right:max(190px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));transform:none;text-align:left;font-size:11px;line-height:1.35;border-radius:22px}.efNextControls button{width:74px;height:74px}.efNextRevive{font-size:15px;white-space:nowrap}.efMutPanel{top:calc(max(12px,env(safe-area-inset-top)) + 44px);right:max(10px,env(safe-area-inset-right));width:min(284px,calc(100vw - 20px));max-height:54vh}}
+        .efNextPlay{position:fixed;inset:0;overflow:hidden;background:#031827;color:#e7f2ff;touch-action:none}.efNextCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}.efNextHud{position:absolute;left:max(12px,env(safe-area-inset-left));top:max(12px,env(safe-area-inset-top));z-index:3;display:grid;gap:3px;padding:12px 14px;border-radius:20px;background:rgba(2,16,27,.62);border:1px solid rgba(150,230,255,.15);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 14px 40px rgba(0,0,0,.26);max-width:min(330px,calc(100vw - 24px));max-height:58vh;overflow:auto;box-sizing:border-box}.efNextHud b{font-size:13px}.efNextHud span{font-size:11px;color:rgba(231,242,255,.76)}.efNextHud i{display:block;width:166px;max-width:100%;height:5px;border-radius:999px;background:rgba(255,255,255,.10);overflow:hidden}.efNextHud em{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,rgba(110,255,180,.95),rgba(120,240,255,.85))}.efNextHud em.apex{background:linear-gradient(90deg,rgba(255,90,90,.95),rgba(255,220,120,.92))}.efNextHud em.xp{background:linear-gradient(90deg,rgba(255,220,120,.95),rgba(255,160,90,.85))}.efNextHud em.level{background:linear-gradient(90deg,rgba(180,140,255,.95),rgba(120,240,255,.85))}.efNextHud em.quest{background:linear-gradient(90deg,rgba(255,240,160,.95),rgba(180,140,255,.85))}.efNextRevive{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;padding:18px 22px;border-radius:24px;background:rgba(2,16,27,.78);border:1px solid rgba(255,120,120,.22);box-shadow:0 22px 70px rgba(0,0,0,.34);font-size:18px;font-weight:1000;color:#ffd0d0;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}.efNextHelp{position:absolute;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:3;max-width:min(640px,calc(100vw - 24px));padding:10px 13px;border-radius:999px;background:rgba(2,16,27,.48);border:1px solid rgba(150,230,255,.12);font-size:12px;text-align:center;color:rgba(231,242,255,.76);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}.efNextLinks{position:absolute;right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));z-index:8;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.efNextLinks a,.efNextLinks button{min-height:34px;display:inline-flex;align-items:center;padding:0 12px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(150,230,255,.14);color:#e7f2ff;text-decoration:none;font-size:12px;font-weight:900}.efNextControls{position:absolute;right:max(16px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));z-index:5;display:flex;gap:10px}.efNextControls button{width:78px;height:78px;border-radius:999px;border:1px solid rgba(150,230,255,.22);background:linear-gradient(180deg,rgba(120,240,255,.22),rgba(90,160,255,.12));box-shadow:0 14px 38px rgba(0,0,0,.28);color:#e7f2ff;font-weight:1000;letter-spacing:.04em;touch-action:manipulation}.efNextControls button:first-child{background:linear-gradient(180deg,rgba(255,110,110,.24),rgba(255,90,90,.12))}.efNextControls button:disabled{opacity:.45}.efGamePanel{position:absolute;right:max(12px,env(safe-area-inset-right));top:calc(max(12px,env(safe-area-inset-top)) + 46px);z-index:9;width:min(330px,calc(100vw - 24px));max-height:62vh;overflow:auto;padding:12px;border-radius:22px;background:rgba(2,16,27,.88);border:1px solid rgba(150,230,255,.18);box-shadow:0 22px 70px rgba(0,0,0,.34);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}.efPanelHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}.efPanelHead b{font-size:14px}.efPanelHead button{width:30px;height:30px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.08);color:#e7f2ff;font-size:18px}.efPanelItem,.efQuestItem{width:100%;display:grid;gap:4px;text-align:left;margin-top:8px;padding:10px;border-radius:16px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);color:#e7f2ff;box-sizing:border-box}.efPanelItem:disabled{opacity:.52}.efPanelItem b,.efQuestItem b{display:flex;justify-content:space-between;gap:10px;font-size:12px}.efPanelItem b span,.efQuestItem b span{color:rgba(120,240,255,.86)}.efPanelItem small,.efQuestItem small,.efShopPanel p{color:rgba(231,242,255,.66);line-height:1.35;margin:0}.efPanelItem em,.efQuestItem em{font-style:normal;color:#fff3a0;font-size:11px;font-weight:950}.efQuestItem.done{border-color:rgba(110,255,180,.22);background:rgba(110,255,180,.06)}.efShopPanel{display:grid;gap:10px}.efShopPanel a{min-height:38px;display:inline-flex;align-items:center;justify-content:center;border-radius:14px;background:rgba(120,240,255,.12);border:1px solid rgba(120,240,255,.20);color:#e7f2ff;text-decoration:none;font-weight:950}@media(max-width:760px){.efNextHud{max-width:min(232px,calc(100vw - 24px));max-height:46vh;padding:10px 12px}.efNextLinks{left:max(12px,env(safe-area-inset-left));right:auto;top:auto;bottom:calc(max(18px,env(safe-area-inset-bottom)) + 96px);justify-content:flex-start;max-width:calc(100vw - 188px);gap:6px}.efNextLinks a,.efNextLinks button{min-height:31px;padding:0 9px;font-size:10px}.efNextHelp{left:max(12px,env(safe-area-inset-left));right:max(190px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));transform:none;text-align:left;font-size:11px;line-height:1.35;border-radius:22px}.efNextControls button{width:74px;height:74px}.efNextRevive{font-size:15px;white-space:nowrap}.efGamePanel{top:calc(max(12px,env(safe-area-inset-top)) + 44px);right:max(10px,env(safe-area-inset-right));width:min(294px,calc(100vw - 20px));max-height:56vh}}
       `}</style>
     </main>
   );
