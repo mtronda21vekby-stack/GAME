@@ -1,4 +1,4 @@
-import type { EvoFishFormId, EvoFishSkinDefinition } from "./types";
+import type { EvoFishEconomyState, EvoFishFormId, EvoFishSkinDefinition } from "./types";
 import type { NextEnemyArchetypeId } from "../content/enemyArchetypes";
 
 export type NextViewport = {
@@ -89,6 +89,8 @@ export type NextEngineStats = {
   xpToNext: number;
   levelXp: number;
   levelXpToNext: number;
+  pearls: number;
+  corals: number;
   skinName: string;
   formName: string;
   lastEvent: string;
@@ -96,6 +98,7 @@ export type NextEngineStats = {
 
 export type NextEngineState = {
   config: NextWorldConfig;
+  economy: EvoFishEconomyState;
   player: NextPlayerState;
   enemies: NextFishEntity[];
   floats: NextDamageFloat[];
