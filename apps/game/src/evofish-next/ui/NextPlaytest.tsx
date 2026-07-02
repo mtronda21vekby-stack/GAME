@@ -1,16 +1,18 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "../../router";
-import type { NextEngineStats, NextInputState } from "../core/engineTypes";
+import type { NextEngineState, NextEngineStats, NextInputState } from "../core/engineTypes";
 import { getMutationLevel, NEXT_MUTATIONS } from "../content/mutations";
 import { EVOFISH_SKIN_BY_ID } from "../content/skins";
 import { renderNextWorld } from "../render/worldRenderer";
 import { createNextWorld } from "../systems/createWorld";
 import { stepNextEngine } from "../systems/engineStep";
+import { refreshMutationStats } from "../systems/progressionSystem";
 import { buyMutation, canBuyMutation, loadEvoFishNextSave, saveEvoFishNextProgress, saveEvoFishNextSave } from "../state/nextSaveStore";
 import { EVOFISH_NEXT_VERSION } from "../version";
 
 export function NextPlaytest() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const engineRef = useRef<NextEngineState | null>(null);
   const inputRef = useRef<NextInputState>({ pointerX: 0, pointerY: 0, down: false, bite: false, dash: false });
   const [saveState, setSaveState] = useState(() => loadEvoFishNextSave());
   const [mutationsOpen, setMutationsOpen] = useState(false);
@@ -60,6 +62,7 @@ export function NextPlaytest() {
     let saveTimer = 0;
     const input = inputRef.current;
     const engine = createNextWorld(skin, saveState.progress, saveState.economy, saveState.quests, saveState.mutations);
+    engineRef.current = engine;
 
     const resize = () => {
       const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
@@ -119,6 +122,7 @@ export function NextPlaytest() {
     return () => {
       live = false;
       saveEvoFishNextProgress(engine);
+      if (engineRef.current === engine) engineRef.current = null;
       window.removeEventListener("resize", resize);
       canvas.removeEventListener("pointerdown", onDown);
       canvas.removeEventListener("pointermove", onMove);
@@ -128,10 +132,22 @@ export function NextPlaytest() {
   }, [skin, saveState]);
 
   const buyMutationLevel = (id: string) => {
-    const next = buyMutation(saveState, id);
-    if (next === saveState) return;
+    const fresh = loadEvoFishNextSave();
+    const next = buyMutation(fresh, id);
+    if (next === fresh) return;
+
+    const engine = engineRef.current;
+    if (engine) {
+      engine.economy = next.economy;
+      engine.mutations = next.mutations;
+      refreshMutationStats(engine);
+      saveEvoFishNextProgress(engine);
+      setStats({ ...engine.stats });
+    } else {
+      saveEvoFishNextSave(next);
+    }
+
     setSaveState(next);
-    saveEvoFishNextSave(next);
   };
 
   const hpPct = Math.max(0, Math.min(1, stats.hp / Math.max(1, stats.hpMax)));
