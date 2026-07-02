@@ -1,1 +1,10 @@
 html,body{height:100%;margin:0}*{box-sizing:border-box}
+
+.efGamePanel.mapPanel{left:max(8px,env(safe-area-inset-left))!important;right:max(8px,env(safe-area-inset-right))!important;top:max(8px,env(safe-area-inset-top))!important;width:auto!important;max-height:calc(100vh - max(16px,env(safe-area-inset-bottom)))!important;padding:14px!important}
+.efGamePanel.mapPanel .efWorldMapSvg{height:calc(100vh - 132px)!important;min-height:70vh!important;max-height:none!important}
+.efGamePanel.mapPanel .efWorldMapFrame{border-radius:22px!important}
+
+@media(max-width:760px){
+  .efGamePanel.mapPanel{left:max(6px,env(safe-area-inset-left))!important;right:max(6px,env(safe-area-inset-right))!important;top:max(6px,env(safe-area-inset-top))!important;max-height:calc(100vh - max(12px,env(safe-area-inset-bottom)))!important;padding:10px!important}
+  .efGamePanel.mapPanel .efWorldMapSvg{height:calc(100vh - 126px)!important;min-height:76vh!important}
+}
