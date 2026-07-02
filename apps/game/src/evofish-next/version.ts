@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-engine-0.4.0";
+export const EVOFISH_NEXT_VERSION = "next-combat-0.5.0";
