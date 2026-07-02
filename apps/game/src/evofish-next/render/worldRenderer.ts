@@ -104,6 +104,14 @@ function drawCombatAura(ctx: CanvasRenderingContext2D, state: NextEngineState) {
     return;
   }
 
+  if (state.craft.barrierT > 0) {
+    ctx.strokeStyle = "rgba(255,240,160,.50)";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, player.radius * 2.38, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
   if (player.invulnT > 0) {
     ctx.strokeStyle = "rgba(120,240,255,.38)";
     ctx.lineWidth = 3;
@@ -121,7 +129,7 @@ function drawCombatAura(ctx: CanvasRenderingContext2D, state: NextEngineState) {
   }
 
   if (player.biteCd > 0.25) {
-    ctx.strokeStyle = "rgba(255,255,255,.34)";
+    ctx.strokeStyle = state.craft.biteBoostT > 0 ? "rgba(255,220,120,.48)" : "rgba(255,255,255,.34)";
     ctx.lineWidth = 5;
     ctx.beginPath();
     ctx.arc(player.x + Math.cos(player.angle) * player.radius * 1.25, player.y + Math.sin(player.angle) * player.radius * 1.25, player.radius * 1.35, 0, Math.PI * 2);
@@ -164,7 +172,8 @@ function drawMapDot(ctx: CanvasRenderingContext2D, x: number, y: number, r: numb
 }
 
 function drawMiniMap(ctx: CanvasRenderingContext2D, state: NextEngineState, camera: NextCameraState, viewport: NextViewport) {
-  const mapW = Math.min(150, Math.max(112, viewport.width * 0.18));
+  const sonar = state.craft.sonarT > 0;
+  const mapW = Math.min(sonar ? 168 : 150, Math.max(112, viewport.width * (sonar ? 0.2 : 0.18)));
   const mapH = Math.round(mapW * (state.config.height / state.config.width));
   const left = Math.max(12, viewport.width - mapW - 12);
   const top = Math.min(Math.max(58, viewport.height * 0.08), viewport.height - mapH - 16);
@@ -172,7 +181,7 @@ function drawMiniMap(ctx: CanvasRenderingContext2D, state: NextEngineState, came
 
   ctx.save();
   ctx.fillStyle = "rgba(2,16,27,.68)";
-  ctx.strokeStyle = "rgba(150,230,255,.18)";
+  ctx.strokeStyle = sonar ? "rgba(255,220,120,.36)" : "rgba(150,230,255,.18)";
   ctx.lineWidth = 1;
   ctx.fillRect(left, top, mapW, mapH);
   ctx.strokeRect(left, top, mapW, mapH);
@@ -191,12 +200,12 @@ function drawMiniMap(ctx: CanvasRenderingContext2D, state: NextEngineState, came
   const threatDots = state.enemies
     .filter((enemy) => enemy.aiType !== "apex")
     .sort((a, b) => Math.hypot(a.x - state.player.x, a.y - state.player.y) - Math.hypot(b.x - state.player.x, b.y - state.player.y))
-    .slice(0, 18);
+    .slice(0, sonar ? 34 : 18);
 
   for (const enemy of threatDots) {
     const ex = mapX(state, enemy.x, left, mapW);
     const ey = mapY(state, enemy.y, top, mapH);
-    const fill = enemy.aiType === "brute" ? "rgba(255,110,110,.78)" : enemy.aiType === "hunter" ? "rgba(255,180,90,.74)" : "rgba(150,230,255,.48)";
+    const fill = enemy.aiType === "brute" ? "rgba(255,110,110,.78)" : enemy.aiType === "hunter" ? "rgba(255,180,90,.74)" : sonar ? "rgba(120,240,255,.70)" : "rgba(150,230,255,.48)";
     drawMapDot(ctx, ex, ey, enemy.aiType === "brute" ? 3 : 2.2, fill);
   }
 
@@ -205,13 +214,13 @@ function drawMiniMap(ctx: CanvasRenderingContext2D, state: NextEngineState, came
     const ay = mapY(state, apex.y, top, mapH);
     const px = mapX(state, state.player.x, left, mapW);
     const py = mapY(state, state.player.y, top, mapH);
-    ctx.strokeStyle = "rgba(255,220,120,.42)";
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = sonar ? "rgba(255,240,160,.70)" : "rgba(255,220,120,.42)";
+    ctx.lineWidth = sonar ? 2 : 1.5;
     ctx.beginPath();
     ctx.moveTo(px, py);
     ctx.lineTo(ax, ay);
     ctx.stroke();
-    drawMapDot(ctx, ax, ay, 5, "rgba(255,220,120,.95)", "rgba(255,90,90,.85)");
+    drawMapDot(ctx, ax, ay, sonar ? 6 : 5, "rgba(255,220,120,.95)", "rgba(255,90,90,.85)");
   }
 
   const px = mapX(state, state.player.x, left, mapW);
@@ -221,7 +230,7 @@ function drawMiniMap(ctx: CanvasRenderingContext2D, state: NextEngineState, came
   ctx.textAlign = "left";
   ctx.font = "900 10px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
   ctx.fillStyle = "rgba(231,242,255,.78)";
-  ctx.fillText(apex ? "MAP · APEX" : "MAP · CLEAR", left + 8, top + 14);
+  ctx.fillText(sonar ? "SONAR · APEX" : apex ? "MAP · APEX" : "MAP · CLEAR", left + 8, top + 14);
   ctx.restore();
 }
 
