@@ -7,6 +7,7 @@ import { defaultCraftState } from "../content/craft";
 import { EVOFISH_FORMS } from "../content/forms";
 import { defaultMutationState, getMutationBonus, getMutationTotalLevel, type NextMutationState } from "../content/mutations";
 import { xpToNextLevel, xpToNextTier } from "../content/progression";
+import { createResourceField } from "../content/resources";
 import { EVOFISH_SKIN_BY_ID } from "../content/skins";
 import { getZoneAt } from "../content/zones";
 import { defaultNextQuests, type EvoFishNextProgressState } from "../state/skinSaveAdapter";
@@ -14,7 +15,8 @@ import { defaultNextQuests, type EvoFishNextProgressState } from "../state/skinS
 export const NEXT_WORLD_CONFIG: NextWorldConfig = {
   width: 2800,
   height: 1800,
-  enemyTarget: 46
+  enemyTarget: 46,
+  resourceTarget: 42
 };
 
 function storedAccount(): NextAccountState {
@@ -204,6 +206,7 @@ export function createNextWorld(
   const completedQuests = Object.keys(quests.completed).length;
   const spawnThreat = enemyThreatLevel(level, tier, mass);
   const enemies = Array.from({ length: config.enemyTarget }, (_, index) => makeEnemy(index + 1, config, spawnThreat, mass));
+  const resources = createResourceField(config.resourceTarget, config.width, config.height);
   const apexEnemy = enemies.find((enemy) => enemy.aiType === "apex");
   const playerDamage = Math.round((damageFromForm(form) + tier * 3) * (1 + damageBonus));
   const playerSpeed = speedFromForm(form) * (1 + speedBonus);
@@ -263,6 +266,7 @@ export function createNextWorld(
       wanderT: 0
     },
     enemies,
+    resources,
     floats: [],
     stats: {
       mass,
@@ -288,6 +292,8 @@ export function createNextWorld(
       craftBarrierT: 0,
       craftBiteBoostT: 0,
       craftSonarT: 0,
+      resourcesCollected: 0,
+      activeResources: resources.length,
       zoneId: startZone.id,
       zoneName: startZone.name,
       zoneEffect: startZone.description,
