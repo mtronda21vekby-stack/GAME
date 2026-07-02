@@ -107,6 +107,10 @@ export type NextEngineStats = {
   activeQuestTitle: string;
   activeQuestProgress: number;
   activeQuestTarget: number;
+  apexAlive: boolean;
+  apexName: string;
+  apexHp: number;
+  apexHpMax: number;
   dead?: boolean;
   respawnTime?: number;
   downed?: boolean;
