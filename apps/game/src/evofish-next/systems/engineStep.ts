@@ -9,6 +9,7 @@ import { syncProgressionStats } from "./progressionSystem";
 import { updateQuestSystem } from "./questSystem";
 import { updatePlayerSystem } from "./playerSystem";
 import { updateSurvivalSystem } from "./survivalSystem";
+import { updateZoneSystem } from "./zoneSystem";
 
 export function stepNextEngine(state: NextEngineState, input: NextInputState, viewport: NextViewport, dt: number) {
   const camera = getNextCamera(state, viewport);
@@ -18,6 +19,7 @@ export function stepNextEngine(state: NextEngineState, input: NextInputState, vi
 
   if (!state.player.downed) {
     updatePlayerSystem(state, input, camera, dt);
+    updateZoneSystem(state, dt);
     updateCombatSystem(state, input, camera);
     updateEnemySystem(state, dt);
     updateCollisionSystem(state);
@@ -25,6 +27,7 @@ export function stepNextEngine(state: NextEngineState, input: NextInputState, vi
     input.bite = false;
     input.dash = false;
     input.down = false;
+    updateZoneSystem(state, dt);
     updateEnemySystem(state, dt);
   }
 
