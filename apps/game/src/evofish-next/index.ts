@@ -3,6 +3,7 @@ export * from "./core/types";
 export * from "./core/engineTypes";
 export * from "./content/forms";
 export * from "./content/skins";
+export * from "./content/skinUnlockRules";
 export * from "./content/enemyArchetypes";
 export * from "./content/progression";
 export * from "./state/skinSaveAdapter";
