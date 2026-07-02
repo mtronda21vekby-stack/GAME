@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { navigate } from "../../router";
 import type { GameSettings } from "./SettingsPanel";
 import { EVOFISH_MOBILE_CSS } from "./evoFishMobileCss";
 import { InstallAppHint } from "./InstallAppHint";
@@ -150,12 +151,20 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
     autoHideUi();
   };
 
-  const openNextGame = () => {
-    window.location.assign("/game/next");
+  const openNextGame = (event?: React.SyntheticEvent) => {
+    event?.preventDefault();
+    event?.stopPropagation();
+    clearHideTimer();
+    setUiHidden(true);
+    navigate("/game/next");
   };
 
-  const openSkinLab = () => {
-    window.location.assign("/game/next/skins");
+  const openSkinLab = (event?: React.SyntheticEvent) => {
+    event?.preventDefault();
+    event?.stopPropagation();
+    clearHideTimer();
+    setUiHidden(true);
+    navigate("/game/next/skins");
   };
 
   const openGameTab = (tabId: string) => {
@@ -243,7 +252,14 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
         Меню
       </button>
 
-      <button className="bcNextQuick" type="button" onClick={openNextGame} aria-label="Открыть EvoFish Next">
+      <button
+        className="bcNextQuick"
+        type="button"
+        onPointerDown={openNextGame}
+        onTouchStart={openNextGame}
+        onClick={openNextGame}
+        aria-label="Открыть EvoFish Next"
+      >
         NEXT GAME<span>{EVOFISH_NEXT_VERSION}</span>
       </button>
 
@@ -256,8 +272,8 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
             <span>Playable {EVOFISH_VERSION}</span>
             <span>Next {EVOFISH_NEXT_VERSION}</span>
           </div>
-          <button className="bcPill bcPillNext" onClick={openNextGame}>NEXT GAME — новая версия</button>
-          <button className="bcPill bcPillNextGhost" onClick={openSkinLab}>Skin Lab — скины Next</button>
+          <button className="bcPill bcPillNext" onPointerDown={openNextGame} onClick={openNextGame}>NEXT GAME — новая версия</button>
+          <button className="bcPill bcPillNextGhost" onPointerDown={openSkinLab} onClick={openSkinLab}>Skin Lab — скины Next</button>
           <button className="bcPill bcPillPrimary" onClick={() => openGameTab("tHud")}>Игра</button>
           <button className="bcPill" onClick={() => openGameTab("tShop")}>Магазин</button>
           <button className="bcPill" onClick={() => openGameTab("tCraft")}>Мутации</button>
@@ -298,8 +314,8 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
       <style>{`
         .bcPseudoFs{position:fixed!important;inset:0!important;z-index:9999!important}
         .bcImmersive{width:var(--app-vw,100vw)!important;height:var(--app-vh,100vh)!important;background:#031827!important}
-        .bcMenuButton{position:absolute;left:max(126px,calc(env(safe-area-inset-left) + 126px));top:max(10px,env(safe-area-inset-top));z-index:36;width:58px;height:30px;border-radius:999px;border:1px solid rgba(150,230,255,.20);background:linear-gradient(180deg,rgba(2,18,30,.70),rgba(2,18,30,.46));color:rgba(231,242,255,.92);font-size:11px;font-weight:950;letter-spacing:.02em;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 10px 24px rgba(0,0,0,.20);pointer-events:auto;touch-action:manipulation}
-        .bcNextQuick{position:absolute;right:max(10px,env(safe-area-inset-right));top:max(10px,env(safe-area-inset-top));z-index:37;min-width:118px;height:38px;padding:0 12px;border-radius:999px;border:1px solid rgba(255,215,120,.36);background:linear-gradient(180deg,rgba(255,215,120,.26),rgba(255,120,80,.14));color:#fff3c4;font-size:11px;font-weight:1000;letter-spacing:.04em;text-align:left;box-shadow:0 14px 34px rgba(0,0,0,.28),0 0 24px rgba(255,190,90,.12);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);pointer-events:auto;touch-action:manipulation}.bcNextQuick span{display:block;margin-top:1px;color:rgba(255,255,255,.72);font-size:9px;font-weight:850;letter-spacing:0;text-transform:none}
+        .bcMenuButton{position:fixed!important;left:max(126px,calc(env(safe-area-inset-left) + 126px));top:max(10px,env(safe-area-inset-top));z-index:2147483300;width:58px;height:30px;border-radius:999px;border:1px solid rgba(150,230,255,.20);background:linear-gradient(180deg,rgba(2,18,30,.70),rgba(2,18,30,.46));color:rgba(231,242,255,.92);font-size:11px;font-weight:950;letter-spacing:.02em;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 10px 24px rgba(0,0,0,.20);pointer-events:auto!important;touch-action:manipulation}
+        .bcNextQuick{position:fixed!important;right:max(10px,env(safe-area-inset-right));top:max(10px,env(safe-area-inset-top));z-index:2147483400;min-width:118px;height:38px;padding:0 12px;border-radius:999px;border:1px solid rgba(255,215,120,.36);background:linear-gradient(180deg,rgba(255,215,120,.26),rgba(255,120,80,.14));color:#fff3c4;font-size:11px;font-weight:1000;letter-spacing:.04em;text-align:left;box-shadow:0 14px 34px rgba(0,0,0,.28),0 0 24px rgba(255,190,90,.12);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);pointer-events:auto!important;touch-action:manipulation}.bcNextQuick span{display:block;margin-top:1px;color:rgba(255,255,255,.72);font-size:9px;font-weight:850;letter-spacing:0;text-transform:none}
         .bcOverlay{position:absolute;left:0;right:0;top:0;z-index:35;padding:calc(max(10px,env(safe-area-inset-top)) + 46px) 10px 10px;transition:opacity 160ms ease,transform 160ms ease;pointer-events:none}
         .bcOverlayHidden{opacity:0;transform:translateY(-12px);visibility:hidden}
         .bcOverlayHidden .bcOverlayInner{pointer-events:none!important}
