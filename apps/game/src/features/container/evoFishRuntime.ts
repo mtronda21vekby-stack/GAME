@@ -1,4 +1,4 @@
-export const EVOFISH_VERSION = "v0.00.25 alpha";
+export const EVOFISH_VERSION = "v0.00.26 alpha";
 
 function numberFromText(value: string | null | undefined) {
   const n = Number(String(value || "").replace(/[^0-9.\-]/g, ""));
