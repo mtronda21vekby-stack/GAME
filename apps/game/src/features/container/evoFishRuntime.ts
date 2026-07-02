@@ -1,4 +1,4 @@
-export const EVOFISH_VERSION = "v0.00.9 alpha";
+export const EVOFISH_VERSION = "v0.00.10 alpha";
 
 function numberFromText(value: string | null | undefined) {
   const n = Number(String(value || "").replace(/[^0-9.\-]/g, ""));
@@ -11,6 +11,91 @@ function xpFromText(value: string | null | undefined) {
     current: numberFromText(parts[0]),
     max: Math.max(1, numberFromText(parts[1]))
   };
+}
+
+function ensureVisualScaleGuard(doc: Document) {
+  if (doc.getElementById("bc-visual-scale-guard")) return;
+
+  const script = doc.createElement("script");
+  script.id = "bc-visual-scale-guard";
+  script.textContent = `
+(function(){
+  if(window.__bcVisualScaleGuardV3) return;
+  window.__bcVisualScaleGuardV3 = true;
+
+  function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+  function num(v,fallback){ v=Number(v); return Number.isFinite(v) ? v : fallback; }
+
+  var originalGetZoom = window.getZoom;
+  var originalGetCamera = window.getCamera;
+  var originalDrawPlayerAvatar = window.drawPlayerAvatar;
+
+  function computeSafeZoom(){
+    var p = window.player || {};
+    var w = num(window.W, window.innerWidth || 800);
+    var h = num(window.H, window.innerHeight || 450);
+    var dpr = num(window.DPR, window.devicePixelRatio || 1);
+    var mass = Math.max(1, num(p.mass, 1));
+    var radius = Math.max(1, num(p.r, 20));
+    var base = originalGetZoom ? num(originalGetZoom(), 1) : 1;
+    var z = base;
+
+    if(mass > 18) z -= clamp(Math.log(mass / 18) * 0.12, 0, 0.42);
+
+    var maxScreenRadius = Math.max(32 * dpr, Math.min(w, h) * 0.105);
+    var screenRadius = radius * dpr * z;
+    if(screenRadius > maxScreenRadius) z = Math.min(z, maxScreenRadius / (radius * dpr));
+
+    return clamp(z, 0.045, 1.0);
+  }
+
+  window.getZoom = function(){
+    try { return computeSafeZoom(); }
+    catch(e){ return originalGetZoom ? originalGetZoom() : 1; }
+  };
+
+  window.getCamera = function(){
+    try{
+      var targetZoom = window.getZoom();
+      var currentZoom = num(window.ZOOM, targetZoom);
+      window.ZOOM = currentZoom + (targetZoom - currentZoom) * 0.12;
+
+      var w = num(window.W, window.innerWidth || 800);
+      var h = num(window.H, window.innerHeight || 450);
+      var world = window.WORLD || { w: 6400, h: 4200 };
+      var p = window.player || { x: 0, y: 0 };
+      var vw = w / window.ZOOM;
+      var vh = h / window.ZOOM;
+      var x = p.x - vw * 0.5;
+      var y = p.y - vh * 0.5;
+
+      if(vw >= world.w) x = (world.w - vw) * 0.5;
+      else x = clamp(x, 0, world.w - vw);
+
+      if(vh >= world.h) y = (world.h - vh) * 0.5;
+      else y = clamp(y, 0, world.h - vh);
+
+      return { x: x, y: y, vw: vw, vh: vh };
+    }catch(e){
+      return originalGetCamera ? originalGetCamera() : { x: 0, y: 0, vw: window.innerWidth || 800, vh: window.innerHeight || 450 };
+    }
+  };
+
+  window.drawPlayerAvatar = function(x,y,r,ang){
+    if(!originalDrawPlayerAvatar) return;
+    try{
+      var w = num(window.W, window.innerWidth || 800);
+      var h = num(window.H, window.innerHeight || 450);
+      var dpr = num(window.DPR, window.devicePixelRatio || 1);
+      var safeRadius = Math.min(r, Math.max(34 * dpr, Math.min(w, h) * 0.13));
+      return originalDrawPlayerAvatar.call(this, x, y, safeRadius, ang);
+    }catch(e){
+      return originalDrawPlayerAvatar.apply(this, arguments);
+    }
+  };
+})();
+  `;
+  doc.head.appendChild(script);
 }
 
 function ensureKillFeedback(doc: Document) {
@@ -73,6 +158,7 @@ export function applyEvoFishRuntime(frame: HTMLIFrameElement | null) {
 
     const root = doc.documentElement;
     root.setAttribute("data-evofish-version", EVOFISH_VERSION);
+    ensureVisualScaleGuard(doc);
     ensureKillFeedback(doc);
 
     const massEl = doc.getElementById("mass");
