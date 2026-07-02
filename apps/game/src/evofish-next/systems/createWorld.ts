@@ -14,7 +14,7 @@ import { defaultNextQuests, type EvoFishNextProgressState } from "../state/skinS
 export const NEXT_WORLD_CONFIG: NextWorldConfig = {
   width: 2800,
   height: 1800,
-  enemyTarget: 34
+  enemyTarget: 46
 };
 
 function storedAccount(): NextAccountState {
@@ -25,6 +25,14 @@ function storedAccount(): NextAccountState {
   } catch {
     return defaultNextAccount();
   }
+}
+
+export function enemyThreatLevel(level: number, tier: number, mass: number) {
+  return Math.max(1, Math.floor(level || 1), Math.floor((mass || 1) * 4), Math.floor((tier || 1) * 3));
+}
+
+function threatScale(threatLevel: number) {
+  return 1 + Math.min(4.8, Math.max(0, threatLevel - 1) * 0.045);
 }
 
 export function formFromSkin(skin: EvoFishSkinDefinition): EvoFishFormId {
@@ -88,19 +96,53 @@ function normalizeMutationState(mutations?: NextMutationState): NextMutationStat
   };
 }
 
-export function makeEnemy(id: number, config: NextWorldConfig = NEXT_WORLD_CONFIG): NextFishEntity {
-  const archetype = chooseEnemyArchetype(id);
+export function makeEnemy(
+  id: number,
+  config: NextWorldConfig = NEXT_WORLD_CONFIG,
+  threatLevel = 1,
+  playerMass = 1.2
+): NextFishEntity {
+  const archetype = chooseEnemyArchetype(id, threatLevel);
   const family = pickEnemyFamily(id, archetype.id);
+  const scale = threatScale(threatLevel);
   const apex = archetype.id === "apex";
-  const big = archetype.id === "brute" || apex;
-  const form: EvoFishFormId = apex ? "megalodon" : big ? "shark" : "fish";
-  const mass = apex ? 9.2 + Math.random() * 1.8 : big ? 2.4 : archetype.id === "hunter" ? 1.2 + Math.random() * 0.75 : 0.45 + Math.random() * 0.7;
+  const leviathan = archetype.id === "leviathan";
+  const stalker = archetype.id === "stalker";
+  const big = archetype.id === "brute" || apex || leviathan || stalker;
+  const form: EvoFishFormId = apex || leviathan ? "megalodon" : big ? "shark" : "fish";
+
+  const baseSmall = 0.48 + Math.random() * 0.72;
+  const mass = apex
+    ? Math.max(10.5 * scale, playerMass * 1.34)
+    : leviathan
+      ? Math.max(7.4 * scale, playerMass * 1.16)
+      : stalker
+        ? Math.max(2.35 * scale, playerMass * 0.72)
+        : archetype.id === "brute"
+          ? Math.max(2.4 * scale, playerMass * 0.48)
+          : archetype.id === "hunter"
+            ? Math.max((1.2 + Math.random() * 0.85) * scale, playerMass * 0.28)
+            : baseSmall * Math.max(1, scale * 0.78);
+
   const baseHp = apex
-    ? Math.round(720 + mass * 52)
-    : Math.round((big ? 155 : archetype.id === "hunter" ? 95 : 45 + Math.random() * 38) * Math.max(0.75, mass));
-  const hp = Math.round(baseHp * family.hpMultiplier);
+    ? Math.round(760 + mass * 68)
+    : leviathan
+      ? Math.round(520 + mass * 58)
+      : stalker
+        ? Math.round(210 + mass * 46)
+        : Math.round((big ? 170 : archetype.id === "hunter" ? 105 : 48 + Math.random() * 42) * Math.max(0.8, mass));
+  const hp = Math.round(baseHp * family.hpMultiplier * (1 + Math.min(1.5, threatLevel * 0.018)));
   const target = wanderPoint(config);
-  const fallbackSkin = apex ? (EVOFISH_SKIN_BY_ID.mega_lava || EVOFISH_SKIN_BY_ID.mega_deep) : big ? EVOFISH_SKIN_BY_ID.shark_classic : EVOFISH_SKIN_BY_ID.default;
+  const fallbackSkin = apex
+    ? (EVOFISH_SKIN_BY_ID.mega_lava || EVOFISH_SKIN_BY_ID.mega_deep)
+    : leviathan
+      ? (EVOFISH_SKIN_BY_ID.mega_ice || EVOFISH_SKIN_BY_ID.mega_deep)
+      : stalker
+        ? (EVOFISH_SKIN_BY_ID.shark_shadow || EVOFISH_SKIN_BY_ID.shark_classic)
+        : big
+          ? EVOFISH_SKIN_BY_ID.shark_classic
+          : EVOFISH_SKIN_BY_ID.default;
+  const damageBase = apex ? 46 : leviathan ? 38 : stalker ? 28 : big ? 24 : 8 + Math.random() * 8;
 
   return {
     id,
@@ -108,14 +150,14 @@ export function makeEnemy(id: number, config: NextWorldConfig = NEXT_WORLD_CONFI
     y: 180 + Math.random() * (config.height - 360),
     vx: -50 + Math.random() * 100,
     vy: -50 + Math.random() * 100,
-    radius: apex ? 44 : big ? 24 : archetype.id === "hunter" ? 20 : 14 + Math.random() * 8,
+    radius: apex ? 46 : leviathan ? 52 : stalker ? 30 : big ? 25 : archetype.id === "hunter" ? 21 : 14 + Math.random() * 8,
     mass,
     hp,
     hpMax: hp,
-    damage: (apex ? 42 : big ? 24 : 8 + Math.random() * 8) * archetype.damageMultiplier,
-    speed: archetype.baseSpeed * family.speedMultiplier,
+    damage: damageBase * archetype.damageMultiplier * (1 + Math.min(1.35, threatLevel * 0.022)),
+    speed: archetype.baseSpeed * family.speedMultiplier * (1 + Math.min(0.42, threatLevel * 0.006)),
     form,
-    skin: apex ? fallbackSkin : familySkin(family.skinId, fallbackSkin),
+    skin: apex || leviathan ? fallbackSkin : familySkin(family.skinId, fallbackSkin),
     angle: 0,
     hitT: 0,
     aiType: archetype.id,
@@ -124,11 +166,11 @@ export function makeEnemy(id: number, config: NextWorldConfig = NEXT_WORLD_CONFI
     familyRewardMultiplier: family.rewardMultiplier,
     aggroRadius: archetype.aggroRadius,
     attackRange: archetype.attackRange,
-    attackCd: apex ? 1.1 : 0.4 + Math.random() * 0.8,
+    attackCd: apex || leviathan ? 1.05 : stalker ? 0.72 : 0.4 + Math.random() * 0.8,
     thinkT: Math.random() * 0.4,
     wanderX: target.x,
     wanderY: target.y,
-    wanderT: apex ? 0.5 : 0.8 + Math.random() * 2.2
+    wanderT: apex || leviathan ? 0.5 : stalker ? 0.65 : 0.8 + Math.random() * 2.2
   };
 }
 
@@ -160,7 +202,8 @@ export function createNextWorld(
   };
   const quests = normalizeQuestState(savedQuests);
   const completedQuests = Object.keys(quests.completed).length;
-  const enemies = Array.from({ length: config.enemyTarget }, (_, index) => makeEnemy(index + 1, config));
+  const spawnThreat = enemyThreatLevel(level, tier, mass);
+  const enemies = Array.from({ length: config.enemyTarget }, (_, index) => makeEnemy(index + 1, config, spawnThreat, mass));
   const apexEnemy = enemies.find((enemy) => enemy.aiType === "apex");
   const playerDamage = Math.round((damageFromForm(form) + tier * 3) * (1 + damageBonus));
   const playerSpeed = speedFromForm(form) * (1 + speedBonus);
@@ -200,9 +243,9 @@ export function createNextWorld(
       level,
       tier,
       xp: Math.max(0, Math.floor(savedProgress?.xp || 0)),
-      xpToNext: Math.max(1, Math.floor(savedProgress?.xpToNext || xpToNextTier(tier))),
+      xpToNext: xpToNextTier(tier),
       levelXp: Math.max(0, Math.floor(savedProgress?.levelXp || 0)),
-      levelXpToNext: Math.max(1, Math.floor(savedProgress?.levelXpToNext || xpToNextLevel(level))),
+      levelXpToNext: xpToNextLevel(level),
       form,
       skin: playerSkin,
       angle: 0,
@@ -236,9 +279,9 @@ export function createNextWorld(
       level,
       tier,
       xp: Math.max(0, Math.floor(savedProgress?.xp || 0)),
-      xpToNext: Math.max(1, Math.floor(savedProgress?.xpToNext || xpToNextTier(tier))),
+      xpToNext: xpToNextTier(tier),
       levelXp: Math.max(0, Math.floor(savedProgress?.levelXp || 0)),
-      levelXpToNext: Math.max(1, Math.floor(savedProgress?.levelXpToNext || xpToNextLevel(level))),
+      levelXpToNext: xpToNextLevel(level),
       pearls: economy.pearls,
       corals: economy.corals,
       mutationLevel: getMutationTotalLevel(mutations),
@@ -264,7 +307,7 @@ export function createNextWorld(
       reviveTime: 0,
       skinName: playerSkin.name,
       formName: EVOFISH_FORMS[form].name,
-      lastEvent: savedProgress ? "Сейв загружен" : "Готов"
+      lastEvent: savedProgress ? `Сейв загружен · threat ${spawnThreat}` : `Готов · threat ${spawnThreat}`
     }
   };
 }
