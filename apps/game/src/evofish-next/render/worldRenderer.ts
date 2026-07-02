@@ -1,4 +1,4 @@
-import type { NextCameraState, NextEngineState, NextFishEntity, NextViewport } from "../core/engineTypes";
+import type { NextAIState, NextCameraState, NextEngineState, NextFishEntity, NextViewport } from "../core/engineTypes";
 import { drawEvoFishSkin } from "./canvasSkinRenderer";
 import { getNextCamera } from "../systems/cameraSystem";
 import { canDevour } from "../systems/collisionSystem";
@@ -33,6 +33,28 @@ function drawWorldBackground(ctx: CanvasRenderingContext2D, state: NextEngineSta
   ctx.lineWidth = 3;
   ctx.strokeRect(0, 0, state.config.width, state.config.height);
   ctx.restore();
+}
+
+function aiColor(state: NextAIState) {
+  if (state === "attack") return "rgba(255,80,80,.48)";
+  if (state === "hunt") return "rgba(255,180,90,.42)";
+  if (state === "flee") return "rgba(110,255,180,.38)";
+  return "rgba(150,230,255,.18)";
+}
+
+function drawAiRing(ctx: CanvasRenderingContext2D, enemy: NextFishEntity) {
+  ctx.strokeStyle = aiColor(enemy.aiState);
+  ctx.lineWidth = enemy.aiState === "attack" ? 4 : enemy.aiState === "hunt" ? 3 : 2;
+  ctx.beginPath();
+  ctx.arc(enemy.x, enemy.y, enemy.radius * (enemy.aiState === "attack" ? 2.2 : 1.85), 0, Math.PI * 2);
+  ctx.stroke();
+
+  if (enemy.aiState === "hunt" || enemy.aiState === "attack") {
+    ctx.fillStyle = aiColor(enemy.aiState);
+    ctx.beginPath();
+    ctx.arc(enemy.x + Math.cos(enemy.angle) * enemy.radius * 1.8, enemy.y + Math.sin(enemy.angle) * enemy.radius * 1.8, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
 }
 
 function drawHpBar(ctx: CanvasRenderingContext2D, entity: NextFishEntity, width: number) {
@@ -89,10 +111,11 @@ export function renderNextWorld(ctx: CanvasRenderingContext2D, state: NextEngine
 
   for (const enemy of state.enemies) {
     const safeToEat = canDevour(state.player.mass, enemy.mass);
+    drawAiRing(ctx, enemy);
     ctx.strokeStyle = safeToEat ? "rgba(110,255,180,.24)" : "rgba(255,90,90,.32)";
     ctx.lineWidth = enemy.hitT > 0 ? 4 : 2;
     ctx.beginPath();
-    ctx.arc(enemy.x, enemy.y, enemy.radius * 1.85, 0, Math.PI * 2);
+    ctx.arc(enemy.x, enemy.y, enemy.radius * 1.52, 0, Math.PI * 2);
     ctx.stroke();
     drawEvoFishSkin(ctx, enemy.skin, enemy.form, {
       x: enemy.x,
