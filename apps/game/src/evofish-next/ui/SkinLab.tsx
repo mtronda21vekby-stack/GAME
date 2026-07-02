@@ -61,6 +61,7 @@ export function SkinLab() {
           <span>{EVOFISH_NEXT_VERSION}</span>
           <span>{save.economy.pearls} жемчуг</span>
           <span>{save.economy.corals} кораллы</span>
+          <Link to="/game/next/play" className="efBack">Тест сцены</Link>
           <Link to="/game" className="efBack">Назад в игру</Link>
         </div>
       </header>
