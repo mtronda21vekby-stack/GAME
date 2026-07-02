@@ -66,6 +66,9 @@ export function syncProgressionStats(state: NextEngineState) {
   state.stats.pearls = state.economy.pearls;
   state.stats.corals = state.economy.corals;
   state.stats.mutationLevel = getMutationTotalLevel(state.mutations);
+  state.stats.craftBarrierT = state.craft.barrierT;
+  state.stats.craftBiteBoostT = state.craft.biteBoostT;
+  state.stats.craftSonarT = state.craft.sonarT;
   state.stats.downs = state.stats.downs || state.stats.deaths || 0;
   state.stats.deaths = state.stats.downs;
   state.stats.downed = Boolean(player.downed);
