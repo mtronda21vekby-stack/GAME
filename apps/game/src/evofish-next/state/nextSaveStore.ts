@@ -1,5 +1,6 @@
 import type { NextEngineState, NextQuestState } from "../core/engineTypes";
 import type { EvoFishCurrency } from "../core/types";
+import { normalizeNextAccount, type NextAccountState } from "../content/account";
 import { defaultMutationState, NEXT_MUTATIONS, type NextMutationState } from "../content/mutations";
 import { xpToNextLevel, xpToNextTier } from "../content/progression";
 import { canUnlockSkinInNext, canUseSkinInNext } from "../content/skinUnlockRules";
@@ -76,6 +77,10 @@ function normalizeMutations(mutations: Partial<NextMutationState> | null | undef
   return { ...defaultMutationState(), levels };
 }
 
+function normalizeAccount(account: Partial<NextAccountState> | null | undefined): NextAccountState {
+  return normalizeNextAccount(account);
+}
+
 function normalizeSave(save: EvoFishNextSkinSave): EvoFishNextSkinSave {
   const equipped = EVOFISH_SKIN_BY_ID[save.loadout.equippedSkinId]
     ? save.loadout.equippedSkinId
@@ -83,6 +88,7 @@ function normalizeSave(save: EvoFishNextSkinSave): EvoFishNextSkinSave {
 
   return {
     schemaVersion: 1,
+    account: normalizeAccount(save.account),
     economy: {
       pearls: Math.max(0, Math.floor(save.economy?.pearls || 0)),
       corals: Math.max(0, Math.floor(save.economy?.corals || 0))
@@ -116,24 +122,31 @@ export function saveEvoFishNextSave(save: EvoFishNextSkinSave) {
 
 export function saveEvoFishNextProgress(engine: NextEngineState) {
   const save = loadEvoFishNextSave();
+  save.account = normalizeAccount(engine.account || save.account);
   save.economy = {
     pearls: Math.max(0, Math.floor(engine.economy.pearls || 0)),
     corals: Math.max(0, Math.floor(engine.economy.corals || 0))
   };
-  save.progress = normalizeProgress({
-    level: engine.player.level,
-    tier: engine.player.tier,
-    xp: engine.player.xp,
-    xpToNext: engine.player.xpToNext,
-    levelXp: engine.player.levelXp,
-    levelXpToNext: engine.player.levelXpToNext,
-    mass: engine.player.mass,
-    hp: engine.player.dead ? Math.max(1, Math.floor(engine.player.hpMax * 0.45)) : engine.player.hp,
-    hpMax: engine.player.hpMax,
-    form: engine.player.form,
-    kills: engine.stats.kills,
-    deaths: engine.stats.deaths
-  });
+
+  if (engine.player.dead || engine.player.downed) {
+    save.progress = defaultNextProgress();
+  } else {
+    save.progress = normalizeProgress({
+      level: engine.player.level,
+      tier: engine.player.tier,
+      xp: engine.player.xp,
+      xpToNext: engine.player.xpToNext,
+      levelXp: engine.player.levelXp,
+      levelXpToNext: engine.player.levelXpToNext,
+      mass: engine.player.mass,
+      hp: engine.player.hp,
+      hpMax: engine.player.hpMax,
+      form: engine.player.form,
+      kills: engine.stats.kills,
+      deaths: engine.stats.deaths
+    });
+  }
+
   save.quests = normalizeQuests(engine.quests);
   save.mutations = normalizeMutations(engine.mutations || save.mutations);
   saveEvoFishNextSave(save);
