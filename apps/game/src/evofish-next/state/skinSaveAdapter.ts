@@ -16,6 +16,7 @@ export type LegacyEvoFishSave = {
   hp?: number;
   hpMax?: number;
   form?: EvoFishFormId;
+  deaths?: number;
 };
 
 export type EvoFishNextProgressState = {
@@ -30,6 +31,7 @@ export type EvoFishNextProgressState = {
   hpMax: number;
   form: EvoFishFormId;
   kills: number;
+  deaths: number;
 };
 
 export type EvoFishNextSkinSave = {
@@ -52,7 +54,8 @@ export function defaultNextProgress(): EvoFishNextProgressState {
     hp: 120,
     hpMax: 120,
     form: "fish",
-    kills: 0
+    kills: 0,
+    deaths: 0
   };
 }
 
@@ -97,7 +100,8 @@ export function migrateLegacySkinSave(legacy: LegacyEvoFishSave | null | undefin
       hp: Math.max(1, Math.min(hpMax, Math.floor(legacy?.hp || hpMax))),
       hpMax,
       form: legacy?.form || "fish",
-      kills: 0
+      kills: 0,
+      deaths: Math.max(0, Math.floor(legacy?.deaths || 0))
     },
     quests: defaultNextQuests()
   };
