@@ -3,12 +3,16 @@ import type { NextAccountState } from "../content/account";
 import type { NextEnemyArchetypeId } from "../content/enemyArchetypes";
 import type { NextCraftState } from "../content/craft";
 import type { NextMutationState } from "../content/mutations";
+import type { NextResourceNode } from "../content/resources";
 import type { NextZoneId } from "../content/zones";
+
+export type NextRenderQuality = "low" | "balanced" | "high";
 
 export type NextViewport = {
   width: number;
   height: number;
   zoom?: number;
+  quality?: NextRenderQuality;
 };
 
 export type NextCameraState = {
@@ -94,6 +98,7 @@ export type NextWorldConfig = {
   width: number;
   height: number;
   enemyTarget: number;
+  resourceTarget: number;
 };
 
 export type NextEngineStats = {
@@ -120,6 +125,8 @@ export type NextEngineStats = {
   craftBarrierT: number;
   craftBiteBoostT: number;
   craftSonarT: number;
+  resourcesCollected: number;
+  activeResources: number;
   zoneId: NextZoneId;
   zoneName: string;
   zoneEffect: string;
@@ -151,6 +158,7 @@ export type NextEngineState = {
   quests: NextQuestState;
   player: NextPlayerState;
   enemies: NextFishEntity[];
+  resources: NextResourceNode[];
   floats: NextDamageFloat[];
   frame: number;
   nextFloatId: number;
