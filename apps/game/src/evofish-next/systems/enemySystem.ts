@@ -9,10 +9,14 @@ function addFloat(state: NextEngineState, x: number, y: number, text: string, ki
   state.floats.push({ id: state.nextFloatId++, x, y, text, ttl: 0.75, kind });
 }
 
+function isElite(enemy: NextFishEntity) {
+  return enemy.aiType === "apex" || enemy.aiType === "leviathan" || enemy.aiType === "stalker";
+}
+
 function setWanderTarget(state: NextEngineState, enemy: NextFishEntity) {
   enemy.wanderX = 180 + Math.random() * (state.config.width - 360);
   enemy.wanderY = 180 + Math.random() * (state.config.height - 360);
-  enemy.wanderT = 1.2 + Math.random() * 3.2;
+  enemy.wanderT = isElite(enemy) ? 0.7 + Math.random() * 1.4 : 1.2 + Math.random() * 3.2;
 }
 
 function wanderTarget(state: NextEngineState, enemy: NextFishEntity) {
@@ -36,13 +40,13 @@ function aiTarget(state: NextEngineState, enemy: NextFishEntity) {
   const dy = player.y - enemy.y;
   const distance = Math.hypot(dx, dy) || 1;
   const playerCanEat = canDevour(player.mass, enemy.mass);
-  const enemyCanThreaten = canDevour(enemy.mass * 1.05, player.mass) || enemy.aiType === "hunter" || enemy.aiType === "brute" || enemy.aiType === "apex";
+  const enemyCanThreaten = canDevour(enemy.mass * 1.08, player.mass) || enemy.aiType === "hunter" || enemy.aiType === "brute" || isElite(enemy);
 
   enemy.thinkT -= 1 / 60;
   if (enemy.thinkT <= 0) {
-    enemy.thinkT = enemy.aiType === "apex" ? 0.12 + Math.random() * 0.18 : 0.18 + Math.random() * 0.28;
-    if (playerCanEat && enemy.aiType !== "apex" && distance < enemy.aggroRadius * 1.25) enemy.aiState = "flee";
-    else if (enemyCanThreaten && distance < enemy.attackRange) enemy.aiState = "attack";
+    enemy.thinkT = isElite(enemy) ? 0.1 + Math.random() * 0.16 : 0.18 + Math.random() * 0.28;
+    if (playerCanEat && !isElite(enemy) && distance < enemy.aggroRadius * 1.25) enemy.aiState = "flee";
+    else if (enemyCanThreaten && distance < enemy.attackRange + player.radius) enemy.aiState = "attack";
     else if (enemyCanThreaten && distance < enemy.aggroRadius) enemy.aiState = "hunt";
     else enemy.aiState = "wander";
   }
@@ -61,14 +65,15 @@ function attackPlayer(state: NextEngineState, enemy: NextFishEntity, distance: n
   const damage = Math.round(enemy.damage);
   player.hp = Math.max(0, player.hp - damage);
   player.hitT = 0.22;
-  player.invulnT = 0.5;
-  enemy.attackCd = enemy.aiType === "apex" ? 1.25 : enemy.aiType === "brute" ? 1.15 : 0.85;
+  player.invulnT = enemy.aiType === "stalker" ? 0.38 : 0.5;
+  enemy.attackCd = enemy.aiType === "leviathan" ? 1.45 : enemy.aiType === "apex" ? 1.18 : enemy.aiType === "stalker" ? 0.62 : enemy.aiType === "brute" ? 1.1 : 0.82;
 
   const dx = player.x - enemy.x;
   const dy = player.y - enemy.y;
   const len = Math.hypot(dx, dy) || 1;
-  player.vx += (dx / len) * (enemy.aiType === "apex" ? 220 : 160);
-  player.vy += (dy / len) * (enemy.aiType === "apex" ? 220 : 160);
+  const knockback = enemy.aiType === "leviathan" ? 260 : enemy.aiType === "apex" ? 230 : enemy.aiType === "stalker" ? 185 : 160;
+  player.vx += (dx / len) * knockback;
+  player.vy += (dy / len) * knockback;
 
   state.stats.lastEvent = `${enemy.aiType} hit -${damage}`;
   addFloat(state, player.x, player.y - player.radius * 2, `-${damage} HP`, "danger");
@@ -81,11 +86,13 @@ export function updateEnemySystem(state: NextEngineState, dt: number) {
     enemy.wanderT = Math.max(0, enemy.wanderT - dt);
 
     const target = aiTarget(state, enemy);
-    const stateSpeed = enemy.aiState === "flee" ? enemy.speed * 1.16 : enemy.aiState === "hunt" ? enemy.speed * (enemy.aiType === "apex" ? 1.16 : 1.08) : enemy.speed * 0.72;
-    enemy.vx += target.x * stateSpeed * dt * (enemy.aiType === "apex" ? 2.45 : 2.2);
-    enemy.vy += target.y * stateSpeed * dt * (enemy.aiType === "apex" ? 2.45 : 2.2);
+    const huntBoost = enemy.aiType === "leviathan" ? 1.12 : enemy.aiType === "apex" ? 1.18 : enemy.aiType === "stalker" ? 1.24 : 1.08;
+    const impulse = enemy.aiType === "leviathan" ? 2.15 : enemy.aiType === "apex" ? 2.45 : enemy.aiType === "stalker" ? 2.7 : 2.2;
+    const stateSpeed = enemy.aiState === "flee" ? enemy.speed * 1.16 : enemy.aiState === "hunt" ? enemy.speed * huntBoost : enemy.speed * 0.72;
+    enemy.vx += target.x * stateSpeed * dt * impulse;
+    enemy.vy += target.y * stateSpeed * dt * impulse;
 
-    const maxSpeed = enemy.aiState === "flee" ? enemy.speed * 1.36 : enemy.aiType === "apex" ? enemy.speed * 1.22 : enemy.speed * 1.12;
+    const maxSpeed = enemy.aiState === "flee" ? enemy.speed * 1.36 : isElite(enemy) ? enemy.speed * 1.25 : enemy.speed * 1.12;
     const speed = Math.hypot(enemy.vx, enemy.vy) || 1;
     if (speed > maxSpeed) {
       enemy.vx = (enemy.vx / speed) * maxSpeed;
