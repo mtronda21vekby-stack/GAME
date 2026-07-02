@@ -2,6 +2,12 @@ import React, { useEffect, useRef, useState } from "react";
 import type { GameSettings } from "./SettingsPanel";
 import { EVOFISH_MOBILE_CSS } from "./evoFishMobileCss";
 
+type EvoFishFrameProps = {
+  src: string;
+  settings: GameSettings;
+  onOpenSettings?: () => void;
+};
+
 type FullscreenElement = HTMLElement & {
   requestFullscreen?: () => Promise<void>;
   webkitRequestFullscreen?: () => Promise<void>;
@@ -106,7 +112,7 @@ function injectMobileCss(frame: HTMLIFrameElement | null) {
   }
 }
 
-export function EvoFishFrame(_props: { src: string; settings: GameSettings }) {
+export function EvoFishFrame(props: EvoFishFrameProps) {
   useAppViewportHeightVar();
 
   const wrapRef = useRef<HTMLDivElement | null>(null);
@@ -228,6 +234,7 @@ export function EvoFishFrame(_props: { src: string; settings: GameSettings }) {
 
           <div className="bcActions">
             <button className="bcPill" onClick={reload}>Reload</button>
+            {props.onOpenSettings ? <button className="bcPill" onClick={props.onOpenSettings}>Settings</button> : null}
             {fullscreen ? (
               <button className="bcPill bcPillPrimary" onClick={exitFullscreen}>Close</button>
             ) : (
@@ -241,7 +248,7 @@ export function EvoFishFrame(_props: { src: string; settings: GameSettings }) {
         <iframe
           ref={iframeRef}
           title="EvoFish"
-          src={_props.src}
+          src={props.src}
           onLoad={() => injectMobileCss(iframeRef.current)}
           style={{
             width: "100%",
