@@ -1,28 +1,33 @@
 import type { NextEngineState, NextFishEntity } from "../core/engineTypes";
-import { makeEnemy } from "./createWorld";
+import { enemyThreatLevel, makeEnemy } from "./createWorld";
 import { awardKillReward } from "./progressionSystem";
 
 export function canDevour(attackerMass: number, targetMass: number) {
-  return attackerMass >= targetMass * 1.08;
+  return attackerMass >= targetMass * 1.18;
 }
 
 function addFloat(state: NextEngineState, x: number, y: number, text: string, kind: "damage" | "kill" | "danger") {
   state.floats.push({ id: state.nextFloatId++, x, y, text, ttl: 0.75, kind });
 }
 
+function respawnEnemy(state: NextEngineState) {
+  const threat = enemyThreatLevel(state.player.level, state.player.tier, state.player.mass);
+  return makeEnemy(1000 + state.stats.kills + state.frame, state.config, threat, state.player.mass);
+}
+
 function devourEnemy(state: NextEngineState, enemy: NextFishEntity, index: number) {
   const player = state.player;
-  const massGain = enemy.mass * 0.08;
+  const massGain = enemy.mass * 0.055;
   const reward = awardKillReward(state, enemy, "devour");
 
   player.mass += massGain;
-  player.radius = Math.min(player.radius + enemy.radius * 0.018, 58);
-  player.hp = Math.min(player.hpMax, player.hp + player.hpMax * 0.08);
+  player.radius = Math.min(player.radius + enemy.radius * 0.012, 58);
+  player.hp = Math.min(player.hpMax, player.hp + player.hpMax * 0.055);
   state.stats.kills += 1;
   state.stats.lastEvent = `Поглощение +${reward.xp} XP +${reward.pearls} жемчуг${reward.corals ? ` +${reward.corals} коралл` : ""} +${massGain.toFixed(2)} Mass`;
   addFloat(state, enemy.x, enemy.y, `EAT +${reward.xp}XP +${reward.pearls}P`, "kill");
   if (reward.corals) addFloat(state, enemy.x, enemy.y - enemy.radius * 2.5, `+${reward.corals} CORAL`, "kill");
-  state.enemies.splice(index, 1, makeEnemy(1000 + state.stats.kills, state.config));
+  state.enemies.splice(index, 1, respawnEnemy(state));
 }
 
 function contactDamage(state: NextEngineState, enemy: NextFishEntity) {
