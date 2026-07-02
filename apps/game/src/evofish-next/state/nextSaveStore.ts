@@ -50,7 +50,8 @@ function normalizeProgress(progress: Partial<EvoFishNextProgressState> | null | 
     hp: Math.max(1, Math.min(hpMax, Math.floor(progress?.hp || hpMax))),
     hpMax,
     form: progress?.form || fallback.form,
-    kills: Math.max(0, Math.floor(progress?.kills || 0))
+    kills: Math.max(0, Math.floor(progress?.kills || 0)),
+    deaths: Math.max(0, Math.floor(progress?.deaths || 0))
   };
 }
 
@@ -114,10 +115,11 @@ export function saveEvoFishNextProgress(engine: NextEngineState) {
     levelXp: engine.player.levelXp,
     levelXpToNext: engine.player.levelXpToNext,
     mass: engine.player.mass,
-    hp: engine.player.hp,
+    hp: engine.player.dead ? Math.max(1, Math.floor(engine.player.hpMax * 0.45)) : engine.player.hp,
     hpMax: engine.player.hpMax,
     form: engine.player.form,
-    kills: engine.stats.kills
+    kills: engine.stats.kills,
+    deaths: engine.stats.deaths
   });
   save.quests = normalizeQuests(engine.quests);
   saveEvoFishNextSave(save);
