@@ -28,7 +28,7 @@ import {
 } from "../state/nextSaveStore";
 import { EVOFISH_NEXT_VERSION } from "../version";
 
-type NextPanel = "map" | "craft" | "mutations" | "quests" | "shop" | "settings" | null;
+type NextPanel = "menu" | "map" | "craft" | "mutations" | "quests" | "shop" | "settings" | null;
 
 type ViewSettings = {
   zoom: number;
@@ -94,6 +94,7 @@ function lockLabel(reasons: { label: string }[]) {
 }
 
 function panelTitle(panel: Exclude<NextPanel, null>) {
+  if (panel === "menu") return "Menu";
   if (panel === "map") return "World Map";
   if (panel === "craft") return "Craft";
   if (panel === "mutations") return "Mutations";
@@ -339,7 +340,6 @@ export function NextPlaytest() {
   const downed = Boolean(stats.downed || stats.dead);
   const reviveTime = stats.reviveTime || stats.respawnTime || 0;
   const downs = stats.downs || stats.deaths || 0;
-  const activeZoom = viewSettings.autoZoom ? autoZoomForMass(stats.mass) : viewSettings.zoom;
   const engine = engineRef.current;
   const shopSkins = getSkinsForForm(shopForm);
   const worldWidth = engine?.config.width || 2800;
@@ -358,34 +358,22 @@ export function NextPlaytest() {
       ) : (
         <div className="efNextHud">
           <b>EvoFish Next</b>
-          <span>{EVOFISH_NEXT_VERSION}</span>
           <span>LV {stats.level} · Tier {stats.tier} · {stats.formName}</span>
-          <span>{stats.skinName}</span>
-          <span>Zone {stats.zoneName} · Risk {stats.zoneRisk} · Reward x{stats.zoneRewardBoost.toFixed(2)}</span>
-          <span>Zoom {activeZoom.toFixed(2)}x · {viewSettings.autoZoom ? "Auto" : "Manual"}</span>
-          <span>Mass {stats.mass.toFixed(2)} · Kills {stats.kills} · Downs {downs}</span>
-          <span>Жемчуг {stats.pearls} · Кораллы {stats.corals} · Mut {stats.mutationLevel}</span>
-          {stats.craftBarrierT > 0 || stats.craftBiteBoostT > 0 || stats.craftSonarT > 0 ? (
-            <span>Craft: BARRIER {stats.craftBarrierT.toFixed(0)} · BITE {stats.craftBiteBoostT.toFixed(0)} · SONAR {stats.craftSonarT.toFixed(0)}</span>
-          ) : null}
-          {stats.apexAlive ? (
-            <>
-              <span>APEX {stats.apexName} {Math.round(stats.apexHp)} / {Math.round(stats.apexHpMax)}</span>
-              <i><em className="apex" style={{ width: `${apexPct * 100}%` }} /></i>
-            </>
-          ) : (
-            <span>APEX cleared</span>
-          )}
           <span>HP {Math.round(stats.hp)} / {Math.round(stats.hpMax)}</span>
           <i><em style={{ width: `${hpPct * 100}%` }} /></i>
+          <span>Zone {stats.zoneName} · Risk {stats.zoneRisk}</span>
+          <span>Mass {stats.mass.toFixed(2)} · Kills {stats.kills} · Downs {downs}</span>
+          <span>Жемчуг {stats.pearls} · Кораллы {stats.corals}</span>
+          {stats.apexAlive ? (
+            <>
+              <span>APEX {Math.round(stats.apexHp)} / {Math.round(stats.apexHpMax)}</span>
+              <i><em className="apex" style={{ width: `${apexPct * 100}%` }} /></i>
+            </>
+          ) : null}
           <span>Tier XP {Math.round(stats.xp)} / {Math.round(stats.xpToNext)}</span>
           <i><em className="xp" style={{ width: `${xpPct * 100}%` }} /></i>
-          <span>Level XP {Math.round(stats.levelXp)} / {Math.round(stats.levelXpToNext)}</span>
-          <i><em className="level" style={{ width: `${levelPct * 100}%` }} /></i>
-          <span>Quest {stats.completedQuests}: {stats.activeQuestTitle}</span>
-          <span>{Math.floor(stats.activeQuestProgress)} / {Math.floor(stats.activeQuestTarget)}</span>
+          <span>Quest: {stats.activeQuestTitle}</span>
           <i><em className="quest" style={{ width: `${questPct * 100}%` }} /></i>
-          <span>{stats.lastEvent}</span>
         </div>
       )}
 
@@ -395,6 +383,17 @@ export function NextPlaytest() {
             <b>{panelTitle(activePanel)}</b>
             <button onClick={() => setActivePanel(null)}>×</button>
           </div>
+
+          {activePanel === "menu" ? (
+            <div className="efMenuGrid">
+              <button onClick={() => setActivePanel("craft")}>Craft</button>
+              <button onClick={() => setActivePanel("mutations")}>Mutations</button>
+              <button onClick={() => setActivePanel("quests")}>Quests</button>
+              <button onClick={() => setActivePanel("shop")}>Shop</button>
+              <button onClick={() => setActivePanel("settings")}>Settings</button>
+              <button onClick={lockUi}>Lock UI</button>
+            </div>
+          ) : null}
 
           {activePanel === "map" ? (
             <div className="efFullMapPanel">
@@ -420,7 +419,6 @@ export function NextPlaytest() {
                 <span><b className="hunter" />Hunter</span>
                 <span><b className="zone" />Zone</span>
               </div>
-              <p>Полная карта мира: зоны, текущая позиция, Apex, враги и линия до Apex. Мини-карта оставлена компактной.</p>
             </div>
           ) : null}
 
@@ -483,7 +481,6 @@ export function NextPlaytest() {
                 <button onClick={() => setZoom(0.82)}>Balanced</button>
                 <button onClick={() => setZoom(1.06)}>Close</button>
               </div>
-              <p>Lock UI убирает панели и нижнее меню от случайных нажатий. Bite/Dash остаются активными.</p>
             </div>
           ) : null}
 
@@ -524,33 +521,28 @@ export function NextPlaytest() {
                   );
                 })}
               </div>
-              <Link to="/game/next/skins">Открыть полный Skin Lab</Link>
+              <Link to="/game/next/skins">Полный Skin Lab</Link>
             </div>
           ) : null}
         </div>
       ) : null}
 
       {downed ? <div className="efNextRevive">Возрождение через {reviveTime.toFixed(1)} сек</div> : null}
-      {!uiLocked ? <div className="efNextHelp">Mini-map снова компактная. Полная карта находится в кнопке Map.</div> : null}
       <div className="efNextControls">
         <button disabled={downed} onPointerDown={(event) => { event.preventDefault(); inputRef.current.bite = true; }}>BITE</button>
         <button disabled={downed} onPointerDown={(event) => { event.preventDefault(); inputRef.current.dash = true; }}>DASH</button>
       </div>
       {!uiLocked ? (
-        <div className="efNextLinks">
+        <div className="efQuickBar">
           <button onClick={() => togglePanel("map")}>Map</button>
-          <button onClick={() => togglePanel("craft")}>Craft</button>
-          <button onClick={() => togglePanel("mutations")}>Mut</button>
-          <button onClick={() => togglePanel("quests")}>Quests</button>
-          <button onClick={() => togglePanel("shop")}>Shop</button>
-          <button onClick={() => togglePanel("settings")}>Settings</button>
-          <button onClick={lockUi}>Lock UI</button>
+          <button className="primary" onClick={() => togglePanel("menu")}>Menu</button>
+          <button onClick={lockUi}>Lock</button>
         </div>
       ) : (
-        <button className="efUnlockPill" onClick={() => setUiLocked(false)}>🔒 UI Locked · Unlock</button>
+        <button className="efUnlockPill" onClick={() => setUiLocked(false)}>🔒 Unlock UI</button>
       )}
       <style>{`
-        .efNextPlay{position:fixed;inset:0;overflow:hidden;background:#031827;color:#e7f2ff;touch-action:none;overscroll-behavior:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}.efNextCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}.efNextHud,.efLockedHud{position:absolute;left:max(12px,env(safe-area-inset-left));top:max(12px,env(safe-area-inset-top));z-index:3;display:grid;gap:3px;padding:12px 14px;border-radius:20px;background:linear-gradient(180deg,rgba(5,31,50,.72),rgba(2,16,27,.58));border:1px solid rgba(150,230,255,.16);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 14px 40px rgba(0,0,0,.26);max-width:min(330px,calc(100vw - 24px));max-height:58vh;overflow:auto;box-sizing:border-box}.efLockedHud{padding:10px 12px;gap:2px;max-width:190px}.efNextHud b,.efLockedHud b{font-size:13px}.efNextHud span,.efLockedHud span{font-size:11px;color:rgba(231,242,255,.76)}.efNextHud i{display:block;width:166px;max-width:100%;height:5px;border-radius:999px;background:rgba(255,255,255,.10);overflow:hidden}.efNextHud em{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,rgba(110,255,180,.95),rgba(120,240,255,.85))}.efNextHud em.apex{background:linear-gradient(90deg,rgba(255,90,90,.95),rgba(255,220,120,.92))}.efNextHud em.xp{background:linear-gradient(90deg,rgba(255,220,120,.95),rgba(255,160,90,.85))}.efNextHud em.level{background:linear-gradient(90deg,rgba(180,140,255,.95),rgba(120,240,255,.85))}.efNextHud em.quest{background:linear-gradient(90deg,rgba(255,240,160,.95),rgba(180,140,255,.85))}.efNextRevive{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;padding:18px 22px;border-radius:24px;background:rgba(2,16,27,.78);border:1px solid rgba(255,120,120,.22);box-shadow:0 22px 70px rgba(0,0,0,.34);font-size:18px;font-weight:1000;color:#ffd0d0;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}.efNextHelp{position:absolute;left:max(12px,env(safe-area-inset-left));bottom:calc(max(18px,env(safe-area-inset-bottom)) + 88px);z-index:3;max-width:min(390px,calc(100vw - 212px));padding:10px 13px;border-radius:22px;background:rgba(2,16,27,.52);border:1px solid rgba(150,230,255,.12);font-size:12px;text-align:left;line-height:1.35;color:rgba(231,242,255,.76);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}.efNextLinks{position:absolute;left:max(12px,env(safe-area-inset-left));bottom:calc(max(18px,env(safe-area-inset-bottom)) + 18px);z-index:8;display:grid;grid-template-columns:repeat(3,minmax(74px,1fr));gap:8px;max-width:min(330px,calc(100vw - 210px))}.efNextLinks a,.efNextLinks button,.efUnlockPill{min-height:34px;display:inline-flex;align-items:center;justify-content:center;padding:0 12px;border-radius:999px;background:rgba(255,255,255,.075);border:1px solid rgba(150,230,255,.15);color:#e7f2ff;text-decoration:none;font-size:11px;font-weight:950;box-shadow:0 10px 26px rgba(0,0,0,.18)}.efUnlockPill{position:absolute;left:max(12px,env(safe-area-inset-left));bottom:calc(max(18px,env(safe-area-inset-bottom)) + 18px);z-index:9;min-width:158px;background:rgba(255,220,120,.14);border-color:rgba(255,220,120,.28);color:#fff3c6}.efNextControls{position:absolute;right:max(16px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));z-index:5;display:flex;gap:12px}.efNextControls button{width:78px;height:78px;border-radius:999px;border:1px solid rgba(150,230,255,.22);background:linear-gradient(180deg,rgba(120,240,255,.22),rgba(90,160,255,.12));box-shadow:0 14px 38px rgba(0,0,0,.28);color:#e7f2ff;font-weight:1000;letter-spacing:.04em;touch-action:manipulation}.efNextControls button:first-child{background:linear-gradient(180deg,rgba(255,110,110,.24),rgba(255,90,90,.12))}.efNextControls button:disabled{opacity:.45}.efGamePanel{position:absolute;right:max(12px,env(safe-area-inset-right));top:calc(max(12px,env(safe-area-inset-top)) + 46px);z-index:9;width:min(350px,calc(100vw - 24px));max-height:62vh;overflow:auto;padding:12px;border-radius:22px;background:rgba(2,16,27,.88);border:1px solid rgba(150,230,255,.18);box-shadow:0 22px 70px rgba(0,0,0,.34);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}.efGamePanel.mapPanel{left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));width:auto;max-height:78vh}.efPanelHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}.efPanelHead b{font-size:14px}.efPanelHead button,.efSettingRow button,.efZoomPresets button{border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.08);color:#e7f2ff;font-weight:950}.efPanelHead button{width:30px;height:30px;font-size:18px}.efFullMapPanel{display:grid;gap:10px}.efWorldMapFrame{width:100%;border:1px solid rgba(150,230,255,.16);border-radius:18px;background:rgba(0,0,0,.18);overflow:hidden}.efWorldMapSvg{display:block;width:100%;height:min(58vh,430px)}.efMapLegend{display:flex;gap:10px;flex-wrap:wrap}.efMapLegend span{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:rgba(231,242,255,.76);font-weight:850}.efMapLegend b{width:10px;height:10px;border-radius:99px;display:inline-block}.efMapLegend b.player{background:#6effb4}.efMapLegend b.apex{background:#ffd86d}.efMapLegend b.hunter{background:#ffb45a}.efMapLegend b.zone{background:rgba(120,240,255,.28);border:1px solid rgba(255,255,255,.35)}.efPanelItem,.efQuestItem{width:100%;display:grid;gap:4px;text-align:left;margin-top:8px;padding:10px;border-radius:16px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);color:#e7f2ff;box-sizing:border-box}.efPanelItem:disabled{opacity:.52}.efPanelItem b,.efQuestItem b{display:flex;justify-content:space-between;gap:10px;font-size:12px}.efPanelItem b span,.efQuestItem b span{color:rgba(120,240,255,.86)}.efPanelItem small,.efQuestItem small,.efShopPanel p,.efSettingsPanel p,.efFullMapPanel p{color:rgba(231,242,255,.66);line-height:1.35;margin:0}.efPanelItem em,.efQuestItem em{font-style:normal;color:#fff3a0;font-size:11px;font-weight:950}.efQuestItem.done{border-color:rgba(110,255,180,.22);background:rgba(110,255,180,.06)}.efShopPanel,.efSettingsPanel{display:grid;gap:10px}.efShopPanel a{min-height:38px;display:inline-flex;align-items:center;justify-content:center;border-radius:14px;background:rgba(120,240,255,.12);border:1px solid rgba(120,240,255,.20);color:#e7f2ff;text-decoration:none;font-weight:950}.efShopTabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.efShopTabs button{min-height:32px;border-radius:12px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);color:#e7f2ff;font-size:11px;font-weight:950}.efShopTabs button.active,.efSettingRow button.active{border-color:rgba(120,240,255,.28);background:rgba(120,240,255,.12)}.efShopGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.efShopCard{display:grid;gap:5px;padding:8px;border-radius:16px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.055);color:#e7f2ff;text-align:left}.efShopCard:disabled{opacity:.56}.efShopCard.equipped{border-color:rgba(110,255,180,.24);background:rgba(110,255,180,.06)}.efShopCard .efSkinPreview svg{border-radius:12px}.efShopCard b{font-size:11px}.efShopCard small{font-size:10px;color:rgba(231,242,255,.60)}.efShopCard em{font-size:10px;font-style:normal;color:#fff3a0;font-weight:950}.efSettingRow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;border:1px solid rgba(255,255,255,.10);border-radius:16px;background:rgba(255,255,255,.055)}.efSettingRow span,.efZoomControl span{font-size:12px;font-weight:900;color:rgba(231,242,255,.84)}.efSettingRow button{min-width:64px;height:30px}.efZoomControl{display:grid;gap:8px;padding:10px;border:1px solid rgba(255,255,255,.10);border-radius:16px;background:rgba(255,255,255,.055)}.efZoomControl input{width:100%;accent-color:#78f0ff}.efZoomPresets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.efZoomPresets button{min-height:34px}.locked .efNextControls{right:max(16px,env(safe-area-inset-right))}@media(max-width:760px){.efNextHud{max-width:min(232px,calc(100vw - 24px));max-height:44vh;padding:10px 12px}.efLockedHud{max-width:160px}.efNextLinks{grid-template-columns:repeat(3,minmax(54px,1fr));left:max(10px,env(safe-area-inset-left));bottom:calc(max(18px,env(safe-area-inset-bottom)) + 96px);max-width:calc(100vw - 196px);gap:6px}.efNextLinks a,.efNextLinks button{min-height:30px;padding:0 8px;font-size:9.5px}.efNextHelp{left:max(10px,env(safe-area-inset-left));right:max(190px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));max-width:none;font-size:10.5px;line-height:1.3;border-radius:20px}.efNextControls{gap:10px}.efNextControls button{width:72px;height:72px}.efNextRevive{font-size:15px;white-space:nowrap}.efGamePanel{top:calc(max(12px,env(safe-area-inset-top)) + 44px);right:max(10px,env(safe-area-inset-right));width:min(304px,calc(100vw - 20px));max-height:56vh}.efGamePanel.mapPanel{left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right));width:auto;max-height:70vh}.efWorldMapSvg{height:min(52vh,390px)}.efShopGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.efUnlockPill{left:max(10px,env(safe-area-inset-left));bottom:calc(max(18px,env(safe-area-inset-bottom)) + 92px);font-size:10px;min-width:142px}}
+        .efNextPlay{position:fixed;inset:0;overflow:hidden;background:#031827;color:#e7f2ff;touch-action:none;overscroll-behavior:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}.efNextCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}.efNextHud,.efLockedHud{position:absolute;left:max(12px,env(safe-area-inset-left));top:max(12px,env(safe-area-inset-top));z-index:3;display:grid;gap:3px;padding:11px 13px;border-radius:20px;background:linear-gradient(180deg,rgba(5,31,50,.68),rgba(2,16,27,.54));border:1px solid rgba(150,230,255,.15);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 14px 40px rgba(0,0,0,.24);max-width:min(310px,calc(100vw - 24px));max-height:44vh;overflow:auto;box-sizing:border-box}.efLockedHud{padding:10px 12px;gap:2px;max-width:170px}.efNextHud b,.efLockedHud b{font-size:13px}.efNextHud span,.efLockedHud span{font-size:10.8px;color:rgba(231,242,255,.76)}.efNextHud i{display:block;width:160px;max-width:100%;height:5px;border-radius:999px;background:rgba(255,255,255,.10);overflow:hidden}.efNextHud em{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,rgba(110,255,180,.95),rgba(120,240,255,.85))}.efNextHud em.apex{background:linear-gradient(90deg,rgba(255,90,90,.95),rgba(255,220,120,.92))}.efNextHud em.xp{background:linear-gradient(90deg,rgba(255,220,120,.95),rgba(255,160,90,.85))}.efNextHud em.quest{background:linear-gradient(90deg,rgba(255,240,160,.95),rgba(180,140,255,.85))}.efNextRevive{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;padding:18px 22px;border-radius:24px;background:rgba(2,16,27,.78);border:1px solid rgba(255,120,120,.22);box-shadow:0 22px 70px rgba(0,0,0,.34);font-size:18px;font-weight:1000;color:#ffd0d0;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}.efQuickBar{position:absolute;left:max(12px,env(safe-area-inset-left));bottom:calc(max(18px,env(safe-area-inset-bottom)) + 18px);z-index:8;display:flex;gap:8px;padding:8px;border-radius:24px;background:rgba(2,16,27,.42);border:1px solid rgba(150,230,255,.11);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}.efQuickBar button,.efUnlockPill{min-width:72px;min-height:38px;display:inline-flex;align-items:center;justify-content:center;padding:0 13px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(150,230,255,.16);color:#e7f2ff;text-decoration:none;font-size:11px;font-weight:1000;box-shadow:0 10px 26px rgba(0,0,0,.18)}.efQuickBar button.primary{background:rgba(120,240,255,.14);border-color:rgba(120,240,255,.26)}.efUnlockPill{position:absolute;left:max(12px,env(safe-area-inset-left));bottom:calc(max(18px,env(safe-area-inset-bottom)) + 18px);z-index:9;min-width:136px;background:rgba(255,220,120,.14);border-color:rgba(255,220,120,.28);color:#fff3c6}.efNextControls{position:absolute;right:max(16px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));z-index:5;display:flex;gap:12px}.efNextControls button{width:78px;height:78px;border-radius:999px;border:1px solid rgba(150,230,255,.22);background:linear-gradient(180deg,rgba(120,240,255,.22),rgba(90,160,255,.12));box-shadow:0 14px 38px rgba(0,0,0,.28);color:#e7f2ff;font-weight:1000;letter-spacing:.04em;touch-action:manipulation}.efNextControls button:first-child{background:linear-gradient(180deg,rgba(255,110,110,.24),rgba(255,90,90,.12))}.efNextControls button:disabled{opacity:.45}.efGamePanel{position:absolute;right:max(12px,env(safe-area-inset-right));top:calc(max(12px,env(safe-area-inset-top)) + 46px);z-index:9;width:min(350px,calc(100vw - 24px));max-height:62vh;overflow:auto;padding:12px;border-radius:22px;background:rgba(2,16,27,.88);border:1px solid rgba(150,230,255,.18);box-shadow:0 22px 70px rgba(0,0,0,.34);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}.efGamePanel.mapPanel{left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));width:auto;max-height:78vh}.efPanelHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}.efPanelHead b{font-size:14px}.efPanelHead button,.efSettingRow button,.efZoomPresets button{border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.08);color:#e7f2ff;font-weight:950}.efPanelHead button{width:30px;height:30px;font-size:18px}.efMenuGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.efMenuGrid button{min-height:46px;border-radius:16px;border:1px solid rgba(150,230,255,.15);background:rgba(255,255,255,.07);color:#e7f2ff;font-weight:1000}.efFullMapPanel{display:grid;gap:10px}.efWorldMapFrame{width:100%;border:1px solid rgba(150,230,255,.16);border-radius:18px;background:rgba(0,0,0,.18);overflow:hidden}.efWorldMapSvg{display:block;width:100%;height:min(58vh,430px)}.efMapLegend{display:flex;gap:10px;flex-wrap:wrap}.efMapLegend span{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:rgba(231,242,255,.76);font-weight:850}.efMapLegend b{width:10px;height:10px;border-radius:99px;display:inline-block}.efMapLegend b.player{background:#6effb4}.efMapLegend b.apex{background:#ffd86d}.efMapLegend b.hunter{background:#ffb45a}.efMapLegend b.zone{background:rgba(120,240,255,.28);border:1px solid rgba(255,255,255,.35)}.efPanelItem,.efQuestItem{width:100%;display:grid;gap:4px;text-align:left;margin-top:8px;padding:10px;border-radius:16px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);color:#e7f2ff;box-sizing:border-box}.efPanelItem:disabled{opacity:.52}.efPanelItem b,.efQuestItem b{display:flex;justify-content:space-between;gap:10px;font-size:12px}.efPanelItem b span,.efQuestItem b span{color:rgba(120,240,255,.86)}.efPanelItem small,.efQuestItem small,.efShopPanel p,.efSettingsPanel p,.efFullMapPanel p{color:rgba(231,242,255,.66);line-height:1.35;margin:0}.efPanelItem em,.efQuestItem em{font-style:normal;color:#fff3a0;font-size:11px;font-weight:950}.efQuestItem.done{border-color:rgba(110,255,180,.22);background:rgba(110,255,180,.06)}.efShopPanel,.efSettingsPanel{display:grid;gap:10px}.efShopPanel a{min-height:38px;display:inline-flex;align-items:center;justify-content:center;border-radius:14px;background:rgba(120,240,255,.12);border:1px solid rgba(120,240,255,.20);color:#e7f2ff;text-decoration:none;font-weight:950}.efShopTabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.efShopTabs button{min-height:32px;border-radius:12px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);color:#e7f2ff;font-size:11px;font-weight:950}.efShopTabs button.active,.efSettingRow button.active{border-color:rgba(120,240,255,.28);background:rgba(120,240,255,.12)}.efShopGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.efShopCard{display:grid;gap:5px;padding:8px;border-radius:16px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.055);color:#e7f2ff;text-align:left}.efShopCard:disabled{opacity:.56}.efShopCard.equipped{border-color:rgba(110,255,180,.24);background:rgba(110,255,180,.06)}.efShopCard .efSkinPreview svg{border-radius:12px}.efShopCard b{font-size:11px}.efShopCard small{font-size:10px;color:rgba(231,242,255,.60)}.efShopCard em{font-size:10px;font-style:normal;color:#fff3a0;font-weight:950}.efSettingRow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;border:1px solid rgba(255,255,255,.10);border-radius:16px;background:rgba(255,255,255,.055)}.efSettingRow span,.efZoomControl span{font-size:12px;font-weight:900;color:rgba(231,242,255,.84)}.efSettingRow button{min-width:64px;height:30px}.efZoomControl{display:grid;gap:8px;padding:10px;border:1px solid rgba(255,255,255,.10);border-radius:16px;background:rgba(255,255,255,.055)}.efZoomControl input{width:100%;accent-color:#78f0ff}.efZoomPresets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.efZoomPresets button{min-height:34px}@media(max-width:760px){.efNextHud{max-width:min(230px,calc(100vw - 24px));max-height:38vh;padding:10px 12px}.efLockedHud{max-width:160px}.efQuickBar{left:max(10px,env(safe-area-inset-left));bottom:calc(max(18px,env(safe-area-inset-bottom)) + 88px);gap:6px;padding:7px}.efQuickBar button{min-width:58px;min-height:34px;padding:0 10px;font-size:10px}.efNextControls{gap:10px}.efNextControls button{width:72px;height:72px}.efNextRevive{font-size:15px;white-space:nowrap}.efGamePanel{top:calc(max(12px,env(safe-area-inset-top)) + 44px);right:max(10px,env(safe-area-inset-right));width:min(304px,calc(100vw - 20px));max-height:56vh}.efGamePanel.mapPanel{left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right));width:auto;max-height:70vh}.efWorldMapSvg{height:min(52vh,390px)}.efShopGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.efUnlockPill{left:max(10px,env(safe-area-inset-left));bottom:calc(max(18px,env(safe-area-inset-bottom)) + 92px);font-size:10px;min-width:128px}}
       `}</style>
     </main>
   );
