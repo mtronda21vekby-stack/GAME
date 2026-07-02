@@ -1,6 +1,7 @@
 import type { EvoFishEconomyState, EvoFishFormId, EvoFishSkinDefinition } from "../core/types";
 import type { NextEngineState, NextFishEntity, NextQuestState, NextWorldConfig } from "../core/engineTypes";
 import { chooseEnemyArchetype } from "../content/enemyArchetypes";
+import { defaultCraftState } from "../content/craft";
 import { EVOFISH_FORMS } from "../content/forms";
 import { defaultMutationState, getMutationBonus, getMutationTotalLevel, type NextMutationState } from "../content/mutations";
 import { xpToNextLevel, xpToNextTier } from "../content/progression";
@@ -128,6 +129,7 @@ export function createNextWorld(
 ): NextEngineState {
   const form = savedProgress?.form || formFromSkin(playerSkin);
   const config = NEXT_WORLD_CONFIG;
+  const craft = defaultCraftState();
   const mutations = normalizeMutationState(savedMutations);
   const level = Math.max(1, Math.floor(savedProgress?.level || 1));
   const tier = Math.max(1, Math.min(12, Math.floor(savedProgress?.tier || 1)));
@@ -152,6 +154,7 @@ export function createNextWorld(
   return {
     config,
     economy,
+    craft,
     mutations,
     quests,
     frame: 0,
@@ -216,6 +219,9 @@ export function createNextWorld(
       pearls: economy.pearls,
       corals: economy.corals,
       mutationLevel: getMutationTotalLevel(mutations),
+      craftBarrierT: 0,
+      craftBiteBoostT: 0,
+      craftSonarT: 0,
       completedQuests,
       activeQuestTitle: "—",
       activeQuestProgress: 0,
