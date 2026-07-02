@@ -4,23 +4,47 @@ function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
 
+function aimVector(state: NextEngineState, input: NextInputState, camera: NextCameraState) {
+  const targetX = camera.x + input.pointerX;
+  const targetY = camera.y + input.pointerY;
+  const dx = targetX - state.player.x;
+  const dy = targetY - state.player.y;
+  const len = Math.hypot(dx, dy) || 1;
+  return { x: dx / len, y: dy / len, angle: Math.atan2(dy, dx) };
+}
+
 export function updatePlayerSystem(state: NextEngineState, input: NextInputState, camera: NextCameraState, dt: number) {
   const player = state.player;
 
-  if (input.down) {
-    const targetX = camera.x + input.pointerX;
-    const targetY = camera.y + input.pointerY;
-    const dx = targetX - player.x;
-    const dy = targetY - player.y;
-    const len = Math.hypot(dx, dy) || 1;
+  player.biteCd = Math.max(0, player.biteCd - dt);
+  player.dashCd = Math.max(0, player.dashCd - dt);
+  player.dashT = Math.max(0, player.dashT - dt);
+  player.invulnT = Math.max(0, player.invulnT - dt);
+  player.hitT = Math.max(0, player.hitT - dt);
 
-    player.vx += (dx / len) * player.speed * dt * 3.2;
-    player.vy += (dy / len) * player.speed * dt * 3.2;
-    player.angle = Math.atan2(dy, dx);
+  if (input.down) {
+    const aim = aimVector(state, input, camera);
+    player.vx += aim.x * player.speed * dt * 3.2;
+    player.vy += aim.y * player.speed * dt * 3.2;
+    player.angle = aim.angle;
   }
 
-  player.vx *= 0.9;
-  player.vy *= 0.9;
+  if (input.dash && player.dashCd <= 0) {
+    const aim = input.down ? aimVector(state, input, camera) : { x: Math.cos(player.angle), y: Math.sin(player.angle), angle: player.angle };
+    player.vx += aim.x * player.speed * 1.45;
+    player.vy += aim.y * player.speed * 1.45;
+    player.angle = aim.angle;
+    player.dashCd = 1.05;
+    player.dashT = 0.18;
+    player.invulnT = 0.16;
+    state.stats.lastEvent = "Рывок";
+  }
+
+  input.dash = false;
+
+  const friction = player.dashT > 0 ? 0.96 : 0.9;
+  player.vx *= friction;
+  player.vy *= friction;
   player.x = clamp(player.x + player.vx * dt, 40, state.config.width - 40);
   player.y = clamp(player.y + player.vy * dt, 40, state.config.height - 40);
 }
