@@ -64,6 +64,12 @@ export type NextPlayerState = NextFishEntity & {
   dashCd: number;
   dashT: number;
   invulnT: number;
+  level: number;
+  tier: number;
+  xp: number;
+  xpToNext: number;
+  levelXp: number;
+  levelXpToNext: number;
 };
 
 export type NextWorldConfig = {
@@ -77,6 +83,12 @@ export type NextEngineStats = {
   kills: number;
   hp: number;
   hpMax: number;
+  level: number;
+  tier: number;
+  xp: number;
+  xpToNext: number;
+  levelXp: number;
+  levelXpToNext: number;
   skinName: string;
   formName: string;
   lastEvent: string;
