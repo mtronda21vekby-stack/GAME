@@ -1,10 +1,11 @@
-import type { NextEngineState } from "../core/engineTypes";
+import type { NextEngineState, NextQuestState } from "../core/engineTypes";
 import type { EvoFishCurrency } from "../core/types";
 import { xpToNextLevel, xpToNextTier } from "../content/progression";
 import { canUnlockSkinInNext, canUseSkinInNext } from "../content/skinUnlockRules";
 import { EVOFISH_SKIN_BY_ID, getDefaultSkinId } from "../content/skins";
 import {
   defaultNextProgress,
+  defaultNextQuests,
   migrateLegacySkinSave,
   type EvoFishNextProgressState,
   type EvoFishNextSkinSave,
@@ -53,6 +54,15 @@ function normalizeProgress(progress: Partial<EvoFishNextProgressState> | null | 
   };
 }
 
+function normalizeQuests(quests: Partial<NextQuestState> | null | undefined): NextQuestState {
+  return {
+    completed: {
+      ...defaultNextQuests().completed,
+      ...(quests?.completed || {})
+    }
+  };
+}
+
 function normalizeSave(save: EvoFishNextSkinSave): EvoFishNextSkinSave {
   const equipped = EVOFISH_SKIN_BY_ID[save.loadout.equippedSkinId]
     ? save.loadout.equippedSkinId
@@ -71,7 +81,8 @@ function normalizeSave(save: EvoFishNextSkinSave): EvoFishNextSkinSave {
         ...(save.loadout.ownedSkins || {})
       }
     },
-    progress: normalizeProgress(save.progress)
+    progress: normalizeProgress(save.progress),
+    quests: normalizeQuests(save.quests)
   };
 }
 
@@ -108,6 +119,7 @@ export function saveEvoFishNextProgress(engine: NextEngineState) {
     form: engine.player.form,
     kills: engine.stats.kills
   });
+  save.quests = normalizeQuests(engine.quests);
   saveEvoFishNextSave(save);
 }
 
