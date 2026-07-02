@@ -19,6 +19,8 @@ export const NEXT_WORLD_CONFIG: NextWorldConfig = {
   resourceTarget: 42
 };
 
+type Point = { x: number; y: number };
+
 function storedAccount(): NextAccountState {
   try {
     const raw = localStorage.getItem("evofish_next_save_v1");
@@ -35,6 +37,45 @@ export function enemyThreatLevel(level: number, tier: number, mass: number) {
 
 function threatScale(threatLevel: number) {
   return 1 + Math.min(4.8, Math.max(0, threatLevel - 1) * 0.045);
+}
+
+function randomWorldPoint(config: NextWorldConfig, pad = 190): Point {
+  return {
+    x: pad + Math.random() * (config.width - pad * 2),
+    y: pad + Math.random() * (config.height - pad * 2)
+  };
+}
+
+function pointAwayFrom(config: NextWorldConfig, avoidX?: number, avoidY?: number, radius = 0): Point {
+  if (!Number.isFinite(avoidX) || !Number.isFinite(avoidY) || radius <= 0) return randomWorldPoint(config);
+
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    const point = randomWorldPoint(config);
+    if (Math.hypot(point.x - Number(avoidX), point.y - Number(avoidY)) >= radius) return point;
+  }
+
+  const angle = Math.random() * Math.PI * 2;
+  return {
+    x: Math.max(190, Math.min(config.width - 190, Number(avoidX) + Math.cos(angle) * radius)),
+    y: Math.max(190, Math.min(config.height - 190, Number(avoidY) + Math.sin(angle) * radius))
+  };
+}
+
+export function safePlayerSpawn(config: NextWorldConfig, enemies: NextFishEntity[] = []): Point {
+  for (let attempt = 0; attempt < 120; attempt += 1) {
+    const point = randomWorldPoint(config, 260);
+    const zone = getZoneAt(point.x, point.y);
+    const nearEnemy = enemies.some((enemy) => Math.hypot(enemy.x - point.x, enemy.y - point.y) < enemy.radius + 720);
+    if (!nearEnemy && zone.risk <= 1) return point;
+  }
+
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    const point = randomWorldPoint(config, 240);
+    const nearEnemy = enemies.some((enemy) => Math.hypot(enemy.x - point.x, enemy.y - point.y) < enemy.radius + 560);
+    if (!nearEnemy) return point;
+  }
+
+  return { x: config.width * 0.34, y: config.height * 0.34 };
 }
 
 export function formFromSkin(skin: EvoFishSkinDefinition): EvoFishFormId {
@@ -76,10 +117,7 @@ function familySkin(familySkinId: string, fallback: EvoFishSkinDefinition) {
 }
 
 function wanderPoint(config: NextWorldConfig) {
-  return {
-    x: 180 + Math.random() * (config.width - 360),
-    y: 180 + Math.random() * (config.height - 360)
-  };
+  return randomWorldPoint(config, 180);
 }
 
 function normalizeQuestState(quests?: NextQuestState): NextQuestState {
@@ -102,7 +140,10 @@ export function makeEnemy(
   id: number,
   config: NextWorldConfig = NEXT_WORLD_CONFIG,
   threatLevel = 1,
-  playerMass = 1.2
+  playerMass = 1.2,
+  avoidX?: number,
+  avoidY?: number,
+  safeRadius = 0
 ): NextFishEntity {
   const archetype = chooseEnemyArchetype(id, threatLevel);
   const family = pickEnemyFamily(id, archetype.id);
@@ -134,6 +175,7 @@ export function makeEnemy(
         ? Math.round(210 + mass * 46)
         : Math.round((big ? 170 : archetype.id === "hunter" ? 105 : 48 + Math.random() * 42) * Math.max(0.8, mass));
   const hp = Math.round(baseHp * family.hpMultiplier * (1 + Math.min(1.5, threatLevel * 0.018)));
+  const spawn = pointAwayFrom(config, avoidX, avoidY, safeRadius + (apex || leviathan ? 260 : stalker ? 160 : 0));
   const target = wanderPoint(config);
   const fallbackSkin = apex
     ? (EVOFISH_SKIN_BY_ID.mega_lava || EVOFISH_SKIN_BY_ID.mega_deep)
@@ -148,8 +190,8 @@ export function makeEnemy(
 
   return {
     id,
-    x: 180 + Math.random() * (config.width - 360),
-    y: 180 + Math.random() * (config.height - 360),
+    x: spawn.x,
+    y: spawn.y,
     vx: -50 + Math.random() * 100,
     vy: -50 + Math.random() * 100,
     radius: apex ? 46 : leviathan ? 52 : stalker ? 30 : big ? 25 : archetype.id === "hunter" ? 21 : 14 + Math.random() * 8,
@@ -205,12 +247,14 @@ export function createNextWorld(
   const quests = normalizeQuestState(savedQuests);
   const completedQuests = Object.keys(quests.completed).length;
   const spawnThreat = enemyThreatLevel(level, tier, mass);
-  const enemies = Array.from({ length: config.enemyTarget }, (_, index) => makeEnemy(index + 1, config, spawnThreat, mass));
+  const playerSpawn = safePlayerSpawn(config);
+  const enemySafeRadius = level <= 3 ? 920 : 680;
+  const enemies = Array.from({ length: config.enemyTarget }, (_, index) => makeEnemy(index + 1, config, spawnThreat, mass, playerSpawn.x, playerSpawn.y, enemySafeRadius));
   const resources = createResourceField(config.resourceTarget, config.width, config.height);
   const apexEnemy = enemies.find((enemy) => enemy.aiType === "apex");
   const playerDamage = Math.round((damageFromForm(form) + tier * 3) * (1 + damageBonus));
   const playerSpeed = speedFromForm(form) * (1 + speedBonus);
-  const startZone = getZoneAt(config.width / 2, config.height / 2);
+  const startZone = getZoneAt(playerSpawn.x, playerSpawn.y);
 
   return {
     config,
@@ -223,8 +267,8 @@ export function createNextWorld(
     nextFloatId: 1,
     player: {
       id: 0,
-      x: config.width / 2,
-      y: config.height / 2,
+      x: playerSpawn.x,
+      y: playerSpawn.y,
       vx: 0,
       vy: 0,
       radius: Math.max(radiusFromForm(form), Math.min(58, 18 + Math.sqrt(mass) * 5.2)),
@@ -236,7 +280,7 @@ export function createNextWorld(
       biteCd: 0,
       dashCd: 0,
       dashT: 0,
-      invulnT: 1.2,
+      invulnT: level <= 3 ? 4.2 : 2.4,
       dead: false,
       downed: false,
       deathT: 0,
@@ -261,8 +305,8 @@ export function createNextWorld(
       attackRange: 0,
       attackCd: 0,
       thinkT: 0,
-      wanderX: config.width / 2,
-      wanderY: config.height / 2,
+      wanderX: playerSpawn.x,
+      wanderY: playerSpawn.y,
       wanderT: 0
     },
     enemies,
@@ -313,7 +357,7 @@ export function createNextWorld(
       reviveTime: 0,
       skinName: playerSkin.name,
       formName: EVOFISH_FORMS[form].name,
-      lastEvent: savedProgress ? `Сейв загружен · threat ${spawnThreat}` : `Готов · threat ${spawnThreat}`
+      lastEvent: savedProgress ? `Safe spawn · threat ${spawnThreat}` : `Safe spawn · threat ${spawnThreat}`
     }
   };
 }
