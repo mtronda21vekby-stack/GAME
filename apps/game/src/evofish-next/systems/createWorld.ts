@@ -1,11 +1,13 @@
 import type { EvoFishEconomyState, EvoFishFormId, EvoFishSkinDefinition } from "../core/types";
 import type { NextEngineState, NextFishEntity, NextQuestState, NextWorldConfig } from "../core/engineTypes";
 import { chooseEnemyArchetype } from "../content/enemyArchetypes";
+import { pickEnemyFamily } from "../content/enemyFamilies";
 import { defaultCraftState } from "../content/craft";
 import { EVOFISH_FORMS } from "../content/forms";
 import { defaultMutationState, getMutationBonus, getMutationTotalLevel, type NextMutationState } from "../content/mutations";
 import { xpToNextLevel, xpToNextTier } from "../content/progression";
 import { EVOFISH_SKIN_BY_ID } from "../content/skins";
+import { getZoneAt } from "../content/zones";
 import { defaultNextQuests, type EvoFishNextProgressState } from "../state/skinSaveAdapter";
 
 export const NEXT_WORLD_CONFIG: NextWorldConfig = {
@@ -48,14 +50,8 @@ export function damageFromForm(form: EvoFishFormId) {
   return 76;
 }
 
-function enemySkin(id: number) {
-  const skins = [
-    EVOFISH_SKIN_BY_ID.premium_fish,
-    EVOFISH_SKIN_BY_ID.neon_koi,
-    EVOFISH_SKIN_BY_ID.clown_pop,
-    EVOFISH_SKIN_BY_ID.deep_sapphire
-  ].filter(Boolean);
-  return skins[id % skins.length] || EVOFISH_SKIN_BY_ID.default;
+function familySkin(familySkinId: string, fallback: EvoFishSkinDefinition) {
+  return EVOFISH_SKIN_BY_ID[familySkinId] || fallback;
 }
 
 function wanderPoint(config: NextWorldConfig) {
@@ -83,14 +79,17 @@ function normalizeMutationState(mutations?: NextMutationState): NextMutationStat
 
 export function makeEnemy(id: number, config: NextWorldConfig = NEXT_WORLD_CONFIG): NextFishEntity {
   const archetype = chooseEnemyArchetype(id);
+  const family = pickEnemyFamily(id, archetype.id);
   const apex = archetype.id === "apex";
   const big = archetype.id === "brute" || apex;
   const form: EvoFishFormId = apex ? "megalodon" : big ? "shark" : "fish";
   const mass = apex ? 9.2 + Math.random() * 1.8 : big ? 2.4 : archetype.id === "hunter" ? 1.2 + Math.random() * 0.75 : 0.45 + Math.random() * 0.7;
-  const hp = apex
+  const baseHp = apex
     ? Math.round(720 + mass * 52)
     : Math.round((big ? 155 : archetype.id === "hunter" ? 95 : 45 + Math.random() * 38) * Math.max(0.75, mass));
+  const hp = Math.round(baseHp * family.hpMultiplier);
   const target = wanderPoint(config);
+  const fallbackSkin = apex ? (EVOFISH_SKIN_BY_ID.mega_lava || EVOFISH_SKIN_BY_ID.mega_deep) : big ? EVOFISH_SKIN_BY_ID.shark_classic : EVOFISH_SKIN_BY_ID.default;
 
   return {
     id,
@@ -103,13 +102,15 @@ export function makeEnemy(id: number, config: NextWorldConfig = NEXT_WORLD_CONFI
     hp,
     hpMax: hp,
     damage: (apex ? 42 : big ? 24 : 8 + Math.random() * 8) * archetype.damageMultiplier,
-    speed: archetype.baseSpeed,
+    speed: archetype.baseSpeed * family.speedMultiplier,
     form,
-    skin: apex ? (EVOFISH_SKIN_BY_ID.mega_lava || EVOFISH_SKIN_BY_ID.mega_deep) : big ? EVOFISH_SKIN_BY_ID.shark_classic : enemySkin(id),
+    skin: apex ? fallbackSkin : familySkin(family.skinId, fallbackSkin),
     angle: 0,
     hitT: 0,
     aiType: archetype.id,
     aiState: "wander",
+    familyName: family.name,
+    familyRewardMultiplier: family.rewardMultiplier,
     aggroRadius: archetype.aggroRadius,
     attackRange: archetype.attackRange,
     attackCd: apex ? 1.1 : 0.4 + Math.random() * 0.8,
@@ -150,6 +151,7 @@ export function createNextWorld(
   const apexEnemy = enemies.find((enemy) => enemy.aiType === "apex");
   const playerDamage = Math.round((damageFromForm(form) + tier * 3) * (1 + damageBonus));
   const playerSpeed = speedFromForm(form) * (1 + speedBonus);
+  const startZone = getZoneAt(config.width / 2, config.height / 2);
 
   return {
     config,
@@ -193,6 +195,8 @@ export function createNextWorld(
       hitT: 0,
       aiType: "neutral",
       aiState: "wander",
+      familyName: "Player",
+      familyRewardMultiplier: 1,
       aggroRadius: 0,
       attackRange: 0,
       attackCd: 0,
@@ -222,6 +226,11 @@ export function createNextWorld(
       craftBarrierT: 0,
       craftBiteBoostT: 0,
       craftSonarT: 0,
+      zoneId: startZone.id,
+      zoneName: startZone.name,
+      zoneEffect: startZone.description,
+      zoneRisk: startZone.risk,
+      zoneRewardBoost: startZone.rewardMultiplier,
       completedQuests,
       activeQuestTitle: "—",
       activeQuestProgress: 0,
