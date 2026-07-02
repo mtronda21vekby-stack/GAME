@@ -13,14 +13,28 @@ export type NextAccountState = {
   lastRunMass: number;
 };
 
+export const DEFAULT_ACCOUNT_NAME = "Player";
+
+export function sanitizeAccountName(value: string | null | undefined) {
+  const clean = String(value || "")
+    .replace(/[<>]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 18);
+
+  if (!clean) return DEFAULT_ACCOUNT_NAME;
+  if (clean.toUpperCase() === "KQYLN") return DEFAULT_ACCOUNT_NAME;
+  return clean;
+}
+
 export function xpToNextAccountLevel(level: number) {
   return Math.round(260 * Math.pow(1.28, Math.max(0, level - 1)));
 }
 
 export function defaultNextAccount(): NextAccountState {
   return {
-    id: "local-kqyln",
-    name: "KQYLN",
+    id: "local-player",
+    name: DEFAULT_ACCOUNT_NAME,
     level: 1,
     xp: 0,
     xpToNext: xpToNextAccountLevel(1),
@@ -40,8 +54,8 @@ export function normalizeNextAccount(account: Partial<NextAccountState> | null |
   const xpToNext = Math.max(1, Math.floor(account?.xpToNext || xpToNextAccountLevel(level)));
 
   return {
-    id: String(account?.id || fallback.id),
-    name: String(account?.name || fallback.name).slice(0, 18),
+    id: String(account?.id || fallback.id).replace("local-kqyln", "local-player"),
+    name: sanitizeAccountName(account?.name || fallback.name),
     level,
     xp: Math.max(0, Math.floor(account?.xp || 0)),
     xpToNext,
@@ -52,6 +66,13 @@ export function normalizeNextAccount(account: Partial<NextAccountState> | null |
     lastRunXp: Math.max(0, Math.floor(account?.lastRunXp || 0)),
     lastRunKills: Math.max(0, Math.floor(account?.lastRunKills || 0)),
     lastRunMass: Math.max(1.2, Number(account?.lastRunMass || fallback.lastRunMass))
+  };
+}
+
+export function renameNextAccount(account: NextAccountState, name: string): NextAccountState {
+  return {
+    ...normalizeNextAccount(account),
+    name: sanitizeAccountName(name)
   };
 }
 
