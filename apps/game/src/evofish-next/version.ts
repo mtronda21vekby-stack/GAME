@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-apex-1.3.0";
+export const EVOFISH_NEXT_VERSION = "next-map-1.4.0";
