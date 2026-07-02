@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-progress-0.7.0";
+export const EVOFISH_NEXT_VERSION = "next-save-0.8.0";
