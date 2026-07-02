@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { Router } from "../router";
 import { Game } from "./Game";
 import { SkinLab } from "../evofish-next/ui/SkinLab";
+import { NextLobby } from "../evofish-next/ui/NextLobby";
 import { NextPlaytest } from "../evofish-next/ui/NextPlaytest";
 import { attachConsoleAnalytics, track } from "@blackcrown/core";
 
@@ -95,10 +96,12 @@ export function App() {
       routes={[
         { path: "/", element: <Game /> },
         { path: "/game", element: <Game /> },
-        { path: "/game/next", element: <NextPlaytest /> },
+        { path: "/game/next", element: <NextLobby /> },
+        { path: "/game/next/lobby", element: <NextLobby /> },
         { path: "/game/next/skins", element: <SkinLab /> },
         { path: "/game/next/play", element: <NextPlaytest /> },
-        { path: "/next", element: <NextPlaytest /> },
+        { path: "/next", element: <NextLobby /> },
+        { path: "/next/lobby", element: <NextLobby /> },
         { path: "/next/skins", element: <SkinLab /> },
         { path: "/next/play", element: <NextPlaytest /> },
       ]}
