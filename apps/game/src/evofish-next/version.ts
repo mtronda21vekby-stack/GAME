@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-map-1.4.0";
+export const EVOFISH_NEXT_VERSION = "next-mut-1.5.0";
