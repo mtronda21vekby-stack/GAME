@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-spawn-2.3.3";
+export const EVOFISH_NEXT_VERSION = "next-ai-2.4.0";
