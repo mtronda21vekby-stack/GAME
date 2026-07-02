@@ -1,108 +1,19 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "../../router";
-import type { EvoFishFormId, EvoFishSkinDefinition } from "../core/types";
-import { EVOFISH_FORMS } from "../content/forms";
+import type { NextEngineStats, NextInputState } from "../core/engineTypes";
 import { EVOFISH_SKIN_BY_ID } from "../content/skins";
-import { drawEvoFishSkin } from "../render/canvasSkinRenderer";
+import { renderNextWorld } from "../render/worldRenderer";
+import { createNextWorld } from "../systems/createWorld";
+import { stepNextEngine } from "../systems/engineStep";
 import { loadEvoFishNextSave } from "../state/nextSaveStore";
 import { EVOFISH_NEXT_VERSION } from "../version";
 
-type FishEntity = {
-  id: number;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  radius: number;
-  mass: number;
-  form: EvoFishFormId;
-  skin: EvoFishSkinDefinition;
-  angle: number;
-};
-
-type RuntimeStats = {
-  mass: number;
-  kills: number;
-  skinName: string;
-  formName: string;
-};
-
-const WORLD = { width: 2800, height: 1800 };
-
-function clamp(value: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, value));
-}
-
-function makeEnemy(id: number): FishEntity {
-  const big = id % 7 === 0;
-  const skin = big ? EVOFISH_SKIN_BY_ID.shark_classic : EVOFISH_SKIN_BY_ID.premium_fish;
-  return {
-    id,
-    x: 180 + Math.random() * (WORLD.width - 360),
-    y: 180 + Math.random() * (WORLD.height - 360),
-    vx: -50 + Math.random() * 100,
-    vy: -50 + Math.random() * 100,
-    radius: big ? 22 : 14 + Math.random() * 8,
-    mass: big ? 2.4 : 0.45 + Math.random() * 0.7,
-    form: big ? "shark" : "fish",
-    skin,
-    angle: 0
-  };
-}
-
-function drawWorld(ctx: CanvasRenderingContext2D, camX: number, camY: number, width: number, height: number) {
-  const g = ctx.createLinearGradient(0, 0, 0, height);
-  g.addColorStop(0, "#06304a");
-  g.addColorStop(1, "#020b15");
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, width, height);
-
-  ctx.save();
-  ctx.translate(-camX, -camY);
-  ctx.strokeStyle = "rgba(150,230,255,.055)";
-  ctx.lineWidth = 1;
-  for (let x = 0; x <= WORLD.width; x += 120) {
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, WORLD.height);
-    ctx.stroke();
-  }
-  for (let y = 0; y <= WORLD.height; y += 120) {
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(WORLD.width, y);
-    ctx.stroke();
-  }
-  ctx.strokeStyle = "rgba(150,230,255,.16)";
-  ctx.lineWidth = 3;
-  ctx.strokeRect(0, 0, WORLD.width, WORLD.height);
-  ctx.restore();
-}
-
-function formFromSkin(skin: EvoFishSkinDefinition): EvoFishFormId {
-  return skin.form === "any" ? "fish" : skin.form;
-}
-
-function radiusFromForm(form: EvoFishFormId) {
-  if (form === "fish") return 24;
-  if (form === "shark") return 31;
-  return 39;
-}
-
-function massFromForm(form: EvoFishFormId) {
-  if (form === "fish") return 1.2;
-  if (form === "shark") return 3.2;
-  return 6.5;
-}
-
 export function NextPlaytest() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [stats, setStats] = useState<RuntimeStats>({ mass: 1, kills: 0, skinName: "—", formName: "—" });
+  const [stats, setStats] = useState<NextEngineStats>({ mass: 1, kills: 0, skinName: "—", formName: "—" });
 
   const save = useMemo(() => loadEvoFishNextSave(), []);
   const skin = EVOFISH_SKIN_BY_ID[save.loadout.equippedSkinId] || EVOFISH_SKIN_BY_ID.default;
-  const form = formFromSkin(skin);
-  const formDef = EVOFISH_FORMS[form];
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -110,21 +21,10 @@ export function NextPlaytest() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    let frame = 0;
-    let last = performance.now();
     let live = true;
-    let kills = 0;
-    const input = { x: 0, y: 0, down: false };
-    const player = {
-      x: WORLD.width / 2,
-      y: WORLD.height / 2,
-      vx: 0,
-      vy: 0,
-      radius: radiusFromForm(form),
-      mass: massFromForm(form),
-      angle: 0
-    };
-    const enemies: FishEntity[] = Array.from({ length: 34 }, (_, i) => makeEnemy(i + 1));
+    let last = performance.now();
+    const input: NextInputState = { pointerX: 0, pointerY: 0, down: false };
+    const engine = createNextWorld(skin);
 
     const resize = () => {
       const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
@@ -136,8 +36,8 @@ export function NextPlaytest() {
 
     const pointer = (event: PointerEvent) => {
       const rect = canvas.getBoundingClientRect();
-      input.x = event.clientX - rect.left;
-      input.y = event.clientY - rect.top;
+      input.pointerX = event.clientX - rect.left;
+      input.pointerY = event.clientY - rect.top;
     };
 
     const onDown = (event: PointerEvent) => {
@@ -160,65 +60,15 @@ export function NextPlaytest() {
       const dt = Math.min(0.04, (now - last) / 1000);
       last = now;
 
-      const cw = canvas.clientWidth || 1;
-      const ch = canvas.clientHeight || 1;
-      const camX = clamp(player.x - cw / 2, 0, WORLD.width - cw);
-      const camY = clamp(player.y - ch / 2, 0, WORLD.height - ch);
+      const viewport = {
+        width: canvas.clientWidth || 1,
+        height: canvas.clientHeight || 1
+      };
 
-      if (input.down) {
-        const tx = camX + input.x;
-        const ty = camY + input.y;
-        const dx = tx - player.x;
-        const dy = ty - player.y;
-        const len = Math.hypot(dx, dy) || 1;
-        const speed = form === "fish" ? 430 : form === "shark" ? 385 : 330;
-        player.vx += (dx / len) * speed * dt * 3.2;
-        player.vy += (dy / len) * speed * dt * 3.2;
-        player.angle = Math.atan2(dy, dx);
-      }
+      stepNextEngine(engine, input, viewport, dt);
+      renderNextWorld(ctx, engine, viewport);
 
-      player.vx *= 0.9;
-      player.vy *= 0.9;
-      player.x = clamp(player.x + player.vx * dt, 40, WORLD.width - 40);
-      player.y = clamp(player.y + player.vy * dt, 40, WORLD.height - 40);
-
-      for (let i = enemies.length - 1; i >= 0; i--) {
-        const e = enemies[i];
-        e.x += e.vx * dt;
-        e.y += e.vy * dt;
-        if (e.x < 80 || e.x > WORLD.width - 80) e.vx *= -1;
-        if (e.y < 80 || e.y > WORLD.height - 80) e.vy *= -1;
-        e.angle = Math.atan2(e.vy, e.vx);
-
-        const d = Math.hypot(e.x - player.x, e.y - player.y);
-        if (d < player.radius + e.radius && player.mass >= e.mass * 1.08) {
-          player.mass += e.mass * 0.08;
-          player.radius = Math.min(player.radius + e.radius * 0.018, 58);
-          kills += 1;
-          enemies.splice(i, 1, makeEnemy(1000 + kills));
-        }
-      }
-
-      drawWorld(ctx, camX, camY, cw, ch);
-      ctx.save();
-      ctx.translate(-camX, -camY);
-      for (const e of enemies) {
-        const danger = player.mass < e.mass * 1.08;
-        ctx.strokeStyle = danger ? "rgba(255,90,90,.32)" : "rgba(110,255,180,.24)";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(e.x, e.y, e.radius * 1.85, 0, Math.PI * 2);
-        ctx.stroke();
-        drawEvoFishSkin(ctx, e.skin, e.form, { x: e.x, y: e.y, radius: e.radius, angle: e.angle, alpha: danger ? 0.92 : 0.82 });
-      }
-      drawEvoFishSkin(ctx, skin, form, { x: player.x, y: player.y, radius: player.radius, angle: player.angle, alpha: 1 });
-      ctx.restore();
-
-      frame += 1;
-      if (frame % 10 === 0) {
-        setStats({ mass: player.mass, kills, skinName: skin.name, formName: formDef.name });
-      }
-
+      if (engine.frame % 10 === 0) setStats({ ...engine.stats });
       requestAnimationFrame(loop);
     };
 
@@ -232,7 +82,7 @@ export function NextPlaytest() {
       canvas.removeEventListener("pointerup", onUp);
       canvas.removeEventListener("pointercancel", onUp);
     };
-  }, [form, formDef.name, skin]);
+  }, [skin]);
 
   return (
     <main className="efNextPlay">
