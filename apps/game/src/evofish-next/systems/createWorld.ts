@@ -1,5 +1,6 @@
 import type { EvoFishEconomyState, EvoFishFormId, EvoFishSkinDefinition } from "../core/types";
 import type { NextEngineState, NextFishEntity, NextQuestState, NextWorldConfig } from "../core/engineTypes";
+import { defaultNextAccount, normalizeNextAccount, type NextAccountState } from "../content/account";
 import { chooseEnemyArchetype } from "../content/enemyArchetypes";
 import { pickEnemyFamily } from "../content/enemyFamilies";
 import { defaultCraftState } from "../content/craft";
@@ -15,6 +16,16 @@ export const NEXT_WORLD_CONFIG: NextWorldConfig = {
   height: 1800,
   enemyTarget: 34
 };
+
+function storedAccount(): NextAccountState {
+  try {
+    const raw = localStorage.getItem("evofish_next_save_v1");
+    if (!raw) return defaultNextAccount();
+    return normalizeNextAccount(JSON.parse(raw)?.account);
+  } catch {
+    return defaultNextAccount();
+  }
+}
 
 export function formFromSkin(skin: EvoFishSkinDefinition): EvoFishFormId {
   return skin.form === "any" ? "fish" : skin.form;
@@ -126,10 +137,12 @@ export function createNextWorld(
   savedProgress?: EvoFishNextProgressState,
   savedEconomy?: EvoFishEconomyState,
   savedQuests?: NextQuestState,
-  savedMutations?: NextMutationState
+  savedMutations?: NextMutationState,
+  savedAccount?: NextAccountState
 ): NextEngineState {
   const form = savedProgress?.form || formFromSkin(playerSkin);
   const config = NEXT_WORLD_CONFIG;
+  const account = normalizeNextAccount(savedAccount || storedAccount());
   const craft = defaultCraftState();
   const mutations = normalizeMutationState(savedMutations);
   const level = Math.max(1, Math.floor(savedProgress?.level || 1));
@@ -155,6 +168,7 @@ export function createNextWorld(
 
   return {
     config,
+    account,
     economy,
     craft,
     mutations,
@@ -212,6 +226,11 @@ export function createNextWorld(
       kills: Math.max(0, Math.floor(savedProgress?.kills || 0)),
       deaths: Math.max(0, Math.floor(savedProgress?.deaths || 0)),
       downs: Math.max(0, Math.floor(savedProgress?.deaths || 0)),
+      accountName: account.name,
+      accountLevel: account.level,
+      accountXp: account.xp,
+      accountXpToNext: account.xpToNext,
+      lastRunAccountXp: account.lastRunXp,
       hp,
       hpMax,
       level,
