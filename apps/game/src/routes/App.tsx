@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { Router } from "../router";
 import { Game } from "./Game";
+import { SkinLab } from "../evofish-next/ui/SkinLab";
 import { attachConsoleAnalytics, track } from "@blackcrown/core";
 
 function safeId() {
@@ -93,6 +94,8 @@ export function App() {
       routes={[
         { path: "/", element: <Game /> },
         { path: "/game", element: <Game /> },
+        { path: "/game/next/skins", element: <SkinLab /> },
+        { path: "/next/skins", element: <SkinLab /> },
       ]}
     />
   );
