@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { userStorage } from "@blackcrown/core";
 import { Drawer } from "@blackcrown/ui";
 import { EvoFishFrame } from "../features/container/EvoFishFrame";
+import { EVOFISH_VERSION } from "../features/container/evoFishRuntime";
 import { SettingsPanel, GameSettings } from "../features/container/SettingsPanel";
 
 export function Game() {
@@ -32,7 +33,7 @@ export function Game() {
       }}
     >
       <EvoFishFrame
-        src="/game/evofish/index.html"
+        src={`/game/evofish/index.html?v=${encodeURIComponent(EVOFISH_VERSION)}`}
         settings={settings}
         onOpenSettings={() => setDrawer(true)}
       />
