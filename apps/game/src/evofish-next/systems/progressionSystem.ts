@@ -44,6 +44,12 @@ export function syncProgressionStats(state: NextEngineState) {
   state.stats.levelXpToNext = player.levelXpToNext;
   state.stats.pearls = state.economy.pearls;
   state.stats.corals = state.economy.corals;
+  state.stats.downs = state.stats.downs || state.stats.deaths || 0;
+  state.stats.deaths = state.stats.downs;
+  state.stats.downed = Boolean(player.downed);
+  state.stats.dead = state.stats.downed;
+  state.stats.reviveTime = player.reviveT || player.respawnT || 0;
+  state.stats.respawnTime = state.stats.reviveTime;
   state.stats.skinName = player.skin.name;
   state.stats.formName = EVOFISH_FORMS[player.form].name;
 }
