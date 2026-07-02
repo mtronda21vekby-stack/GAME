@@ -134,7 +134,7 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
   const autoHideUi = () => {
     clearHideTimer();
     if (!fullscreen) return;
-    hideTimer.current = window.setTimeout(() => setUiHidden(true), 2600);
+    hideTimer.current = window.setTimeout(() => setUiHidden(true), 3200);
   };
 
   const toggleMenu = () => {
@@ -233,10 +233,10 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
           <button className="bcPill" onClick={() => openGameTab("tCraft")}>Мутации</button>
           <button className="bcPill" onClick={() => openGameTab("tQuests")}>Задания</button>
           <button className="bcPill" onClick={() => openGameTab("tSettings")}>Настройки</button>
-          <button className="bcPill" onClick={reload}>Reload</button>
+          <button className="bcPill" onClick={reload}>Перезапуск</button>
           {props.onOpenSettings ? <button className="bcPill" onClick={props.onOpenSettings}>App</button> : null}
           {fullscreen ? (
-            <button className="bcPill" onClick={exitFullscreen}>Close</button>
+            <button className="bcPill" onClick={exitFullscreen}>Окно</button>
           ) : (
             <button className="bcPill" onClick={enterFullscreen}>Fullscreen</button>
           )}
@@ -268,13 +268,13 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
       <style>{`
         .bcPseudoFs{position:fixed!important;inset:0!important;z-index:9999!important}
         .bcImmersive{width:var(--app-vw,100vw)!important;height:var(--app-vh,100vh)!important;background:#031827!important}
-        .bcMenuButton{position:absolute;left:max(124px,calc(env(safe-area-inset-left) + 124px));top:max(10px,env(safe-area-inset-top));z-index:36;width:56px;height:28px;border-radius:999px;border:1px solid rgba(150,230,255,.18);background:rgba(2,16,27,.62);color:rgba(231,242,255,.90);font-size:11px;font-weight:900;letter-spacing:.02em;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 8px 22px rgba(0,0,0,.18);pointer-events:auto;touch-action:manipulation}
-        .bcOverlay{position:absolute;left:0;right:0;top:0;z-index:35;padding:calc(max(10px,env(safe-area-inset-top)) + 44px) 10px 10px;transition:opacity 160ms ease,transform 160ms ease;pointer-events:none}
+        .bcMenuButton{position:absolute;left:max(126px,calc(env(safe-area-inset-left) + 126px));top:max(10px,env(safe-area-inset-top));z-index:36;width:58px;height:30px;border-radius:999px;border:1px solid rgba(150,230,255,.20);background:linear-gradient(180deg,rgba(2,18,30,.70),rgba(2,18,30,.46));color:rgba(231,242,255,.92);font-size:11px;font-weight:950;letter-spacing:.02em;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 10px 24px rgba(0,0,0,.20);pointer-events:auto;touch-action:manipulation}
+        .bcOverlay{position:absolute;left:0;right:0;top:0;z-index:35;padding:calc(max(10px,env(safe-area-inset-top)) + 46px) 10px 10px;transition:opacity 160ms ease,transform 160ms ease;pointer-events:none}
         .bcOverlayHidden{opacity:0;transform:translateY(-12px);visibility:hidden}
         .bcOverlayHidden .bcOverlayInner{pointer-events:none!important}
-        .bcOverlayInner{margin-left:max(10px,env(safe-area-inset-left));width:min(320px,calc(100vw - 20px));display:grid;grid-template-columns:1fr;gap:8px;padding:10px;border-radius:22px;background:rgba(2,16,27,.94);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(150,230,255,.14);box-shadow:0 18px 50px rgba(0,0,0,.30);pointer-events:auto}
-        .bcPill{min-height:42px;padding:0 13px;border-radius:15px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.07);color:#e7f2ff;font-weight:900;text-align:left}.bcPillPrimary{border-color:rgba(120,240,255,.28);background:linear-gradient(180deg,rgba(120,240,255,.22),rgba(90,160,255,.13))}
-        @media(orientation:landscape){.bcMenuButton{left:max(116px,calc(env(safe-area-inset-left) + 116px));width:52px;height:26px;font-size:10px}.bcOverlay{padding-top:calc(max(10px,env(safe-area-inset-top)) + 40px)}.bcOverlayInner{width:250px}}
+        .bcOverlayInner{margin-left:max(10px,env(safe-area-inset-left));width:min(320px,calc(100vw - 20px));display:grid;grid-template-columns:1fr;gap:8px;padding:10px;border-radius:22px;background:rgba(2,16,27,.95);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(150,230,255,.16);box-shadow:0 18px 50px rgba(0,0,0,.32);pointer-events:auto}
+        .bcPill{min-height:42px;padding:0 13px;border-radius:15px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.07);color:#e7f2ff;font-weight:950;text-align:left}.bcPillPrimary{border-color:rgba(120,240,255,.30);background:linear-gradient(180deg,rgba(120,240,255,.24),rgba(90,160,255,.14))}
+        @media(orientation:landscape){.bcMenuButton{left:max(118px,calc(env(safe-area-inset-left) + 118px));width:54px;height:28px;font-size:10px}.bcOverlay{padding-top:calc(max(10px,env(safe-area-inset-top)) + 42px)}.bcOverlayInner{width:250px}}
       `}</style>
     </div>
   );
