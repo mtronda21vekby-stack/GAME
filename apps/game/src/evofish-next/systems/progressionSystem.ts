@@ -63,6 +63,11 @@ export function syncProgressionStats(state: NextEngineState) {
   state.stats.xpToNext = player.xpToNext;
   state.stats.levelXp = player.levelXp;
   state.stats.levelXpToNext = player.levelXpToNext;
+  state.stats.accountName = state.account.name;
+  state.stats.accountLevel = state.account.level;
+  state.stats.accountXp = state.account.xp;
+  state.stats.accountXpToNext = state.account.xpToNext;
+  state.stats.lastRunAccountXp = state.account.lastRunXp;
   state.stats.pearls = state.economy.pearls;
   state.stats.corals = state.economy.corals;
   state.stats.mutationLevel = getMutationTotalLevel(state.mutations);
