@@ -88,8 +88,8 @@ export function chooseEnemyArchetype(id: number, threatLevel = 1): NextEnemyArch
   if (threatLevel >= 35 && id % 13 === 0) return NEXT_ENEMY_ARCHETYPES.leviathan;
   if (threatLevel >= 24 && id % 11 === 0) return NEXT_ENEMY_ARCHETYPES.stalker;
   if (threatLevel >= 30 && id % 19 === 0) return NEXT_ENEMY_ARCHETYPES.apex;
-  if (id % 31 === 0) return NEXT_ENEMY_ARCHETYPES.apex;
-  if (id % 7 === 0) return NEXT_ENEMY_ARCHETYPES.brute;
+  if (threatLevel >= 18 && id % 31 === 0) return NEXT_ENEMY_ARCHETYPES.apex;
+  if (threatLevel >= 10 && id % 7 === 0) return NEXT_ENEMY_ARCHETYPES.brute;
   if (id % 5 === 0) return NEXT_ENEMY_ARCHETYPES.hunter;
   if (id % 3 === 0) return NEXT_ENEMY_ARCHETYPES.neutral;
   return NEXT_ENEMY_ARCHETYPES.prey;
