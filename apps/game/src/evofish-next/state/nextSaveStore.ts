@@ -60,8 +60,8 @@ function normalizeSave(save: EvoFishNextSkinSave): EvoFishNextSkinSave {
   return {
     schemaVersion: 1,
     economy: {
-      pearls: Math.max(0, Math.floor(save.economy.pearls || 0)),
-      corals: Math.max(0, Math.floor(save.economy.corals || 0))
+      pearls: Math.max(0, Math.floor(save.economy?.pearls || 0)),
+      corals: Math.max(0, Math.floor(save.economy?.corals || 0))
     },
     loadout: {
       equippedSkinId: equipped,
@@ -90,6 +90,10 @@ export function saveEvoFishNextSave(save: EvoFishNextSkinSave) {
 
 export function saveEvoFishNextProgress(engine: NextEngineState) {
   const save = loadEvoFishNextSave();
+  save.economy = {
+    pearls: Math.max(0, Math.floor(engine.economy.pearls || 0)),
+    corals: Math.max(0, Math.floor(engine.economy.corals || 0))
+  };
   save.progress = normalizeProgress({
     level: engine.player.level,
     tier: engine.player.tier,
