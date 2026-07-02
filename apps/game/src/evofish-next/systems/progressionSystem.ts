@@ -14,6 +14,14 @@ function addFloat(state: NextEngineState, x: number, y: number, text: string, ki
   state.floats.push({ id: state.nextFloatId++, x, y, text, ttl: 0.9, kind });
 }
 
+function syncApexStats(state: NextEngineState) {
+  const apex = state.enemies.find((enemy) => enemy.aiType === "apex");
+  state.stats.apexAlive = Boolean(apex);
+  state.stats.apexName = apex ? "Apex Megalodon" : "Apex cleared";
+  state.stats.apexHp = apex?.hp || 0;
+  state.stats.apexHpMax = apex?.hpMax || 1;
+}
+
 function applyPlayerForm(state: NextEngineState, nextForm: EvoFishFormId) {
   const player = state.player;
   if (player.form === nextForm) return;
@@ -52,6 +60,7 @@ export function syncProgressionStats(state: NextEngineState) {
   state.stats.respawnTime = state.stats.reviveTime;
   state.stats.skinName = player.skin.name;
   state.stats.formName = EVOFISH_FORMS[player.form].name;
+  syncApexStats(state);
 }
 
 export function awardNextXp(state: NextEngineState, amount: number) {
@@ -99,10 +108,10 @@ export function awardNextXp(state: NextEngineState, amount: number) {
 
 function awardKillEconomy(state: NextEngineState, enemy: NextFishEntity, source: "bite" | "devour") {
   const sourceBonus = source === "devour" ? 1.15 : 1;
-  const archetypeBonus = enemy.aiType === "brute" ? 2.2 : enemy.aiType === "hunter" ? 1.55 : enemy.aiType === "neutral" ? 1.15 : 1;
+  const archetypeBonus = enemy.aiType === "apex" ? 5.2 : enemy.aiType === "brute" ? 2.2 : enemy.aiType === "hunter" ? 1.55 : enemy.aiType === "neutral" ? 1.15 : 1;
   const pearls = Math.max(1, Math.round((1 + enemy.mass * 1.65) * sourceBonus * archetypeBonus));
-  const coralChance = Math.min(0.22, 0.015 + enemy.mass * 0.012 + (enemy.aiType === "brute" ? 0.08 : 0));
-  const corals = Math.random() < coralChance ? 1 : 0;
+  const coralChance = enemy.aiType === "apex" ? 1 : Math.min(0.22, 0.015 + enemy.mass * 0.012 + (enemy.aiType === "brute" ? 0.08 : 0));
+  const corals = enemy.aiType === "apex" ? 5 : Math.random() < coralChance ? 1 : 0;
 
   state.economy.pearls += pearls;
   state.economy.corals += corals;
@@ -112,9 +121,14 @@ function awardKillEconomy(state: NextEngineState, enemy: NextFishEntity, source:
 export function awardKillReward(state: NextEngineState, enemy: NextFishEntity, source: "bite" | "devour"): NextKillReward {
   const formBonus = enemy.form === "shark" ? 1.45 : enemy.form === "megalodon" ? 2.25 : 1;
   const sourceBonus = source === "devour" ? 1.2 : 1;
-  const archetypeBonus = enemy.aiType === "brute" ? 1.65 : enemy.aiType === "hunter" ? 1.3 : 1;
+  const archetypeBonus = enemy.aiType === "apex" ? 4.25 : enemy.aiType === "brute" ? 1.65 : enemy.aiType === "hunter" ? 1.3 : 1;
   const xp = awardNextXp(state, (35 + enemy.mass * 28 + enemy.hpMax * 0.22) * formBonus * sourceBonus * archetypeBonus);
   const economy = awardKillEconomy(state, enemy, source);
+
+  if (enemy.aiType === "apex") {
+    state.stats.lastEvent = `APEX cleared +${xp} XP +${economy.pearls} жемчуг +${economy.corals} коралл`;
+    addFloat(state, enemy.x, enemy.y - enemy.radius * 3.2, "APEX CLEARED", "kill");
+  }
 
   syncProgressionStats(state);
   return { xp, ...economy };
