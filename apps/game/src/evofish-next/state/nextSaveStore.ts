@@ -1,6 +1,7 @@
 import type { NextEngineState } from "../core/engineTypes";
 import type { EvoFishCurrency } from "../core/types";
 import { xpToNextLevel, xpToNextTier } from "../content/progression";
+import { canUnlockSkinInNext, canUseSkinInNext } from "../content/skinUnlockRules";
 import { EVOFISH_SKIN_BY_ID, getDefaultSkinId } from "../content/skins";
 import {
   defaultNextProgress,
@@ -122,27 +123,21 @@ export function canBuySkin(save: EvoFishNextSkinSave, skinId: string) {
   const skin = EVOFISH_SKIN_BY_ID[skinId];
   if (!skin) return false;
   if (isSkinOwned(save, skinId)) return false;
-  if (skin.unlock.type === "free") return true;
-  if (skin.unlock.type !== "currency") return false;
-  return getCurrencyBalance(save, skin.unlock.currency) >= skin.unlock.amount;
+  return canUnlockSkinInNext(normalizeSave(save), skin);
 }
 
 export function buySkin(save: EvoFishNextSkinSave, skinId: string): EvoFishNextSkinSave {
   const skin = EVOFISH_SKIN_BY_ID[skinId];
-  if (!skin || isSkinOwned(save, skinId)) return save;
+  if (!skin || isSkinOwned(save, skinId) || !canBuySkin(save, skinId)) return save;
+
+  const next = normalizeSave(save);
 
   if (skin.unlock.type === "currency") {
-    if (!canBuySkin(save, skinId)) return save;
-    const next = normalizeSave(save);
     if (skin.unlock.currency === "pearls") next.economy.pearls -= skin.unlock.amount;
     else next.economy.corals -= skin.unlock.amount;
-    next.loadout.ownedSkins[skinId] = true;
-    next.loadout.equippedSkinId = skinId;
-    return normalizeSave(next);
   }
 
-  if (skin.unlock.type === "free") {
-    const next = normalizeSave(save);
+  if (skin.unlock.type === "free" || skin.unlock.type === "currency") {
     next.loadout.ownedSkins[skinId] = true;
     next.loadout.equippedSkinId = skinId;
     return normalizeSave(next);
@@ -152,7 +147,9 @@ export function buySkin(save: EvoFishNextSkinSave, skinId: string): EvoFishNextS
 }
 
 export function equipSkin(save: EvoFishNextSkinSave, skinId: string): EvoFishNextSkinSave {
-  if (!EVOFISH_SKIN_BY_ID[skinId] || !isSkinOwned(save, skinId)) return save;
+  const skin = EVOFISH_SKIN_BY_ID[skinId];
+  if (!skin || !isSkinOwned(save, skinId) || !canUseSkinInNext(normalizeSave(save), skin)) return save;
+
   return normalizeSave({
     ...save,
     loadout: {
