@@ -43,69 +43,24 @@ async function ping() {
   }
 }
 
-function registerGameServiceWorker() {
+function disableGameServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
-  if (location.protocol !== "https:" && location.hostname !== "localhost") return;
 
-  let refreshing = false;
-
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (refreshing) return;
-    refreshing = true;
-    window.location.reload();
-  });
-
-  navigator.serviceWorker
-    .register("/game/sw.js", {
-      scope: "/game/",
-      updateViaCache: "none"
-    })
-    .then((registration) => {
-      const activateWaiting = () => {
-        if (registration.waiting) {
-          registration.waiting.postMessage({ type: "SKIP_WAITING" });
-        }
-      };
-
-      registration.addEventListener("updatefound", () => {
-        const worker = registration.installing;
-        if (!worker) return;
-        worker.addEventListener("statechange", () => {
-          if (worker.state === "installed" && navigator.serviceWorker.controller) {
-            worker.postMessage({ type: "SKIP_WAITING" });
-          }
-        });
-      });
-
-      activateWaiting();
-      registration.update().catch(() => undefined);
-
-      const updateTimer = window.setInterval(() => {
-        registration.update().catch(() => undefined);
-      }, 60_000);
-
-      const onVisible = () => {
-        if (document.visibilityState === "visible") registration.update().catch(() => undefined);
-      };
-
-      document.addEventListener("visibilitychange", onVisible);
-      window.addEventListener("focus", onVisible);
-
-      window.addEventListener("beforeunload", () => {
-        window.clearInterval(updateTimer);
-        document.removeEventListener("visibilitychange", onVisible);
-        window.removeEventListener("focus", onVisible);
-      });
-    })
+  navigator.serviceWorker.getRegistrations()
+    .then((registrations) => Promise.all(
+      registrations
+        .filter((registration) => registration.scope.includes("/game/"))
+        .map((registration) => registration.unregister())
+    ))
     .catch(() => {
-      // PWA install remains optional; never block the game.
+      // Never block the game because of PWA cleanup.
     });
 }
 
 export function App() {
   useEffect(() => attachConsoleAnalytics(), []);
   useEffect(() => track({ type: "page_view", path: window.location.pathname }), []);
-  useEffect(() => registerGameServiceWorker(), []);
+  useEffect(() => disableGameServiceWorker(), []);
 
   // metrics ping (online + unique через server /api/metrics/ping)
   useEffect(() => {
