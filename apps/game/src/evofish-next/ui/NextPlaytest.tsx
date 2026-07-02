@@ -77,6 +77,11 @@ export function NextPlaytest() {
     craftBarrierT: 0,
     craftBiteBoostT: 0,
     craftSonarT: 0,
+    zoneId: "open_water",
+    zoneName: "Open Water",
+    zoneEffect: "Neutral water.",
+    zoneRisk: 0,
+    zoneRewardBoost: 1,
     completedQuests: 0,
     activeQuestTitle: "—",
     activeQuestProgress: 0,
@@ -258,6 +263,7 @@ export function NextPlaytest() {
         <span>{EVOFISH_NEXT_VERSION}</span>
         <span>LV {stats.level} · Tier {stats.tier} · {stats.formName}</span>
         <span>{stats.skinName}</span>
+        <span>Zone {stats.zoneName} · Risk {stats.zoneRisk} · Reward x{stats.zoneRewardBoost.toFixed(2)}</span>
         <span>Mass {stats.mass.toFixed(2)} · Kills {stats.kills} · Downs {downs}</span>
         <span>Жемчуг {stats.pearls} · Кораллы {stats.corals} · Mut {stats.mutationLevel}</span>
         {stats.craftBarrierT > 0 || stats.craftBiteBoostT > 0 || stats.craftSonarT > 0 ? (
@@ -369,7 +375,7 @@ export function NextPlaytest() {
       ) : null}
 
       {downed ? <div className="efNextRevive">Возрождение через {reviveTime.toFixed(1)} сек</div> : null}
-      <div className="efNextHelp">Next: in-game Shop, Craft, Mutations, Quests, Apex, mini-map и revive. Старую логику переносим слоями.</div>
+      <div className="efNextHelp">Next: zones, families, Shop, Craft, Mutations, Quests, Apex, mini-map и revive.</div>
       <div className="efNextControls">
         <button disabled={downed} onPointerDown={(event) => { event.preventDefault(); inputRef.current.bite = true; }}>BITE</button>
         <button disabled={downed} onPointerDown={(event) => { event.preventDefault(); inputRef.current.dash = true; }}>DASH</button>
