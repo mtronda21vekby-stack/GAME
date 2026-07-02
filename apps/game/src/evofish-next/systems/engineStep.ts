@@ -3,6 +3,7 @@ import { getNextCamera } from "./cameraSystem";
 import { updateCollisionSystem } from "./collisionSystem";
 import { updateCombatSystem } from "./combatSystem";
 import { updateCraftSystem } from "./craftSystem";
+import { updateDirectorSystem } from "./directorSystem";
 import { updateEnemySystem } from "./enemySystem";
 import { updateFeedbackSystem } from "./feedbackSystem";
 import { syncProgressionStats } from "./progressionSystem";
@@ -24,6 +25,7 @@ export function stepNextEngine(state: NextEngineState, input: NextInputState, vi
     updateResourceSystem(state, dt);
     updateCombatSystem(state, input, camera);
     updateEnemySystem(state, dt);
+    updateDirectorSystem(state, dt);
     updateCollisionSystem(state);
   } else {
     input.bite = false;
@@ -32,6 +34,7 @@ export function stepNextEngine(state: NextEngineState, input: NextInputState, vi
     updateZoneSystem(state, dt);
     updateResourceSystem(state, dt);
     updateEnemySystem(state, dt);
+    updateDirectorSystem(state, dt);
   }
 
   updateCraftSystem(state, dt);
