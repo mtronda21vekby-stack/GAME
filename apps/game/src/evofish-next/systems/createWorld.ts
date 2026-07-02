@@ -1,4 +1,4 @@
-import type { EvoFishFormId, EvoFishSkinDefinition } from "../core/types";
+import type { EvoFishEconomyState, EvoFishFormId, EvoFishSkinDefinition } from "../core/types";
 import type { NextEngineState, NextFishEntity, NextWorldConfig } from "../core/engineTypes";
 import { chooseEnemyArchetype } from "../content/enemyArchetypes";
 import { EVOFISH_FORMS } from "../content/forms";
@@ -99,7 +99,7 @@ export function makeEnemy(id: number, config: NextWorldConfig = NEXT_WORLD_CONFI
   };
 }
 
-export function createNextWorld(playerSkin: EvoFishSkinDefinition, savedProgress?: EvoFishNextProgressState): NextEngineState {
+export function createNextWorld(playerSkin: EvoFishSkinDefinition, savedProgress?: EvoFishNextProgressState, savedEconomy?: EvoFishEconomyState): NextEngineState {
   const form = savedProgress?.form || formFromSkin(playerSkin);
   const config = NEXT_WORLD_CONFIG;
   const level = Math.max(1, Math.floor(savedProgress?.level || 1));
@@ -108,9 +108,14 @@ export function createNextWorld(playerSkin: EvoFishSkinDefinition, savedProgress
   const hpMax = Math.max(baseHpMax, Math.floor(savedProgress?.hpMax || baseHpMax));
   const hp = Math.max(1, Math.min(hpMax, Math.floor(savedProgress?.hp || hpMax)));
   const mass = Math.max(massFromForm(form), Number(savedProgress?.mass || massFromForm(form)));
+  const economy: EvoFishEconomyState = {
+    pearls: Math.max(0, Math.floor(savedEconomy?.pearls || 0)),
+    corals: Math.max(0, Math.floor(savedEconomy?.corals || 0))
+  };
 
   return {
     config,
+    economy,
     frame: 0,
     nextFloatId: 1,
     player: {
@@ -162,6 +167,8 @@ export function createNextWorld(playerSkin: EvoFishSkinDefinition, savedProgress
       xpToNext: Math.max(1, Math.floor(savedProgress?.xpToNext || xpToNextTier(tier))),
       levelXp: Math.max(0, Math.floor(savedProgress?.levelXp || 0)),
       levelXpToNext: Math.max(1, Math.floor(savedProgress?.levelXpToNext || xpToNextLevel(level))),
+      pearls: economy.pearls,
+      corals: economy.corals,
       skinName: playerSkin.name,
       formName: EVOFISH_FORMS[form].name,
       lastEvent: savedProgress ? "Сейв загружен" : "Готов"
