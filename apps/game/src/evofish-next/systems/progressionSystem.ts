@@ -136,9 +136,11 @@ export function awardNextXp(state: NextEngineState, amount: number) {
 function awardKillEconomy(state: NextEngineState, enemy: NextFishEntity, source: "bite" | "devour") {
   const sourceBonus = source === "devour" ? 1.15 : 1;
   const mutationBonus = 1 + getMutationBonus(state.mutations, "reward");
+  const zoneBonus = state.stats.zoneRewardBoost || 1;
+  const familyBonus = enemy.familyRewardMultiplier || 1;
   const archetypeBonus = enemy.aiType === "apex" ? 5.2 : enemy.aiType === "brute" ? 2.2 : enemy.aiType === "hunter" ? 1.55 : enemy.aiType === "neutral" ? 1.15 : 1;
-  const pearls = Math.max(1, Math.round((1 + enemy.mass * 1.65) * sourceBonus * archetypeBonus * mutationBonus));
-  const coralChance = enemy.aiType === "apex" ? 1 : Math.min(0.22, 0.015 + enemy.mass * 0.012 + (enemy.aiType === "brute" ? 0.08 : 0));
+  const pearls = Math.max(1, Math.round((1 + enemy.mass * 1.65) * sourceBonus * archetypeBonus * mutationBonus * zoneBonus * familyBonus));
+  const coralChance = enemy.aiType === "apex" ? 1 : Math.min(0.28, (0.015 + enemy.mass * 0.012 + (enemy.aiType === "brute" ? 0.08 : 0)) * Math.max(1, zoneBonus));
   const corals = enemy.aiType === "apex" ? 5 : Math.random() < coralChance ? 1 : 0;
 
   state.economy.pearls += pearls;
@@ -149,8 +151,10 @@ function awardKillEconomy(state: NextEngineState, enemy: NextFishEntity, source:
 export function awardKillReward(state: NextEngineState, enemy: NextFishEntity, source: "bite" | "devour"): NextKillReward {
   const formBonus = enemy.form === "shark" ? 1.45 : enemy.form === "megalodon" ? 2.25 : 1;
   const sourceBonus = source === "devour" ? 1.2 : 1;
+  const zoneBonus = state.stats.zoneRewardBoost || 1;
+  const familyBonus = enemy.familyRewardMultiplier || 1;
   const archetypeBonus = enemy.aiType === "apex" ? 4.25 : enemy.aiType === "brute" ? 1.65 : enemy.aiType === "hunter" ? 1.3 : 1;
-  const xp = awardNextXp(state, (35 + enemy.mass * 28 + enemy.hpMax * 0.22) * formBonus * sourceBonus * archetypeBonus);
+  const xp = awardNextXp(state, (35 + enemy.mass * 28 + enemy.hpMax * 0.22) * formBonus * sourceBonus * archetypeBonus * zoneBonus * familyBonus);
   const economy = awardKillEconomy(state, enemy, source);
 
   if (enemy.aiType === "apex") {
