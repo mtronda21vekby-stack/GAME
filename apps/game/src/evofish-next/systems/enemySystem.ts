@@ -15,8 +15,23 @@ function setWanderTarget(state: NextEngineState, enemy: NextFishEntity) {
   enemy.wanderT = 1.2 + Math.random() * 3.2;
 }
 
+function wanderTarget(state: NextEngineState, enemy: NextFishEntity) {
+  enemy.wanderT -= 1 / 60;
+  const wx = enemy.wanderX - enemy.x;
+  const wy = enemy.wanderY - enemy.y;
+  const wDistance = Math.hypot(wx, wy) || 1;
+  if (enemy.wanderT <= 0 || wDistance < 80) setWanderTarget(state, enemy);
+  return { x: wx / wDistance, y: wy / wDistance, distance: wDistance };
+}
+
 function aiTarget(state: NextEngineState, enemy: NextFishEntity) {
   const player = state.player;
+
+  if (player.downed || player.dead) {
+    enemy.aiState = "wander";
+    return wanderTarget(state, enemy);
+  }
+
   const dx = player.x - enemy.x;
   const dy = player.y - enemy.y;
   const distance = Math.hypot(dx, dy) || 1;
@@ -35,18 +50,13 @@ function aiTarget(state: NextEngineState, enemy: NextFishEntity) {
   if (enemy.aiState === "flee") return { x: -dx / distance, y: -dy / distance, distance };
   if (enemy.aiState === "hunt" || enemy.aiState === "attack") return { x: dx / distance, y: dy / distance, distance };
 
-  enemy.wanderT -= 1 / 60;
-  const wx = enemy.wanderX - enemy.x;
-  const wy = enemy.wanderY - enemy.y;
-  const wDistance = Math.hypot(wx, wy) || 1;
-  if (enemy.wanderT <= 0 || wDistance < 80) setWanderTarget(state, enemy);
-  return { x: wx / wDistance, y: wy / wDistance, distance };
+  return wanderTarget(state, enemy);
 }
 
 function attackPlayer(state: NextEngineState, enemy: NextFishEntity, distance: number) {
   const player = state.player;
   enemy.attackCd = Math.max(0, enemy.attackCd - 1 / 60);
-  if (distance > enemy.attackRange + player.radius || enemy.attackCd > 0 || player.invulnT > 0) return;
+  if (player.downed || player.dead || distance > enemy.attackRange + player.radius || enemy.attackCd > 0 || player.invulnT > 0) return;
 
   const damage = Math.round(enemy.damage);
   player.hp = Math.max(0, player.hp - damage);
