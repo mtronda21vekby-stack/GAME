@@ -1,7 +1,11 @@
+import type { NextEngineState } from "../core/engineTypes";
 import type { EvoFishCurrency } from "../core/types";
+import { xpToNextLevel, xpToNextTier } from "../content/progression";
 import { EVOFISH_SKIN_BY_ID, getDefaultSkinId } from "../content/skins";
 import {
+  defaultNextProgress,
   migrateLegacySkinSave,
+  type EvoFishNextProgressState,
   type EvoFishNextSkinSave,
   type LegacyEvoFishSave
 } from "./skinSaveAdapter";
@@ -27,6 +31,27 @@ function safeWriteJSON(key: string, value: unknown) {
   }
 }
 
+function normalizeProgress(progress: Partial<EvoFishNextProgressState> | null | undefined): EvoFishNextProgressState {
+  const fallback = defaultNextProgress();
+  const level = Math.max(1, Math.floor(progress?.level || fallback.level));
+  const tier = Math.max(1, Math.min(12, Math.floor(progress?.tier || fallback.tier)));
+  const hpMax = Math.max(1, Math.floor(progress?.hpMax || fallback.hpMax));
+
+  return {
+    level,
+    tier,
+    xp: Math.max(0, Math.floor(progress?.xp || 0)),
+    xpToNext: Math.max(1, Math.floor(progress?.xpToNext || xpToNextTier(tier))),
+    levelXp: Math.max(0, Math.floor(progress?.levelXp || 0)),
+    levelXpToNext: Math.max(1, Math.floor(progress?.levelXpToNext || xpToNextLevel(level))),
+    mass: Math.max(1, Number(progress?.mass || fallback.mass)),
+    hp: Math.max(1, Math.min(hpMax, Math.floor(progress?.hp || hpMax))),
+    hpMax,
+    form: progress?.form || fallback.form,
+    kills: Math.max(0, Math.floor(progress?.kills || 0))
+  };
+}
+
 function normalizeSave(save: EvoFishNextSkinSave): EvoFishNextSkinSave {
   const equipped = EVOFISH_SKIN_BY_ID[save.loadout.equippedSkinId]
     ? save.loadout.equippedSkinId
@@ -44,7 +69,8 @@ function normalizeSave(save: EvoFishNextSkinSave): EvoFishNextSkinSave {
         default: true,
         ...(save.loadout.ownedSkins || {})
       }
-    }
+    },
+    progress: normalizeProgress(save.progress)
   };
 }
 
@@ -60,6 +86,24 @@ export function loadEvoFishNextSave(): EvoFishNextSkinSave {
 
 export function saveEvoFishNextSave(save: EvoFishNextSkinSave) {
   safeWriteJSON(EVOFISH_NEXT_SAVE_KEY, normalizeSave(save));
+}
+
+export function saveEvoFishNextProgress(engine: NextEngineState) {
+  const save = loadEvoFishNextSave();
+  save.progress = normalizeProgress({
+    level: engine.player.level,
+    tier: engine.player.tier,
+    xp: engine.player.xp,
+    xpToNext: engine.player.xpToNext,
+    levelXp: engine.player.levelXp,
+    levelXpToNext: engine.player.levelXpToNext,
+    mass: engine.player.mass,
+    hp: engine.player.hp,
+    hpMax: engine.player.hpMax,
+    form: engine.player.form,
+    kills: engine.stats.kills
+  });
+  saveEvoFishNextSave(save);
 }
 
 export function isSkinOwned(save: EvoFishNextSkinSave, skinId: string) {
