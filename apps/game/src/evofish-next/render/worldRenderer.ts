@@ -12,9 +12,10 @@ function drawWorldBackground(ctx: CanvasRenderingContext2D, state: NextEngineSta
   ctx.fillRect(0, 0, viewport.width, viewport.height);
 
   ctx.save();
+  ctx.scale(camera.scale, camera.scale);
   ctx.translate(-camera.x, -camera.y);
   ctx.strokeStyle = "rgba(150,230,255,.055)";
-  ctx.lineWidth = 1;
+  ctx.lineWidth = 1 / camera.scale;
 
   for (let x = 0; x <= state.config.width; x += 120) {
     ctx.beginPath();
@@ -33,7 +34,7 @@ function drawWorldBackground(ctx: CanvasRenderingContext2D, state: NextEngineSta
   for (const zone of NEXT_MAP_ZONES) {
     ctx.fillStyle = zone.color;
     ctx.strokeStyle = zone.id === state.stats.zoneId ? "rgba(255,255,255,.34)" : "rgba(255,255,255,.12)";
-    ctx.lineWidth = zone.id === state.stats.zoneId ? 4 : 2;
+    ctx.lineWidth = (zone.id === state.stats.zoneId ? 4 : 2) / camera.scale;
     ctx.beginPath();
     ctx.arc(zone.x, zone.y, zone.radius, 0, Math.PI * 2);
     ctx.fill();
@@ -46,7 +47,7 @@ function drawWorldBackground(ctx: CanvasRenderingContext2D, state: NextEngineSta
   }
 
   ctx.strokeStyle = "rgba(150,230,255,.16)";
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 3 / camera.scale;
   ctx.strokeRect(0, 0, state.config.width, state.config.height);
   ctx.restore();
 }
@@ -263,6 +264,7 @@ export function renderNextWorld(ctx: CanvasRenderingContext2D, state: NextEngine
   drawWorldBackground(ctx, state, camera, viewport);
 
   ctx.save();
+  ctx.scale(camera.scale, camera.scale);
   ctx.translate(-camera.x, -camera.y);
 
   for (const enemy of state.enemies) {
