@@ -2,6 +2,7 @@ import type { EvoFishEconomyState, EvoFishFormId, EvoFishSkinDefinition } from "
 import type { NextAccountState } from "../content/account";
 import type { NextEnemyArchetypeId } from "../content/enemyArchetypes";
 import type { NextCraftState } from "../content/craft";
+import type { NextMapEventState } from "../content/events";
 import type { NextMutationState } from "../content/mutations";
 import type { NextResourceNode } from "../content/resources";
 import type { NextZoneId } from "../content/zones";
@@ -127,6 +128,11 @@ export type NextEngineStats = {
   craftSonarT: number;
   resourcesCollected?: number;
   activeResources?: number;
+  activeEventTitle?: string;
+  activeEventProgress?: number;
+  activeEventTarget?: number;
+  activeEventTime?: number;
+  activeEventKind?: string;
   zoneId: NextZoneId;
   zoneName: string;
   zoneEffect: string;
@@ -159,6 +165,7 @@ export type NextEngineState = {
   player: NextPlayerState;
   enemies: NextFishEntity[];
   resources: NextResourceNode[];
+  events?: NextMapEventState[];
   floats: NextDamageFloat[];
   frame: number;
   nextFloatId: number;
