@@ -30,6 +30,10 @@ export type NextDamageFloat = {
   kind: "damage" | "kill" | "danger";
 };
 
+export type NextQuestState = {
+  completed: Record<string, true>;
+};
+
 export type NextAIState = "wander" | "hunt" | "flee" | "attack";
 
 export type NextFishEntity = {
@@ -91,6 +95,10 @@ export type NextEngineStats = {
   levelXpToNext: number;
   pearls: number;
   corals: number;
+  completedQuests: number;
+  activeQuestTitle: string;
+  activeQuestProgress: number;
+  activeQuestTarget: number;
   skinName: string;
   formName: string;
   lastEvent: string;
@@ -99,6 +107,7 @@ export type NextEngineStats = {
 export type NextEngineState = {
   config: NextWorldConfig;
   economy: EvoFishEconomyState;
+  quests: NextQuestState;
   player: NextPlayerState;
   enemies: NextFishEntity[];
   floats: NextDamageFloat[];
