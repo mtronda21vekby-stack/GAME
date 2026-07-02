@@ -1,5 +1,6 @@
 import type { NextEngineState, NextFishEntity } from "../core/engineTypes";
 import { makeEnemy } from "./createWorld";
+import { awardKillProgression } from "./progressionSystem";
 
 export function canDevour(attackerMass: number, targetMass: number) {
   return attackerMass >= targetMass * 1.08;
@@ -12,13 +13,14 @@ function addFloat(state: NextEngineState, x: number, y: number, text: string, ki
 function devourEnemy(state: NextEngineState, enemy: NextFishEntity, index: number) {
   const player = state.player;
   const massGain = enemy.mass * 0.08;
+  const xp = awardKillProgression(state, enemy, "devour");
 
   player.mass += massGain;
   player.radius = Math.min(player.radius + enemy.radius * 0.018, 58);
   player.hp = Math.min(player.hpMax, player.hp + player.hpMax * 0.08);
   state.stats.kills += 1;
-  state.stats.lastEvent = `Поглощение +${massGain.toFixed(2)} Mass`;
-  addFloat(state, enemy.x, enemy.y, "DEVOURED", "kill");
+  state.stats.lastEvent = `Поглощение +${xp} XP +${massGain.toFixed(2)} Mass`;
+  addFloat(state, enemy.x, enemy.y, `EAT +${xp}XP`, "kill");
   state.enemies.splice(index, 1, makeEnemy(1000 + state.stats.kills, state.config));
 }
 
