@@ -2,6 +2,7 @@ import type { EvoFishEconomyState, EvoFishFormId, EvoFishSkinDefinition } from "
 import type { NextEngineState, NextFishEntity, NextQuestState, NextWorldConfig } from "../core/engineTypes";
 import { chooseEnemyArchetype } from "../content/enemyArchetypes";
 import { EVOFISH_FORMS } from "../content/forms";
+import { defaultMutationState, getMutationBonus, getMutationTotalLevel, type NextMutationState } from "../content/mutations";
 import { xpToNextLevel, xpToNextTier } from "../content/progression";
 import { EVOFISH_SKIN_BY_ID } from "../content/skins";
 import { defaultNextQuests, type EvoFishNextProgressState } from "../state/skinSaveAdapter";
@@ -72,6 +73,13 @@ function normalizeQuestState(quests?: NextQuestState): NextQuestState {
   };
 }
 
+function normalizeMutationState(mutations?: NextMutationState): NextMutationState {
+  return {
+    ...defaultMutationState(),
+    levels: { ...(mutations?.levels || {}) }
+  };
+}
+
 export function makeEnemy(id: number, config: NextWorldConfig = NEXT_WORLD_CONFIG): NextFishEntity {
   const archetype = chooseEnemyArchetype(id);
   const apex = archetype.id === "apex";
@@ -115,13 +123,18 @@ export function createNextWorld(
   playerSkin: EvoFishSkinDefinition,
   savedProgress?: EvoFishNextProgressState,
   savedEconomy?: EvoFishEconomyState,
-  savedQuests?: NextQuestState
+  savedQuests?: NextQuestState,
+  savedMutations?: NextMutationState
 ): NextEngineState {
   const form = savedProgress?.form || formFromSkin(playerSkin);
   const config = NEXT_WORLD_CONFIG;
+  const mutations = normalizeMutationState(savedMutations);
   const level = Math.max(1, Math.floor(savedProgress?.level || 1));
   const tier = Math.max(1, Math.min(12, Math.floor(savedProgress?.tier || 1)));
-  const baseHpMax = hpFromForm(form) + tier * 12;
+  const hpBonus = getMutationBonus(mutations, "hp");
+  const damageBonus = getMutationBonus(mutations, "damage");
+  const speedBonus = getMutationBonus(mutations, "speed");
+  const baseHpMax = Math.round((hpFromForm(form) + tier * 12) * (1 + hpBonus));
   const hpMax = Math.max(baseHpMax, Math.floor(savedProgress?.hpMax || baseHpMax));
   const hp = Math.max(1, Math.min(hpMax, Math.floor(savedProgress?.hp || hpMax)));
   const mass = Math.max(massFromForm(form), Number(savedProgress?.mass || massFromForm(form)));
@@ -133,10 +146,13 @@ export function createNextWorld(
   const completedQuests = Object.keys(quests.completed).length;
   const enemies = Array.from({ length: config.enemyTarget }, (_, index) => makeEnemy(index + 1, config));
   const apexEnemy = enemies.find((enemy) => enemy.aiType === "apex");
+  const playerDamage = Math.round((damageFromForm(form) + tier * 3) * (1 + damageBonus));
+  const playerSpeed = speedFromForm(form) * (1 + speedBonus);
 
   return {
     config,
     economy,
+    mutations,
     quests,
     frame: 0,
     nextFloatId: 1,
@@ -150,8 +166,8 @@ export function createNextWorld(
       mass,
       hp,
       hpMax,
-      damage: damageFromForm(form) + tier * 3,
-      speed: speedFromForm(form),
+      damage: playerDamage,
+      speed: playerSpeed,
       biteCd: 0,
       dashCd: 0,
       dashT: 0,
@@ -199,6 +215,7 @@ export function createNextWorld(
       levelXpToNext: Math.max(1, Math.floor(savedProgress?.levelXpToNext || xpToNextLevel(level))),
       pearls: economy.pearls,
       corals: economy.corals,
+      mutationLevel: getMutationTotalLevel(mutations),
       completedQuests,
       activeQuestTitle: "—",
       activeQuestProgress: 0,
