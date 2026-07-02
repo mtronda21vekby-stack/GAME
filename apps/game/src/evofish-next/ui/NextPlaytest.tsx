@@ -14,6 +14,8 @@ export function NextPlaytest() {
   const [stats, setStats] = useState<NextEngineStats>({
     mass: 1,
     kills: 0,
+    deaths: 0,
+    downs: 0,
     hp: 1,
     hpMax: 1,
     level: 1,
@@ -28,6 +30,10 @@ export function NextPlaytest() {
     activeQuestTitle: "—",
     activeQuestProgress: 0,
     activeQuestTarget: 1,
+    dead: false,
+    downed: false,
+    respawnTime: 0,
+    reviveTime: 0,
     skinName: "—",
     formName: "—",
     lastEvent: "Готов"
@@ -118,6 +124,9 @@ export function NextPlaytest() {
   const xpPct = Math.max(0, Math.min(1, stats.xp / Math.max(1, stats.xpToNext)));
   const levelPct = Math.max(0, Math.min(1, stats.levelXp / Math.max(1, stats.levelXpToNext)));
   const questPct = Math.max(0, Math.min(1, stats.activeQuestProgress / Math.max(1, stats.activeQuestTarget)));
+  const downed = Boolean(stats.downed || stats.dead);
+  const reviveTime = stats.reviveTime || stats.respawnTime || 0;
+  const downs = stats.downs || stats.deaths || 0;
 
   return (
     <main className="efNextPlay">
@@ -127,7 +136,7 @@ export function NextPlaytest() {
         <span>{EVOFISH_NEXT_VERSION}</span>
         <span>LV {stats.level} · Tier {stats.tier} · {stats.formName}</span>
         <span>{stats.skinName}</span>
-        <span>Mass {stats.mass.toFixed(2)} · Kills {stats.kills}</span>
+        <span>Mass {stats.mass.toFixed(2)} · Kills {stats.kills} · Downs {downs}</span>
         <span>Жемчуг {stats.pearls} · Кораллы {stats.corals}</span>
         <span>HP {Math.round(stats.hp)} / {Math.round(stats.hpMax)}</span>
         <i><em style={{ width: `${hpPct * 100}%` }} /></i>
@@ -140,17 +149,18 @@ export function NextPlaytest() {
         <i><em className="quest" style={{ width: `${questPct * 100}%` }} /></i>
         <span>{stats.lastEvent}</span>
       </div>
-      <div className="efNextHelp">Quest цели дают XP, жемчуг и кораллы. Прогресс сохраняется каждые 2 секунды.</div>
+      {downed ? <div className="efNextRevive">Возрождение через {reviveTime.toFixed(1)} сек</div> : null}
+      <div className="efNextHelp">Если HP падает до 0 — короткий revive, небольшой штраф Mass и временный щит после возврата.</div>
       <div className="efNextControls">
-        <button onPointerDown={(event) => { event.preventDefault(); inputRef.current.bite = true; }}>BITE</button>
-        <button onPointerDown={(event) => { event.preventDefault(); inputRef.current.dash = true; }}>DASH</button>
+        <button disabled={downed} onPointerDown={(event) => { event.preventDefault(); inputRef.current.bite = true; }}>BITE</button>
+        <button disabled={downed} onPointerDown={(event) => { event.preventDefault(); inputRef.current.dash = true; }}>DASH</button>
       </div>
       <div className="efNextLinks">
         <Link to="/game/next/skins">Skin Lab</Link>
         <Link to="/game">Playable EvoFish</Link>
       </div>
       <style>{`
-        .efNextPlay{position:fixed;inset:0;overflow:hidden;background:#031827;color:#e7f2ff;touch-action:none}.efNextCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}.efNextHud{position:absolute;left:max(12px,env(safe-area-inset-left));top:max(12px,env(safe-area-inset-top));z-index:3;display:grid;gap:3px;padding:12px 14px;border-radius:20px;background:rgba(2,16,27,.62);border:1px solid rgba(150,230,255,.15);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 14px 40px rgba(0,0,0,.26)}.efNextHud b{font-size:13px}.efNextHud span{font-size:11px;color:rgba(231,242,255,.76)}.efNextHud i{display:block;width:166px;height:5px;border-radius:999px;background:rgba(255,255,255,.10);overflow:hidden}.efNextHud em{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,rgba(110,255,180,.95),rgba(120,240,255,.85))}.efNextHud em.xp{background:linear-gradient(90deg,rgba(255,220,120,.95),rgba(255,160,90,.85))}.efNextHud em.level{background:linear-gradient(90deg,rgba(180,140,255,.95),rgba(120,240,255,.85))}.efNextHud em.quest{background:linear-gradient(90deg,rgba(255,240,160,.95),rgba(180,140,255,.85))}.efNextHelp{position:absolute;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:3;max-width:min(640px,calc(100vw - 24px));padding:10px 13px;border-radius:999px;background:rgba(2,16,27,.48);border:1px solid rgba(150,230,255,.12);font-size:12px;text-align:center;color:rgba(231,242,255,.76);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}.efNextLinks{position:absolute;right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));z-index:4;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.efNextLinks a{min-height:34px;display:inline-flex;align-items:center;padding:0 12px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(150,230,255,.14);color:#e7f2ff;text-decoration:none;font-size:12px;font-weight:900}.efNextControls{position:absolute;right:max(16px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));z-index:5;display:flex;gap:10px}.efNextControls button{width:78px;height:78px;border-radius:999px;border:1px solid rgba(150,230,255,.22);background:linear-gradient(180deg,rgba(120,240,255,.22),rgba(90,160,255,.12));box-shadow:0 14px 38px rgba(0,0,0,.28);color:#e7f2ff;font-weight:1000;letter-spacing:.04em;touch-action:manipulation}.efNextControls button:first-child{background:linear-gradient(180deg,rgba(255,110,110,.24),rgba(255,90,90,.12))}@media(max-width:760px){.efNextLinks{top:auto;bottom:calc(max(18px,env(safe-area-inset-bottom)) + 92px)}.efNextHelp{left:max(12px,env(safe-area-inset-left));right:max(112px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));transform:none;text-align:left;font-size:11px}.efNextHud{max-width:214px}.efNextControls button{width:74px;height:74px}}
+        .efNextPlay{position:fixed;inset:0;overflow:hidden;background:#031827;color:#e7f2ff;touch-action:none}.efNextCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}.efNextHud{position:absolute;left:max(12px,env(safe-area-inset-left));top:max(12px,env(safe-area-inset-top));z-index:3;display:grid;gap:3px;padding:12px 14px;border-radius:20px;background:rgba(2,16,27,.62);border:1px solid rgba(150,230,255,.15);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 14px 40px rgba(0,0,0,.26)}.efNextHud b{font-size:13px}.efNextHud span{font-size:11px;color:rgba(231,242,255,.76)}.efNextHud i{display:block;width:166px;height:5px;border-radius:999px;background:rgba(255,255,255,.10);overflow:hidden}.efNextHud em{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,rgba(110,255,180,.95),rgba(120,240,255,.85))}.efNextHud em.xp{background:linear-gradient(90deg,rgba(255,220,120,.95),rgba(255,160,90,.85))}.efNextHud em.level{background:linear-gradient(90deg,rgba(180,140,255,.95),rgba(120,240,255,.85))}.efNextHud em.quest{background:linear-gradient(90deg,rgba(255,240,160,.95),rgba(180,140,255,.85))}.efNextRevive{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;padding:18px 22px;border-radius:24px;background:rgba(2,16,27,.78);border:1px solid rgba(255,120,120,.22);box-shadow:0 22px 70px rgba(0,0,0,.34);font-size:18px;font-weight:1000;color:#ffd0d0;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}.efNextHelp{position:absolute;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:3;max-width:min(640px,calc(100vw - 24px));padding:10px 13px;border-radius:999px;background:rgba(2,16,27,.48);border:1px solid rgba(150,230,255,.12);font-size:12px;text-align:center;color:rgba(231,242,255,.76);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}.efNextLinks{position:absolute;right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));z-index:4;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.efNextLinks a{min-height:34px;display:inline-flex;align-items:center;padding:0 12px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(150,230,255,.14);color:#e7f2ff;text-decoration:none;font-size:12px;font-weight:900}.efNextControls{position:absolute;right:max(16px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));z-index:5;display:flex;gap:10px}.efNextControls button{width:78px;height:78px;border-radius:999px;border:1px solid rgba(150,230,255,.22);background:linear-gradient(180deg,rgba(120,240,255,.22),rgba(90,160,255,.12));box-shadow:0 14px 38px rgba(0,0,0,.28);color:#e7f2ff;font-weight:1000;letter-spacing:.04em;touch-action:manipulation}.efNextControls button:first-child{background:linear-gradient(180deg,rgba(255,110,110,.24),rgba(255,90,90,.12))}.efNextControls button:disabled{opacity:.45}@media(max-width:760px){.efNextLinks{top:auto;bottom:calc(max(18px,env(safe-area-inset-bottom)) + 92px)}.efNextHelp{left:max(12px,env(safe-area-inset-left));right:max(112px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));transform:none;text-align:left;font-size:11px}.efNextHud{max-width:214px}.efNextControls button{width:74px;height:74px}.efNextRevive{font-size:15px;white-space:nowrap}}
       `}</style>
     </main>
   );
