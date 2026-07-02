@@ -1,5 +1,6 @@
 import type { EvoFishFormId, EvoFishSkinDefinition } from "../core/types";
 import type { NextEngineState, NextFishEntity, NextWorldConfig } from "../core/engineTypes";
+import { chooseEnemyArchetype } from "../content/enemyArchetypes";
 import { EVOFISH_FORMS } from "../content/forms";
 import { EVOFISH_SKIN_BY_ID } from "../content/skins";
 
@@ -53,11 +54,20 @@ function enemySkin(id: number) {
   return skins[id % skins.length] || EVOFISH_SKIN_BY_ID.default;
 }
 
+function wanderPoint(config: NextWorldConfig) {
+  return {
+    x: 180 + Math.random() * (config.width - 360),
+    y: 180 + Math.random() * (config.height - 360)
+  };
+}
+
 export function makeEnemy(id: number, config: NextWorldConfig = NEXT_WORLD_CONFIG): NextFishEntity {
-  const big = id % 7 === 0;
+  const archetype = chooseEnemyArchetype(id);
+  const big = archetype.id === "brute";
   const form: EvoFishFormId = big ? "shark" : "fish";
-  const mass = big ? 2.4 : 0.45 + Math.random() * 0.7;
-  const hp = Math.round((big ? 140 : 45 + Math.random() * 38) * Math.max(0.75, mass));
+  const mass = big ? 2.4 : archetype.id === "hunter" ? 1.2 + Math.random() * 0.75 : 0.45 + Math.random() * 0.7;
+  const hp = Math.round((big ? 155 : archetype.id === "hunter" ? 95 : 45 + Math.random() * 38) * Math.max(0.75, mass));
+  const target = wanderPoint(config);
 
   return {
     id,
@@ -65,15 +75,25 @@ export function makeEnemy(id: number, config: NextWorldConfig = NEXT_WORLD_CONFI
     y: 180 + Math.random() * (config.height - 360),
     vx: -50 + Math.random() * 100,
     vy: -50 + Math.random() * 100,
-    radius: big ? 22 : 14 + Math.random() * 8,
+    radius: big ? 24 : archetype.id === "hunter" ? 20 : 14 + Math.random() * 8,
     mass,
     hp,
     hpMax: hp,
-    damage: big ? 22 : 8 + Math.random() * 8,
+    damage: (big ? 24 : 8 + Math.random() * 8) * archetype.damageMultiplier,
+    speed: archetype.baseSpeed,
     form,
     skin: big ? EVOFISH_SKIN_BY_ID.shark_classic : enemySkin(id),
     angle: 0,
-    hitT: 0
+    hitT: 0,
+    aiType: archetype.id,
+    aiState: "wander",
+    aggroRadius: archetype.aggroRadius,
+    attackRange: archetype.attackRange,
+    attackCd: 0.4 + Math.random() * 0.8,
+    thinkT: Math.random() * 0.4,
+    wanderX: target.x,
+    wanderY: target.y,
+    wanderT: 0.8 + Math.random() * 2.2
   };
 }
 
@@ -105,7 +125,16 @@ export function createNextWorld(playerSkin: EvoFishSkinDefinition): NextEngineSt
       form,
       skin: playerSkin,
       angle: 0,
-      hitT: 0
+      hitT: 0,
+      aiType: "neutral",
+      aiState: "wander",
+      aggroRadius: 0,
+      attackRange: 0,
+      attackCd: 0,
+      thinkT: 0,
+      wanderX: config.width / 2,
+      wanderY: config.height / 2,
+      wanderT: 0
     },
     enemies: Array.from({ length: config.enemyTarget }, (_, index) => makeEnemy(index + 1, config)),
     floats: [],
