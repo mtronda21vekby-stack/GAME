@@ -2,6 +2,7 @@ import type { EvoFishEconomyState, EvoFishFormId, EvoFishSkinDefinition } from "
 import type { NextEnemyArchetypeId } from "../content/enemyArchetypes";
 import type { NextCraftState } from "../content/craft";
 import type { NextMutationState } from "../content/mutations";
+import type { NextZoneId } from "../content/zones";
 
 export type NextViewport = {
   width: number;
@@ -56,6 +57,8 @@ export type NextFishEntity = {
   hitT: number;
   aiType: NextEnemyArchetypeId;
   aiState: NextAIState;
+  familyName?: string;
+  familyRewardMultiplier?: number;
   aggroRadius: number;
   attackRange: number;
   attackCd: number;
@@ -109,6 +112,11 @@ export type NextEngineStats = {
   craftBarrierT: number;
   craftBiteBoostT: number;
   craftSonarT: number;
+  zoneId: NextZoneId;
+  zoneName: string;
+  zoneEffect: string;
+  zoneRisk: number;
+  zoneRewardBoost: number;
   completedQuests: number;
   activeQuestTitle: string;
   activeQuestProgress: number;
