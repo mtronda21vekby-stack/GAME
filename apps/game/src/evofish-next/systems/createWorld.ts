@@ -4,6 +4,7 @@ import { chooseEnemyArchetype } from "../content/enemyArchetypes";
 import { EVOFISH_FORMS } from "../content/forms";
 import { xpToNextLevel, xpToNextTier } from "../content/progression";
 import { EVOFISH_SKIN_BY_ID } from "../content/skins";
+import type { EvoFishNextProgressState } from "../state/skinSaveAdapter";
 
 export const NEXT_WORLD_CONFIG: NextWorldConfig = {
   width: 2800,
@@ -98,10 +99,15 @@ export function makeEnemy(id: number, config: NextWorldConfig = NEXT_WORLD_CONFI
   };
 }
 
-export function createNextWorld(playerSkin: EvoFishSkinDefinition): NextEngineState {
-  const form = formFromSkin(playerSkin);
+export function createNextWorld(playerSkin: EvoFishSkinDefinition, savedProgress?: EvoFishNextProgressState): NextEngineState {
+  const form = savedProgress?.form || formFromSkin(playerSkin);
   const config = NEXT_WORLD_CONFIG;
-  const hp = hpFromForm(form);
+  const level = Math.max(1, Math.floor(savedProgress?.level || 1));
+  const tier = Math.max(1, Math.min(12, Math.floor(savedProgress?.tier || 1)));
+  const baseHpMax = hpFromForm(form) + tier * 12;
+  const hpMax = Math.max(baseHpMax, Math.floor(savedProgress?.hpMax || baseHpMax));
+  const hp = Math.max(1, Math.min(hpMax, Math.floor(savedProgress?.hp || hpMax)));
+  const mass = Math.max(massFromForm(form), Number(savedProgress?.mass || massFromForm(form)));
 
   return {
     config,
@@ -113,22 +119,22 @@ export function createNextWorld(playerSkin: EvoFishSkinDefinition): NextEngineSt
       y: config.height / 2,
       vx: 0,
       vy: 0,
-      radius: radiusFromForm(form),
-      mass: massFromForm(form),
+      radius: Math.max(radiusFromForm(form), Math.min(58, 18 + Math.sqrt(mass) * 5.2)),
+      mass,
       hp,
-      hpMax: hp,
-      damage: damageFromForm(form),
+      hpMax,
+      damage: damageFromForm(form) + tier * 3,
       speed: speedFromForm(form),
       biteCd: 0,
       dashCd: 0,
       dashT: 0,
       invulnT: 0,
-      level: 1,
-      tier: 1,
-      xp: 0,
-      xpToNext: xpToNextTier(1),
-      levelXp: 0,
-      levelXpToNext: xpToNextLevel(1),
+      level,
+      tier,
+      xp: Math.max(0, Math.floor(savedProgress?.xp || 0)),
+      xpToNext: Math.max(1, Math.floor(savedProgress?.xpToNext || xpToNextTier(tier))),
+      levelXp: Math.max(0, Math.floor(savedProgress?.levelXp || 0)),
+      levelXpToNext: Math.max(1, Math.floor(savedProgress?.levelXpToNext || xpToNextLevel(level))),
       form,
       skin: playerSkin,
       angle: 0,
@@ -146,19 +152,19 @@ export function createNextWorld(playerSkin: EvoFishSkinDefinition): NextEngineSt
     enemies: Array.from({ length: config.enemyTarget }, (_, index) => makeEnemy(index + 1, config)),
     floats: [],
     stats: {
-      mass: massFromForm(form),
-      kills: 0,
+      mass,
+      kills: Math.max(0, Math.floor(savedProgress?.kills || 0)),
       hp,
-      hpMax: hp,
-      level: 1,
-      tier: 1,
-      xp: 0,
-      xpToNext: xpToNextTier(1),
-      levelXp: 0,
-      levelXpToNext: xpToNextLevel(1),
+      hpMax,
+      level,
+      tier,
+      xp: Math.max(0, Math.floor(savedProgress?.xp || 0)),
+      xpToNext: Math.max(1, Math.floor(savedProgress?.xpToNext || xpToNextTier(tier))),
+      levelXp: Math.max(0, Math.floor(savedProgress?.levelXp || 0)),
+      levelXpToNext: Math.max(1, Math.floor(savedProgress?.levelXpToNext || xpToNextLevel(level))),
       skinName: playerSkin.name,
       formName: EVOFISH_FORMS[form].name,
-      lastEvent: "Готов"
+      lastEvent: savedProgress ? "Сейв загружен" : "Готов"
     }
   };
 }
