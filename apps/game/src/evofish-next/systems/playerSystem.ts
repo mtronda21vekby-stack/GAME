@@ -5,8 +5,9 @@ function clamp(value: number, min: number, max: number) {
 }
 
 function aimVector(state: NextEngineState, input: NextInputState, camera: NextCameraState) {
-  const targetX = camera.x + input.pointerX;
-  const targetY = camera.y + input.pointerY;
+  const scale = camera.scale || 1;
+  const targetX = camera.x + input.pointerX / scale;
+  const targetY = camera.y + input.pointerY / scale;
   const dx = targetX - state.player.x;
   const dy = targetY - state.player.y;
   const len = Math.hypot(dx, dy) || 1;
