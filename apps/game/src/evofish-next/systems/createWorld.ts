@@ -74,10 +74,13 @@ function normalizeQuestState(quests?: NextQuestState): NextQuestState {
 
 export function makeEnemy(id: number, config: NextWorldConfig = NEXT_WORLD_CONFIG): NextFishEntity {
   const archetype = chooseEnemyArchetype(id);
-  const big = archetype.id === "brute";
-  const form: EvoFishFormId = big ? "shark" : "fish";
-  const mass = big ? 2.4 : archetype.id === "hunter" ? 1.2 + Math.random() * 0.75 : 0.45 + Math.random() * 0.7;
-  const hp = Math.round((big ? 155 : archetype.id === "hunter" ? 95 : 45 + Math.random() * 38) * Math.max(0.75, mass));
+  const apex = archetype.id === "apex";
+  const big = archetype.id === "brute" || apex;
+  const form: EvoFishFormId = apex ? "megalodon" : big ? "shark" : "fish";
+  const mass = apex ? 9.2 + Math.random() * 1.8 : big ? 2.4 : archetype.id === "hunter" ? 1.2 + Math.random() * 0.75 : 0.45 + Math.random() * 0.7;
+  const hp = apex
+    ? Math.round(720 + mass * 52)
+    : Math.round((big ? 155 : archetype.id === "hunter" ? 95 : 45 + Math.random() * 38) * Math.max(0.75, mass));
   const target = wanderPoint(config);
 
   return {
@@ -86,25 +89,25 @@ export function makeEnemy(id: number, config: NextWorldConfig = NEXT_WORLD_CONFI
     y: 180 + Math.random() * (config.height - 360),
     vx: -50 + Math.random() * 100,
     vy: -50 + Math.random() * 100,
-    radius: big ? 24 : archetype.id === "hunter" ? 20 : 14 + Math.random() * 8,
+    radius: apex ? 44 : big ? 24 : archetype.id === "hunter" ? 20 : 14 + Math.random() * 8,
     mass,
     hp,
     hpMax: hp,
-    damage: (big ? 24 : 8 + Math.random() * 8) * archetype.damageMultiplier,
+    damage: (apex ? 42 : big ? 24 : 8 + Math.random() * 8) * archetype.damageMultiplier,
     speed: archetype.baseSpeed,
     form,
-    skin: big ? EVOFISH_SKIN_BY_ID.shark_classic : enemySkin(id),
+    skin: apex ? (EVOFISH_SKIN_BY_ID.mega_lava || EVOFISH_SKIN_BY_ID.mega_deep) : big ? EVOFISH_SKIN_BY_ID.shark_classic : enemySkin(id),
     angle: 0,
     hitT: 0,
     aiType: archetype.id,
     aiState: "wander",
     aggroRadius: archetype.aggroRadius,
     attackRange: archetype.attackRange,
-    attackCd: 0.4 + Math.random() * 0.8,
+    attackCd: apex ? 1.1 : 0.4 + Math.random() * 0.8,
     thinkT: Math.random() * 0.4,
     wanderX: target.x,
     wanderY: target.y,
-    wanderT: 0.8 + Math.random() * 2.2
+    wanderT: apex ? 0.5 : 0.8 + Math.random() * 2.2
   };
 }
 
@@ -128,6 +131,8 @@ export function createNextWorld(
   };
   const quests = normalizeQuestState(savedQuests);
   const completedQuests = Object.keys(quests.completed).length;
+  const enemies = Array.from({ length: config.enemyTarget }, (_, index) => makeEnemy(index + 1, config));
+  const apexEnemy = enemies.find((enemy) => enemy.aiType === "apex");
 
   return {
     config,
@@ -150,7 +155,13 @@ export function createNextWorld(
       biteCd: 0,
       dashCd: 0,
       dashT: 0,
-      invulnT: 0,
+      invulnT: 1.2,
+      dead: false,
+      downed: false,
+      deathT: 0,
+      downT: 0,
+      respawnT: 0,
+      reviveT: 0,
       level,
       tier,
       xp: Math.max(0, Math.floor(savedProgress?.xp || 0)),
@@ -171,11 +182,13 @@ export function createNextWorld(
       wanderY: config.height / 2,
       wanderT: 0
     },
-    enemies: Array.from({ length: config.enemyTarget }, (_, index) => makeEnemy(index + 1, config)),
+    enemies,
     floats: [],
     stats: {
       mass,
       kills: Math.max(0, Math.floor(savedProgress?.kills || 0)),
+      deaths: Math.max(0, Math.floor(savedProgress?.deaths || 0)),
+      downs: Math.max(0, Math.floor(savedProgress?.deaths || 0)),
       hp,
       hpMax,
       level,
@@ -190,6 +203,14 @@ export function createNextWorld(
       activeQuestTitle: "—",
       activeQuestProgress: 0,
       activeQuestTarget: 1,
+      apexAlive: Boolean(apexEnemy),
+      apexName: apexEnemy ? "Apex Megalodon" : "—",
+      apexHp: apexEnemy?.hp || 0,
+      apexHpMax: apexEnemy?.hpMax || 1,
+      dead: false,
+      downed: false,
+      respawnTime: 0,
+      reviveTime: 0,
       skinName: playerSkin.name,
       formName: EVOFISH_FORMS[form].name,
       lastEvent: savedProgress ? "Сейв загружен" : "Готов"
