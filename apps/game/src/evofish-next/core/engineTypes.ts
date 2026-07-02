@@ -7,6 +7,7 @@ import type { NextZoneId } from "../content/zones";
 export type NextViewport = {
   width: number;
   height: number;
+  zoom?: number;
 };
 
 export type NextCameraState = {
@@ -14,6 +15,7 @@ export type NextCameraState = {
   y: number;
   width: number;
   height: number;
+  scale: number;
 };
 
 export type NextInputState = {
