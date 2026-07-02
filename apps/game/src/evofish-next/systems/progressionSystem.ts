@@ -4,6 +4,12 @@ import { EVOFISH_FORMS } from "../content/forms";
 import { formForLevel, NEXT_MAX_TIER, tierMassBonus, xpToNextLevel, xpToNextTier } from "../content/progression";
 import { damageFromForm, hpFromForm, radiusFromForm, speedFromForm } from "./createWorld";
 
+export type NextKillReward = {
+  xp: number;
+  pearls: number;
+  corals: number;
+};
+
 function addFloat(state: NextEngineState, x: number, y: number, text: string, kind: "damage" | "kill" | "danger") {
   state.floats.push({ id: state.nextFloatId++, x, y, text, ttl: 0.9, kind });
 }
@@ -36,6 +42,8 @@ export function syncProgressionStats(state: NextEngineState) {
   state.stats.xpToNext = player.xpToNext;
   state.stats.levelXp = player.levelXp;
   state.stats.levelXpToNext = player.levelXpToNext;
+  state.stats.pearls = state.economy.pearls;
+  state.stats.corals = state.economy.corals;
   state.stats.skinName = player.skin.name;
   state.stats.formName = EVOFISH_FORMS[player.form].name;
 }
@@ -83,10 +91,25 @@ export function awardNextXp(state: NextEngineState, amount: number) {
   return xp;
 }
 
-export function awardKillProgression(state: NextEngineState, enemy: NextFishEntity, source: "bite" | "devour") {
+function awardKillEconomy(state: NextEngineState, enemy: NextFishEntity, source: "bite" | "devour") {
+  const sourceBonus = source === "devour" ? 1.15 : 1;
+  const archetypeBonus = enemy.aiType === "brute" ? 2.2 : enemy.aiType === "hunter" ? 1.55 : enemy.aiType === "neutral" ? 1.15 : 1;
+  const pearls = Math.max(1, Math.round((1 + enemy.mass * 1.65) * sourceBonus * archetypeBonus));
+  const coralChance = Math.min(0.22, 0.015 + enemy.mass * 0.012 + (enemy.aiType === "brute" ? 0.08 : 0));
+  const corals = Math.random() < coralChance ? 1 : 0;
+
+  state.economy.pearls += pearls;
+  state.economy.corals += corals;
+  return { pearls, corals };
+}
+
+export function awardKillReward(state: NextEngineState, enemy: NextFishEntity, source: "bite" | "devour"): NextKillReward {
   const formBonus = enemy.form === "shark" ? 1.45 : enemy.form === "megalodon" ? 2.25 : 1;
   const sourceBonus = source === "devour" ? 1.2 : 1;
   const archetypeBonus = enemy.aiType === "brute" ? 1.65 : enemy.aiType === "hunter" ? 1.3 : 1;
-  const xp = (35 + enemy.mass * 28 + enemy.hpMax * 0.22) * formBonus * sourceBonus * archetypeBonus;
-  return awardNextXp(state, xp);
+  const xp = awardNextXp(state, (35 + enemy.mass * 28 + enemy.hpMax * 0.22) * formBonus * sourceBonus * archetypeBonus);
+  const economy = awardKillEconomy(state, enemy, source);
+
+  syncProgressionStats(state);
+  return { xp, ...economy };
 }
