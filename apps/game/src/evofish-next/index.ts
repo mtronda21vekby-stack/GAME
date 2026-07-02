@@ -10,6 +10,8 @@ export * from "./systems/cameraSystem";
 export * from "./systems/playerSystem";
 export * from "./systems/enemySystem";
 export * from "./systems/collisionSystem";
+export * from "./systems/combatSystem";
+export * from "./systems/feedbackSystem";
 export * from "./systems/engineStep";
 export * from "./render/SkinPreview";
 export * from "./render/canvasSkinRenderer";
