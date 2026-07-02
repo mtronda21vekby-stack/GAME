@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-map-1.9.4";
+export const EVOFISH_NEXT_VERSION = "next-ui-2.0.0";
