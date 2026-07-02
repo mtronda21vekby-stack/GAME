@@ -12,8 +12,9 @@ function rewardText(reward: { xp: number; pearls: number; corals: number }) {
 }
 
 function respawnEnemy(state: NextEngineState) {
-  const threat = enemyThreatLevel(state.player.level, state.player.tier, state.player.mass);
-  return makeEnemy(1000 + state.stats.kills + state.frame, state.config, threat, state.player.mass);
+  const player = state.player;
+  const threat = enemyThreatLevel(player.level, player.tier, player.mass);
+  return makeEnemy(1000 + state.stats.kills + state.frame, state.config, threat, player.mass, player.x, player.y, 720);
 }
 
 function killEnemy(state: NextEngineState, enemy: NextFishEntity, index: number, source: "bite" | "devour") {
