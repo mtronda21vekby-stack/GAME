@@ -5,7 +5,7 @@ import { EVOFISH_SKIN_BY_ID } from "../content/skins";
 import { renderNextWorld } from "../render/worldRenderer";
 import { createNextWorld } from "../systems/createWorld";
 import { stepNextEngine } from "../systems/engineStep";
-import { loadEvoFishNextSave } from "../state/nextSaveStore";
+import { loadEvoFishNextSave, saveEvoFishNextProgress } from "../state/nextSaveStore";
 import { EVOFISH_NEXT_VERSION } from "../version";
 
 export function NextPlaytest() {
@@ -38,8 +38,9 @@ export function NextPlaytest() {
 
     let live = true;
     let last = performance.now();
+    let saveTimer = 0;
     const input = inputRef.current;
-    const engine = createNextWorld(skin);
+    const engine = createNextWorld(skin, save.progress);
 
     const resize = () => {
       const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
@@ -64,6 +65,7 @@ export function NextPlaytest() {
     const onUp = () => { input.down = false; };
 
     resize();
+    setStats({ ...engine.stats });
     window.addEventListener("resize", resize);
     canvas.addEventListener("pointerdown", onDown);
     canvas.addEventListener("pointermove", onMove);
@@ -83,6 +85,12 @@ export function NextPlaytest() {
       stepNextEngine(engine, input, viewport, dt);
       renderNextWorld(ctx, engine, viewport);
 
+      saveTimer += dt;
+      if (saveTimer >= 2) {
+        saveTimer = 0;
+        saveEvoFishNextProgress(engine);
+      }
+
       if (engine.frame % 10 === 0) setStats({ ...engine.stats });
       requestAnimationFrame(loop);
     };
@@ -91,13 +99,14 @@ export function NextPlaytest() {
 
     return () => {
       live = false;
+      saveEvoFishNextProgress(engine);
       window.removeEventListener("resize", resize);
       canvas.removeEventListener("pointerdown", onDown);
       canvas.removeEventListener("pointermove", onMove);
       canvas.removeEventListener("pointerup", onUp);
       canvas.removeEventListener("pointercancel", onUp);
     };
-  }, [skin]);
+  }, [skin, save.progress]);
 
   const hpPct = Math.max(0, Math.min(1, stats.hp / Math.max(1, stats.hpMax)));
   const xpPct = Math.max(0, Math.min(1, stats.xp / Math.max(1, stats.xpToNext)));
@@ -116,11 +125,11 @@ export function NextPlaytest() {
         <i><em style={{ width: `${hpPct * 100}%` }} /></i>
         <span>Tier XP {Math.round(stats.xp)} / {Math.round(stats.xpToNext)}</span>
         <i><em className="xp" style={{ width: `${xpPct * 100}%` }} /></i>
-        <span>Level XP {Math.round(stats.levelXp)} / {Math.round(stats.levelXpToNext)}</span>
+        <span>Level XP {Math.round(stats.levelXp)} / {Math.round(stats.levelXpToNext}</span>
         <i><em className="level" style={{ width: `${levelPct * 100}%` }} /></i>
         <span>{stats.lastEvent}</span>
       </div>
-      <div className="efNextHelp">Движение — удержание пальца. Bite — удар. Dash — рывок. Kill/Eat дают XP, Tier и форму.</div>
+      <div className="efNextHelp">Прогресс сохраняется каждые 2 секунды. Kill/Eat дают XP, Tier и форму.</div>
       <div className="efNextControls">
         <button onPointerDown={(event) => { event.preventDefault(); inputRef.current.bite = true; }}>BITE</button>
         <button onPointerDown={(event) => { event.preventDefault(); inputRef.current.dash = true; }}>DASH</button>
