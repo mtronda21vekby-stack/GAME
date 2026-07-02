@@ -2,6 +2,7 @@ import type { EvoFishFormId, EvoFishSkinDefinition } from "../core/types";
 import type { NextEngineState, NextFishEntity, NextWorldConfig } from "../core/engineTypes";
 import { chooseEnemyArchetype } from "../content/enemyArchetypes";
 import { EVOFISH_FORMS } from "../content/forms";
+import { xpToNextLevel, xpToNextTier } from "../content/progression";
 import { EVOFISH_SKIN_BY_ID } from "../content/skins";
 
 export const NEXT_WORLD_CONFIG: NextWorldConfig = {
@@ -122,6 +123,12 @@ export function createNextWorld(playerSkin: EvoFishSkinDefinition): NextEngineSt
       dashCd: 0,
       dashT: 0,
       invulnT: 0,
+      level: 1,
+      tier: 1,
+      xp: 0,
+      xpToNext: xpToNextTier(1),
+      levelXp: 0,
+      levelXpToNext: xpToNextLevel(1),
       form,
       skin: playerSkin,
       angle: 0,
@@ -143,6 +150,12 @@ export function createNextWorld(playerSkin: EvoFishSkinDefinition): NextEngineSt
       kills: 0,
       hp,
       hpMax: hp,
+      level: 1,
+      tier: 1,
+      xp: 0,
+      xpToNext: xpToNextTier(1),
+      levelXp: 0,
+      levelXpToNext: xpToNextLevel(1),
       skinName: playerSkin.name,
       formName: EVOFISH_FORMS[form].name,
       lastEvent: "Готов"
