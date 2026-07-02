@@ -1,8 +1,13 @@
 import type { NextAIState, NextCameraState, NextEngineState, NextFishEntity, NextViewport } from "../core/engineTypes";
+import { resourceDef } from "../content/resources";
 import { NEXT_MAP_ZONES } from "../content/zones";
 import { drawEvoFishSkin } from "./canvasSkinRenderer";
 import { getNextCamera } from "../systems/cameraSystem";
 import { canDevour } from "../systems/collisionSystem";
+
+function isVisible(camera: NextCameraState, x: number, y: number, pad = 160) {
+  return x >= camera.x - pad && x <= camera.x + camera.width + pad && y >= camera.y - pad && y <= camera.y + camera.height + pad;
+}
 
 function drawWorldBackground(ctx: CanvasRenderingContext2D, state: NextEngineState, camera: NextCameraState, viewport: NextViewport) {
   const g = ctx.createLinearGradient(0, 0, 0, viewport.height);
@@ -17,21 +22,27 @@ function drawWorldBackground(ctx: CanvasRenderingContext2D, state: NextEngineSta
   ctx.strokeStyle = "rgba(150,230,255,.055)";
   ctx.lineWidth = 1 / camera.scale;
 
-  for (let x = 0; x <= state.config.width; x += 120) {
+  const startX = Math.max(0, Math.floor(camera.x / 120) * 120);
+  const endX = Math.min(state.config.width, camera.x + camera.width + 120);
+  const startY = Math.max(0, Math.floor(camera.y / 120) * 120);
+  const endY = Math.min(state.config.height, camera.y + camera.height + 120);
+
+  for (let x = startX; x <= endX; x += 120) {
     ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, state.config.height);
+    ctx.moveTo(x, Math.max(0, camera.y - 120));
+    ctx.lineTo(x, Math.min(state.config.height, camera.y + camera.height + 120));
     ctx.stroke();
   }
 
-  for (let y = 0; y <= state.config.height; y += 120) {
+  for (let y = startY; y <= endY; y += 120) {
     ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(state.config.width, y);
+    ctx.moveTo(Math.max(0, camera.x - 120), y);
+    ctx.lineTo(Math.min(state.config.width, camera.x + camera.width + 120), y);
     ctx.stroke();
   }
 
   for (const zone of NEXT_MAP_ZONES) {
+    if (!isVisible(camera, zone.x, zone.y, zone.radius + 180)) continue;
     ctx.fillStyle = zone.color;
     ctx.strokeStyle = zone.id === state.stats.zoneId ? "rgba(255,255,255,.34)" : "rgba(255,255,255,.12)";
     ctx.lineWidth = (zone.id === state.stats.zoneId ? 4 : 2) / camera.scale;
@@ -40,10 +51,12 @@ function drawWorldBackground(ctx: CanvasRenderingContext2D, state: NextEngineSta
     ctx.fill();
     ctx.stroke();
 
-    ctx.textAlign = "center";
-    ctx.font = "900 24px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
-    ctx.fillStyle = "rgba(231,242,255,.30)";
-    ctx.fillText(zone.name.toUpperCase(), zone.x, zone.y - zone.radius * 0.12);
+    if ((viewport.quality || "balanced") !== "low") {
+      ctx.textAlign = "center";
+      ctx.font = "900 24px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillStyle = "rgba(231,242,255,.30)";
+      ctx.fillText(zone.name.toUpperCase(), zone.x, zone.y - zone.radius * 0.12);
+    }
   }
 
   ctx.strokeStyle = "rgba(150,230,255,.16)";
@@ -60,10 +73,10 @@ function aiColor(state: NextAIState) {
 }
 
 function drawApexFrame(ctx: CanvasRenderingContext2D, enemy: NextFishEntity) {
-  if (enemy.aiType !== "apex") return;
+  if (enemy.aiType !== "apex" && enemy.aiType !== "leviathan") return;
 
   ctx.save();
-  ctx.strokeStyle = "rgba(255,220,120,.50)";
+  ctx.strokeStyle = enemy.aiType === "leviathan" ? "rgba(180,140,255,.50)" : "rgba(255,220,120,.50)";
   ctx.lineWidth = 5;
   ctx.beginPath();
   ctx.arc(enemy.x, enemy.y, enemy.radius * 2.55, 0, Math.PI * 2);
@@ -77,24 +90,25 @@ function drawApexFrame(ctx: CanvasRenderingContext2D, enemy: NextFishEntity) {
 
   ctx.textAlign = "center";
   ctx.font = "1000 16px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
-  ctx.fillStyle = "rgba(255,240,180,.95)";
-  ctx.fillText("APEX", enemy.x, enemy.y - enemy.radius * 3.2);
+  ctx.fillStyle = enemy.aiType === "leviathan" ? "rgba(220,205,255,.96)" : "rgba(255,240,180,.95)";
+  ctx.fillText(enemy.aiType === "leviathan" ? "LEVIATHAN" : "APEX", enemy.x, enemy.y - enemy.radius * 3.2);
   ctx.restore();
 }
 
-function drawAiRing(ctx: CanvasRenderingContext2D, enemy: NextFishEntity) {
+function drawAiRing(ctx: CanvasRenderingContext2D, enemy: NextFishEntity, quality: string) {
   drawApexFrame(ctx, enemy);
+  if (quality === "low" && enemy.aiState === "wander" && enemy.aiType !== "apex" && enemy.aiType !== "leviathan") return;
 
-  ctx.strokeStyle = enemy.aiType === "apex" ? "rgba(255,220,120,.42)" : aiColor(enemy.aiState);
-  ctx.lineWidth = enemy.aiType === "apex" ? 4 : enemy.aiState === "attack" ? 4 : enemy.aiState === "hunt" ? 3 : 2;
+  ctx.strokeStyle = enemy.aiType === "apex" || enemy.aiType === "leviathan" ? "rgba(255,220,120,.42)" : aiColor(enemy.aiState);
+  ctx.lineWidth = enemy.aiType === "apex" || enemy.aiType === "leviathan" ? 4 : enemy.aiState === "attack" ? 4 : enemy.aiState === "hunt" ? 3 : 2;
   ctx.beginPath();
-  ctx.arc(enemy.x, enemy.y, enemy.radius * (enemy.aiType === "apex" ? 2.05 : enemy.aiState === "attack" ? 2.2 : 1.85), 0, Math.PI * 2);
+  ctx.arc(enemy.x, enemy.y, enemy.radius * (enemy.aiType === "apex" || enemy.aiType === "leviathan" ? 2.05 : enemy.aiState === "attack" ? 2.2 : 1.85), 0, Math.PI * 2);
   ctx.stroke();
 
   if (enemy.aiState === "hunt" || enemy.aiState === "attack") {
-    ctx.fillStyle = enemy.aiType === "apex" ? "rgba(255,220,120,.72)" : aiColor(enemy.aiState);
+    ctx.fillStyle = enemy.aiType === "apex" || enemy.aiType === "leviathan" ? "rgba(255,220,120,.72)" : aiColor(enemy.aiState);
     ctx.beginPath();
-    ctx.arc(enemy.x + Math.cos(enemy.angle) * enemy.radius * 1.8, enemy.y + Math.sin(enemy.angle) * enemy.radius * 1.8, enemy.aiType === "apex" ? 6 : 4, 0, Math.PI * 2);
+    ctx.arc(enemy.x + Math.cos(enemy.angle) * enemy.radius * 1.8, enemy.y + Math.sin(enemy.angle) * enemy.radius * 1.8, enemy.aiType === "apex" || enemy.aiType === "leviathan" ? 6 : 4, 0, Math.PI * 2);
     ctx.fill();
   }
 }
@@ -105,8 +119,32 @@ function drawHpBar(ctx: CanvasRenderingContext2D, entity: NextFishEntity, width:
   const y = entity.y - entity.radius * 2.15;
   ctx.fillStyle = "rgba(2,12,20,.64)";
   ctx.fillRect(x, y, width, 5);
-  ctx.fillStyle = entity.aiType === "apex" ? "rgba(255,220,120,.92)" : pct > 0.45 ? "rgba(110,255,180,.88)" : "rgba(255,90,90,.9)";
+  ctx.fillStyle = entity.aiType === "apex" || entity.aiType === "leviathan" ? "rgba(255,220,120,.92)" : pct > 0.45 ? "rgba(110,255,180,.88)" : "rgba(255,90,90,.9)";
   ctx.fillRect(x, y, width * pct, 5);
+}
+
+function drawResources(ctx: CanvasRenderingContext2D, state: NextEngineState, camera: NextCameraState, quality: string) {
+  for (const node of state.resources) {
+    if (node.respawnT > 0 || !isVisible(camera, node.x, node.y, 60)) continue;
+    const def = resourceDef(node.kind);
+    const pulse = Math.sin(node.pulse) * 2;
+
+    if (quality !== "low") {
+      ctx.fillStyle = def.glow;
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, node.radius * 2.15 + pulse, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.fillStyle = def.color;
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, node.radius + pulse * 0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(255,255,255,.55)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
 }
 
 function drawCombatAura(ctx: CanvasRenderingContext2D, state: NextEngineState) {
@@ -194,7 +232,7 @@ function drawMiniMap(ctx: CanvasRenderingContext2D, state: NextEngineState, came
   const mapH = Math.round(mapW * (state.config.height / state.config.width));
   const left = Math.max(12, viewport.width - mapW - 12);
   const top = Math.min(Math.max(58, viewport.height * 0.08), viewport.height - mapH - 16);
-  const apex = state.enemies.find((enemy) => enemy.aiType === "apex");
+  const apex = state.enemies.find((enemy) => enemy.aiType === "apex" || enemy.aiType === "leviathan");
 
   ctx.save();
   ctx.fillStyle = "rgba(2,16,27,.68)";
@@ -213,6 +251,12 @@ function drawMiniMap(ctx: CanvasRenderingContext2D, state: NextEngineState, came
     drawMapDot(ctx, zx, zy, zone.id === state.stats.zoneId ? 3.6 : 2.6, zone.color, zone.id === state.stats.zoneId ? "rgba(255,255,255,.68)" : undefined);
   }
 
+  for (const node of state.resources.slice(0, 18)) {
+    if (node.respawnT > 0) continue;
+    const def = resourceDef(node.kind);
+    drawMapDot(ctx, mapX(state, node.x, left, mapW), mapY(state, node.y, top, mapH), 1.7, def.color);
+  }
+
   const camX = left + (camera.x / state.config.width) * mapW;
   const camY = top + (camera.y / state.config.height) * mapH;
   const camW = (camera.width / state.config.width) * mapW;
@@ -229,8 +273,8 @@ function drawMiniMap(ctx: CanvasRenderingContext2D, state: NextEngineState, came
   for (const enemy of threatDots) {
     const ex = mapX(state, enemy.x, left, mapW);
     const ey = mapY(state, enemy.y, top, mapH);
-    const fill = enemy.aiType === "brute" ? "rgba(255,110,110,.78)" : enemy.aiType === "hunter" ? "rgba(255,180,90,.74)" : sonar ? "rgba(120,240,255,.70)" : "rgba(150,230,255,.48)";
-    drawMapDot(ctx, ex, ey, enemy.aiType === "brute" ? 3 : 2.2, fill);
+    const fill = enemy.aiType === "leviathan" ? "rgba(180,140,255,.84)" : enemy.aiType === "brute" ? "rgba(255,110,110,.78)" : enemy.aiType === "hunter" || enemy.aiType === "stalker" ? "rgba(255,180,90,.74)" : sonar ? "rgba(120,240,255,.70)" : "rgba(150,230,255,.48)";
+    drawMapDot(ctx, ex, ey, enemy.aiType === "brute" || enemy.aiType === "leviathan" ? 3 : 2.2, fill);
   }
 
   if (apex) {
@@ -244,7 +288,7 @@ function drawMiniMap(ctx: CanvasRenderingContext2D, state: NextEngineState, came
     ctx.moveTo(px, py);
     ctx.lineTo(ax, ay);
     ctx.stroke();
-    drawMapDot(ctx, ax, ay, sonar ? 6 : 5, "rgba(255,220,120,.95)", "rgba(255,90,90,.85)");
+    drawMapDot(ctx, ax, ay, sonar ? 6 : 5, apex.aiType === "leviathan" ? "rgba(180,140,255,.95)" : "rgba(255,220,120,.95)", "rgba(255,90,90,.85)");
   }
 
   const px = mapX(state, state.player.x, left, mapW);
@@ -261,6 +305,7 @@ function drawMiniMap(ctx: CanvasRenderingContext2D, state: NextEngineState, came
 export function renderNextWorld(ctx: CanvasRenderingContext2D, state: NextEngineState, viewport: NextViewport) {
   const camera = getNextCamera(state, viewport);
   const playerDowned = Boolean(state.player.downed || state.player.dead);
+  const quality = viewport.quality || "balanced";
 
   drawWorldBackground(ctx, state, camera, viewport);
 
@@ -268,10 +313,13 @@ export function renderNextWorld(ctx: CanvasRenderingContext2D, state: NextEngine
   ctx.scale(camera.scale, camera.scale);
   ctx.translate(-camera.x, -camera.y);
 
-  for (const enemy of state.enemies) {
+  drawResources(ctx, state, camera, quality);
+
+  const visibleEnemies = state.enemies.filter((enemy) => isVisible(camera, enemy.x, enemy.y, enemy.radius * 4));
+  for (const enemy of visibleEnemies) {
     const safeToEat = canDevour(state.player.mass, enemy.mass);
-    drawAiRing(ctx, enemy);
-    ctx.strokeStyle = enemy.aiType === "apex" ? "rgba(255,220,120,.30)" : safeToEat ? "rgba(110,255,180,.24)" : "rgba(255,90,90,.32)";
+    drawAiRing(ctx, enemy, quality);
+    ctx.strokeStyle = enemy.aiType === "apex" || enemy.aiType === "leviathan" ? "rgba(255,220,120,.30)" : safeToEat ? "rgba(110,255,180,.24)" : "rgba(255,90,90,.32)";
     ctx.lineWidth = enemy.hitT > 0 ? 4 : 2;
     ctx.beginPath();
     ctx.arc(enemy.x, enemy.y, enemy.radius * 1.52, 0, Math.PI * 2);
@@ -283,7 +331,9 @@ export function renderNextWorld(ctx: CanvasRenderingContext2D, state: NextEngine
       angle: enemy.angle,
       alpha: enemy.hitT > 0 ? 0.55 : safeToEat ? 0.82 : 0.92
     });
-    drawHpBar(ctx, enemy, enemy.radius * (enemy.aiType === "apex" ? 4.1 : 2.8));
+    if (quality !== "low" || enemy.aiType === "apex" || enemy.aiType === "leviathan") {
+      drawHpBar(ctx, enemy, enemy.radius * (enemy.aiType === "apex" || enemy.aiType === "leviathan" ? 4.1 : 2.8));
+    }
   }
 
   drawCombatAura(ctx, state);
