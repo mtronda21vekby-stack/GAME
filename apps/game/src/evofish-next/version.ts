@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-skins-0.2.0";
+export const EVOFISH_NEXT_VERSION = "next-playtest-0.3.0";
