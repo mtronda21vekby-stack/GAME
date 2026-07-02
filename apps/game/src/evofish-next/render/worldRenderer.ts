@@ -190,47 +190,47 @@ function drawMapDot(ctx: CanvasRenderingContext2D, x: number, y: number, r: numb
 
 function drawMiniMap(ctx: CanvasRenderingContext2D, state: NextEngineState, camera: NextCameraState, viewport: NextViewport) {
   const sonar = state.craft.sonarT > 0;
-  const mapW = Math.min(sonar ? 260 : 230, Math.max(170, viewport.width * (sonar ? 0.34 : 0.30)));
+  const mapW = Math.min(sonar ? 168 : 150, Math.max(112, viewport.width * (sonar ? 0.2 : 0.18)));
   const mapH = Math.round(mapW * (state.config.height / state.config.width));
   const left = Math.max(12, viewport.width - mapW - 12);
-  const top = Math.min(Math.max(58, viewport.height * 0.085), viewport.height - mapH - 148);
+  const top = Math.min(Math.max(58, viewport.height * 0.08), viewport.height - mapH - 16);
   const apex = state.enemies.find((enemy) => enemy.aiType === "apex");
 
   ctx.save();
-  ctx.fillStyle = "rgba(2,16,27,.72)";
-  ctx.strokeStyle = sonar ? "rgba(255,220,120,.45)" : "rgba(150,230,255,.24)";
-  ctx.lineWidth = 1.5;
+  ctx.fillStyle = "rgba(2,16,27,.68)";
+  ctx.strokeStyle = sonar ? "rgba(255,220,120,.36)" : "rgba(150,230,255,.18)";
+  ctx.lineWidth = 1;
   ctx.fillRect(left, top, mapW, mapH);
   ctx.strokeRect(left, top, mapW, mapH);
 
-  ctx.fillStyle = "rgba(150,230,255,.075)";
+  ctx.fillStyle = "rgba(150,230,255,.06)";
   for (let gx = 1; gx < 4; gx += 1) ctx.fillRect(left + (mapW / 4) * gx, top, 1, mapH);
   for (let gy = 1; gy < 3; gy += 1) ctx.fillRect(left, top + (mapH / 3) * gy, mapW, 1);
 
   for (const zone of NEXT_MAP_ZONES) {
     const zx = mapX(state, zone.x, left, mapW);
     const zy = mapY(state, zone.y, top, mapH);
-    drawMapDot(ctx, zx, zy, zone.id === state.stats.zoneId ? 5 : 3.7, zone.color, zone.id === state.stats.zoneId ? "rgba(255,255,255,.78)" : undefined);
+    drawMapDot(ctx, zx, zy, zone.id === state.stats.zoneId ? 3.6 : 2.6, zone.color, zone.id === state.stats.zoneId ? "rgba(255,255,255,.68)" : undefined);
   }
 
   const camX = left + (camera.x / state.config.width) * mapW;
   const camY = top + (camera.y / state.config.height) * mapH;
   const camW = (camera.width / state.config.width) * mapW;
   const camH = (camera.height / state.config.height) * mapH;
-  ctx.strokeStyle = "rgba(255,255,255,.32)";
-  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = "rgba(255,255,255,.24)";
+  ctx.lineWidth = 1;
   ctx.strokeRect(camX, camY, camW, camH);
 
   const threatDots = state.enemies
     .filter((enemy) => enemy.aiType !== "apex")
     .sort((a, b) => Math.hypot(a.x - state.player.x, a.y - state.player.y) - Math.hypot(b.x - state.player.x, b.y - state.player.y))
-    .slice(0, sonar ? 34 : 22);
+    .slice(0, sonar ? 34 : 18);
 
   for (const enemy of threatDots) {
     const ex = mapX(state, enemy.x, left, mapW);
     const ey = mapY(state, enemy.y, top, mapH);
-    const fill = enemy.aiType === "brute" ? "rgba(255,110,110,.84)" : enemy.aiType === "hunter" ? "rgba(255,180,90,.80)" : sonar ? "rgba(120,240,255,.76)" : "rgba(150,230,255,.56)";
-    drawMapDot(ctx, ex, ey, enemy.aiType === "brute" ? 4.4 : 3.2, fill);
+    const fill = enemy.aiType === "brute" ? "rgba(255,110,110,.78)" : enemy.aiType === "hunter" ? "rgba(255,180,90,.74)" : sonar ? "rgba(120,240,255,.70)" : "rgba(150,230,255,.48)";
+    drawMapDot(ctx, ex, ey, enemy.aiType === "brute" ? 3 : 2.2, fill);
   }
 
   if (apex) {
@@ -238,23 +238,23 @@ function drawMiniMap(ctx: CanvasRenderingContext2D, state: NextEngineState, came
     const ay = mapY(state, apex.y, top, mapH);
     const px = mapX(state, state.player.x, left, mapW);
     const py = mapY(state, state.player.y, top, mapH);
-    ctx.strokeStyle = sonar ? "rgba(255,240,160,.82)" : "rgba(255,220,120,.55)";
-    ctx.lineWidth = sonar ? 2.8 : 2;
+    ctx.strokeStyle = sonar ? "rgba(255,240,160,.70)" : "rgba(255,220,120,.42)";
+    ctx.lineWidth = sonar ? 2 : 1.5;
     ctx.beginPath();
     ctx.moveTo(px, py);
     ctx.lineTo(ax, ay);
     ctx.stroke();
-    drawMapDot(ctx, ax, ay, sonar ? 9 : 7.5, "rgba(255,220,120,.98)", "rgba(255,90,90,.95)");
+    drawMapDot(ctx, ax, ay, sonar ? 6 : 5, "rgba(255,220,120,.95)", "rgba(255,90,90,.85)");
   }
 
   const px = mapX(state, state.player.x, left, mapW);
   const py = mapY(state, state.player.y, top, mapH);
-  drawMapDot(ctx, px, py, 7, "rgba(110,255,180,.98)", "rgba(255,255,255,.82)");
+  drawMapDot(ctx, px, py, 4.5, "rgba(110,255,180,.95)", "rgba(255,255,255,.72)");
 
   ctx.textAlign = "left";
-  ctx.font = "1000 12px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
-  ctx.fillStyle = "rgba(231,242,255,.86)";
-  ctx.fillText(sonar ? `SONAR · ${state.stats.zoneName}` : state.stats.zoneName || "MAP", left + 10, top + 16);
+  ctx.font = "900 10px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.fillStyle = "rgba(231,242,255,.78)";
+  ctx.fillText(sonar ? `SONAR · ${state.stats.zoneName}` : state.stats.zoneName || "MAP", left + 8, top + 14);
   ctx.restore();
 }
 
