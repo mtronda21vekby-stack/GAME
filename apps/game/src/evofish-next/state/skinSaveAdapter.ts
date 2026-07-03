@@ -64,7 +64,7 @@ export function defaultNextProgress(): EvoFishNextProgressState {
 }
 
 export function defaultNextQuests(): NextQuestState {
-  return { completed: {} };
+  return { completed: {}, baselines: {}, dailyKey: "", weeklyKey: "", directorFocus: "balanced" };
 }
 
 export function migrateLegacySkinSave(legacy: LegacyEvoFishSave | null | undefined): EvoFishNextSkinSave {
