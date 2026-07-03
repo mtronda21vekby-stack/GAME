@@ -8,6 +8,7 @@ import { EVOFISH_FORMS } from "../content/forms";
 import { defaultMutationState, getMutationBonus, getMutationTotalLevel, type NextMutationState } from "../content/mutations";
 import { xpToNextLevel, xpToNextTier } from "../content/progression";
 import { createResourceField } from "../content/resources";
+import { buildQuestBoard } from "../content/quests";
 import { EVOFISH_SKIN_BY_ID } from "../content/skins";
 import { getZoneAt } from "../content/zones";
 import { defaultNextQuests, type EvoFishNextProgressState } from "../state/skinSaveAdapter";
@@ -121,11 +122,19 @@ function wanderPoint(config: NextWorldConfig) {
 }
 
 function normalizeQuestState(quests?: NextQuestState): NextQuestState {
+  const fallback = defaultNextQuests();
   return {
     completed: {
-      ...defaultNextQuests().completed,
+      ...fallback.completed,
       ...(quests?.completed || {})
-    }
+    },
+    baselines: {
+      ...fallback.baselines,
+      ...(quests?.baselines || {})
+    },
+    dailyKey: quests?.dailyKey || fallback.dailyKey,
+    weeklyKey: quests?.weeklyKey || fallback.weeklyKey,
+    directorFocus: quests?.directorFocus || fallback.directorFocus
   };
 }
 
@@ -245,6 +254,7 @@ export function createNextWorld(
     corals: Math.max(0, Math.floor(savedEconomy?.corals || 0))
   };
   const quests = normalizeQuestState(savedQuests);
+  const board = buildQuestBoard();
   const completedQuests = Object.keys(quests.completed).length;
   const spawnThreat = enemyThreatLevel(level, tier, mass);
   const playerSpawn = safePlayerSpawn(config);
@@ -333,6 +343,11 @@ export function createNextWorld(
       pearls: economy.pearls,
       corals: economy.corals,
       mutationLevel: getMutationTotalLevel(mutations),
+      craftUses: 0,
+      mutationPurchases: 0,
+      questDirectorFocus: board.directorFocus,
+      dailyQuestKey: board.dailyKey,
+      weeklyQuestKey: board.weeklyKey,
       craftBarrierT: 0,
       craftBiteBoostT: 0,
       craftSonarT: 0,
