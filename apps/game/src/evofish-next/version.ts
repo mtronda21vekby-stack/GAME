@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-beta-checklist-4.9.0";
+export const EVOFISH_NEXT_VERSION = "next-cache-doctor-5.0.0";
