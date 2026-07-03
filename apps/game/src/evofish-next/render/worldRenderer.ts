@@ -5,7 +5,6 @@ import { drawEvoFishSkin } from "./canvasSkinRenderer";
 import { getNextCamera } from "../systems/cameraSystem";
 import { canDevour } from "../systems/collisionSystem";
 
-const DEFAULT_FISH_SPRITE = "/game/skins/custom/default-blue-fish.svg";
 const spriteCache = new Map<string, HTMLImageElement>();
 
 function isVisible(camera: NextCameraState, x: number, y: number, pad = 160) {
@@ -13,10 +12,7 @@ function isVisible(camera: NextCameraState, x: number, y: number, pad = 160) {
 }
 
 function skinSpriteSource(entity: NextFishEntity) {
-  const customImage = (entity.skin as { image?: string }).image;
-  if (customImage) return customImage;
-  if (entity.id === 0 && entity.skin.id === "default") return DEFAULT_FISH_SPRITE;
-  return "";
+  return entity.skin.assetPath || entity.skin.image || "";
 }
 
 function getSprite(src: string) {
