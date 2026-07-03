@@ -1,8 +1,29 @@
-export const EVOFISH_VERSION = "v0.00.49 alpha";
+export const EVOFISH_VERSION = "v0.00.50 alpha";
+
+type ClassicWindow = Window & {
+  __bcVisualScaleGuardV5?: boolean;
+  getZoom?: () => number;
+  getCamera?: () => { x: number; y: number; vw: number; vh: number };
+  player?: { mass?: number; r?: number; x?: number; y?: number };
+  W?: number;
+  H?: number;
+  DPR?: number;
+  WORLD?: { w: number; h: number };
+  ZOOM?: number;
+};
 
 function numberFromText(value: string | null | undefined) {
   const n = Number(String(value || "").replace(/[^0-9.\-]/g, ""));
   return Number.isFinite(n) ? n : 0;
+}
+
+function numeric(value: unknown, fallback: number) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
 }
 
 function xpFromText(value: string | null | undefined) {
@@ -44,70 +65,59 @@ function ensureClassicAutoStart(doc: Document) {
 }
 
 function ensureVisualScaleGuard(doc: Document) {
-  if (doc.getElementById("bc-visual-scale-guard")) return;
+  const win = doc.defaultView as ClassicWindow | null;
+  if (!win || win.__bcVisualScaleGuardV5) return;
+  win.__bcVisualScaleGuardV5 = true;
 
-  const script = doc.createElement("script");
-  script.id = "bc-visual-scale-guard";
-  script.textContent = `
-(function(){
-  if(window.__bcVisualScaleGuardV4) return;
-  window.__bcVisualScaleGuardV4 = true;
-  function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
-  function num(v,fallback){ v=Number(v); return Number.isFinite(v) ? v : fallback; }
-  var originalGetZoom = window.getZoom;
-  var originalGetCamera = window.getCamera;
-  var originalDrawPlayerAvatar = window.drawPlayerAvatar;
-  function computeSafeZoom(){
-    var p = window.player || {};
-    var w = num(window.W, window.innerWidth || 800);
-    var h = num(window.H, window.innerHeight || 450);
-    var dpr = num(window.DPR, window.devicePixelRatio || 1);
-    var mass = Math.max(1, num(p.mass, 1));
-    var radius = Math.max(1, num(p.r, 20));
-    var base = originalGetZoom ? num(originalGetZoom(), 1) : 1;
-    var z = base;
-    if(mass > 18) z -= clamp(Math.log(mass / 18) * 0.12, 0, 0.42);
-    var maxScreenRadius = Math.max(32 * dpr, Math.min(w, h) * 0.105);
-    var screenRadius = radius * dpr * z;
-    if(screenRadius > maxScreenRadius) z = Math.min(z, maxScreenRadius / (radius * dpr));
-    return clamp(z, 0.045, 1);
-  }
-  window.getZoom = function(){ try { return computeSafeZoom(); } catch(e){ return originalGetZoom ? originalGetZoom() : 1; } };
-  window.getCamera = function(){
-    try{
-      var targetZoom = window.getZoom();
-      var currentZoom = num(window.ZOOM, targetZoom);
-      window.ZOOM = currentZoom + (targetZoom - currentZoom) * 0.12;
-      var w = num(window.W, window.innerWidth || 800);
-      var h = num(window.H, window.innerHeight || 450);
-      var world = window.WORLD || { w: 6400, h: 4200 };
-      var p = window.player || { x: 0, y: 0 };
-      var vw = w / window.ZOOM;
-      var vh = h / window.ZOOM;
-      var x = p.x - vw * 0.5;
-      var y = p.y - vh * 0.5;
-      if(vw >= world.w) x = (world.w - vw) * 0.5;
-      else x = clamp(x, 0, world.w - vw);
-      if(vh >= world.h) y = (world.h - vh) * 0.5;
-      else y = clamp(y, 0, world.h - vh);
-      return { x: x, y: y, vw: vw, vh: vh };
-    }catch(e){
-      return originalGetCamera ? originalGetCamera() : { x: 0, y: 0, vw: window.innerWidth || 800, vh: window.innerHeight || 450 };
+  const originalGetZoom = win.getZoom;
+
+  const computeSafeZoom = () => {
+    const player = win.player || {};
+    const width = numeric(win.W, win.innerWidth || 800);
+    const height = numeric(win.H, win.innerHeight || 450);
+    const dpr = numeric(win.DPR, win.devicePixelRatio || 1);
+    const mass = Math.max(1, numeric(player.mass, 1));
+    const radius = Math.max(1, numeric(player.r, 20));
+    const base = originalGetZoom ? numeric(originalGetZoom(), 1) : 1;
+    let zoom = base;
+
+    if (mass > 18) zoom -= clamp(Math.log(mass / 18) * 0.12, 0, 0.42);
+
+    const maxScreenRadius = Math.max(32 * dpr, Math.min(width, height) * 0.105);
+    const screenRadius = radius * dpr * zoom;
+    if (screenRadius > maxScreenRadius) zoom = Math.min(zoom, maxScreenRadius / (radius * dpr));
+    return clamp(zoom, 0.045, 1);
+  };
+
+  win.getZoom = () => {
+    try {
+      return computeSafeZoom();
+    } catch {
+      return originalGetZoom ? originalGetZoom() : 1;
     }
   };
-  window.drawPlayerAvatar = function(x,y,r,ang){
-    if(!originalDrawPlayerAvatar) return;
-    try{
-      var w = num(window.W, window.innerWidth || 800);
-      var h = num(window.H, window.innerHeight || 450);
-      var dpr = num(window.DPR, window.devicePixelRatio || 1);
-      var safeRadius = Math.min(r, Math.max(34 * dpr, Math.min(w, h) * 0.13));
-      return originalDrawPlayerAvatar.call(this, x, y, safeRadius, ang);
-    }catch(e){ return originalDrawPlayerAvatar.apply(this, arguments); }
+
+  win.getCamera = () => {
+    try {
+      const targetZoom = win.getZoom ? win.getZoom() : 1;
+      const currentZoom = numeric(win.ZOOM, targetZoom);
+      win.ZOOM = currentZoom + (targetZoom - currentZoom) * 0.12;
+      const width = numeric(win.W, win.innerWidth || 800);
+      const height = numeric(win.H, win.innerHeight || 450);
+      const world = win.WORLD || { w: 6400, h: 4200 };
+      const player = win.player || { x: 0, y: 0 };
+      const vw = width / Math.max(0.045, win.ZOOM || 1);
+      const vh = height / Math.max(0.045, win.ZOOM || 1);
+      let x = numeric(player.x, 0) - vw * 0.5;
+      let y = numeric(player.y, 0) - vh * 0.5;
+
+      x = vw >= world.w ? (world.w - vw) * 0.5 : clamp(x, 0, world.w - vw);
+      y = vh >= world.h ? (world.h - vh) * 0.5 : clamp(y, 0, world.h - vh);
+      return { x, y, vw, vh };
+    } catch {
+      return { x: 0, y: 0, vw: win.innerWidth || 800, vh: win.innerHeight || 450 };
+    }
   };
-})();
-  `;
-  doc.head.appendChild(script);
 }
 
 function ensureProgressFeedback(doc: Document) {
