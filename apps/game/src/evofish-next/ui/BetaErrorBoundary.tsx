@@ -49,7 +49,7 @@ export class BetaErrorBoundary extends React.Component<BetaErrorBoundaryProps, B
         <section className="efBetaErrorCard">
           <span>BLACKCROWN ERROR GUARD · {EVOFISH_NEXT_VERSION}</span>
           <h1>Game Error</h1>
-          <p>Игра поймала runtime-ошибку вместо белого экрана. Можно безопасно восстановить save, сбросить текущий run или вернуться в lobby.</p>
+          <p>Игра поймала runtime-ошибку вместо белого экрана. Можно безопасно восстановить save, сбросить текущий run или вернуться в beta home.</p>
 
           <pre>{safeErrorText(this.state.error)}</pre>
 
@@ -57,8 +57,8 @@ export class BetaErrorBoundary extends React.Component<BetaErrorBoundaryProps, B
             <button onClick={this.reload}>Reload</button>
             <button onClick={this.resetRun}>Restart Run</button>
             <button onClick={this.repairSave}>Repair Save</button>
-            <Link to="/game">Back to Lobby</Link>
-            <Link to="/game/next/progress">Save Doctor</Link>
+            <Link to="/game">Beta Home</Link>
+            <Link to="/game/repair">Save Doctor</Link>
           </div>
 
           <div className="efErrorReport">
