@@ -1,4 +1,4 @@
-export type NextResourceKind = "pearls" | "coral" | "plankton" | "heal" | "boost";
+export type NextResourceKind = "pearls" | "coral" | "plankton" | "heal" | "boost" | "speed_perk" | "damage_perk" | "shield_perk" | "artifact_shell";
 
 export type NextResourceNode = {
   id: number;
@@ -84,6 +84,54 @@ export const NEXT_RESOURCE_DEFS: NextResourceDefinition[] = [
     weight: 8,
     respawnMin: 24,
     respawnMax: 38
+  },
+  {
+    kind: "speed_perk",
+    name: "SPD Перк",
+    color: "#5bf0ff",
+    glow: "rgba(91,240,255,.30)",
+    radius: 16,
+    valueMin: 8,
+    valueMax: 12,
+    weight: 8,
+    respawnMin: 34,
+    respawnMax: 58
+  },
+  {
+    kind: "damage_perk",
+    name: "DMG Перк",
+    color: "#ffd36d",
+    glow: "rgba(255,180,90,.30)",
+    radius: 16,
+    valueMin: 8,
+    valueMax: 12,
+    weight: 7,
+    respawnMin: 38,
+    respawnMax: 62
+  },
+  {
+    kind: "shield_perk",
+    name: "SHD Перк",
+    color: "#9affc1",
+    glow: "rgba(110,255,180,.30)",
+    radius: 16,
+    valueMin: 7,
+    valueMax: 11,
+    weight: 6,
+    respawnMin: 40,
+    respawnMax: 66
+  },
+  {
+    kind: "artifact_shell",
+    name: "Древняя раковина",
+    color: "#ffcc6d",
+    glow: "rgba(255,204,109,.34)",
+    radius: 20,
+    valueMin: 1,
+    valueMax: 1,
+    weight: 2,
+    respawnMin: 95,
+    respawnMax: 160
   }
 ];
 
@@ -123,7 +171,7 @@ export function makeResourceNode(id: number, worldWidth: number, worldHeight: nu
 }
 
 export function createResourceField(count: number, worldWidth: number, worldHeight: number) {
-  const forced: NextResourceKind[] = ["pearls", "plankton", "heal", "boost"];
+  const forced: NextResourceKind[] = ["pearls", "plankton", "heal", "boost", "speed_perk", "damage_perk", "shield_perk"];
   return Array.from({ length: count }, (_, index) => makeResourceNode(index + 1, worldWidth, worldHeight, forced[index]));
 }
 
