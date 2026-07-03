@@ -29,10 +29,12 @@ import {
 import { EVOFISH_NEXT_VERSION } from "../version";
 
 type NextPanel = "menu" | "map" | "craft" | "mutations" | "quests" | "shop" | "settings" | null;
+type ControlMode = "pointer" | "joystick" | "gamepad";
 
 type ViewSettings = {
   zoom: number;
   autoZoom: boolean;
+  controlMode: ControlMode;
 };
 
 type CanvasViewportState = {
@@ -41,10 +43,17 @@ type CanvasViewportState = {
   dpr: number;
 };
 
+type StickState = {
+  active: boolean;
+  x: number;
+  y: number;
+};
+
 const FORM_ORDER: EvoFishFormId[] = ["fish", "shark", "megalodon"];
-const VIEW_SETTINGS_KEY = "evofish_next_view_settings_v1";
-const DEFAULT_VIEW_SETTINGS: ViewSettings = { zoom: 0.82, autoZoom: true };
+const VIEW_SETTINGS_KEY = "evofish_next_view_settings_v2";
+const DEFAULT_VIEW_SETTINGS: ViewSettings = { zoom: 0.82, autoZoom: true, controlMode: "pointer" };
 const DEFAULT_VIEWPORT: CanvasViewportState = { width: 1, height: 1, dpr: 1 };
+const STICK_RADIUS = 42;
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -57,6 +66,10 @@ function viewportSize() {
   return { width, height };
 }
 
+function normalizeControlMode(value: unknown): ControlMode {
+  return value === "joystick" || value === "gamepad" || value === "pointer" ? value : "pointer";
+}
+
 function loadViewSettings(): ViewSettings {
   try {
     const raw = localStorage.getItem(VIEW_SETTINGS_KEY);
@@ -64,7 +77,8 @@ function loadViewSettings(): ViewSettings {
     const parsed = JSON.parse(raw) as Partial<ViewSettings>;
     return {
       zoom: clamp(Number(parsed.zoom || DEFAULT_VIEW_SETTINGS.zoom), 0.56, 1.18),
-      autoZoom: parsed.autoZoom !== false
+      autoZoom: parsed.autoZoom !== false,
+      controlMode: normalizeControlMode(parsed.controlMode)
     };
   } catch {
     return DEFAULT_VIEW_SETTINGS;
@@ -97,9 +111,17 @@ function questValue(stats: NextEngineStats, quest: NextQuestDefinition) {
   return 0;
 }
 
+function formatNumber(value: number) {
+  return Math.max(0, Math.floor(value || 0)).toLocaleString("ru-RU");
+}
+
 function skinPriceLabel(skin: EvoFishSkinDefinition) {
   if (skin.unlock.type === "free") return "Бесплатно";
-  if (skin.unlock.type === "currency") return `${skin.unlock.amount} ${skin.unlock.currency === "pearls" ? "жемчуг" : "кораллы"}`;
+  if (skin.unlock.type === "currency") {
+    const icon = skin.unlock.currency === "pearls" ? "🦪" : "💎";
+    const label = skin.unlock.currency === "pearls" ? "жемчуг" : "кристаллы";
+    return `${icon} ${formatNumber(skin.unlock.amount)} ${label}`;
+  }
   return "Achievement";
 }
 
@@ -132,15 +154,20 @@ function enemyMapRadius(enemy: NextFishEntity) {
   return 13;
 }
 
+function gamepadAxis(value: number) {
+  return Math.abs(value) < 0.18 ? 0 : value;
+}
+
 export function NextPlaytest() {
   const rootRef = useRef<HTMLElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<NextEngineState | null>(null);
   const viewportRef = useRef<CanvasViewportState>(DEFAULT_VIEWPORT);
   const settingsRef = useRef<ViewSettings>(loadViewSettings());
-  const inputRef = useRef<NextInputState>({ pointerX: 0, pointerY: 0, down: false, bite: false, dash: false });
+  const inputRef = useRef<NextInputState>({ pointerX: 0, pointerY: 0, down: false, bite: false, dash: false, moveX: 0, moveY: 0 });
   const [saveState, setSaveState] = useState(() => loadEvoFishNextSave());
   const [viewSettings, setViewSettings] = useState<ViewSettings>(() => settingsRef.current);
+  const [stick, setStick] = useState<StickState>({ active: false, x: 0, y: 0 });
   const [uiLocked, setUiLocked] = useState(false);
   const [activePanel, setActivePanel] = useState<NextPanel>(null);
   const [shopForm, setShopForm] = useState<EvoFishFormId>("fish");
@@ -190,6 +217,16 @@ export function NextPlaytest() {
   useEffect(() => {
     settingsRef.current = viewSettings;
     saveViewSettings(viewSettings);
+    if (viewSettings.controlMode !== "joystick") setStick({ active: false, x: 0, y: 0 });
+    if (viewSettings.controlMode !== "pointer") {
+      inputRef.current.pointerX = 0;
+      inputRef.current.pointerY = 0;
+    }
+    if (viewSettings.controlMode === "pointer") {
+      inputRef.current.moveX = 0;
+      inputRef.current.moveY = 0;
+      inputRef.current.down = false;
+    }
   }, [viewSettings]);
 
   useEffect(() => {
@@ -286,17 +323,43 @@ export function NextPlaytest() {
 
     const onDown = (event: PointerEvent) => {
       event.preventDefault();
+      if (settingsRef.current.controlMode !== "pointer") return;
+      input.moveX = 0;
+      input.moveY = 0;
       input.down = true;
       pointer(event);
       canvas.setPointerCapture?.(event.pointerId);
     };
     const onMove = (event: PointerEvent) => {
       event.preventDefault();
+      if (settingsRef.current.controlMode !== "pointer") return;
       pointer(event);
     };
     const onUp = (event?: PointerEvent) => {
       event?.preventDefault();
+      if (settingsRef.current.controlMode !== "pointer") return;
       input.down = false;
+    };
+
+    const applyGamepadInput = (settings: ViewSettings) => {
+      if (settings.controlMode !== "gamepad") return;
+      const pads = typeof navigator !== "undefined" && navigator.getGamepads ? Array.from(navigator.getGamepads()) : [];
+      const pad = pads.find(Boolean);
+      if (!pad) {
+        input.down = false;
+        input.moveX = 0;
+        input.moveY = 0;
+        return;
+      }
+
+      const x = gamepadAxis(pad.axes[0] || 0);
+      const y = gamepadAxis(pad.axes[1] || 0);
+      const mag = Math.min(1, Math.hypot(x, y));
+      input.moveX = clamp(x, -1, 1);
+      input.moveY = clamp(y, -1, 1);
+      input.down = mag > 0.08;
+      if (pad.buttons[0]?.pressed || (pad.buttons[7]?.value || 0) > 0.45) input.bite = true;
+      if (pad.buttons[1]?.pressed || pad.buttons[5]?.pressed || (pad.buttons[6]?.value || 0) > 0.45) input.dash = true;
     };
 
     resize();
@@ -326,6 +389,7 @@ export function NextPlaytest() {
       const dt = Math.min(0.04, (now - last) / 1000);
       last = now;
       const settings = settingsRef.current;
+      applyGamepadInput(settings);
       const zoom = settings.autoZoom ? autoZoomForEngine(engine) : settings.zoom;
       const viewport = {
         width: viewportRef.current.width,
@@ -391,6 +455,40 @@ export function NextPlaytest() {
   const lockUi = () => {
     setActivePanel(null);
     setUiLocked(true);
+  };
+
+  const setControlMode = (controlMode: ControlMode) => {
+    inputRef.current.down = false;
+    inputRef.current.moveX = 0;
+    inputRef.current.moveY = 0;
+    setStick({ active: false, x: 0, y: 0 });
+    setViewSettings((current) => ({ ...current, controlMode }));
+  };
+
+  const updateStick = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (viewSettings.controlMode !== "joystick" || uiLocked || stats.downed || stats.dead) return;
+    event.preventDefault();
+    const rect = event.currentTarget.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const rawX = event.clientX - cx;
+    const rawY = event.clientY - cy;
+    const len = Math.hypot(rawX, rawY);
+    const scale = len > STICK_RADIUS ? STICK_RADIUS / len : 1;
+    const x = rawX * scale;
+    const y = rawY * scale;
+    inputRef.current.moveX = x / STICK_RADIUS;
+    inputRef.current.moveY = y / STICK_RADIUS;
+    inputRef.current.down = len > 7;
+    setStick({ active: true, x, y });
+  };
+
+  const releaseStick = (event?: React.PointerEvent<HTMLDivElement>) => {
+    event?.preventDefault();
+    inputRef.current.moveX = 0;
+    inputRef.current.moveY = 0;
+    if (viewSettings.controlMode === "joystick") inputRef.current.down = false;
+    setStick({ active: false, x: 0, y: 0 });
   };
 
   const liveSave = {
@@ -466,6 +564,7 @@ export function NextPlaytest() {
   const worldWidth = engine?.config.width || 2800;
   const worldHeight = engine?.config.height || 1800;
   const mapApex = engine?.enemies.find((enemy) => enemy.aiType === "apex");
+  const showJoystick = !uiLocked && viewSettings.controlMode === "joystick" && !downed;
 
   return (
     <main ref={rootRef} className={`efNextPlay ${uiLocked ? "locked" : ""}`} onContextMenu={(event) => event.preventDefault()}>
@@ -478,22 +577,27 @@ export function NextPlaytest() {
         </div>
       ) : (
         <div className="efNextHud">
-          <b>EvoFish Next</b>
-          <span>LV {stats.level} · Tier {stats.tier} · {stats.formName}</span>
-          <span>HP {Math.round(stats.hp)} / {Math.round(stats.hpMax)}</span>
+          <div className="efHudTitle"><b>EvoFish Next</b><em>{EVOFISH_NEXT_VERSION}</em></div>
+          <div className="efHudChips">
+            <span className="level"><b>LV</b>{stats.level}</span>
+            <span className="tier"><b>TIER</b>{stats.tier}</span>
+            <span className="pearl"><b>🦪</b>{formatNumber(stats.pearls)}</span>
+            <span className="coral"><b>💎</b>{formatNumber(stats.corals)}</span>
+          </div>
+          <span className="efHudLine">{stats.formName} · {stats.skinName}</span>
+          <span className="efHudLine">HP {Math.round(stats.hp)} / {Math.round(stats.hpMax)}</span>
           <i><em style={{ width: `${hpPct * 100}%` }} /></i>
-          <span>Zone {stats.zoneName} · Risk {stats.zoneRisk}</span>
-          <span>Mass {stats.mass.toFixed(2)} · Kills {stats.kills} · Downs {downs}</span>
-          <span>Жемчуг {stats.pearls} · Кораллы {stats.corals}</span>
+          <span className="efHudLine">Zone {stats.zoneName} · Risk {stats.zoneRisk}</span>
+          <span className="efHudLine">Mass {stats.mass.toFixed(2)} · Kills {stats.kills} · Downs {downs}</span>
           {stats.apexAlive ? (
             <>
-              <span>APEX {Math.round(stats.apexHp)} / {Math.round(stats.apexHpMax)}</span>
+              <span className="efHudLine">APEX {Math.round(stats.apexHp)} / {Math.round(stats.apexHpMax)}</span>
               <i><em className="apex" style={{ width: `${apexPct * 100}%` }} /></i>
             </>
           ) : null}
-          <span>Tier XP {Math.round(stats.xp)} / {Math.round(stats.xpToNext)}</span>
+          <span className="efHudLine">Tier XP {Math.round(stats.xp)} / {Math.round(stats.xpToNext)}</span>
           <i><em className="xp" style={{ width: `${xpPct * 100}%` }} /></i>
-          <span>Quest: {stats.activeQuestTitle}</span>
+          <span className="efHudLine">Quest: {stats.activeQuestTitle}</span>
           <i><em className="quest" style={{ width: `${questPct * 100}%` }} /></i>
         </div>
       )}
@@ -564,7 +668,7 @@ export function NextPlaytest() {
               <button key={mutation.id} className="efPanelItem" disabled={!canBuy} onClick={() => buyMutationLevel(mutation.id)}>
                 <b>{mutation.name}<span>LV {level}/{mutation.maxLevel}</span></b>
                 <small>{mutation.description}</small>
-                <em>{level >= mutation.maxLevel ? "MAX" : `${mutation.coralCost} коралл`}</em>
+                <em>{level >= mutation.maxLevel ? "MAX" : `${mutation.coralCost} кристалл`}</em>
               </button>
             );
           }) : null}
@@ -576,13 +680,22 @@ export function NextPlaytest() {
               <div key={quest.id} className={`efQuestItem ${done ? "done" : ""}`}>
                 <b>{quest.title}<span>{Math.floor(current)} / {quest.target}</span></b>
                 <small>{quest.description}</small>
-                <em>Reward: {quest.reward.xp} XP · {quest.reward.pearls} жемчуг{quest.reward.corals ? ` · ${quest.reward.corals} коралл` : ""}</em>
+                <em>Reward: {quest.reward.xp} XP · {quest.reward.pearls} жемчуг{quest.reward.corals ? ` · ${quest.reward.corals} кристалл` : ""}</em>
               </div>
             );
           }) : null}
 
           {activePanel === "settings" ? (
             <div className="efSettingsPanel">
+              <div className="efSettingBlock">
+                <b>Управление</b>
+                <div className="efControlModes">
+                  <button className={viewSettings.controlMode === "pointer" ? "active" : ""} onClick={() => setControlMode("pointer")}>Touch</button>
+                  <button className={viewSettings.controlMode === "joystick" ? "active" : ""} onClick={() => setControlMode("joystick")}>Stick</button>
+                  <button className={viewSettings.controlMode === "gamepad" ? "active" : ""} onClick={() => setControlMode("gamepad")}>Gamepad</button>
+                </div>
+                <small>{viewSettings.controlMode === "joystick" ? "Маленький стик включается отдельно и не мешает кнопкам." : viewSettings.controlMode === "gamepad" ? "Геймпад: левый стик — движение, A/RT — bite, B/RB/LT — dash." : "Touch: веди пальцем по экрану в сторону движения."}</small>
+              </div>
               <div className="efSettingRow">
                 <span>Auto Zoom</span>
                 <button className={viewSettings.autoZoom ? "active" : ""} onClick={() => setViewSettings((current) => ({ ...current, autoZoom: !current.autoZoom }))}>
@@ -603,7 +716,10 @@ export function NextPlaytest() {
 
           {activePanel === "shop" ? (
             <div className="efShopPanel">
-              <p>Баланс: {stats.pearls} жемчуг · {stats.corals} кораллы</p>
+              <div className="efShopBalance">
+                <span><b>🦪</b>{formatNumber(stats.pearls)}<em>жемчуг</em></span>
+                <span><b>💎</b>{formatNumber(stats.corals)}<em>кристаллы</em></span>
+              </div>
               <div className="efShopTabs">
                 {FORM_ORDER.map((formId) => (
                   <button key={formId} className={shopForm === formId ? "active" : ""} onClick={() => setShopForm(formId)}>{EVOFISH_FORMS[formId].name}</button>
@@ -620,7 +736,7 @@ export function NextPlaytest() {
                   const label = equipped ? "Надето" : owned && usable ? "Надеть" : canBuy ? "Купить" : lockLabel(locks);
                   const previewForm = skinDef.form === "any" ? shopForm : skinDef.form;
                   return (
-                    <button key={skinDef.id} className={`efShopCard ${equipped ? "equipped" : ""}`} disabled={!canAct} onClick={() => applySkinAction(skinDef.id)}>
+                    <button key={skinDef.id} className={`efShopCard ${equipped ? "equipped" : ""} ${skinDef.unlock.type === "currency" && skinDef.unlock.currency === "corals" ? "coralPrice" : ""}`} disabled={!canAct} onClick={() => applySkinAction(skinDef.id)}>
                       <SkinPreview skin={skinDef} form={previewForm} size="sm" />
                       <b>{skinDef.name}</b>
                       <small>{skinPriceLabel(skinDef)}</small>
@@ -632,6 +748,18 @@ export function NextPlaytest() {
               <Link to="/game/next/skins">Полный Skin Lab</Link>
             </div>
           ) : null}
+        </div>
+      ) : null}
+
+      {showJoystick ? (
+        <div
+          className={`efMoveStick ${stick.active ? "active" : ""}`}
+          onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); updateStick(event); }}
+          onPointerMove={updateStick}
+          onPointerUp={releaseStick}
+          onPointerCancel={releaseStick}
+        >
+          <span style={{ transform: `translate(${stick.x}px, ${stick.y}px)` }} />
         </div>
       ) : null}
 
@@ -650,7 +778,7 @@ export function NextPlaytest() {
         <button className="efUnlockPill" onClick={() => setUiLocked(false)}>🔒 Unlock UI</button>
       )}
       <style>{`
-        .efNextPlay{position:fixed!important;left:0!important;top:0!important;width:var(--ef-vw,100vw)!important;height:var(--ef-vh,100dvh)!important;min-width:var(--ef-vw,100vw)!important;min-height:var(--ef-vh,100dvh)!important;overflow:hidden;background:#031827;color:#e7f2ff;touch-action:none;overscroll-behavior:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;contain:layout size paint;z-index:9999;box-sizing:border-box}.efNextCanvas{position:absolute;left:0;top:0;width:var(--ef-vw,100vw)!important;height:var(--ef-vh,100dvh)!important;display:block;background:#031827;touch-action:none;box-sizing:border-box}.efNextHud,.efLockedHud{position:absolute;left:max(12px,env(safe-area-inset-left));top:max(12px,env(safe-area-inset-top));z-index:3;display:grid;gap:3px;padding:11px 13px;border-radius:20px;background:linear-gradient(180deg,rgba(5,31,50,.68),rgba(2,16,27,.54));border:1px solid rgba(150,230,255,.15);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 14px 40px rgba(0,0,0,.24);max-width:min(310px,calc(var(--ef-vw,100vw) - 24px));max-height:44vh;overflow:auto;box-sizing:border-box}.efLockedHud{padding:10px 12px;gap:2px;max-width:170px}.efNextHud b,.efLockedHud b{font-size:13px}.efNextHud span,.efLockedHud span{font-size:10.8px;color:rgba(231,242,255,.76)}.efNextHud i{display:block;width:160px;max-width:100%;height:5px;border-radius:999px;background:rgba(255,255,255,.10);overflow:hidden}.efNextHud em{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,rgba(110,255,180,.95),rgba(120,240,255,.85))}.efNextHud em.apex{background:linear-gradient(90deg,rgba(255,90,90,.95),rgba(255,220,120,.92))}.efNextHud em.xp{background:linear-gradient(90deg,rgba(255,220,120,.95),rgba(255,160,90,.85))}.efNextHud em.quest{background:linear-gradient(90deg,rgba(255,240,160,.95),rgba(180,140,255,.85))}.efNextRevive{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;padding:18px 22px;border-radius:24px;background:rgba(2,16,27,.78);border:1px solid rgba(255,120,120,.22);box-shadow:0 22px 70px rgba(0,0,0,.34);font-size:18px;font-weight:1000;color:#ffd0d0;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}.efQuickBar{position:absolute;left:max(12px,env(safe-area-inset-left));bottom:calc(max(18px,env(safe-area-inset-bottom)) + 18px);z-index:8;display:flex;gap:8px;padding:8px;border-radius:24px;background:rgba(2,16,27,.42);border:1px solid rgba(150,230,255,.11);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}.efQuickBar button,.efUnlockPill{min-width:72px;min-height:38px;display:inline-flex;align-items:center;justify-content:center;padding:0 13px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(150,230,255,.16);color:#e7f2ff;text-decoration:none;font-size:11px;font-weight:1000;box-shadow:0 10px 26px rgba(0,0,0,.18)}.efQuickBar button.primary{background:rgba(120,240,255,.14);border-color:rgba(120,240,255,.26)}.efUnlockPill{position:absolute;left:max(12px,env(safe-area-inset-left));bottom:calc(max(18px,env(safe-area-inset-bottom)) + 18px);z-index:9;min-width:136px;background:rgba(255,220,120,.14);border-color:rgba(255,220,120,.28);color:#fff3c6}.efNextControls{position:absolute;right:max(16px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));z-index:5;display:flex;gap:12px}.efNextControls button{width:78px;height:78px;border-radius:999px;border:1px solid rgba(150,230,255,.22);background:linear-gradient(180deg,rgba(120,240,255,.22),rgba(90,160,255,.12));box-shadow:0 14px 38px rgba(0,0,0,.28);color:#e7f2ff;font-weight:1000;letter-spacing:.04em;touch-action:manipulation}.efNextControls button:first-child{background:linear-gradient(180deg,rgba(255,110,110,.24),rgba(255,90,90,.12))}.efNextControls button:disabled{opacity:.45}.efGamePanel{position:absolute;right:max(12px,env(safe-area-inset-right));top:calc(max(12px,env(safe-area-inset-top)) + 46px);z-index:9;width:min(350px,calc(var(--ef-vw,100vw) - 24px));max-height:62vh;overflow:auto;padding:12px;border-radius:22px;background:rgba(2,16,27,.88);border:1px solid rgba(150,230,255,.18);box-shadow:0 22px 70px rgba(0,0,0,.34);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-sizing:border-box}.efGamePanel.mapPanel{left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));width:auto;max-height:78vh}.efPanelHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}.efPanelHead b{font-size:14px}.efPanelHead button,.efSettingRow button,.efZoomPresets button{border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.08);color:#e7f2ff;font-weight:950}.efPanelHead button{width:30px;height:30px;font-size:18px}.efMenuGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.efMenuGrid button{min-height:46px;border-radius:16px;border:1px solid rgba(150,230,255,.15);background:rgba(255,255,255,.07);color:#e7f2ff;font-weight:1000}.efFullMapPanel{display:grid;gap:10px}.efWorldMapFrame{width:100%;border:1px solid rgba(150,230,255,.16);border-radius:18px;background:rgba(0,0,0,.18);overflow:hidden}.efWorldMapSvg{display:block;width:100%;height:min(58vh,430px)}.efMapLegend{display:flex;gap:10px;flex-wrap:wrap}.efMapLegend span{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:rgba(231,242,255,.76);font-weight:850}.efMapLegend b{width:10px;height:10px;border-radius:99px;display:inline-block}.efMapLegend b.player{background:#6effb4}.efMapLegend b.apex{background:#ffd86d}.efMapLegend b.hunter{background:#ffb45a}.efMapLegend b.event{background:#fff3a0}.efPanelItem,.efQuestItem{width:100%;display:grid;gap:4px;text-align:left;margin-top:8px;padding:10px;border-radius:16px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);color:#e7f2ff;box-sizing:border-box}.efPanelItem:disabled{opacity:.52}.efPanelItem b,.efQuestItem b{display:flex;justify-content:space-between;gap:10px;font-size:12px}.efPanelItem b span,.efQuestItem b span{color:rgba(120,240,255,.86)}.efPanelItem small,.efQuestItem small,.efShopPanel p,.efSettingsPanel p,.efFullMapPanel p{color:rgba(231,242,255,.66);line-height:1.35;margin:0}.efPanelItem em,.efQuestItem em{font-style:normal;color:#fff3a0;font-size:11px;font-weight:950}.efQuestItem.done{border-color:rgba(110,255,180,.22);background:rgba(110,255,180,.06)}.efShopPanel,.efSettingsPanel{display:grid;gap:10px}.efShopPanel a{min-height:38px;display:inline-flex;align-items:center;justify-content:center;border-radius:14px;background:rgba(120,240,255,.12);border:1px solid rgba(120,240,255,.20);color:#e7f2ff;text-decoration:none;font-weight:950}.efShopTabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.efShopTabs button{min-height:32px;border-radius:12px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);color:#e7f2ff;font-size:11px;font-weight:950}.efShopTabs button.active,.efSettingRow button.active{border-color:rgba(120,240,255,.28);background:rgba(120,240,255,.12)}.efShopGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.efShopCard{display:grid;gap:5px;padding:8px;border-radius:16px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.055);color:#e7f2ff;text-align:left}.efShopCard:disabled{opacity:.56}.efShopCard.equipped{border-color:rgba(110,255,180,.24);background:rgba(110,255,180,.06)}.efShopCard .efSkinPreview svg{border-radius:12px}.efShopCard b{font-size:11px}.efShopCard small{font-size:10px;color:rgba(231,242,255,.60)}.efShopCard em{font-size:10px;font-style:normal;color:#fff3a0;font-weight:950}.efSettingRow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;border:1px solid rgba(255,255,255,.10);border-radius:16px;background:rgba(255,255,255,.055)}.efSettingRow span,.efZoomControl span{font-size:12px;font-weight:900;color:rgba(231,242,255,.84)}.efSettingRow button{min-width:64px;height:30px}.efZoomControl{display:grid;gap:8px;padding:10px;border:1px solid rgba(255,255,255,.10);border-radius:16px;background:rgba(255,255,255,.055)}.efZoomControl input{width:100%;accent-color:#78f0ff}.efZoomPresets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.efZoomPresets button{min-height:34px}@media(max-width:760px){.efNextHud{max-width:min(230px,calc(var(--ef-vw,100vw) - 24px));max-height:38vh;padding:10px 12px}.efLockedHud{max-width:160px}.efQuickBar{left:max(10px,env(safe-area-inset-left));bottom:calc(max(18px,env(safe-area-inset-bottom)) + 88px);gap:6px;padding:7px}.efQuickBar button{min-width:58px;min-height:34px;padding:0 10px;font-size:10px}.efNextControls{gap:10px}.efNextControls button{width:72px;height:72px}.efNextRevive{font-size:15px;white-space:nowrap}.efGamePanel{top:calc(max(12px,env(safe-area-inset-top)) + 44px);right:max(10px,env(safe-area-inset-right));width:min(304px,calc(var(--ef-vw,100vw) - 20px));max-height:56vh}.efGamePanel.mapPanel{left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right));width:auto;max-height:70vh}.efWorldMapSvg{height:min(52vh,390px)}.efShopGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.efUnlockPill{left:max(10px,env(safe-area-inset-left));bottom:calc(max(18px,env(safe-area-inset-bottom)) + 92px);font-size:10px;min-width:128px}}@media(orientation:landscape){.efNextHud{max-height:50vh}.efQuickBar{bottom:max(12px,env(safe-area-inset-bottom))}.efNextControls{bottom:max(12px,env(safe-area-inset-bottom))}.efNextControls button{width:72px;height:72px}.efGamePanel{max-height:78vh}.efGamePanel.mapPanel{max-height:82vh}.efWorldMapSvg{height:min(66vh,440px)}}
+        .efNextPlay{position:fixed!important;left:0!important;top:0!important;width:var(--ef-vw,100vw)!important;height:var(--ef-vh,100dvh)!important;min-width:var(--ef-vw,100vw)!important;min-height:var(--ef-vh,100dvh)!important;overflow:hidden;background:#031827;color:#e7f2ff;touch-action:none;overscroll-behavior:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;contain:layout size paint;z-index:9999;box-sizing:border-box}.efNextCanvas{position:absolute;left:0;top:0;width:var(--ef-vw,100vw)!important;height:var(--ef-vh,100dvh)!important;display:block;background:#031827;touch-action:none;box-sizing:border-box}.efNextHud,.efLockedHud{position:absolute;left:max(12px,env(safe-area-inset-left));top:max(12px,env(safe-area-inset-top));z-index:3;display:grid;gap:4px;padding:12px 13px;border-radius:22px;background:linear-gradient(180deg,rgba(5,31,50,.74),rgba(2,16,27,.58));border:1px solid rgba(150,230,255,.17);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 14px 40px rgba(0,0,0,.24);max-width:min(324px,calc(var(--ef-vw,100vw) - 24px));max-height:46vh;overflow:auto;box-sizing:border-box}.efLockedHud{padding:10px 12px;gap:2px;max-width:170px}.efHudTitle{display:flex;align-items:center;justify-content:space-between;gap:12px}.efHudTitle b{font-size:14px}.efHudTitle em{font-style:normal;font-size:9px;color:rgba(255,243,160,.78);font-weight:1000}.efHudChips,.efShopBalance{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}.efHudChips span,.efShopBalance span{min-height:32px;display:flex;align-items:center;justify-content:center;gap:4px;padding:0 6px;border-radius:12px;border:1px solid rgba(255,255,255,.10);font-size:11px;font-weight:1000;background:rgba(255,255,255,.055);box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}.efHudChips b,.efShopBalance b{font-size:11px}.efHudChips .level{background:linear-gradient(180deg,rgba(120,240,255,.18),rgba(80,140,255,.08));border-color:rgba(120,240,255,.22)}.efHudChips .tier{background:linear-gradient(180deg,rgba(180,140,255,.20),rgba(80,140,255,.08));border-color:rgba(180,140,255,.24)}.efHudChips .pearl,.efShopBalance span:first-child{background:linear-gradient(180deg,rgba(255,243,190,.18),rgba(120,240,255,.07));border-color:rgba(255,243,190,.22)}.efHudChips .coral,.efShopBalance span:last-child{background:linear-gradient(180deg,rgba(190,140,255,.22),rgba(120,240,255,.08));border-color:rgba(190,140,255,.28)}.efShopBalance{grid-template-columns:repeat(2,1fr)}.efShopBalance span{min-height:42px;font-size:13px}.efShopBalance em{font-style:normal;color:rgba(231,242,255,.62);font-size:9px}.efHudLine,.efLockedHud span{font-size:10.8px;color:rgba(231,242,255,.76)}.efNextHud i{display:block;width:100%;height:5px;border-radius:999px;background:rgba(255,255,255,.10);overflow:hidden}.efNextHud i em{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,rgba(110,255,180,.95),rgba(120,240,255,.85))}.efNextHud i em.apex{background:linear-gradient(90deg,rgba(255,90,90,.95),rgba(255,220,120,.92))}.efNextHud i em.xp{background:linear-gradient(90deg,rgba(255,220,120,.95),rgba(255,160,90,.85))}.efNextHud i em.quest{background:linear-gradient(90deg,rgba(255,240,160,.95),rgba(180,140,255,.85))}.efNextRevive{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;padding:18px 22px;border-radius:24px;background:rgba(2,16,27,.78);border:1px solid rgba(255,120,120,.22);box-shadow:0 22px 70px rgba(0,0,0,.34);font-size:18px;font-weight:1000;color:#ffd0d0;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}.efQuickBar{position:absolute;left:max(12px,env(safe-area-inset-left));bottom:calc(max(18px,env(safe-area-inset-bottom)) + 18px);z-index:8;display:flex;gap:8px;padding:8px;border-radius:24px;background:rgba(2,16,27,.42);border:1px solid rgba(150,230,255,.11);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}.efQuickBar button,.efUnlockPill{min-width:72px;min-height:38px;display:inline-flex;align-items:center;justify-content:center;padding:0 13px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(150,230,255,.16);color:#e7f2ff;text-decoration:none;font-size:11px;font-weight:1000;box-shadow:0 10px 26px rgba(0,0,0,.18)}.efQuickBar button.primary{background:rgba(120,240,255,.14);border-color:rgba(120,240,255,.26)}.efUnlockPill{position:absolute;left:max(12px,env(safe-area-inset-left));bottom:calc(max(18px,env(safe-area-inset-bottom)) + 18px);z-index:9;min-width:136px;background:rgba(255,220,120,.14);border-color:rgba(255,220,120,.28);color:#fff3c6}.efNextControls{position:absolute;right:max(16px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));z-index:5;display:flex;gap:12px}.efNextControls button{width:78px;height:78px;border-radius:999px;border:1px solid rgba(150,230,255,.22);background:linear-gradient(180deg,rgba(120,240,255,.22),rgba(90,160,255,.12));box-shadow:0 14px 38px rgba(0,0,0,.28);color:#e7f2ff;font-weight:1000;letter-spacing:.04em;touch-action:manipulation}.efNextControls button:first-child{background:linear-gradient(180deg,rgba(255,110,110,.24),rgba(255,90,90,.12))}.efNextControls button:disabled{opacity:.45}.efMoveStick{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:calc(max(18px,env(safe-area-inset-bottom)) + 132px);z-index:7;width:116px;height:116px;border-radius:999px;background:radial-gradient(circle,rgba(120,240,255,.16),rgba(2,16,27,.42));border:1px solid rgba(150,230,255,.18);box-shadow:0 16px 46px rgba(0,0,0,.26),inset 0 1px 0 rgba(255,255,255,.08);touch-action:none;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}.efMoveStick span{position:absolute;left:50%;top:50%;width:42px;height:42px;margin:-21px 0 0 -21px;border-radius:999px;background:linear-gradient(180deg,rgba(231,242,255,.82),rgba(120,240,255,.32));border:1px solid rgba(255,255,255,.30);box-shadow:0 10px 26px rgba(0,0,0,.22);transition:transform 45ms linear}.efMoveStick.active{border-color:rgba(120,240,255,.38)}.efGamePanel{position:absolute;right:max(12px,env(safe-area-inset-right));top:calc(max(12px,env(safe-area-inset-top)) + 46px);z-index:9;width:min(360px,calc(var(--ef-vw,100vw) - 24px));max-height:64vh;overflow:auto;padding:12px;border-radius:22px;background:rgba(2,16,27,.88);border:1px solid rgba(150,230,255,.18);box-shadow:0 22px 70px rgba(0,0,0,.34);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-sizing:border-box}.efGamePanel.mapPanel{left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));width:auto;max-height:78vh}.efPanelHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}.efPanelHead b{font-size:14px}.efPanelHead button,.efSettingRow button,.efZoomPresets button{border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.08);color:#e7f2ff;font-weight:950}.efPanelHead button{width:30px;height:30px;font-size:18px}.efMenuGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.efMenuGrid button{min-height:46px;border-radius:16px;border:1px solid rgba(150,230,255,.15);background:rgba(255,255,255,.07);color:#e7f2ff;font-weight:1000}.efFullMapPanel{display:grid;gap:10px}.efWorldMapFrame{width:100%;border:1px solid rgba(150,230,255,.16);border-radius:18px;background:rgba(0,0,0,.18);overflow:hidden}.efWorldMapSvg{display:block;width:100%;height:min(58vh,430px)}.efMapLegend{display:flex;gap:10px;flex-wrap:wrap}.efMapLegend span{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:rgba(231,242,255,.76);font-weight:850}.efMapLegend b{width:10px;height:10px;border-radius:99px;display:inline-block}.efMapLegend b.player{background:#6effb4}.efMapLegend b.apex{background:#ffd86d}.efMapLegend b.hunter{background:#ffb45a}.efMapLegend b.event{background:#fff3a0}.efPanelItem,.efQuestItem{width:100%;display:grid;gap:4px;text-align:left;margin-top:8px;padding:10px;border-radius:16px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);color:#e7f2ff;box-sizing:border-box}.efPanelItem:disabled{opacity:.52}.efPanelItem b,.efQuestItem b{display:flex;justify-content:space-between;gap:10px;font-size:12px}.efPanelItem b span,.efQuestItem b span{color:rgba(120,240,255,.86)}.efPanelItem small,.efQuestItem small,.efShopPanel p,.efSettingsPanel p,.efFullMapPanel p,.efSettingBlock small{color:rgba(231,242,255,.66);line-height:1.35;margin:0}.efPanelItem em,.efQuestItem em{font-style:normal;color:#fff3a0;font-size:11px;font-weight:950}.efQuestItem.done{border-color:rgba(110,255,180,.22);background:rgba(110,255,180,.06)}.efShopPanel,.efSettingsPanel{display:grid;gap:10px}.efSettingBlock{display:grid;gap:8px;padding:10px;border:1px solid rgba(255,255,255,.10);border-radius:16px;background:rgba(255,255,255,.055)}.efControlModes{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.efControlModes button{min-height:36px;border-radius:14px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);color:#e7f2ff;font-weight:950}.efControlModes button.active{border-color:rgba(120,240,255,.34);background:linear-gradient(180deg,rgba(120,240,255,.18),rgba(90,160,255,.08))}.efShopPanel a{min-height:38px;display:inline-flex;align-items:center;justify-content:center;border-radius:14px;background:rgba(120,240,255,.12);border:1px solid rgba(120,240,255,.20);color:#e7f2ff;text-decoration:none;font-weight:950}.efShopTabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.efShopTabs button{min-height:32px;border-radius:12px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);color:#e7f2ff;font-size:11px;font-weight:950}.efShopTabs button.active,.efSettingRow button.active{border-color:rgba(120,240,255,.28);background:rgba(120,240,255,.12)}.efShopGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.efShopCard{display:grid;gap:5px;padding:8px;border-radius:16px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.055);color:#e7f2ff;text-align:left}.efShopCard.coralPrice{border-color:rgba(190,140,255,.24);background:linear-gradient(180deg,rgba(190,140,255,.10),rgba(255,255,255,.04))}.efShopCard:disabled{opacity:.56}.efShopCard.equipped{border-color:rgba(110,255,180,.24);background:rgba(110,255,180,.06)}.efShopCard .efSkinPreview svg{border-radius:12px}.efShopCard b{font-size:11px}.efShopCard small{font-size:10px;color:rgba(231,242,255,.68)}.efShopCard em{font-size:10px;font-style:normal;color:#fff3a0;font-weight:950}.efSettingRow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;border:1px solid rgba(255,255,255,.10);border-radius:16px;background:rgba(255,255,255,.055)}.efSettingRow span,.efZoomControl span,.efSettingBlock b{font-size:12px;font-weight:900;color:rgba(231,242,255,.84)}.efSettingRow button{min-width:64px;height:30px}.efZoomControl{display:grid;gap:8px;padding:10px;border:1px solid rgba(255,255,255,.10);border-radius:16px;background:rgba(255,255,255,.055)}.efZoomControl input{width:100%;accent-color:#78f0ff}.efZoomPresets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.efZoomPresets button{min-height:34px}@media(max-width:760px){.efNextHud{max-width:min(238px,calc(var(--ef-vw,100vw) - 24px));max-height:39vh;padding:10px 12px}.efHudChips{grid-template-columns:repeat(2,minmax(0,1fr))}.efLockedHud{max-width:160px}.efQuickBar{left:max(10px,env(safe-area-inset-left));bottom:calc(max(18px,env(safe-area-inset-bottom)) + 88px);gap:6px;padding:7px}.efQuickBar button{min-width:58px;min-height:34px;padding:0 10px;font-size:10px}.efMoveStick{width:104px;height:104px;bottom:calc(max(18px,env(safe-area-inset-bottom)) + 134px)}.efMoveStick span{width:38px;height:38px;margin:-19px 0 0 -19px}.efNextControls{gap:10px}.efNextControls button{width:72px;height:72px}.efNextRevive{font-size:15px;white-space:nowrap}.efGamePanel{top:calc(max(12px,env(safe-area-inset-top)) + 44px);right:max(10px,env(safe-area-inset-right));width:min(310px,calc(var(--ef-vw,100vw) - 20px));max-height:58vh}.efGamePanel.mapPanel{left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right));width:auto;max-height:70vh}.efWorldMapSvg{height:min(52vh,390px)}.efShopGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.efUnlockPill{left:max(10px,env(safe-area-inset-left));bottom:calc(max(18px,env(safe-area-inset-bottom)) + 92px);font-size:10px;min-width:128px}}@media(orientation:landscape){.efNextHud{max-height:50vh}.efQuickBar{bottom:max(12px,env(safe-area-inset-bottom))}.efMoveStick{bottom:calc(max(12px,env(safe-area-inset-bottom)) + 70px)}.efNextControls{bottom:max(12px,env(safe-area-inset-bottom))}.efNextControls button{width:72px;height:72px}.efGamePanel{max-height:78vh}.efGamePanel.mapPanel{max-height:82vh}.efWorldMapSvg{height:min(66vh,440px)}}
       `}</style>
     </main>
   );
