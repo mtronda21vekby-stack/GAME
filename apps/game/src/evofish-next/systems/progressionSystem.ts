@@ -91,6 +91,7 @@ export function syncProgressionStats(state: NextEngineState) {
   state.stats.pearls = state.economy.pearls;
   state.stats.corals = state.economy.corals;
   state.stats.mutationLevel = getMutationTotalLevel(state.mutations);
+  state.stats.achievementsUnlocked = Object.keys(state.achievements?.unlocked || {}).length;
   state.stats.craftBarrierT = state.craft.barrierT;
   state.stats.craftBiteBoostT = state.craft.biteBoostT;
   state.stats.craftSonarT = state.craft.sonarT;
@@ -165,8 +166,9 @@ function awardKillEconomy(state: NextEngineState, enemy: NextFishEntity, source:
   const familyBonus = enemy.familyRewardMultiplier || 1;
   const archetypeBonus = archetypeCurrencyBonus(enemy);
   const pearls = Math.max(1, Math.round((1 + enemy.mass * 1.35) * sourceBonus * archetypeBonus * mutationBonus * zoneBonus * familyBonus));
-  const coralChance = enemy.aiType === "apex" || enemy.aiType === "leviathan" ? 1 : Math.min(0.24, (0.012 + enemy.mass * 0.009 + (enemy.aiType === "brute" ? 0.065 : 0)) * Math.max(1, zoneBonus));
-  const corals = enemy.aiType === "apex" ? 5 : enemy.aiType === "leviathan" ? 3 : Math.random() < coralChance ? 1 : 0;
+  const bossCorals = enemy.aiType === "apex" ? 3 : enemy.aiType === "leviathan" ? 2 : 0;
+  const coralChance = Math.min(0.075, (0.004 + enemy.mass * 0.003 + (enemy.aiType === "brute" ? 0.018 : 0) + (enemy.aiType === "stalker" ? 0.012 : 0)) * Math.max(0.75, Math.min(1.35, zoneBonus)));
+  const corals = bossCorals || (Math.random() < coralChance ? 1 : 0);
 
   state.economy.pearls += pearls;
   state.economy.corals += corals;
