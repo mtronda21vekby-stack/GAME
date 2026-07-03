@@ -44,6 +44,13 @@ export type NextDamageFloat = {
   kind: "damage" | "kill" | "danger";
 };
 
+export type NextMutationDraftState = {
+  id: number;
+  source: "level" | "tier" | "director";
+  options: string[];
+  createdFrame: number;
+};
+
 export type NextQuestState = {
   completed: Record<string, true>;
   baselines?: Record<string, number>;
@@ -131,6 +138,7 @@ export type NextEngineStats = {
   pearls: number;
   corals: number;
   mutationLevel: number;
+  mutationDraftReady?: boolean;
   achievementsUnlocked?: number;
   craftUses?: number;
   mutationPurchases?: number;
@@ -176,6 +184,7 @@ export type NextEngineState = {
   achievements: NextAchievementState;
   craft: NextCraftState;
   mutations: NextMutationState;
+  mutationDraft?: NextMutationDraftState | null;
   quests: NextQuestState;
   player: NextPlayerState;
   enemies: NextFishEntity[];
