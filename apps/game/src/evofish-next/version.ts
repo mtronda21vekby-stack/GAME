@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-perks-artifacts-3.7.0";
+export const EVOFISH_NEXT_VERSION = "next-beta-progress-3.8.0";
