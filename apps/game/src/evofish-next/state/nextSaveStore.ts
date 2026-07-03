@@ -2,7 +2,7 @@ import type { NextEngineState, NextQuestState } from "../core/engineTypes";
 import type { EvoFishCurrency } from "../core/types";
 import { normalizeNextAccount, type NextAccountState } from "../content/account";
 import { defaultAchievementState, type NextAchievementState } from "../content/achievements";
-import { defaultMutationState, NEXT_MUTATIONS, type NextMutationState } from "../content/mutations";
+import { defaultMutationState, getMutationTotalLevel, NEXT_MUTATIONS, type NextMutationState } from "../content/mutations";
 import { xpToNextLevel, xpToNextTier } from "../content/progression";
 import { canUnlockSkinInNext, canUseSkinInNext } from "../content/skinUnlockRules";
 import { EVOFISH_SKIN_BY_ID, getDefaultSkinId } from "../content/skins";
@@ -17,6 +17,27 @@ import {
 
 export const EVOFISH_NEXT_SAVE_KEY = "evofish_next_save_v1";
 export const LEGACY_EVOFISH_SAVE_KEY = "evofish_save_v0_00_1_alpha";
+
+export type EvoFishSaveDoctorStatus = "healthy" | "needs_repair" | "repaired" | "reset" | "error";
+
+export type EvoFishSaveDoctorReport = {
+  status: EvoFishSaveDoctorStatus;
+  issues: string[];
+  timestamp: string;
+  summary: {
+    schemaVersion: number;
+    ownedSkins: number;
+    equippedSkinId: string;
+    pearls: number;
+    corals: number;
+    level: number;
+    tier: number;
+    mutations: number;
+    completedQuests: number;
+    achievements: number;
+    counters: number;
+  };
+};
 
 function safeReadJSON<T>(key: string): T | null {
   try {
@@ -135,6 +156,54 @@ function normalizeSave(save: EvoFishNextSkinSave): EvoFishNextSkinSave {
   };
 }
 
+function readRawSave() {
+  try {
+    return localStorage.getItem(EVOFISH_NEXT_SAVE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function saveSummary(save: EvoFishNextSkinSave): EvoFishSaveDoctorReport["summary"] {
+  return {
+    schemaVersion: save.schemaVersion,
+    ownedSkins: Object.keys(save.loadout.ownedSkins || {}).length,
+    equippedSkinId: save.loadout.equippedSkinId,
+    pearls: save.economy.pearls,
+    corals: save.economy.corals,
+    level: save.progress.level,
+    tier: save.progress.tier,
+    mutations: getMutationTotalLevel(save.mutations),
+    completedQuests: Object.keys(save.quests.completed || {}).length,
+    achievements: Object.keys(save.achievements.unlocked || {}).length,
+    counters: Object.keys(save.quests.counters || {}).length
+  };
+}
+
+function makeDoctorReport(status: EvoFishSaveDoctorStatus, save: EvoFishNextSkinSave, issues: string[] = []): EvoFishSaveDoctorReport {
+  return {
+    status,
+    issues,
+    timestamp: new Date().toISOString(),
+    summary: saveSummary(save)
+  };
+}
+
+function inspectIssues(raw: string | null, parsed: EvoFishNextSkinSave | null, normalized: EvoFishNextSkinSave): string[] {
+  const issues: string[] = [];
+  if (!raw) issues.push("No next save found; a safe default save can be created.");
+  if (raw && !parsed) issues.push("Current save JSON is corrupted or unreadable.");
+  if (parsed?.schemaVersion !== 1) issues.push("Save schema is missing or outdated.");
+  if (!parsed?.loadout?.ownedSkins?.default) issues.push("Default skin ownership was missing.");
+  if (!EVOFISH_SKIN_BY_ID[normalized.loadout.equippedSkinId]) issues.push("Equipped skin id was invalid.");
+  if (!parsed?.quests?.counters) issues.push("Quest counters were missing.");
+  if (!parsed?.achievements?.unlocked) issues.push("Achievement state was missing.");
+  if (!parsed?.mutations?.levels) issues.push("Mutation levels were missing.");
+  if (normalized.progress.hp > normalized.progress.hpMax) issues.push("HP exceeded HP max and needs normalization.");
+  if (normalized.economy.pearls < 0 || normalized.economy.corals < 0) issues.push("Negative currency was detected.");
+  return issues;
+}
+
 export function loadEvoFishNextSave(): EvoFishNextSkinSave {
   const next = safeReadJSON<EvoFishNextSkinSave>(EVOFISH_NEXT_SAVE_KEY);
   if (next?.schemaVersion === 1) return normalizeSave(next);
@@ -143,6 +212,52 @@ export function loadEvoFishNextSave(): EvoFishNextSkinSave {
   const migrated = normalizeSave(migrateLegacySkinSave(legacy));
   safeWriteJSON(EVOFISH_NEXT_SAVE_KEY, migrated);
   return migrated;
+}
+
+export function inspectEvoFishNextSave(): EvoFishSaveDoctorReport {
+  const raw = readRawSave();
+  const parsed = safeReadJSON<EvoFishNextSkinSave>(EVOFISH_NEXT_SAVE_KEY);
+  const save = parsed?.schemaVersion === 1 ? normalizeSave(parsed) : loadEvoFishNextSave();
+  const issues = inspectIssues(raw, parsed, save);
+  return makeDoctorReport(issues.length ? "needs_repair" : "healthy", save, issues);
+}
+
+export function repairEvoFishNextSave(): EvoFishSaveDoctorReport {
+  try {
+    const save = loadEvoFishNextSave();
+    safeWriteJSON(EVOFISH_NEXT_SAVE_KEY, save);
+    const issues = inspectIssues(readRawSave(), safeReadJSON<EvoFishNextSkinSave>(EVOFISH_NEXT_SAVE_KEY), save);
+    return makeDoctorReport("repaired", save, issues.length ? issues : ["Save normalized and rewritten safely."]);
+  } catch {
+    const fallback = normalizeSave(migrateLegacySkinSave(null));
+    safeWriteJSON(EVOFISH_NEXT_SAVE_KEY, fallback);
+    return makeDoctorReport("error", fallback, ["Repair failed; safe fallback save was created."]);
+  }
+}
+
+export function resetEvoFishNextRun(): EvoFishSaveDoctorReport {
+  const save = loadEvoFishNextSave();
+  const next = normalizeSave({ ...save, progress: defaultNextProgress() });
+  safeWriteJSON(EVOFISH_NEXT_SAVE_KEY, next);
+  return makeDoctorReport("reset", next, ["Current run reset. Account, wallet, skins, quests, mutations and achievements were preserved."]);
+}
+
+export function resetEvoFishNextProgressKeepSkins(): EvoFishSaveDoctorReport {
+  const save = loadEvoFishNextSave();
+  const next = normalizeSave({
+    ...save,
+    progress: defaultNextProgress(),
+    quests: defaultNextQuests(),
+    mutations: defaultMutationState(),
+    achievements: defaultAchievementState()
+  });
+  safeWriteJSON(EVOFISH_NEXT_SAVE_KEY, next);
+  return makeDoctorReport("reset", next, ["Progress reset. Account, wallet and owned skins were preserved."]);
+}
+
+export function exportEvoFishNextDebugSave() {
+  const save = loadEvoFishNextSave();
+  return JSON.stringify({ key: EVOFISH_NEXT_SAVE_KEY, exportedAt: new Date().toISOString(), save }, null, 2);
 }
 
 export function saveEvoFishNextSave(save: EvoFishNextSkinSave) {
