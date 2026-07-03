@@ -44,6 +44,8 @@ export type EvoFishSkinDefinition = {
   pattern: SkinPatternId;
   tags: string[];
   legacyId: string;
+  assetPath?: string;
+  image?: string;
 };
 
 export type OwnedSkinState = Record<string, true>;
