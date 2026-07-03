@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { Router } from "../router";
 import { Game } from "./Game";
+import { BetaProgress } from "../evofish-next/ui/BetaProgress";
 import { SkinLab } from "../evofish-next/ui/SkinLab";
 import { NextLobby } from "../evofish-next/ui/NextLobby";
 import { NextPlaytest } from "../evofish-next/ui/NextPlaytest";
@@ -99,11 +100,13 @@ export function App() {
         { path: "/game/classic", element: <Game /> },
         { path: "/game/next", element: <NextLobby /> },
         { path: "/game/next/lobby", element: <NextLobby /> },
+        { path: "/game/next/progress", element: <BetaProgress /> },
         { path: "/game/next/skins", element: <SkinLab /> },
         { path: "/game/next/play", element: <NextPlaytest /> },
         { path: "/classic", element: <Game /> },
         { path: "/next", element: <NextLobby /> },
         { path: "/next/lobby", element: <NextLobby /> },
+        { path: "/next/progress", element: <BetaProgress /> },
         { path: "/next/skins", element: <SkinLab /> },
         { path: "/next/play", element: <NextPlaytest /> },
       ]}
