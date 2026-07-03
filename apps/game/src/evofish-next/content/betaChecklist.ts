@@ -9,22 +9,29 @@ export type BetaChecklistItem = {
   gate: string;
 };
 
-export const EVOFISH_BETA_CHECKLIST_VERSION = "beta-checklist-v1";
+export const EVOFISH_BETA_CHECKLIST_VERSION = "beta-checklist-v2-cache";
 
 export const EVOFISH_BETA_CHECKLIST: BetaChecklistItem[] = [
   {
     id: "routes",
     priority: "P0",
     title: "Stable beta routes",
-    description: "Проверить /game, /game/play, /game/progress, /game/repair, /game/qa, /game/report, /game/skins, /game/classic.",
+    description: "Проверить /game, /game/play, /game/checklist, /game/cache, /game/progress, /game/repair, /game/qa, /game/report, /game/skins, /game/classic.",
     gate: "Все маршруты открываются без белого экрана."
   },
   {
     id: "error_guard",
     priority: "P0",
     title: "Error Guard",
-    description: "Game Error должен давать Reload, Restart Run, Repair Save, Beta Home, Save Doctor и Report Bug.",
+    description: "Game Error должен давать Reload, Restart Run, Repair Save, Beta Home, Save Doctor, Cache Doctor и Report Bug.",
     gate: "Игрок не видит пустой экран при runtime crash."
+  },
+  {
+    id: "cache_doctor",
+    priority: "P0",
+    title: "Cache Doctor",
+    description: "Inspect, Clean Game Cache, Reset Local Settings, Fresh Reload и Copy Report должны работать на iPhone Safari.",
+    gate: "Игрок может выбить старый кэш и получить свежий билд после деплоя."
   },
   {
     id: "save_doctor",
@@ -86,7 +93,7 @@ export const EVOFISH_BETA_CHECKLIST: BetaChecklistItem[] = [
     id: "visual_polish",
     priority: "P2",
     title: "Premium visual pass",
-    description: "Главные beta-экраны выглядят как единый BlackCrown flow: beta home, progress, QA, report, skins.",
+    description: "Главные beta-экраны выглядят как единый BlackCrown flow: beta home, checklist, cache, progress, QA, report, skins.",
     gate: "UI не выглядит как временная dev-панель."
   },
   {
