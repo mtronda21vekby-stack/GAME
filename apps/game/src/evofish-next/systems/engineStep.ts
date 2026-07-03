@@ -8,6 +8,7 @@ import { updateDirectorSystem } from "./directorSystem";
 import { updateEnemySystem } from "./enemySystem";
 import { updateEventSystem } from "./eventSystem";
 import { updateFeedbackSystem } from "./feedbackSystem";
+import { updateMutationDraftSystem } from "./mutationDraftSystem";
 import { syncProgressionStats } from "./progressionSystem";
 import { updateQuestDirectorSystem } from "./questDirectorSystem";
 import { updateQuestSystem } from "./questSystem";
@@ -18,6 +19,17 @@ import { updateZoneSystem } from "./zoneSystem";
 
 export function stepNextEngine(state: NextEngineState, input: NextInputState, viewport: NextViewport, dt: number) {
   const camera = getNextCamera(state, viewport);
+
+  updateMutationDraftSystem(state);
+  if (state.mutationDraft) {
+    input.bite = false;
+    input.dash = false;
+    input.down = false;
+    updateFeedbackSystem(state, dt);
+    syncProgressionStats(state);
+    state.frame += 1;
+    return state;
+  }
 
   updateCraftSystem(state, dt);
   updateSurvivalSystem(state, dt);
