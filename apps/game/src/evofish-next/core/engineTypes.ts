@@ -45,6 +45,10 @@ export type NextDamageFloat = {
 
 export type NextQuestState = {
   completed: Record<string, true>;
+  baselines?: Record<string, number>;
+  dailyKey?: string;
+  weeklyKey?: string;
+  directorFocus?: string;
 };
 
 export type NextAIState = "wander" | "hunt" | "flee" | "attack";
@@ -125,6 +129,11 @@ export type NextEngineStats = {
   pearls: number;
   corals: number;
   mutationLevel: number;
+  craftUses?: number;
+  mutationPurchases?: number;
+  questDirectorFocus?: string;
+  dailyQuestKey?: string;
+  weeklyQuestKey?: string;
   craftBarrierT: number;
   craftBiteBoostT: number;
   craftSonarT: number;
