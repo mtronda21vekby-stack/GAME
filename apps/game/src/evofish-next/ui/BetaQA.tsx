@@ -17,61 +17,14 @@ type QACheck = {
 const QA_STATE_KEY = "evofish_beta_qa_state_v1";
 
 const QA_CHECKS: QACheck[] = [
-  {
-    id: "home",
-    title: "Beta Home открывается",
-    route: "/game",
-    expected: "Видны Play / Progress / Skins / Classic, статус Save Doctor и быстрый Repair.",
-    critical: true
-  },
-  {
-    id: "play",
-    title: "Основной run запускается",
-    route: "/game/play",
-    expected: "Нет белого экрана, виден HUD beta.1, управление реагирует, игра сохраняется.",
-    critical: true
-  },
-  {
-    id: "settings",
-    title: "Settings сохраняются",
-    route: "/game/play",
-    expected: "Язык RU/EN, Quality, Stick Fixed/Floating, размер и sensitivity сохраняются после перезахода.",
-    critical: true
-  },
-  {
-    id: "progress",
-    title: "Progress + Balance Hub",
-    route: "/game/progress",
-    expected: "Видны Daily/Weekly/Story, достижения, pickups, мутации и Beta Balance Pass.",
-    critical: true
-  },
-  {
-    id: "repair",
-    title: "Repair path работает",
-    route: "/game/repair",
-    expected: "Inspect / Repair Save / Reset Run / Copy Debug Save не ломают кошелёк и скины.",
-    critical: true
-  },
-  {
-    id: "skins",
-    title: "Skin Lab работает",
-    route: "/game/skins",
-    expected: "Скины открываются по LV/Tier/Form, покупка/надевание работает, цены beta-баланса видны.",
-    critical: true
-  },
-  {
-    id: "classic",
-    title: "Classic fallback доступен",
-    route: "/game/classic",
-    expected: "Старая версия открывается как fallback и не перехватывает основной beta-flow."
-  },
-  {
-    id: "mobile",
-    title: "Mobile viewport / touch",
-    route: "/game/play",
-    expected: "На телефоне нет скролла страницы, canvas занимает экран, bite/dash/stick не конфликтуют с браузером.",
-    critical: true
-  }
+  { id: "home", title: "Beta Home открывается", route: "/game", expected: "Видны Play / Progress / Skins / Classic, статус Save Doctor и быстрый Repair.", critical: true },
+  { id: "play", title: "Основной run запускается", route: "/game/play", expected: "Нет белого экрана, виден HUD beta.1, управление реагирует, игра сохраняется.", critical: true },
+  { id: "settings", title: "Settings сохраняются", route: "/game/play", expected: "Язык RU/EN, Quality, Stick Fixed/Floating, размер и sensitivity сохраняются после перезахода.", critical: true },
+  { id: "progress", title: "Progress + Balance Hub", route: "/game/progress", expected: "Видны Daily/Weekly/Story, достижения, pickups, мутации и Beta Balance Pass.", critical: true },
+  { id: "repair", title: "Repair path работает", route: "/game/repair", expected: "Inspect / Repair Save / Reset Run / Copy Debug Save не ломают кошелёк и скины.", critical: true },
+  { id: "skins", title: "Skin Lab работает", route: "/game/skins", expected: "Скины открываются по LV/Tier/Form, покупка/надевание работает, цены beta-баланса видны.", critical: true },
+  { id: "classic", title: "Classic fallback доступен", route: "/game/classic", expected: "Старая версия открывается как fallback и не перехватывает основной beta-flow." },
+  { id: "mobile", title: "Mobile viewport / touch", route: "/game/play", expected: "На телефоне нет скролла страницы, canvas занимает экран, bite/dash/stick не конфликтуют с браузером.", critical: true }
 ];
 
 function readState(): Record<string, QAStatus> {
@@ -111,8 +64,8 @@ function browserChecks() {
   const canvas2d = Boolean(canvas?.getContext("2d"));
   const localStorageOk = (() => {
     try {
-      localStorage.setItem("ef_beta_qa_probe", "1");
-      localStorage.removeItem("ef_beta_qa_probe");
+      localStorage.setItem("ef_beta_probe", "1");
+      localStorage.removeItem("ef_beta_probe");
       return true;
     } catch {
       return false;
@@ -132,12 +85,14 @@ function browserChecks() {
 export function BetaQA() {
   const [qaState, setQaState] = useState<Record<string, QAStatus>>(() => readState());
   const [doctor, setDoctor] = useState(() => inspectEvoFishNextSave());
+  const [copied, setCopied] = useState(false);
   const save = useMemo(() => loadEvoFishNextSave(), [doctor]);
   const checks = useMemo(() => browserChecks(), []);
   const passed = QA_CHECKS.filter((item) => qaState[item.id] === "pass").length;
   const failed = QA_CHECKS.filter((item) => qaState[item.id] === "fail").length;
+  const todo = QA_CHECKS.length - passed - failed;
   const criticalFailed = QA_CHECKS.filter((item) => item.critical && qaState[item.id] === "fail").length;
-  const readyForBeta2 = passed >= QA_CHECKS.length && failed === 0 && doctor.status !== "needs_repair" && doctor.status !== "error";
+  const readyForNextBuild = passed >= QA_CHECKS.length && failed === 0 && doctor.status !== "needs_repair" && doctor.status !== "error";
 
   const setStatus = (id: string, status: QAStatus) => {
     const next = { ...qaState, [id]: status };
@@ -148,14 +103,35 @@ export function BetaQA() {
   const resetQA = () => {
     setQaState({});
     writeState({});
+    setCopied(false);
   };
 
-  const repair = () => {
-    setDoctor(repairEvoFishNextSave());
-  };
+  const repair = () => setDoctor(repairEvoFishNextSave());
+  const restartRun = () => setDoctor(resetEvoFishNextRun());
 
-  const restartRun = () => {
-    setDoctor(resetEvoFishNextRun());
+  const buildReport = () => JSON.stringify({
+    title: "EvoFish Beta QA Report",
+    generatedAt: new Date().toISOString(),
+    version: EVOFISH_NEXT_VERSION,
+    balance: NEXT_BETA_BALANCE_VERSION,
+    page: typeof window !== "undefined" ? window.location.pathname : "unknown",
+    userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "unknown",
+    viewport: typeof window !== "undefined" ? { width: window.innerWidth, height: window.innerHeight, dpr: window.devicePixelRatio } : null,
+    summary: { total: QA_CHECKS.length, passed, failed, todo, criticalFailed, readyForNextBuild },
+    saveDoctor: { status: doctor.status, issues: doctor.issues, summary: doctor.summary },
+    run: { level: save.progress.level, tier: save.progress.tier, form: save.progress.form, pearls: save.economy.pearls, corals: save.economy.corals },
+    smoke: checks,
+    checklist: QA_CHECKS.map((item) => ({ id: item.id, title: item.title, route: item.route, status: qaState[item.id] || "todo", critical: Boolean(item.critical), expected: item.expected }))
+  }, null, 2);
+
+  const copyReport = async () => {
+    setCopied(false);
+    try {
+      await navigator.clipboard?.writeText(buildReport());
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
   };
 
   return (
@@ -175,20 +151,14 @@ export function BetaQA() {
         </header>
 
         <section className="efQaStats">
-          <article><span>QA</span><b>{passed}/{QA_CHECKS.length}</b><small>{failed} fail · {criticalFailed} critical fail</small></article>
-          <article className={readyForBeta2 ? "good" : "warn"}><span>Status</span><b>{readyForBeta2 ? "READY" : "NOT READY"}</b><small>{readyForBeta2 ? "Можно двигать beta.2" : "Нужно закрыть checklist"}</small></article>
+          <article><span>QA</span><b>{passed}/{QA_CHECKS.length}</b><small>{failed} fail · {todo} todo · {criticalFailed} critical</small></article>
+          <article className={readyForNextBuild ? "good" : "warn"}><span>Status</span><b>{readyForNextBuild ? "READY" : "NOT READY"}</b><small>{readyForNextBuild ? "Можно двигать следующую сборку" : "Нужно закрыть checklist"}</small></article>
           <article><span>Save</span><b>{saveStatusLabel(doctor)}</b><small>{doctor.issues[0] || "Ошибок нет"}</small></article>
           <article><span>Balance</span><b>{NEXT_BETA_BALANCE_VERSION}</b><small>LV {save.progress.level} · Tier {save.progress.tier}</small></article>
         </section>
 
         <section className="efQaPanel">
-          <div className="efQaPanelHead">
-            <div>
-              <span>Browser smoke checks</span>
-              <h2>Среда запуска</h2>
-            </div>
-            <small>{new Date().toLocaleString("ru-RU")}</small>
-          </div>
+          <div className="efQaPanelHead"><div><span>Browser smoke checks</span><h2>Среда запуска</h2></div><small>{new Date().toLocaleString("ru-RU")}</small></div>
           <div className="efSmokeGrid">
             {checks.map((check) => <article key={check.label} className={check.ok ? "ok" : "bad"}><b>{check.ok ? "OK" : "NO"}</b><span>{check.label}</span></article>)}
           </div>
@@ -199,15 +169,9 @@ export function BetaQA() {
             const status = qaState[item.id] || "todo";
             return (
               <article key={item.id} className={`efQaCard ${status} ${item.critical ? "critical" : ""}`}>
-                <div className="efQaCardHead">
-                  <b>{item.title}</b>
-                  <span>{statusText(status)}</span>
-                </div>
+                <div className="efQaCardHead"><b>{item.title}</b><span>{statusText(status)}</span></div>
                 <p>{item.expected}</p>
-                <div className="efQaRouteRow">
-                  <code>{item.route}</code>
-                  <Link to={item.route}>Open</Link>
-                </div>
+                <div className="efQaRouteRow"><code>{item.route}</code><Link to={item.route}>Open</Link></div>
                 <div className="efQaButtons">
                   <button onClick={() => setStatus(item.id, "pass")}>PASS</button>
                   <button onClick={() => setStatus(item.id, "fail")}>FAIL</button>
@@ -220,15 +184,16 @@ export function BetaQA() {
 
         <section className="efQaRepair">
           <div>
-            <span>Recovery controls</span>
-            <h2>Починка без ручного удаления save</h2>
-            <p>Перед тестом можно сделать Inspect/Repair. Restart Run сбрасывает только текущий забег и сохраняет кошелёк, скины, аккаунт.</p>
+            <span>Recovery + report</span>
+            <h2>Починка и отчёт</h2>
+            <p>Скопируй QA Report после теста: туда попадут статусы, save doctor, browser smoke checks, версия, viewport и маршруты.</p>
           </div>
           <div>
             <button onClick={() => setDoctor(inspectEvoFishNextSave())}>Inspect Save</button>
             <button onClick={repair}>Repair Save</button>
             <button onClick={restartRun}>Restart Run</button>
             <button onClick={resetQA}>Reset QA Marks</button>
+            <button onClick={copyReport}>{copied ? "Report Copied" : "Copy QA Report"}</button>
           </div>
         </section>
       </section>
