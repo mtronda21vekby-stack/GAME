@@ -1,4 +1,4 @@
-export type NextAchievementMetric = "kills" | "tier" | "level" | "craft" | "resources" | "mutations" | "pearls" | "corals";
+export type NextAchievementMetric = "kills" | "tier" | "level" | "craft" | "resources" | "mutations" | "pearls" | "corals" | "perks" | "artifacts";
 
 export type NextAchievementReward = {
   xp: number;
@@ -47,6 +47,38 @@ export const NEXT_ACHIEVEMENTS: NextAchievementDefinition[] = [
     metric: "kills",
     target: 200,
     reward: { xp: 1600, pearls: 1800, corals: 5 }
+  },
+  {
+    id: "first_perk",
+    title: "Перк найден",
+    description: "Подбери первый временный perk.",
+    metric: "perks",
+    target: 1,
+    reward: { xp: 140, pearls: 120, corals: 0 }
+  },
+  {
+    id: "perks_30",
+    title: "Перк-машина",
+    description: "Подбери 30 временных perks.",
+    metric: "perks",
+    target: 30,
+    reward: { xp: 1300, pearls: 1500, corals: 4 }
+  },
+  {
+    id: "artifact_1",
+    title: "Древняя раковина",
+    description: "Найди первую древнюю раковину.",
+    metric: "artifacts",
+    target: 1,
+    reward: { xp: 520, pearls: 520, corals: 2 }
+  },
+  {
+    id: "artifacts_5",
+    title: "Археолог глубин",
+    description: "Найди 5 древних раковин.",
+    metric: "artifacts",
+    target: 5,
+    reward: { xp: 2200, pearls: 2600, corals: 8 }
   },
   {
     id: "tier_5",
