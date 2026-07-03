@@ -24,38 +24,38 @@ export const NEXT_CRAFT_RECIPES: NextCraftRecipe[] = [
   {
     id: "heal_gel",
     name: "Лечебный гель",
-    description: "Мгновенно восстанавливает 38% HP.",
-    cost: { pearls: 75 },
+    description: "Мгновенно восстанавливает 42% HP. Закрывает daily/weekly craft-задачи.",
+    cost: { pearls: 95 },
     effect: "heal",
-    value: 0.38,
+    value: 0.42,
     duration: 0
   },
   {
     id: "reef_barrier",
     name: "Рифовый барьер",
-    description: "Даёт временную защиту на 8 секунд.",
-    cost: { pearls: 110, corals: 1 },
+    description: "Даёт временную защиту на 9 секунд и помогает пережить APEX-зону.",
+    cost: { pearls: 160, corals: 1 },
     effect: "barrier",
     value: 1,
-    duration: 8
+    duration: 9
   },
   {
     id: "bite_rush",
     name: "Ускоренный укус",
-    description: "+35% bite damage на 10 секунд.",
-    cost: { pearls: 95, corals: 1 },
+    description: "+38% bite damage на 11 секунд. Хорошо под задания охоты.",
+    cost: { pearls: 145, corals: 1 },
     effect: "bite_boost",
-    value: 0.35,
-    duration: 10
+    value: 0.38,
+    duration: 11
   },
   {
     id: "sonar_ping",
     name: "Сонар",
-    description: "Усиливает mini-map и показывает больше угроз на 16 секунд.",
-    cost: { pearls: 60 },
+    description: "Усиливает mini-map, показывает угрозы и ресурсы на 18 секунд.",
+    cost: { pearls: 90 },
     effect: "sonar",
     value: 1,
-    duration: 16
+    duration: 18
   }
 ];
 
@@ -69,7 +69,7 @@ export function defaultCraftState(): NextCraftState {
 
 export function getCraftCostLabel(cost: NextCraftCost) {
   const parts: string[] = [];
-  if (cost.pearls) parts.push(`${cost.pearls} жемчуг`);
-  if (cost.corals) parts.push(`${cost.corals} коралл`);
+  if (cost.pearls) parts.push(`🦪 ${cost.pearls} жемчуг`);
+  if (cost.corals) parts.push(`💎 ${cost.corals} кристалл`);
   return parts.join(" · ") || "Бесплатно";
 }
