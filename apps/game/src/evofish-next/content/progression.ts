@@ -1,23 +1,25 @@
 import type { EvoFishFormId } from "../core/types";
 
 export const NEXT_MAX_TIER = 12;
+export const NEXT_SHARK_UNLOCK_LEVEL = 24;
+export const NEXT_MEGALODON_UNLOCK_LEVEL = 55;
 
 export function xpToNextTier(tier: number) {
-  return Math.round(140 * Math.pow(1.42, Math.max(0, tier - 1)));
+  return Math.round(150 * Math.pow(1.38, Math.max(0, tier - 1)));
 }
 
 export function xpToNextLevel(level: number) {
-  return Math.round(220 * Math.pow(1.16, Math.max(0, level - 1)));
+  return Math.round(185 * Math.pow(1.145, Math.max(0, level - 1)));
 }
 
 export function formForLevel(level: number, currentForm: EvoFishFormId): EvoFishFormId {
   if (currentForm === "megalodon") return "megalodon";
-  if (currentForm === "shark" && level < 65) return "shark";
-  if (level >= 65) return "megalodon";
-  if (level >= 35) return "shark";
+  if (currentForm === "shark" && level < NEXT_MEGALODON_UNLOCK_LEVEL) return "shark";
+  if (level >= NEXT_MEGALODON_UNLOCK_LEVEL) return "megalodon";
+  if (level >= NEXT_SHARK_UNLOCK_LEVEL) return "shark";
   return "fish";
 }
 
 export function tierMassBonus(tier: number) {
-  return 0.11 + tier * 0.026;
+  return 0.12 + tier * 0.024;
 }
