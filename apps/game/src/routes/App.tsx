@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { Router } from "../router";
 import { Game } from "./Game";
 import { BetaErrorBoundary } from "../evofish-next/ui/BetaErrorBoundary";
+import { BetaHome } from "../evofish-next/ui/BetaHome";
 import { BetaProgress } from "../evofish-next/ui/BetaProgress";
 import { SkinLab } from "../evofish-next/ui/SkinLab";
 import { NextLobby } from "../evofish-next/ui/NextLobby";
@@ -34,8 +35,13 @@ export function App() {
   return (
     <Router
       routes={[
-        { path: "/", element: withBoundary(<NextLobby />) },
-        { path: "/game", element: withBoundary(<NextLobby />) },
+        { path: "/", element: withBoundary(<BetaHome />) },
+        { path: "/game", element: withBoundary(<BetaHome />) },
+        { path: "/game/lobby", element: withBoundary(<BetaHome />) },
+        { path: "/game/play", element: withBoundary(<NextPlaytest />) },
+        { path: "/game/progress", element: withBoundary(<BetaProgress />) },
+        { path: "/game/repair", element: withBoundary(<BetaProgress />) },
+        { path: "/game/skins", element: withBoundary(<SkinLab />) },
         { path: "/game/classic", element: withBoundary(<Game />) },
         { path: "/game/next", element: withBoundary(<NextLobby />) },
         { path: "/game/next/lobby", element: withBoundary(<NextLobby />) },
@@ -43,7 +49,7 @@ export function App() {
         { path: "/game/next/skins", element: withBoundary(<SkinLab />) },
         { path: "/game/next/play", element: withBoundary(<NextPlaytest />) },
         { path: "/classic", element: withBoundary(<Game />) },
-        { path: "/next", element: withBoundary(<NextLobby />) },
+        { path: "/next", element: withBoundary(<BetaHome />) },
         { path: "/next/lobby", element: withBoundary(<NextLobby />) },
         { path: "/next/progress", element: withBoundary(<BetaProgress />) },
         { path: "/next/skins", element: withBoundary(<SkinLab />) },
