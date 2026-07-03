@@ -3,6 +3,7 @@ export * from "./core/types";
 export * from "./core/engineTypes";
 export * from "./content/account";
 export * from "./content/achievements";
+export * from "./content/balance";
 export * from "./content/forms";
 export * from "./content/skins";
 export * from "./content/skinUnlockRules";
