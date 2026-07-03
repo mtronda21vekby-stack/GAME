@@ -1,5 +1,21 @@
 import type { EvoFishSkinDefinition } from "../core/types";
 
+export const EVOFISH_SKIN_ASSET_BASE = "/game/skins/custom";
+
+export function getSkinAssetPath(id: string) {
+  if (id === "default") return `${EVOFISH_SKIN_ASSET_BASE}/default-blue-fish.svg`;
+  return `${EVOFISH_SKIN_ASSET_BASE}/${id}.svg`;
+}
+
+function withAsset(skin: Omit<EvoFishSkinDefinition, "assetPath" | "image">): EvoFishSkinDefinition {
+  const assetPath = getSkinAssetPath(skin.id);
+  return {
+    ...skin,
+    assetPath,
+    image: assetPath
+  };
+}
+
 function freeSkin(
   id: string,
   name: string,
@@ -8,7 +24,7 @@ function freeSkin(
   palette: EvoFishSkinDefinition["palette"],
   pattern: EvoFishSkinDefinition["pattern"] = "none"
 ): EvoFishSkinDefinition {
-  return {
+  return withAsset({
     id,
     legacyId: id,
     name,
@@ -19,7 +35,7 @@ function freeSkin(
     palette,
     pattern,
     tags: ["legacy", "free"]
-  };
+  });
 }
 
 function pearlSkin(
@@ -33,7 +49,7 @@ function pearlSkin(
   pattern: EvoFishSkinDefinition["pattern"] = "none",
   tags: string[] = []
 ): EvoFishSkinDefinition {
-  return {
+  return withAsset({
     id,
     legacyId: id,
     name,
@@ -44,7 +60,7 @@ function pearlSkin(
     palette,
     pattern,
     tags: ["legacy", ...tags]
-  };
+  });
 }
 
 export const EVOFISH_SKINS: EvoFishSkinDefinition[] = [
