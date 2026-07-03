@@ -5,8 +5,66 @@ import { drawEvoFishSkin } from "./canvasSkinRenderer";
 import { getNextCamera } from "../systems/cameraSystem";
 import { canDevour } from "../systems/collisionSystem";
 
+const DEFAULT_FISH_SPRITE = "/game/skins/custom/default-blue-fish.svg";
+const spriteCache = new Map<string, HTMLImageElement>();
+
 function isVisible(camera: NextCameraState, x: number, y: number, pad = 160) {
   return x >= camera.x - pad && x <= camera.x + camera.width + pad && y >= camera.y - pad && y <= camera.y + camera.height + pad;
+}
+
+function skinSpriteSource(entity: NextFishEntity) {
+  const customImage = (entity.skin as { image?: string }).image;
+  if (customImage) return customImage;
+  if (entity.id === 0 && entity.skin.id === "default") return DEFAULT_FISH_SPRITE;
+  return "";
+}
+
+function getSprite(src: string) {
+  if (!src || typeof Image === "undefined") return null;
+  const cached = spriteCache.get(src);
+  if (cached) return cached;
+
+  const img = new Image();
+  img.decoding = "async";
+  img.src = src;
+  spriteCache.set(src, img);
+  return img;
+}
+
+function drawSpriteSkin(ctx: CanvasRenderingContext2D, entity: NextFishEntity, alpha: number) {
+  const src = skinSpriteSource(entity);
+  const img = getSprite(src);
+  if (!img || !img.complete || img.naturalWidth <= 0) return false;
+
+  const formScale = entity.form === "megalodon" ? 5.3 : entity.form === "shark" ? 5.0 : 4.75;
+  const width = entity.radius * formScale;
+  const height = width * (img.naturalHeight / Math.max(1, img.naturalWidth));
+
+  ctx.save();
+  ctx.translate(entity.x, entity.y);
+  ctx.rotate(entity.angle);
+  ctx.globalAlpha = alpha;
+  ctx.drawImage(img, -width * 0.5, -height * 0.5, width, height);
+  ctx.globalAlpha = 1;
+  ctx.restore();
+  return true;
+}
+
+function drawEntitySkin(ctx: CanvasRenderingContext2D, entity: NextFishEntity, alpha: number) {
+  if (drawSpriteSkin(ctx, entity, alpha)) return;
+  drawEvoFishSkin(ctx, entity.skin, entity.form, {
+    x: entity.x,
+    y: entity.y,
+    radius: entity.radius,
+    angle: entity.angle,
+    alpha
+  });
+}
+
+function eventColor(kind?: string) {
+  if (kind === "hunt_pack") return "rgba(255,120,90,.30)";
+  if (kind === "safe_spring") return "rgba(110,255,180,.26)";
+  return "rgba(255,220,120,.28)";
 }
 
 function drawWorldBackground(ctx: CanvasRenderingContext2D, state: NextEngineState, camera: NextCameraState, viewport: NextViewport) {
@@ -121,6 +179,36 @@ function drawHpBar(ctx: CanvasRenderingContext2D, entity: NextFishEntity, width:
   ctx.fillRect(x, y, width, 5);
   ctx.fillStyle = entity.aiType === "apex" || entity.aiType === "leviathan" ? "rgba(255,220,120,.92)" : pct > 0.45 ? "rgba(110,255,180,.88)" : "rgba(255,90,90,.9)";
   ctx.fillRect(x, y, width * pct, 5);
+}
+
+function drawEvents(ctx: CanvasRenderingContext2D, state: NextEngineState, camera: NextCameraState, quality: string) {
+  if (!state.events?.length) return;
+
+  for (const event of state.events) {
+    if (!isVisible(camera, event.x, event.y, event.radius + 160)) continue;
+    const pct = Math.max(0, Math.min(1, event.progress / Math.max(1, event.target)));
+
+    ctx.fillStyle = eventColor(event.kind);
+    ctx.strokeStyle = "rgba(255,255,255,.22)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(event.x, event.y, event.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.strokeStyle = "rgba(255,243,160,.82)";
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.arc(event.x, event.y, event.radius + 9, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pct);
+    ctx.stroke();
+
+    if (quality !== "low") {
+      ctx.textAlign = "center";
+      ctx.font = "1000 22px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,.62)";
+      ctx.fillText(event.name.toUpperCase(), event.x, event.y);
+    }
+  }
 }
 
 function drawResources(ctx: CanvasRenderingContext2D, state: NextEngineState, camera: NextCameraState, quality: string) {
@@ -246,9 +334,11 @@ function drawMiniMap(ctx: CanvasRenderingContext2D, state: NextEngineState, came
   for (let gy = 1; gy < 3; gy += 1) ctx.fillRect(left, top + (mapH / 3) * gy, mapW, 1);
 
   for (const zone of NEXT_MAP_ZONES) {
-    const zx = mapX(state, zone.x, left, mapW);
-    const zy = mapY(state, zone.y, top, mapH);
-    drawMapDot(ctx, zx, zy, zone.id === state.stats.zoneId ? 3.6 : 2.6, zone.color, zone.id === state.stats.zoneId ? "rgba(255,255,255,.68)" : undefined);
+    drawMapDot(ctx, mapX(state, zone.x, left, mapW), mapY(state, zone.y, top, mapH), zone.id === state.stats.zoneId ? 3.6 : 2.6, zone.color, zone.id === state.stats.zoneId ? "rgba(255,255,255,.68)" : undefined);
+  }
+
+  for (const event of state.events || []) {
+    drawMapDot(ctx, mapX(state, event.x, left, mapW), mapY(state, event.y, top, mapH), 4.2, eventColor(event.kind), "rgba(255,255,255,.68)");
   }
 
   for (const node of state.resources.slice(0, 18)) {
@@ -291,9 +381,7 @@ function drawMiniMap(ctx: CanvasRenderingContext2D, state: NextEngineState, came
     drawMapDot(ctx, ax, ay, sonar ? 6 : 5, apex.aiType === "leviathan" ? "rgba(180,140,255,.95)" : "rgba(255,220,120,.95)", "rgba(255,90,90,.85)");
   }
 
-  const px = mapX(state, state.player.x, left, mapW);
-  const py = mapY(state, state.player.y, top, mapH);
-  drawMapDot(ctx, px, py, 4.5, "rgba(110,255,180,.95)", "rgba(255,255,255,.72)");
+  drawMapDot(ctx, mapX(state, state.player.x, left, mapW), mapY(state, state.player.y, top, mapH), 4.5, "rgba(110,255,180,.95)", "rgba(255,255,255,.72)");
 
   ctx.textAlign = "left";
   ctx.font = "900 10px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
@@ -313,6 +401,7 @@ export function renderNextWorld(ctx: CanvasRenderingContext2D, state: NextEngine
   ctx.scale(camera.scale, camera.scale);
   ctx.translate(-camera.x, -camera.y);
 
+  drawEvents(ctx, state, camera, quality);
   drawResources(ctx, state, camera, quality);
 
   const visibleEnemies = state.enemies.filter((enemy) => isVisible(camera, enemy.x, enemy.y, enemy.radius * 4));
@@ -324,26 +413,14 @@ export function renderNextWorld(ctx: CanvasRenderingContext2D, state: NextEngine
     ctx.beginPath();
     ctx.arc(enemy.x, enemy.y, enemy.radius * 1.52, 0, Math.PI * 2);
     ctx.stroke();
-    drawEvoFishSkin(ctx, enemy.skin, enemy.form, {
-      x: enemy.x,
-      y: enemy.y,
-      radius: enemy.radius,
-      angle: enemy.angle,
-      alpha: enemy.hitT > 0 ? 0.55 : safeToEat ? 0.82 : 0.92
-    });
+    drawEntitySkin(ctx, enemy, enemy.hitT > 0 ? 0.55 : safeToEat ? 0.82 : 0.92);
     if (quality !== "low" || enemy.aiType === "apex" || enemy.aiType === "leviathan") {
       drawHpBar(ctx, enemy, enemy.radius * (enemy.aiType === "apex" || enemy.aiType === "leviathan" ? 4.1 : 2.8));
     }
   }
 
   drawCombatAura(ctx, state);
-  drawEvoFishSkin(ctx, state.player.skin, state.player.form, {
-    x: state.player.x,
-    y: state.player.y,
-    radius: state.player.radius,
-    angle: state.player.angle,
-    alpha: playerDowned ? 0.34 : state.player.hitT > 0 ? 0.68 : 1
-  });
+  drawEntitySkin(ctx, state.player, playerDowned ? 0.34 : state.player.hitT > 0 ? 0.68 : 1);
   drawHpBar(ctx, state.player, state.player.radius * 3.2);
   drawFloatText(ctx, state);
 
