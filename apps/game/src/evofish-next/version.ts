@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-stick-ui-3.2.0";
+export const EVOFISH_NEXT_VERSION = "next-daily-weekly-3.3.0";
