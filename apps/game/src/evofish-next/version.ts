@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-tutorial-stick-4.0.0";
+export const EVOFISH_NEXT_VERSION = "next-localized-ui-4.1.0";
