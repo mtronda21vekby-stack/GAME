@@ -33,7 +33,7 @@ export const NEXT_RESOURCE_DEFS: NextResourceDefinition[] = [
     radius: 16,
     valueMin: 10,
     valueMax: 24,
-    weight: 38,
+    weight: 42,
     respawnMin: 13,
     respawnMax: 24
   },
@@ -45,7 +45,7 @@ export const NEXT_RESOURCE_DEFS: NextResourceDefinition[] = [
     radius: 15,
     valueMin: 18,
     valueMax: 42,
-    weight: 28,
+    weight: 30,
     respawnMin: 10,
     respawnMax: 20
   },
@@ -57,7 +57,7 @@ export const NEXT_RESOURCE_DEFS: NextResourceDefinition[] = [
     radius: 17,
     valueMin: 16,
     valueMax: 34,
-    weight: 18,
+    weight: 19,
     respawnMin: 18,
     respawnMax: 32
   },
@@ -68,10 +68,10 @@ export const NEXT_RESOURCE_DEFS: NextResourceDefinition[] = [
     glow: "rgba(190,140,255,.34)",
     radius: 18,
     valueMin: 1,
-    valueMax: 3,
-    weight: 11,
-    respawnMin: 24,
-    respawnMax: 42
+    valueMax: 2,
+    weight: 4,
+    respawnMin: 52,
+    respawnMax: 92
   },
   {
     kind: "boost",
@@ -123,7 +123,7 @@ export function makeResourceNode(id: number, worldWidth: number, worldHeight: nu
 }
 
 export function createResourceField(count: number, worldWidth: number, worldHeight: number) {
-  const forced: NextResourceKind[] = ["pearls", "plankton", "heal", "coral", "boost"];
+  const forced: NextResourceKind[] = ["pearls", "plankton", "heal", "boost"];
   return Array.from({ length: count }, (_, index) => makeResourceNode(index + 1, worldWidth, worldHeight, forced[index]));
 }
 
