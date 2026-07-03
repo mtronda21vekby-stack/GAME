@@ -14,38 +14,38 @@ export const NEXT_MUTATIONS: NextMutationDefinition[] = [
   {
     id: "thick_scales",
     name: "Толстая чешуя",
-    description: "+HP за каждый уровень мутации.",
-    maxLevel: 5,
-    coralCost: 1,
+    description: "+HP за каждый уровень. Помогает проходить weekly hunt и APEX-зоны.",
+    maxLevel: 6,
+    coralCost: 2,
     stat: "hp",
-    valuePerLevel: 0.08
+    valuePerLevel: 0.075
   },
   {
     id: "sharp_teeth",
     name: "Острые зубы",
-    description: "+DMG за каждый уровень мутации.",
-    maxLevel: 5,
-    coralCost: 1,
+    description: "+DMG за каждый уровень. Связано с заданиями на охоту.",
+    maxLevel: 6,
+    coralCost: 2,
     stat: "damage",
-    valuePerLevel: 0.07
+    valuePerLevel: 0.068
   },
   {
     id: "jet_tail",
     name: "Реактивный хвост",
-    description: "+SPD за каждый уровень мутации.",
-    maxLevel: 5,
-    coralCost: 1,
+    description: "+SPD за каждый уровень. Ускоряет сбор жемчуга и кристаллов.",
+    maxLevel: 6,
+    coralCost: 2,
     stat: "speed",
-    valuePerLevel: 0.055
+    valuePerLevel: 0.052
   },
   {
     id: "pearl_instinct",
     name: "Инстинкт жемчуга",
-    description: "+награды за kill/eat.",
-    maxLevel: 5,
-    coralCost: 2,
+    description: "+награды за kill/eat и +бонус к pickup жемчуга/кристаллов.",
+    maxLevel: 6,
+    coralCost: 3,
     stat: "reward",
-    valuePerLevel: 0.06
+    valuePerLevel: 0.055
   }
 ];
 
