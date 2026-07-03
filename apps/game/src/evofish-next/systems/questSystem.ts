@@ -26,7 +26,9 @@ function questValue(state: NextEngineState, quest: NextQuestDefinition) {
   if (quest.metric === "corals") return state.economy.corals;
   if (quest.metric === "resources") return Math.max(state.stats.resourcesCollected || 0, questCounter(state, "resources"));
   if (quest.metric === "craft") return Math.max(state.stats.craftUses || 0, questCounter(state, "craft"));
-  if (quest.metric === "mutations") return Math.max(state.stats.mutationPurchases || 0, getMutationTotalLevel(state.mutations));
+  if (quest.metric === "mutations") return Math.max(state.stats.mutationPurchases || 0, getMutationTotalLevel(state.mutations), questCounter(state, "mutations"));
+  if (quest.metric === "perks") return Math.max(state.stats.perksPicked || 0, questCounter(state, "perks"));
+  if (quest.metric === "artifacts") return Math.max(state.stats.artifactsFound || 0, questCounter(state, "artifacts"));
   return 0;
 }
 
