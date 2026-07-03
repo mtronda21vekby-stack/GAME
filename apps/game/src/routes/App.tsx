@@ -1,51 +1,12 @@
 import React, { useEffect } from "react";
 import { Router } from "../router";
 import { Game } from "./Game";
+import { BetaErrorBoundary } from "../evofish-next/ui/BetaErrorBoundary";
 import { BetaProgress } from "../evofish-next/ui/BetaProgress";
 import { SkinLab } from "../evofish-next/ui/SkinLab";
 import { NextLobby } from "../evofish-next/ui/NextLobby";
 import { NextPlaytest } from "../evofish-next/ui/NextPlaytest";
 import { attachConsoleAnalytics, track } from "@blackcrown/core";
-
-function safeId() {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const anyCrypto = crypto as any;
-    if (anyCrypto?.randomUUID) return anyCrypto.randomUUID();
-  } catch {
-    // ignore
-  }
-  return `c_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
-}
-
-function getClientId(): string {
-  try {
-    const k = "bc.clientId.v1";
-    const ex = localStorage.getItem(k);
-    if (ex) return ex;
-    const id = safeId();
-    localStorage.setItem(k, id);
-    return id;
-  } catch {
-    return safeId();
-  }
-}
-
-async function ping() {
-  const clientId = getClientId();
-  try {
-    await fetch("/api/metrics/ping", {
-      method: "POST",
-      headers: { "content-type": "application/json", accept: "application/json" },
-      body: JSON.stringify({ clientId, area: "game" }),
-      credentials: "include",
-      keepalive: true,
-      cache: "no-store",
-    });
-  } catch {
-    // metrics are optional
-  }
-}
 
 function disableGameServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
@@ -61,54 +22,32 @@ function disableGameServiceWorker() {
     });
 }
 
+function withBoundary(element: React.ReactNode) {
+  return <BetaErrorBoundary>{element}</BetaErrorBoundary>;
+}
+
 export function App() {
   useEffect(() => attachConsoleAnalytics(), []);
   useEffect(() => track({ type: "page_view", path: window.location.pathname }), []);
   useEffect(() => disableGameServiceWorker(), []);
 
-  // metrics ping (online + unique через server /api/metrics/ping)
-  useEffect(() => {
-    let alive = true;
-
-    ping();
-
-    const t = window.setInterval(() => {
-      if (!alive) return;
-      if (document.visibilityState === "visible") ping();
-    }, 20000);
-
-    const onVis = () => {
-      if (document.visibilityState === "visible") ping();
-    };
-
-    window.addEventListener("focus", onVis);
-    document.addEventListener("visibilitychange", onVis);
-
-    return () => {
-      alive = false;
-      window.clearInterval(t);
-      window.removeEventListener("focus", onVis);
-      document.removeEventListener("visibilitychange", onVis);
-    };
-  }, []);
-
   return (
     <Router
       routes={[
-        { path: "/", element: <NextLobby /> },
-        { path: "/game", element: <NextLobby /> },
-        { path: "/game/classic", element: <Game /> },
-        { path: "/game/next", element: <NextLobby /> },
-        { path: "/game/next/lobby", element: <NextLobby /> },
-        { path: "/game/next/progress", element: <BetaProgress /> },
-        { path: "/game/next/skins", element: <SkinLab /> },
-        { path: "/game/next/play", element: <NextPlaytest /> },
-        { path: "/classic", element: <Game /> },
-        { path: "/next", element: <NextLobby /> },
-        { path: "/next/lobby", element: <NextLobby /> },
-        { path: "/next/progress", element: <BetaProgress /> },
-        { path: "/next/skins", element: <SkinLab /> },
-        { path: "/next/play", element: <NextPlaytest /> },
+        { path: "/", element: withBoundary(<NextLobby />) },
+        { path: "/game", element: withBoundary(<NextLobby />) },
+        { path: "/game/classic", element: withBoundary(<Game />) },
+        { path: "/game/next", element: withBoundary(<NextLobby />) },
+        { path: "/game/next/lobby", element: withBoundary(<NextLobby />) },
+        { path: "/game/next/progress", element: withBoundary(<BetaProgress />) },
+        { path: "/game/next/skins", element: withBoundary(<SkinLab />) },
+        { path: "/game/next/play", element: withBoundary(<NextPlaytest />) },
+        { path: "/classic", element: withBoundary(<Game />) },
+        { path: "/next", element: withBoundary(<NextLobby />) },
+        { path: "/next/lobby", element: withBoundary(<NextLobby />) },
+        { path: "/next/progress", element: withBoundary(<BetaProgress />) },
+        { path: "/next/skins", element: withBoundary(<SkinLab />) },
+        { path: "/next/play", element: withBoundary(<NextPlaytest />) },
       ]}
     />
   );
