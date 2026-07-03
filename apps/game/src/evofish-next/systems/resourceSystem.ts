@@ -8,7 +8,7 @@ function addFloat(state: NextEngineState, text: string, x = state.player.x, y = 
 }
 
 function pickupAmount(state: NextEngineState, value: number, premium = false) {
-  const bonus = 1 + getMutationBonus(state.mutations, "reward") * (premium ? 0.75 : 0.55);
+  const bonus = 1 + getMutationBonus(state.mutations, "reward") * (premium ? 0.55 : 0.42);
   return Math.max(1, Math.round(value * bonus));
 }
 
@@ -48,12 +48,12 @@ function collectArtifact(state: NextEngineState, x: number, y: number) {
   bumpQuestCounter(state, "artifacts");
   state.stats.artifactsFound = Math.max(state.stats.artifactsFound || 0, state.quests.counters?.artifacts || 0);
 
-  const xp = awardNextXp(state, 520 + state.player.level * 16);
-  const pearls = pickupAmount(state, 260 + state.player.tier * 18);
+  const xp = awardNextXp(state, 420 + state.player.level * 12);
+  const pearls = pickupAmount(state, 180 + state.player.tier * 14);
   const corals = 1;
   state.economy.pearls += pearls;
   state.economy.corals += corals;
-  state.craft.sonarT = Math.max(state.craft.sonarT, 18);
+  state.craft.sonarT = Math.max(state.craft.sonarT, 14);
   state.stats.lastEvent = `Древняя раковина: +${xp} XP +${pearls} жемчуг +${corals} кристалл`;
   addFloat(state, "ARTIFACT SHELL", x, y);
 }
