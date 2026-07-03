@@ -1,6 +1,7 @@
 import type { NextQuestState } from "../core/engineTypes";
 import type { EvoFishEconomyState, EvoFishFormId, SkinLoadoutState } from "../core/types";
 import { defaultNextAccount, type NextAccountState } from "../content/account";
+import { defaultAchievementState, type NextAchievementState } from "../content/achievements";
 import { defaultMutationState, type NextMutationState } from "../content/mutations";
 import { xpToNextLevel, xpToNextTier } from "../content/progression";
 import { EVOFISH_SKIN_BY_ID, getDefaultSkinId } from "../content/skins";
@@ -8,6 +9,7 @@ import { EVOFISH_SKIN_BY_ID, getDefaultSkinId } from "../content/skins";
 export type LegacyEvoFishSave = {
   pearls?: number;
   corals?: number;
+  achievements?: string[];
   ownedSkins?: Record<string, boolean>;
   equippedSkin?: string;
   level?: number;
@@ -44,6 +46,7 @@ export type EvoFishNextSkinSave = {
   progress: EvoFishNextProgressState;
   quests: NextQuestState;
   mutations: NextMutationState;
+  achievements: NextAchievementState;
 };
 
 export function defaultNextProgress(): EvoFishNextProgressState {
@@ -65,6 +68,12 @@ export function defaultNextProgress(): EvoFishNextProgressState {
 
 export function defaultNextQuests(): NextQuestState {
   return { completed: {}, baselines: {}, counters: {}, dailyKey: "", weeklyKey: "", directorFocus: "balanced" };
+}
+
+function migrateLegacyAchievements(legacy: LegacyEvoFishSave | null | undefined): NextAchievementState {
+  const state = defaultAchievementState();
+  for (const id of legacy?.achievements || []) state.unlocked[id] = true;
+  return state;
 }
 
 export function migrateLegacySkinSave(legacy: LegacyEvoFishSave | null | undefined): EvoFishNextSkinSave {
@@ -109,7 +118,8 @@ export function migrateLegacySkinSave(legacy: LegacyEvoFishSave | null | undefin
       deaths: Math.max(0, Math.floor(legacy?.deaths || 0))
     },
     quests: defaultNextQuests(),
-    mutations: defaultMutationState()
+    mutations: defaultMutationState(),
+    achievements: migrateLegacyAchievements(legacy)
   };
 }
 
