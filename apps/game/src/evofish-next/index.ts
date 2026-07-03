@@ -17,6 +17,7 @@ export * from "./content/mutations";
 export * from "./content/craft";
 export * from "./content/resources";
 export * from "./content/zones";
+export * from "./state/errorReportStore";
 export * from "./state/skinSaveAdapter";
 export * from "./state/nextSaveStore";
 export * from "./systems/createWorld";
