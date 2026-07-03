@@ -3,14 +3,14 @@ import { makeResourceNode, type NextResourceKind } from "../content/resources";
 
 const FOCUS_RESOURCE_KIND: Record<string, NextResourceKind[]> = {
   economy: ["pearls", "pearls", "plankton", "heal"],
-  premium: ["coral", "coral", "pearls", "boost"],
-  map: ["pearls", "coral", "plankton", "boost"],
-  craft: ["pearls", "pearls", "coral", "heal"],
-  mutation: ["coral", "coral", "pearls", "plankton"],
+  premium: ["pearls", "coral", "boost", "plankton"],
+  map: ["pearls", "plankton", "boost", "heal"],
+  craft: ["pearls", "pearls", "heal", "coral"],
+  mutation: ["pearls", "coral", "plankton", "boost"],
   combat: ["heal", "boost", "pearls", "plankton"],
   growth: ["plankton", "pearls", "heal", "boost"],
-  evolution: ["plankton", "pearls", "coral", "boost"],
-  balanced: ["pearls", "plankton", "heal", "coral", "boost"]
+  evolution: ["plankton", "pearls", "boost", "coral"],
+  balanced: ["pearls", "plankton", "heal", "boost", "coral"]
 };
 
 function focus(state: NextEngineState) {
@@ -25,14 +25,19 @@ function hasActiveKind(state: NextEngineState, kind: NextResourceKind) {
   return state.resources.some((node) => node.kind === kind && node.respawnT <= 0);
 }
 
+function activeCrystalCount(state: NextEngineState) {
+  return state.resources.filter((node) => node.kind === "coral" && node.respawnT <= 0).length;
+}
+
 function replaceResource(state: NextEngineState, index: number, kind: NextResourceKind) {
+  if (kind === "coral" && activeCrystalCount(state) >= 1) return;
   state.resources[index] = makeResourceNode(9000 + state.frame + index, state.config.width, state.config.height, kind);
 }
 
 function steerResourcePool(state: NextEngineState) {
   if (!state.resources.length) return;
   const kinds = preferredKinds(state);
-  const required = kinds.slice(0, focus(state) === "premium" || focus(state) === "mutation" ? 3 : 2);
+  const required = kinds.slice(0, 2).filter((kind) => kind !== "coral" || activeCrystalCount(state) <= 0);
 
   for (const kind of required) {
     if (hasActiveKind(state, kind)) continue;
@@ -40,8 +45,8 @@ function steerResourcePool(state: NextEngineState) {
     if (index >= 0) replaceResource(state, index, kind);
   }
 
-  if (state.frame % 480 !== 0) return;
-  const kind = kinds[Math.floor((state.frame / 480) % kinds.length)] || "pearls";
+  if (state.frame % 720 !== 0) return;
+  const kind = kinds[Math.floor((state.frame / 720) % kinds.length)] || "pearls";
   const candidates = state.resources
     .map((node, index) => ({ node, index }))
     .filter((item) => item.node.kind !== kind && item.node.respawnT <= 0);
@@ -61,7 +66,8 @@ function steerCraftPressure(state: NextEngineState) {
 function steerMutationPressure(state: NextEngineState) {
   const currentFocus = focus(state);
   if (currentFocus !== "mutation" && currentFocus !== "premium") return;
-  if (state.frame % 540 !== 0) return;
+  if (state.frame % 1260 !== 0) return;
+  if (activeCrystalCount(state) >= 1) return;
   const coralIndex = state.resources.findIndex((node) => node.kind !== "coral" && node.respawnT <= 0);
   if (coralIndex >= 0) replaceResource(state, coralIndex, "coral");
 }
