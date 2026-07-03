@@ -132,6 +132,10 @@ function normalizeQuestState(quests?: NextQuestState): NextQuestState {
       ...fallback.baselines,
       ...(quests?.baselines || {})
     },
+    counters: {
+      ...fallback.counters,
+      ...(quests?.counters || {})
+    },
     dailyKey: quests?.dailyKey || fallback.dailyKey,
     weeklyKey: quests?.weeklyKey || fallback.weeklyKey,
     directorFocus: quests?.directorFocus || fallback.directorFocus
@@ -343,7 +347,7 @@ export function createNextWorld(
       pearls: economy.pearls,
       corals: economy.corals,
       mutationLevel: getMutationTotalLevel(mutations),
-      craftUses: 0,
+      craftUses: quests.counters?.craft || 0,
       mutationPurchases: 0,
       questDirectorFocus: board.directorFocus,
       dailyQuestKey: board.dailyKey,
@@ -351,7 +355,7 @@ export function createNextWorld(
       craftBarrierT: 0,
       craftBiteBoostT: 0,
       craftSonarT: 0,
-      resourcesCollected: 0,
+      resourcesCollected: quests.counters?.resources || 0,
       activeResources: resources.length,
       zoneId: startZone.id,
       zoneName: startZone.name,
