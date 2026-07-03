@@ -4,7 +4,15 @@ function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
 
-function aimVector(state: NextEngineState, input: NextInputState, camera: NextCameraState) {
+export function aimVector(state: NextEngineState, input: NextInputState, camera: NextCameraState) {
+  const moveX = input.moveX || 0;
+  const moveY = input.moveY || 0;
+  const moveLen = Math.hypot(moveX, moveY);
+
+  if (moveLen > 0.08) {
+    return { x: moveX / moveLen, y: moveY / moveLen, angle: Math.atan2(moveY, moveX) };
+  }
+
   const scale = camera.scale || 1;
   const targetX = camera.x + input.pointerX / scale;
   const targetY = camera.y + input.pointerY / scale;
@@ -25,8 +33,9 @@ export function updatePlayerSystem(state: NextEngineState, input: NextInputState
 
   if (input.down) {
     const aim = aimVector(state, input, camera);
-    player.vx += aim.x * player.speed * dt * 3.2;
-    player.vy += aim.y * player.speed * dt * 3.2;
+    const moveLen = Math.min(1, Math.hypot(input.moveX || 0, input.moveY || 0) || 1);
+    player.vx += aim.x * player.speed * dt * 3.2 * moveLen;
+    player.vy += aim.y * player.speed * dt * 3.2 * moveLen;
     player.angle = aim.angle;
   }
 
