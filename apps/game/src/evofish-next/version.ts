@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-beta-balance-4.2.0";
+export const EVOFISH_NEXT_VERSION = "next-beta-routes-4.3.0";
