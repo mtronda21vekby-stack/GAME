@@ -176,7 +176,14 @@ export function saveEvoFishNextProgress(engine: NextEngineState) {
     });
   }
 
-  save.quests = normalizeQuests(engine.quests);
+  save.quests = normalizeQuests({
+    ...save.quests,
+    ...engine.quests,
+    counters: {
+      ...(save.quests?.counters || {}),
+      ...(engine.quests?.counters || {})
+    }
+  });
   save.mutations = normalizeMutations(engine.mutations || save.mutations);
   save.achievements = normalizeAchievements(engine.achievements || save.achievements);
   saveEvoFishNextSave(save);
