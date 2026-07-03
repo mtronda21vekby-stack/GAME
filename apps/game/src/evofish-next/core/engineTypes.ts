@@ -30,6 +30,8 @@ export type NextInputState = {
   down: boolean;
   bite: boolean;
   dash: boolean;
+  moveX?: number;
+  moveY?: number;
 };
 
 export type NextDamageFloat = {
