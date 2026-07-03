@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-custom-skins-2.7.0";
+export const EVOFISH_NEXT_VERSION = "next-viewport-2.8.0";
