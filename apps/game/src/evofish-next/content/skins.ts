@@ -1,10 +1,11 @@
 import type { EvoFishSkinDefinition } from "../core/types";
 
 export const EVOFISH_SKIN_ASSET_BASE = "/game/skins/custom";
+export const EVOFISH_SKIN_ASSET_VERSION = "heif-default-fish-1";
 
 export function getSkinAssetPath(id: string) {
-  if (id === "default") return `${EVOFISH_SKIN_ASSET_BASE}/default-blue-fish.svg`;
-  return `${EVOFISH_SKIN_ASSET_BASE}/${id}.svg`;
+  const file = id === "default" ? "default-blue-fish.svg" : `${id}.svg`;
+  return `${EVOFISH_SKIN_ASSET_BASE}/${file}?v=${EVOFISH_SKIN_ASSET_VERSION}`;
 }
 
 function withAsset(skin: Omit<EvoFishSkinDefinition, "assetPath" | "image">): EvoFishSkinDefinition {
@@ -64,7 +65,7 @@ function pearlSkin(
 }
 
 export const EVOFISH_SKINS: EvoFishSkinDefinition[] = [
-  freeSkin("default", "Стандарт", "any", "Базовый скин.", {
+  freeSkin("default", "Стандарт", "any", "HEIF default fish, fitted for EvoFish gameplay.", {
     primary: "#9fe6ff",
     secondary: "#78c8ff",
     accent: "#ffffff"
