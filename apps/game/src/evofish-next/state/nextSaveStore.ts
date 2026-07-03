@@ -1,6 +1,7 @@
 import type { NextEngineState, NextQuestState } from "../core/engineTypes";
 import type { EvoFishCurrency } from "../core/types";
 import { normalizeNextAccount, type NextAccountState } from "../content/account";
+import { defaultAchievementState, type NextAchievementState } from "../content/achievements";
 import { defaultMutationState, NEXT_MUTATIONS, type NextMutationState } from "../content/mutations";
 import { xpToNextLevel, xpToNextTier } from "../content/progression";
 import { canUnlockSkinInNext, canUseSkinInNext } from "../content/skinUnlockRules";
@@ -78,6 +79,16 @@ function normalizeQuests(quests: Partial<NextQuestState> | null | undefined): Ne
   };
 }
 
+function normalizeAchievements(achievements: Partial<NextAchievementState> | null | undefined): NextAchievementState {
+  const fallback = defaultAchievementState();
+  return {
+    unlocked: {
+      ...fallback.unlocked,
+      ...(achievements?.unlocked || {})
+    }
+  };
+}
+
 function normalizeMutations(mutations: Partial<NextMutationState> | null | undefined): NextMutationState {
   const levels: Record<string, number> = {};
   const input = mutations?.levels || {};
@@ -91,6 +102,11 @@ function normalizeMutations(mutations: Partial<NextMutationState> | null | undef
 
 function normalizeAccount(account: Partial<NextAccountState> | null | undefined): NextAccountState {
   return normalizeNextAccount(account);
+}
+
+function bumpCounter(quests: NextQuestState, key: string, amount = 1) {
+  quests.counters = quests.counters || {};
+  quests.counters[key] = Math.max(0, Math.floor((quests.counters[key] || 0) + amount));
 }
 
 function normalizeSave(save: EvoFishNextSkinSave): EvoFishNextSkinSave {
@@ -114,7 +130,8 @@ function normalizeSave(save: EvoFishNextSkinSave): EvoFishNextSkinSave {
     },
     progress: normalizeProgress(save.progress),
     quests: normalizeQuests(save.quests),
-    mutations: normalizeMutations(save.mutations)
+    mutations: normalizeMutations(save.mutations),
+    achievements: normalizeAchievements(save.achievements)
   };
 }
 
@@ -161,6 +178,7 @@ export function saveEvoFishNextProgress(engine: NextEngineState) {
 
   save.quests = normalizeQuests(engine.quests);
   save.mutations = normalizeMutations(engine.mutations || save.mutations);
+  save.achievements = normalizeAchievements(engine.achievements || save.achievements);
   saveEvoFishNextSave(save);
 }
 
@@ -229,5 +247,6 @@ export function buyMutation(save: EvoFishNextSkinSave, mutationId: string): EvoF
 
   next.economy.corals -= mutation.coralCost;
   next.mutations.levels[mutationId] = Math.min(mutation.maxLevel, (next.mutations.levels[mutationId] || 0) + 1);
+  bumpCounter(next.quests, "mutations");
   return normalizeSave(next);
 }
