@@ -12,6 +12,11 @@ function pickupAmount(state: NextEngineState, value: number, premium = false) {
   return Math.max(1, Math.round(value * bonus));
 }
 
+function bumpQuestCounter(state: NextEngineState, key: string, amount = 1) {
+  state.quests.counters = state.quests.counters || {};
+  state.quests.counters[key] = Math.max(0, Math.floor((state.quests.counters[key] || 0) + amount));
+}
+
 function collectResource(state: NextEngineState, index: number) {
   const node = state.resources[index];
   const def = resourceDef(node.kind);
@@ -51,6 +56,7 @@ function collectResource(state: NextEngineState, index: number) {
   }
 
   state.stats.resourcesCollected = (state.stats.resourcesCollected || 0) + 1;
+  bumpQuestCounter(state, "resources");
   state.resources[index] = {
     ...node,
     respawnT: resourceRespawnDelay(node.kind),
