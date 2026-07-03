@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "basePath": "/game/skins/custom",
+  "defaultSkinId": "default",
+  "skins": {
+    "default": "default-blue-fish.svg",
+    "premium_fish": "premium_fish.svg",
+    "neon_koi": "neon_koi.svg",
+    "reef_royal": "reef_royal.svg",
+    "clown_pop": "clown_pop.svg",
+    "angler_glow": "angler_glow.svg",
+    "deep_sapphire": "deep_sapphire.svg",
+    "gold_scale": "gold_scale.svg",
+    "cyber_fish": "cyber_fish.svg",
+    "pirate_fish": "pirate_fish.svg",
+    "shark_classic": "shark_classic.svg",
+    "shark_tiger": "shark_tiger.svg",
+    "shark_shadow": "shark_shadow.svg",
+    "shark_azure": "shark_azure.svg",
+    "shark_white": "shark_white.svg",
+    "mega_deep": "mega_deep.svg",
+    "mega_bone": "mega_bone.svg",
+    "mega_lava": "mega_lava.svg",
+    "mega_ice": "mega_ice.svg",
+    "mega_nebula": "mega_nebula.svg"
+  }
+}
