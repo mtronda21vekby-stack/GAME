@@ -31,11 +31,11 @@ export const NEXT_RESOURCE_DEFS: NextResourceDefinition[] = [
     color: "#fff3a0",
     glow: "rgba(255,220,120,.34)",
     radius: 16,
-    valueMin: 10,
-    valueMax: 24,
-    weight: 42,
-    respawnMin: 13,
-    respawnMax: 24
+    valueMin: 9,
+    valueMax: 19,
+    weight: 46,
+    respawnMin: 15,
+    respawnMax: 28
   },
   {
     kind: "plankton",
@@ -43,11 +43,11 @@ export const NEXT_RESOURCE_DEFS: NextResourceDefinition[] = [
     color: "#78f0ff",
     glow: "rgba(120,240,255,.28)",
     radius: 15,
-    valueMin: 18,
-    valueMax: 42,
-    weight: 30,
-    respawnMin: 10,
-    respawnMax: 20
+    valueMin: 16,
+    valueMax: 34,
+    weight: 29,
+    respawnMin: 12,
+    respawnMax: 23
   },
   {
     kind: "heal",
@@ -55,11 +55,11 @@ export const NEXT_RESOURCE_DEFS: NextResourceDefinition[] = [
     color: "#6effb4",
     glow: "rgba(110,255,180,.28)",
     radius: 17,
-    valueMin: 16,
-    valueMax: 34,
-    weight: 19,
-    respawnMin: 18,
-    respawnMax: 32
+    valueMin: 14,
+    valueMax: 30,
+    weight: 18,
+    respawnMin: 20,
+    respawnMax: 36
   },
   {
     kind: "coral",
@@ -68,10 +68,10 @@ export const NEXT_RESOURCE_DEFS: NextResourceDefinition[] = [
     glow: "rgba(190,140,255,.34)",
     radius: 18,
     valueMin: 1,
-    valueMax: 2,
-    weight: 4,
-    respawnMin: 52,
-    respawnMax: 92
+    valueMax: 1,
+    weight: 3,
+    respawnMin: 72,
+    respawnMax: 118
   },
   {
     kind: "boost",
@@ -81,9 +81,9 @@ export const NEXT_RESOURCE_DEFS: NextResourceDefinition[] = [
     radius: 15,
     valueMin: 1,
     valueMax: 1,
-    weight: 8,
-    respawnMin: 24,
-    respawnMax: 38
+    weight: 7,
+    respawnMin: 28,
+    respawnMax: 46
   },
   {
     kind: "speed_perk",
@@ -91,11 +91,11 @@ export const NEXT_RESOURCE_DEFS: NextResourceDefinition[] = [
     color: "#5bf0ff",
     glow: "rgba(91,240,255,.30)",
     radius: 16,
-    valueMin: 8,
-    valueMax: 12,
-    weight: 8,
-    respawnMin: 34,
-    respawnMax: 58
+    valueMin: 6,
+    valueMax: 10,
+    weight: 7,
+    respawnMin: 38,
+    respawnMax: 64
   },
   {
     kind: "damage_perk",
@@ -103,11 +103,11 @@ export const NEXT_RESOURCE_DEFS: NextResourceDefinition[] = [
     color: "#ffd36d",
     glow: "rgba(255,180,90,.30)",
     radius: 16,
-    valueMin: 8,
-    valueMax: 12,
-    weight: 7,
-    respawnMin: 38,
-    respawnMax: 62
+    valueMin: 6,
+    valueMax: 10,
+    weight: 6,
+    respawnMin: 42,
+    respawnMax: 70
   },
   {
     kind: "shield_perk",
@@ -115,11 +115,11 @@ export const NEXT_RESOURCE_DEFS: NextResourceDefinition[] = [
     color: "#9affc1",
     glow: "rgba(110,255,180,.30)",
     radius: 16,
-    valueMin: 7,
-    valueMax: 11,
+    valueMin: 6,
+    valueMax: 9,
     weight: 6,
-    respawnMin: 40,
-    respawnMax: 66
+    respawnMin: 46,
+    respawnMax: 76
   },
   {
     kind: "artifact_shell",
@@ -129,9 +129,9 @@ export const NEXT_RESOURCE_DEFS: NextResourceDefinition[] = [
     radius: 20,
     valueMin: 1,
     valueMax: 1,
-    weight: 2,
-    respawnMin: 95,
-    respawnMax: 160
+    weight: 1,
+    respawnMin: 150,
+    respawnMax: 230
   }
 ];
 
