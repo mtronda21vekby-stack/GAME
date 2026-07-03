@@ -1,9 +1,15 @@
 import type { NextEngineState } from "../core/engineTypes";
 import { makeResourceNode, resourceDef, resourceRespawnDelay } from "../content/resources";
+import { getMutationBonus } from "../content/mutations";
 import { awardNextXp } from "./progressionSystem";
 
 function addFloat(state: NextEngineState, text: string, x = state.player.x, y = state.player.y) {
   state.floats.push({ id: state.nextFloatId++, x, y, text, ttl: 0.82, kind: "kill" });
+}
+
+function pickupAmount(state: NextEngineState, value: number, premium = false) {
+  const bonus = 1 + getMutationBonus(state.mutations, "reward") * (premium ? 0.75 : 0.55);
+  return Math.max(1, Math.round(value * bonus));
 }
 
 function collectResource(state: NextEngineState, index: number) {
@@ -11,15 +17,17 @@ function collectResource(state: NextEngineState, index: number) {
   const def = resourceDef(node.kind);
 
   if (node.kind === "pearls") {
-    state.economy.pearls += node.value;
-    state.stats.lastEvent = `${def.name}: +${node.value} жемчуг`;
-    addFloat(state, `+${node.value}P`, node.x, node.y);
+    const amount = pickupAmount(state, node.value);
+    state.economy.pearls += amount;
+    state.stats.lastEvent = `${def.name}: +${amount} жемчуг`;
+    addFloat(state, `🦪 +${amount}`, node.x, node.y);
   }
 
   if (node.kind === "coral") {
-    state.economy.corals += node.value;
-    state.stats.lastEvent = `${def.name}: +${node.value} коралл`;
-    addFloat(state, `+${node.value} CORAL`, node.x, node.y);
+    const amount = pickupAmount(state, node.value, true);
+    state.economy.corals += amount;
+    state.stats.lastEvent = `${def.name}: +${amount} кристалл`;
+    addFloat(state, `💎 +${amount}`, node.x, node.y);
   }
 
   if (node.kind === "plankton") {
