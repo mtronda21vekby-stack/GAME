@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-daily-weekly-3.3.0";
+export const EVOFISH_NEXT_VERSION = "next-quest-director-3.4.0";
