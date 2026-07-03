@@ -1,4 +1,4 @@
-export type NextQuestMetric = "kills" | "mass" | "level" | "tier" | "pearls" | "corals" | "resources" | "craft" | "mutations";
+export type NextQuestMetric = "kills" | "mass" | "level" | "tier" | "pearls" | "corals" | "resources" | "craft" | "mutations" | "perks" | "artifacts";
 
 export type NextQuestScope = "story" | "daily" | "weekly";
 
@@ -38,6 +38,26 @@ export const NEXT_STORY_QUESTS: NextQuestDefinition[] = [
     reward: { xp: 60, pearls: 12, corals: 0 },
     scope: "story",
     directorTag: "tutorial"
+  },
+  {
+    id: "first_perk",
+    title: "Первый перк",
+    description: "Подбери временный перк на карте.",
+    metric: "perks",
+    target: 1,
+    reward: { xp: 90, pearls: 35, corals: 0 },
+    scope: "story",
+    directorTag: "perks"
+  },
+  {
+    id: "ancient_shell",
+    title: "Древняя раковина",
+    description: "Найди редкий artifact pickup.",
+    metric: "artifacts",
+    target: 1,
+    reward: { xp: 260, pearls: 120, corals: 1 },
+    scope: "story",
+    directorTag: "artifact"
   },
   {
     id: "small_predator",
@@ -113,6 +133,26 @@ const DAILY_TEMPLATES: QuestTemplate[] = [
     directorTag: "combat"
   },
   {
+    id: "daily_perks",
+    title: "Перк-рывок",
+    description: "Подбери временные perks: SPD, DMG или SHD.",
+    metric: "perks",
+    targetMin: 2,
+    targetMax: 5,
+    reward: { xp: 210, pearls: 190, corals: 1 },
+    directorTag: "perks"
+  },
+  {
+    id: "daily_artifact",
+    title: "Охота за реликвией",
+    description: "Найди древнюю раковину.",
+    metric: "artifacts",
+    targetMin: 1,
+    targetMax: 1,
+    reward: { xp: 320, pearls: 260, corals: 2 },
+    directorTag: "artifact"
+  },
+  {
     id: "daily_pearls",
     title: "Жемчужный маршрут",
     description: "Подбери жемчужины на карте.",
@@ -128,7 +168,7 @@ const DAILY_TEMPLATES: QuestTemplate[] = [
     description: "Подбери кристаллы-кораллы.",
     metric: "corals",
     targetMin: 2,
-    targetMax: 5,
+    targetMax: 4,
     reward: { xp: 240, pearls: 220, corals: 2 },
     directorTag: "premium"
   },
@@ -176,6 +216,26 @@ const WEEKLY_TEMPLATES: QuestTemplate[] = [
     directorTag: "combat"
   },
   {
+    id: "weekly_perk_chain",
+    title: "Перк-цепочка",
+    description: "Подбери серию временных perks.",
+    metric: "perks",
+    targetMin: 16,
+    targetMax: 34,
+    reward: { xp: 1250, pearls: 1550, corals: 7 },
+    directorTag: "perks"
+  },
+  {
+    id: "weekly_artifact_hunt",
+    title: "Реликвии глубин",
+    description: "Найди несколько древних раковин.",
+    metric: "artifacts",
+    targetMin: 2,
+    targetMax: 5,
+    reward: { xp: 1800, pearls: 2100, corals: 10 },
+    directorTag: "artifact"
+  },
+  {
     id: "weekly_treasure",
     title: "Казна глубин",
     description: "Собери много жемчуга за неделю.",
@@ -190,8 +250,8 @@ const WEEKLY_TEMPLATES: QuestTemplate[] = [
     title: "Кристальный банк",
     description: "Собери кристаллы-кораллы за неделю.",
     metric: "corals",
-    targetMin: 18,
-    targetMax: 42,
+    targetMin: 14,
+    targetMax: 32,
     reward: { xp: 1450, pearls: 1800, corals: 12 },
     directorTag: "premium"
   },
