@@ -27,19 +27,19 @@ export type NextResourceDefinition = {
 export const NEXT_RESOURCE_DEFS: NextResourceDefinition[] = [
   {
     kind: "pearls",
-    name: "Pearl Cluster",
+    name: "Жемчужина",
     color: "#fff3a0",
-    glow: "rgba(255,220,120,.32)",
+    glow: "rgba(255,220,120,.34)",
     radius: 16,
-    valueMin: 8,
-    valueMax: 18,
-    weight: 36,
-    respawnMin: 14,
-    respawnMax: 26
+    valueMin: 10,
+    valueMax: 24,
+    weight: 38,
+    respawnMin: 13,
+    respawnMax: 24
   },
   {
     kind: "plankton",
-    name: "XP Plankton",
+    name: "XP Планктон",
     color: "#78f0ff",
     glow: "rgba(120,240,255,.28)",
     radius: 15,
@@ -63,15 +63,15 @@ export const NEXT_RESOURCE_DEFS: NextResourceDefinition[] = [
   },
   {
     kind: "coral",
-    name: "Coral Shard",
-    color: "#ff9ec8",
-    glow: "rgba(255,120,190,.28)",
+    name: "Кристалл коралла",
+    color: "#8fe8ff",
+    glow: "rgba(190,140,255,.34)",
     radius: 18,
     valueMin: 1,
-    valueMax: 2,
-    weight: 10,
-    respawnMin: 26,
-    respawnMax: 44
+    valueMax: 3,
+    weight: 11,
+    respawnMin: 24,
+    respawnMax: 42
   },
   {
     kind: "boost",
