@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-achievements-crystal-3.5.0";
+export const EVOFISH_NEXT_VERSION = "next-mutation-draft-3.6.0";
