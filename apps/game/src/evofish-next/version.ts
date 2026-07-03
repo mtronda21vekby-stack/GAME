@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-skin-assets-2.9.0";
+export const EVOFISH_NEXT_VERSION = "next-heif-fish-3.0.0";
