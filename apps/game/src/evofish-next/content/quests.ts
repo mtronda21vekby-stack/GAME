@@ -112,10 +112,10 @@ export const NEXT_STORY_QUESTS: NextQuestDefinition[] = [
   {
     id: "shark_path",
     title: "Путь к акуле",
-    description: "Достигни LV 30.",
+    description: "Достигни LV 24.",
     metric: "level",
-    target: 30,
-    reward: { xp: 520, pearls: 180, corals: 4 },
+    target: 24,
+    reward: { xp: 620, pearls: 260, corals: 2 },
     scope: "story",
     directorTag: "evolution"
   }
@@ -127,9 +127,9 @@ const DAILY_TEMPLATES: QuestTemplate[] = [
     title: "Охота дня",
     description: "Сделай убийства в текущем забеге.",
     metric: "kills",
-    targetMin: 6,
-    targetMax: 14,
-    reward: { xp: 180, pearls: 180, corals: 1 },
+    targetMin: 5,
+    targetMax: 12,
+    reward: { xp: 160, pearls: 120, corals: 0 },
     directorTag: "combat"
   },
   {
@@ -138,8 +138,8 @@ const DAILY_TEMPLATES: QuestTemplate[] = [
     description: "Подбери временные perks: SPD, DMG или SHD.",
     metric: "perks",
     targetMin: 2,
-    targetMax: 5,
-    reward: { xp: 210, pearls: 190, corals: 1 },
+    targetMax: 4,
+    reward: { xp: 170, pearls: 130, corals: 0 },
     directorTag: "perks"
   },
   {
@@ -149,7 +149,7 @@ const DAILY_TEMPLATES: QuestTemplate[] = [
     metric: "artifacts",
     targetMin: 1,
     targetMax: 1,
-    reward: { xp: 320, pearls: 260, corals: 2 },
+    reward: { xp: 280, pearls: 180, corals: 1 },
     directorTag: "artifact"
   },
   {
@@ -157,9 +157,9 @@ const DAILY_TEMPLATES: QuestTemplate[] = [
     title: "Жемчужный маршрут",
     description: "Подбери жемчужины на карте.",
     metric: "pearls",
-    targetMin: 180,
-    targetMax: 520,
-    reward: { xp: 170, pearls: 160, corals: 1 },
+    targetMin: 160,
+    targetMax: 420,
+    reward: { xp: 150, pearls: 110, corals: 0 },
     directorTag: "economy"
   },
   {
@@ -167,9 +167,9 @@ const DAILY_TEMPLATES: QuestTemplate[] = [
     title: "Кристальный след",
     description: "Подбери кристаллы-кораллы.",
     metric: "corals",
-    targetMin: 2,
-    targetMax: 4,
-    reward: { xp: 240, pearls: 220, corals: 2 },
+    targetMin: 1,
+    targetMax: 2,
+    reward: { xp: 220, pearls: 180, corals: 1 },
     directorTag: "premium"
   },
   {
@@ -178,8 +178,8 @@ const DAILY_TEMPLATES: QuestTemplate[] = [
     description: "Подбери ресурсы на карте.",
     metric: "resources",
     targetMin: 8,
-    targetMax: 18,
-    reward: { xp: 190, pearls: 150, corals: 1 },
+    targetMax: 16,
+    reward: { xp: 160, pearls: 110, corals: 0 },
     directorTag: "map"
   },
   {
@@ -188,8 +188,8 @@ const DAILY_TEMPLATES: QuestTemplate[] = [
     description: "Используй крафт-рецепты.",
     metric: "craft",
     targetMin: 1,
-    targetMax: 3,
-    reward: { xp: 210, pearls: 130, corals: 1 },
+    targetMax: 2,
+    reward: { xp: 170, pearls: 100, corals: 0 },
     directorTag: "craft"
   },
   {
@@ -199,7 +199,7 @@ const DAILY_TEMPLATES: QuestTemplate[] = [
     metric: "mutations",
     targetMin: 1,
     targetMax: 1,
-    reward: { xp: 260, pearls: 180, corals: 2 },
+    reward: { xp: 240, pearls: 140, corals: 1 },
     directorTag: "mutation"
   }
 ];
@@ -210,9 +210,9 @@ const WEEKLY_TEMPLATES: QuestTemplate[] = [
     title: "Неделя охотника",
     description: "Сделай серию убийств за неделю.",
     metric: "kills",
-    targetMin: 45,
-    targetMax: 85,
-    reward: { xp: 1200, pearls: 1600, corals: 8 },
+    targetMin: 38,
+    targetMax: 72,
+    reward: { xp: 900, pearls: 900, corals: 4 },
     directorTag: "combat"
   },
   {
@@ -220,9 +220,9 @@ const WEEKLY_TEMPLATES: QuestTemplate[] = [
     title: "Перк-цепочка",
     description: "Подбери серию временных perks.",
     metric: "perks",
-    targetMin: 16,
-    targetMax: 34,
-    reward: { xp: 1250, pearls: 1550, corals: 7 },
+    targetMin: 12,
+    targetMax: 26,
+    reward: { xp: 950, pearls: 850, corals: 3 },
     directorTag: "perks"
   },
   {
@@ -230,9 +230,9 @@ const WEEKLY_TEMPLATES: QuestTemplate[] = [
     title: "Реликвии глубин",
     description: "Найди несколько древних раковин.",
     metric: "artifacts",
-    targetMin: 2,
-    targetMax: 5,
-    reward: { xp: 1800, pearls: 2100, corals: 10 },
+    targetMin: 1,
+    targetMax: 3,
+    reward: { xp: 1200, pearls: 1100, corals: 5 },
     directorTag: "artifact"
   },
   {
@@ -240,9 +240,9 @@ const WEEKLY_TEMPLATES: QuestTemplate[] = [
     title: "Казна глубин",
     description: "Собери много жемчуга за неделю.",
     metric: "pearls",
-    targetMin: 2500,
-    targetMax: 6500,
-    reward: { xp: 1050, pearls: 2200, corals: 7 },
+    targetMin: 1800,
+    targetMax: 5000,
+    reward: { xp: 850, pearls: 1300, corals: 4 },
     directorTag: "economy"
   },
   {
@@ -250,9 +250,9 @@ const WEEKLY_TEMPLATES: QuestTemplate[] = [
     title: "Кристальный банк",
     description: "Собери кристаллы-кораллы за неделю.",
     metric: "corals",
-    targetMin: 14,
-    targetMax: 32,
-    reward: { xp: 1450, pearls: 1800, corals: 12 },
+    targetMin: 7,
+    targetMax: 16,
+    reward: { xp: 1100, pearls: 1100, corals: 6 },
     directorTag: "premium"
   },
   {
@@ -260,9 +260,9 @@ const WEEKLY_TEMPLATES: QuestTemplate[] = [
     title: "Мастерская рифа",
     description: "Используй крафт много раз.",
     metric: "craft",
-    targetMin: 8,
-    targetMax: 18,
-    reward: { xp: 1150, pearls: 1450, corals: 7 },
+    targetMin: 6,
+    targetMax: 14,
+    reward: { xp: 850, pearls: 850, corals: 3 },
     directorTag: "craft"
   },
   {
@@ -270,9 +270,9 @@ const WEEKLY_TEMPLATES: QuestTemplate[] = [
     title: "Генная линия",
     description: "Прокачай мутации за неделю.",
     metric: "mutations",
-    targetMin: 3,
-    targetMax: 7,
-    reward: { xp: 1500, pearls: 1750, corals: 10 },
+    targetMin: 2,
+    targetMax: 5,
+    reward: { xp: 1200, pearls: 1000, corals: 5 },
     directorTag: "mutation"
   },
   {
@@ -280,9 +280,9 @@ const WEEKLY_TEMPLATES: QuestTemplate[] = [
     title: "Чистка карты",
     description: "Подбери много ресурсов за неделю.",
     metric: "resources",
-    targetMin: 60,
-    targetMax: 120,
-    reward: { xp: 1100, pearls: 1500, corals: 7 },
+    targetMin: 48,
+    targetMax: 96,
+    reward: { xp: 850, pearls: 950, corals: 4 },
     directorTag: "map"
   }
 ];
@@ -334,7 +334,7 @@ function buildQuest(template: QuestTemplate, scope: NextQuestScope, key: string,
   const random = rand(`${scope}:${key}:${template.id}:${index}`);
   const span = Math.max(0, template.targetMax - template.targetMin);
   const target = Math.round(template.targetMin + random() * span);
-  const rewardBoost = scope === "weekly" ? 1.35 : 1;
+  const rewardBoost = 1;
   return {
     id: `${scope}_${key}_${template.id}`,
     title: scope === "daily" ? `Daily: ${template.title}` : `Weekly: ${template.title}`,
