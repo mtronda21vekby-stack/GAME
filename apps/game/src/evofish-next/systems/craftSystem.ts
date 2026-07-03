@@ -21,6 +21,11 @@ function syncCraftStats(state: NextEngineState) {
   state.stats.craftSonarT = state.craft.sonarT;
 }
 
+function bumpQuestCounter(state: NextEngineState, key: string, amount = 1) {
+  state.quests.counters = state.quests.counters || {};
+  state.quests.counters[key] = Math.max(0, Math.floor((state.quests.counters[key] || 0) + amount));
+}
+
 export function canCraftRecipe(state: NextEngineState, recipeId: string) {
   const recipe = NEXT_CRAFT_RECIPES.find((item) => item.id === recipeId);
   if (!recipe) return false;
@@ -35,6 +40,7 @@ export function applyCraftRecipe(state: NextEngineState, recipeId: string) {
 
   payCost(state, recipe);
   state.stats.craftUses = (state.stats.craftUses || 0) + 1;
+  bumpQuestCounter(state, "craft");
 
   if (recipe.effect === "heal") {
     const heal = Math.round(state.player.hpMax * recipe.value);
