@@ -21,6 +21,7 @@ export * from "./systems/cameraSystem";
 export * from "./systems/playerSystem";
 export * from "./systems/enemySystem";
 export * from "./systems/directorSystem";
+export * from "./systems/questDirectorSystem";
 export * from "./systems/eventSystem";
 export * from "./systems/collisionSystem";
 export * from "./systems/combatSystem";
