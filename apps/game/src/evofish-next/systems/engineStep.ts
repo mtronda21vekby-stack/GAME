@@ -8,6 +8,7 @@ import { updateEnemySystem } from "./enemySystem";
 import { updateEventSystem } from "./eventSystem";
 import { updateFeedbackSystem } from "./feedbackSystem";
 import { syncProgressionStats } from "./progressionSystem";
+import { updateQuestDirectorSystem } from "./questDirectorSystem";
 import { updateQuestSystem } from "./questSystem";
 import { updatePlayerSystem } from "./playerSystem";
 import { updateResourceSystem } from "./resourceSystem";
@@ -24,6 +25,7 @@ export function stepNextEngine(state: NextEngineState, input: NextInputState, vi
     updatePlayerSystem(state, input, camera, dt);
     updateZoneSystem(state, dt);
     updateResourceSystem(state, dt);
+    updateQuestDirectorSystem(state);
     updateCombatSystem(state, input, camera);
     updateEnemySystem(state, dt);
     updateDirectorSystem(state, dt);
@@ -34,6 +36,7 @@ export function stepNextEngine(state: NextEngineState, input: NextInputState, vi
     input.down = false;
     updateZoneSystem(state, dt);
     updateResourceSystem(state, dt);
+    updateQuestDirectorSystem(state);
     updateEnemySystem(state, dt);
     updateDirectorSystem(state, dt);
   }
