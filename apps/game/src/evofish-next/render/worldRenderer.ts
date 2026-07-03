@@ -1,5 +1,5 @@
 import type { NextAIState, NextCameraState, NextEngineState, NextFishEntity, NextViewport } from "../core/engineTypes";
-import { resourceDef } from "../content/resources";
+import { resourceDef, type NextResourceNode } from "../content/resources";
 import { NEXT_MAP_ZONES } from "../content/zones";
 import { drawEvoFishSkin } from "./canvasSkinRenderer";
 import { getNextCamera } from "../systems/cameraSystem";
@@ -207,27 +207,122 @@ function drawEvents(ctx: CanvasRenderingContext2D, state: NextEngineState, camer
   }
 }
 
+function drawPearlPickup(ctx: CanvasRenderingContext2D, node: NextResourceNode, pulse: number) {
+  const r = node.radius;
+  const shell = ctx.createRadialGradient(node.x - r * 0.35, node.y - r * 0.35, r * 0.2, node.x, node.y, r * 1.25);
+  shell.addColorStop(0, "#ffffff");
+  shell.addColorStop(0.46, "#fff3a0");
+  shell.addColorStop(1, "#b88b32");
+
+  ctx.save();
+  ctx.translate(node.x, node.y);
+  ctx.rotate(Math.sin(node.pulse) * 0.16);
+  ctx.fillStyle = "rgba(255,220,120,.23)";
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 2.08 + pulse, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.translate(-node.x, -node.y);
+  ctx.fillStyle = shell;
+  ctx.beginPath();
+  ctx.ellipse(node.x, node.y, r * 1.05, r * 0.82, -0.16, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,.72)";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.strokeStyle = "rgba(130,90,24,.24)";
+  ctx.lineWidth = 2;
+  for (let i = -2; i <= 2; i += 1) {
+    ctx.beginPath();
+    ctx.ellipse(node.x + i * r * 0.18, node.y + r * 0.08, r * 0.15, r * 0.66, -0.12, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = "rgba(255,255,255,.86)";
+  ctx.beginPath();
+  ctx.arc(node.x - r * 0.28, node.y - r * 0.26, r * 0.18, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawCrystalPickup(ctx: CanvasRenderingContext2D, node: NextResourceNode, pulse: number) {
+  const r = node.radius;
+  const g = ctx.createLinearGradient(node.x - r, node.y - r, node.x + r, node.y + r);
+  g.addColorStop(0, "#d8fbff");
+  g.addColorStop(0.38, "#8fe8ff");
+  g.addColorStop(0.72, "#b48cff");
+  g.addColorStop(1, "#5a5cff");
+
+  ctx.save();
+  ctx.translate(node.x, node.y);
+  ctx.rotate(Math.sin(node.pulse * 0.7) * 0.2);
+  ctx.fillStyle = "rgba(190,140,255,.24)";
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 2.2 + pulse, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(0, -r * 1.15);
+  ctx.lineTo(r * 0.95, -r * 0.18);
+  ctx.lineTo(r * 0.58, r * 1.05);
+  ctx.lineTo(-r * 0.58, r * 1.05);
+  ctx.lineTo(-r * 0.95, -r * 0.18);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,.72)";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.strokeStyle = "rgba(255,255,255,.32)";
+  ctx.beginPath();
+  ctx.moveTo(0, -r * 1.15);
+  ctx.lineTo(0, r * 1.05);
+  ctx.moveTo(-r * 0.95, -r * 0.18);
+  ctx.lineTo(r * 0.95, -r * 0.18);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawOrbPickup(ctx: CanvasRenderingContext2D, node: NextResourceNode, fill: string, glow: string, pulse: number) {
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(node.x, node.y, node.radius * 2.15 + pulse, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = fill;
+  ctx.beginPath();
+  ctx.arc(node.x, node.y, node.radius + pulse * 0.4, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "rgba(255,255,255,.55)";
+  ctx.beginPath();
+  ctx.arc(node.x - node.radius * 0.28, node.y - node.radius * 0.34, node.radius * 0.24, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = "rgba(255,255,255,.55)";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
 function drawResources(ctx: CanvasRenderingContext2D, state: NextEngineState, camera: NextCameraState, quality: string) {
   for (const node of state.resources) {
     if (node.respawnT > 0 || !isVisible(camera, node.x, node.y, 60)) continue;
     const def = resourceDef(node.kind);
     const pulse = Math.sin(node.pulse) * 2;
 
-    if (quality !== "low") {
-      ctx.fillStyle = def.glow;
-      ctx.beginPath();
-      ctx.arc(node.x, node.y, node.radius * 2.15 + pulse, 0, Math.PI * 2);
-      ctx.fill();
+    if (node.kind === "pearls") {
+      drawPearlPickup(ctx, node, pulse);
+      continue;
     }
 
-    ctx.fillStyle = def.color;
-    ctx.beginPath();
-    ctx.arc(node.x, node.y, node.radius + pulse * 0.4, 0, Math.PI * 2);
-    ctx.fill();
+    if (node.kind === "coral") {
+      drawCrystalPickup(ctx, node, pulse);
+      continue;
+    }
 
-    ctx.strokeStyle = "rgba(255,255,255,.55)";
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    drawOrbPickup(ctx, node, def.color, quality !== "low" ? def.glow : "rgba(255,255,255,.06)", pulse);
   }
 }
 
@@ -340,7 +435,7 @@ function drawMiniMap(ctx: CanvasRenderingContext2D, state: NextEngineState, came
   for (const node of state.resources.slice(0, 18)) {
     if (node.respawnT > 0) continue;
     const def = resourceDef(node.kind);
-    drawMapDot(ctx, mapX(state, node.x, left, mapW), mapY(state, node.y, top, mapH), 1.7, def.color);
+    drawMapDot(ctx, mapX(state, node.x, left, mapW), mapY(state, node.y, top, mapH), node.kind === "coral" ? 2.5 : node.kind === "pearls" ? 2.2 : 1.7, def.color);
   }
 
   const camX = left + (camera.x / state.config.width) * mapW;
