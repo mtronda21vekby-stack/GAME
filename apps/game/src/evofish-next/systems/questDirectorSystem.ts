@@ -4,13 +4,15 @@ import { makeResourceNode, type NextResourceKind } from "../content/resources";
 const FOCUS_RESOURCE_KIND: Record<string, NextResourceKind[]> = {
   economy: ["pearls", "pearls", "plankton", "heal"],
   premium: ["pearls", "coral", "boost", "plankton"],
-  map: ["pearls", "plankton", "boost", "heal"],
-  craft: ["pearls", "pearls", "heal", "coral"],
+  map: ["pearls", "plankton", "boost", "heal", "speed_perk"],
+  craft: ["pearls", "pearls", "heal", "coral", "shield_perk"],
   mutation: ["pearls", "coral", "plankton", "boost"],
-  combat: ["heal", "boost", "pearls", "plankton"],
-  growth: ["plankton", "pearls", "heal", "boost"],
-  evolution: ["plankton", "pearls", "boost", "coral"],
-  balanced: ["pearls", "plankton", "heal", "boost", "coral"]
+  perks: ["speed_perk", "damage_perk", "shield_perk", "pearls"],
+  artifact: ["artifact_shell", "speed_perk", "pearls", "boost"],
+  combat: ["heal", "boost", "damage_perk", "shield_perk", "pearls"],
+  growth: ["plankton", "pearls", "heal", "speed_perk"],
+  evolution: ["plankton", "pearls", "boost", "coral", "artifact_shell"],
+  balanced: ["pearls", "plankton", "heal", "boost", "speed_perk", "coral"]
 };
 
 function focus(state: NextEngineState) {
@@ -29,15 +31,25 @@ function activeCrystalCount(state: NextEngineState) {
   return state.resources.filter((node) => node.kind === "coral" && node.respawnT <= 0).length;
 }
 
+function activeArtifactCount(state: NextEngineState) {
+  return state.resources.filter((node) => node.kind === "artifact_shell" && node.respawnT <= 0).length;
+}
+
 function replaceResource(state: NextEngineState, index: number, kind: NextResourceKind) {
   if (kind === "coral" && activeCrystalCount(state) >= 1) return;
+  if (kind === "artifact_shell" && activeArtifactCount(state) >= 1) return;
   state.resources[index] = makeResourceNode(9000 + state.frame + index, state.config.width, state.config.height, kind);
 }
 
 function steerResourcePool(state: NextEngineState) {
   if (!state.resources.length) return;
   const kinds = preferredKinds(state);
-  const required = kinds.slice(0, 2).filter((kind) => kind !== "coral" || activeCrystalCount(state) <= 0);
+  const currentFocus = focus(state);
+  const requiredCount = currentFocus === "artifact" || currentFocus === "perks" ? 3 : 2;
+  const required = kinds
+    .slice(0, requiredCount)
+    .filter((kind) => kind !== "coral" || activeCrystalCount(state) <= 0)
+    .filter((kind) => kind !== "artifact_shell" || activeArtifactCount(state) <= 0);
 
   for (const kind of required) {
     if (hasActiveKind(state, kind)) continue;
