@@ -13,6 +13,10 @@ function scopeLabel(scope: NextQuestScope) {
   return "Quest";
 }
 
+function questCounter(state: NextEngineState, key: string) {
+  return Math.max(0, Math.floor(state.quests.counters?.[key] || 0));
+}
+
 function questValue(state: NextEngineState, quest: NextQuestDefinition) {
   if (quest.metric === "kills") return state.stats.kills;
   if (quest.metric === "mass") return state.player.mass;
@@ -20,8 +24,8 @@ function questValue(state: NextEngineState, quest: NextQuestDefinition) {
   if (quest.metric === "tier") return state.player.tier;
   if (quest.metric === "pearls") return state.economy.pearls;
   if (quest.metric === "corals") return state.economy.corals;
-  if (quest.metric === "resources") return state.stats.resourcesCollected || 0;
-  if (quest.metric === "craft") return state.stats.craftUses || 0;
+  if (quest.metric === "resources") return Math.max(state.stats.resourcesCollected || 0, questCounter(state, "resources"));
+  if (quest.metric === "craft") return Math.max(state.stats.craftUses || 0, questCounter(state, "craft"));
   if (quest.metric === "mutations") return Math.max(state.stats.mutationPurchases || 0, getMutationTotalLevel(state.mutations));
   return 0;
 }
@@ -29,6 +33,7 @@ function questValue(state: NextEngineState, quest: NextQuestDefinition) {
 function ensureQuestDirectorState(state: NextEngineState) {
   const board = buildQuestBoard();
   state.quests.baselines = state.quests.baselines || {};
+  state.quests.counters = state.quests.counters || {};
 
   if (state.quests.dailyKey !== board.dailyKey) {
     state.quests.dailyKey = board.dailyKey;
