@@ -142,6 +142,8 @@ export type NextEngineStats = {
   achievementsUnlocked?: number;
   craftUses?: number;
   mutationPurchases?: number;
+  perksPicked?: number;
+  artifactsFound?: number;
   questDirectorFocus?: string;
   dailyQuestKey?: string;
   weeklyQuestKey?: string;
