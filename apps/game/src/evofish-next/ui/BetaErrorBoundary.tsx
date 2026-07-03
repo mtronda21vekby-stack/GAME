@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "../../router";
+import { saveBetaLastError } from "../state/errorReportStore";
 import { inspectEvoFishNextSave, repairEvoFishNextSave, resetEvoFishNextRun, type EvoFishSaveDoctorReport } from "../state/nextSaveStore";
 import { EVOFISH_NEXT_VERSION } from "../version";
 
@@ -19,6 +20,7 @@ export class BetaErrorBoundary extends React.Component<BetaErrorBoundaryProps, B
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
+    saveBetaLastError(error, info.componentStack || undefined);
     console.error("EvoFish beta runtime error", error, info);
   }
 
@@ -35,7 +37,7 @@ export class BetaErrorBoundary extends React.Component<BetaErrorBoundaryProps, B
         <section className="efBetaErrorCard">
           <span>BLACKCROWN ERROR GUARD · {EVOFISH_NEXT_VERSION}</span>
           <h1>Game Error</h1>
-          <p>Игра поймала runtime-ошибку вместо белого экрана. Можно восстановить save, сбросить run, почистить cache или открыть report flow.</p>
+          <p>Игра поймала runtime-ошибку вместо белого экрана. Ошибка сохранена для Report Bug. Можно восстановить save, сбросить run или почистить cache.</p>
           <pre>{safeErrorText(this.state.error)}</pre>
           <div className="efErrorActions">
             <button onClick={this.reload}>Reload</button>
@@ -49,6 +51,7 @@ export class BetaErrorBoundary extends React.Component<BetaErrorBoundaryProps, B
           <div className="efErrorReport">
             <b>Save Doctor: {report.status.toUpperCase()}</b>
             {(report.issues.length ? report.issues : ["No save issues detected."]).map((issue) => <em key={issue}>{issue}</em>)}
+            <em>Last error captured for /game/report.</em>
           </div>
         </section>
         <style>{`
