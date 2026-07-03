@@ -1,4 +1,4 @@
-export const EVOFISH_VERSION = "v0.00.50 alpha";
+export const EVOFISH_VERSION = "v0.00.51 alpha";
 
 type ClassicWindow = Window & {
   __bcVisualScaleGuardV5?: boolean;
