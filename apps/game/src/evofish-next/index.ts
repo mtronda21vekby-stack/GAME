@@ -39,6 +39,7 @@ export * from "./systems/engineStep";
 export * from "./render/SkinPreview";
 export * from "./render/canvasSkinRenderer";
 export * from "./render/worldRenderer";
+export * from "./ui/BetaErrorBoundary";
 export * from "./ui/BetaProgress";
 export * from "./ui/SkinLab";
 export * from "./ui/NextLobby";
