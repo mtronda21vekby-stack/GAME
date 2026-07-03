@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { Router } from "../router";
 import { Game } from "./Game";
+import { BetaChecklist } from "../evofish-next/ui/BetaChecklist";
 import { BetaErrorBoundary } from "../evofish-next/ui/BetaErrorBoundary";
 import { BetaHome } from "../evofish-next/ui/BetaHome";
 import { BetaProgress } from "../evofish-next/ui/BetaProgress";
@@ -38,6 +39,7 @@ export function App() {
         { path: "/game/repair", element: withBoundary(<BetaProgress />) },
         { path: "/game/qa", element: withBoundary(<BetaQA />) },
         { path: "/game/report", element: withBoundary(<BetaReport />) },
+        { path: "/game/checklist", element: withBoundary(<BetaChecklist />) },
         { path: "/game/skins", element: withBoundary(<SkinLab />) },
         { path: "/game/classic", element: withBoundary(<Game />) },
         { path: "/game/next", element: withBoundary(<NextLobby />) },
@@ -45,6 +47,7 @@ export function App() {
         { path: "/game/next/progress", element: withBoundary(<BetaProgress />) },
         { path: "/game/next/qa", element: withBoundary(<BetaQA />) },
         { path: "/game/next/report", element: withBoundary(<BetaReport />) },
+        { path: "/game/next/checklist", element: withBoundary(<BetaChecklist />) },
         { path: "/game/next/skins", element: withBoundary(<SkinLab />) },
         { path: "/game/next/play", element: withBoundary(<NextPlaytest />) },
         { path: "/classic", element: withBoundary(<Game />) },
@@ -53,6 +56,7 @@ export function App() {
         { path: "/next/progress", element: withBoundary(<BetaProgress />) },
         { path: "/next/qa", element: withBoundary(<BetaQA />) },
         { path: "/next/report", element: withBoundary(<BetaReport />) },
+        { path: "/next/checklist", element: withBoundary(<BetaChecklist />) },
         { path: "/next/skins", element: withBoundary(<SkinLab />) },
         { path: "/next/play", element: withBoundary(<NextPlaytest />) },
       ]}
