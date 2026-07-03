@@ -68,6 +68,10 @@ function normalizeQuests(quests: Partial<NextQuestState> | null | undefined): Ne
       ...fallback.baselines,
       ...(quests?.baselines || {})
     },
+    counters: {
+      ...fallback.counters,
+      ...(quests?.counters || {})
+    },
     dailyKey: quests?.dailyKey || fallback.dailyKey,
     weeklyKey: quests?.weeklyKey || fallback.weeklyKey,
     directorFocus: quests?.directorFocus || fallback.directorFocus
