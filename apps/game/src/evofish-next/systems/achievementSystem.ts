@@ -14,13 +14,19 @@ function addFloat(state: NextEngineState, text: string) {
   });
 }
 
+function counter(state: NextEngineState, key: string) {
+  return Math.max(0, Math.floor(state.quests.counters?.[key] || 0));
+}
+
 function achievementValue(state: NextEngineState, achievement: NextAchievementDefinition) {
   if (achievement.metric === "kills") return state.stats.kills;
   if (achievement.metric === "tier") return state.player.tier;
   if (achievement.metric === "level") return state.player.level;
-  if (achievement.metric === "craft") return Math.max(state.stats.craftUses || 0, state.quests.counters?.craft || 0);
-  if (achievement.metric === "resources") return Math.max(state.stats.resourcesCollected || 0, state.quests.counters?.resources || 0);
-  if (achievement.metric === "mutations") return Math.max(state.quests.counters?.mutations || 0, getMutationTotalLevel(state.mutations));
+  if (achievement.metric === "craft") return Math.max(state.stats.craftUses || 0, counter(state, "craft"));
+  if (achievement.metric === "resources") return Math.max(state.stats.resourcesCollected || 0, counter(state, "resources"));
+  if (achievement.metric === "mutations") return Math.max(state.stats.mutationPurchases || 0, counter(state, "mutations"), getMutationTotalLevel(state.mutations));
+  if (achievement.metric === "perks") return Math.max(state.stats.perksPicked || 0, counter(state, "perks"));
+  if (achievement.metric === "artifacts") return Math.max(state.stats.artifactsFound || 0, counter(state, "artifacts"));
   if (achievement.metric === "pearls") return state.economy.pearls;
   if (achievement.metric === "corals") return state.economy.corals;
   return 0;
