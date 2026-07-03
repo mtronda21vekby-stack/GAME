@@ -34,6 +34,7 @@ export function applyCraftRecipe(state: NextEngineState, recipeId: string) {
   if (!recipe || !canCraftRecipe(state, recipeId)) return false;
 
   payCost(state, recipe);
+  state.stats.craftUses = (state.stats.craftUses || 0) + 1;
 
   if (recipe.effect === "heal") {
     const heal = Math.round(state.player.hpMax * recipe.value);
