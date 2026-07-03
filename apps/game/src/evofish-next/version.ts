@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-cache-doctor-5.0.1";
+export const EVOFISH_NEXT_VERSION = "next-error-capture-5.1.0";
