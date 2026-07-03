@@ -2,13 +2,7 @@ import React, { useState } from "react";
 import { Link } from "../../router";
 import { NEXT_BETA_BALANCE_VERSION, NEXT_BETA_ECONOMY_TARGETS } from "../content/balance";
 import { getMutationTotalLevel } from "../content/mutations";
-import {
-  inspectEvoFishNextSave,
-  loadEvoFishNextSave,
-  repairEvoFishNextSave,
-  resetEvoFishNextRun,
-  type EvoFishSaveDoctorReport
-} from "../state/nextSaveStore";
+import { inspectEvoFishNextSave, loadEvoFishNextSave, repairEvoFishNextSave, resetEvoFishNextRun, type EvoFishSaveDoctorReport } from "../state/nextSaveStore";
 import { EVOFISH_NEXT_VERSION } from "../version";
 
 function format(value: number) {
@@ -48,7 +42,7 @@ export function BetaHome() {
           <div>
             <span>BLACKCROWN · EVOFISH BETA FLOW · {EVOFISH_NEXT_VERSION}</span>
             <h1>EvoFish Beta</h1>
-            <p>Основной маршрут игры теперь здесь: играть, проверить прогресс, починить сохранение, открыть скины или вернуться в Classic fallback.</p>
+            <p>Основной маршрут игры: играть, проверять прогресс, пройти QA, открыть скины или вернуться в Classic fallback.</p>
           </div>
           <div className={`efSaveStatus ${statusTone(doctor)}`}>
             <small>Save Doctor</small>
@@ -64,55 +58,32 @@ export function BetaHome() {
           <article><span>Баланс</span><b>{NEXT_BETA_BALANCE_VERSION}</b><small>{NEXT_BETA_ECONOMY_TARGETS.pearlsPerTenMinutes} жемчуга / 10 мин</small></article>
         </section>
 
-        <section className="efBetaActionGrid">
-          <Link className="efBetaAction primary" to="/game/play">
-            <b>Играть</b>
-            <span>Основной beta-run: ресурсы, перки, мутации, боссы, Daily/Weekly.</span>
-            <em>PLAY</em>
-          </Link>
-          <Link className="efBetaAction" to="/game/progress">
-            <b>Progress + Repair</b>
-            <span>Задания, достижения, balance targets, Save Doctor и debug save.</span>
-            <em>PROGRESS</em>
-          </Link>
-          <Link className="efBetaAction" to="/game/skins">
-            <b>Скины</b>
-            <span>Skin Lab, формы fish/shark/megalodon и магазин косметики.</span>
-            <em>SKINS</em>
-          </Link>
-          <Link className="efBetaAction classic" to="/game/classic">
-            <b>Classic fallback</b>
-            <span>Старая версия оставлена как запасной режим, не основной.</span>
-            <em>CLASSIC</em>
-          </Link>
+        <section className="efBetaActionGrid five">
+          <Link className="efBetaAction primary" to="/game/play"><b>Играть</b><span>Основной beta-run: ресурсы, перки, мутации, боссы, Daily/Weekly.</span><em>PLAY</em></Link>
+          <Link className="efBetaAction" to="/game/progress"><b>Progress + Repair</b><span>Задания, достижения, balance targets, Save Doctor.</span><em>PROGRESS</em></Link>
+          <Link className="efBetaAction qa" to="/game/qa"><b>QA Pass</b><span>Чеклист маршрутов, smoke checks, save, touch/stick и repair path.</span><em>QA</em></Link>
+          <Link className="efBetaAction" to="/game/skins"><b>Скины</b><span>Skin Lab, формы fish/shark/megalodon и магазин косметики.</span><em>SKINS</em></Link>
+          <Link className="efBetaAction classic" to="/game/classic"><b>Classic fallback</b><span>Старая версия оставлена как запасной режим.</span><em>CLASSIC</em></Link>
         </section>
 
         <section className="efBetaRepairPanel">
-          <div>
-            <span>Быстрое восстановление</span>
-            <h2>Repair path без захода в игру</h2>
-            <p>Если после обновления что-то сломалось, сначала жми Inspect или Repair. Restart Run сбрасывает только текущий забег, не удаляя кошелёк, скины и аккаунт.</p>
-          </div>
+          <div><span>Быстрое восстановление</span><h2>Repair path</h2><p>Перед тестом можно сделать Inspect или Repair. Restart Run сбрасывает только текущий забег.</p></div>
           <div className="efBetaRepairActions">
             <button onClick={() => refresh(inspectEvoFishNextSave())}>Inspect</button>
             <button onClick={() => refresh(repairEvoFishNextSave())}>Repair Save</button>
             <button onClick={() => refresh(resetEvoFishNextRun())}>Restart Run</button>
-            <Link to="/game/progress">Open Save Doctor</Link>
+            <Link to="/game/progress">Save Doctor</Link>
+            <Link to="/game/qa">QA</Link>
           </div>
         </section>
 
         <section className="efBetaRoutePanel">
-          <b>Stable beta routes</b>
-          <code>/game</code>
-          <code>/game/play</code>
-          <code>/game/progress</code>
-          <code>/game/skins</code>
-          <code>/game/classic</code>
+          <b>Stable beta routes</b><code>/game</code><code>/game/play</code><code>/game/progress</code><code>/game/repair</code><code>/game/qa</code><code>/game/skins</code><code>/game/classic</code>
         </section>
       </section>
 
       <style>{`
-        .efBetaHome{min-height:100vh;background:#020b15;color:#e7f2ff;font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif}.efBetaHomeShell{width:min(1120px,calc(100vw - 28px));margin:0 auto;padding:max(22px,env(safe-area-inset-top)) 0 max(24px,env(safe-area-inset-bottom));display:grid;gap:14px}.efBetaHomeHero,.efBetaHomeStats article,.efBetaAction,.efBetaRepairPanel,.efBetaRoutePanel{border:1px solid rgba(150,230,255,.15);background:linear-gradient(180deg,rgba(255,255,255,.085),rgba(255,255,255,.035));box-shadow:0 24px 80px rgba(0,0,0,.30);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}.efBetaHomeHero{border-radius:32px;padding:18px;display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,.36fr);gap:14px;align-items:stretch;background:radial-gradient(circle at 10% 0,rgba(120,240,255,.18),transparent 38%),linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.035))}.efBetaHomeHero span,.efBetaHomeStats span,.efBetaRepairPanel span{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:rgba(231,242,255,.56);font-weight:1000}.efBetaHomeHero h1{margin:5px 0;font-size:42px;line-height:1}.efBetaHomeHero p,.efBetaAction span,.efBetaRepairPanel p,.efSaveStatus em{margin:0;color:rgba(231,242,255,.68);line-height:1.45}.efSaveStatus{border-radius:24px;border:1px solid rgba(255,255,255,.09);background:rgba(2,16,27,.42);padding:14px;display:grid;gap:6px}.efSaveStatus b{font-size:17px}.efSaveStatus.good{border-color:rgba(110,255,180,.22)}.efSaveStatus.good b{color:#9affc1}.efSaveStatus.warn{border-color:rgba(255,220,120,.26)}.efSaveStatus.warn b{color:#fff3a0}.efSaveStatus.bad{border-color:rgba(255,120,120,.28)}.efSaveStatus.bad b{color:#ffb0b0}.efBetaHomeStats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.efBetaHomeStats article{border-radius:22px;padding:12px;display:grid;gap:5px}.efBetaHomeStats b{font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.efBetaHomeStats small{color:rgba(231,242,255,.62);font-size:11px}.efBetaActionGrid{display:grid;grid-template-columns:1.2fr 1fr 1fr .95fr;gap:12px}.efBetaAction{min-height:126px;border-radius:28px;padding:16px;text-decoration:none;color:#e7f2ff;display:grid;gap:7px;align-content:center;position:relative;overflow:hidden}.efBetaAction:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 84% 18%,rgba(120,240,255,.16),transparent 44%);pointer-events:none}.efBetaAction.primary{border-color:rgba(120,240,255,.30);background:linear-gradient(135deg,rgba(120,240,255,.20),rgba(255,220,120,.08))}.efBetaAction.classic{border-color:rgba(255,220,120,.18)}.efBetaAction b,.efBetaAction span,.efBetaAction em{position:relative}.efBetaAction b{font-size:20px}.efBetaAction em{font-style:normal;color:#fff3a0;font-size:11px;font-weight:1000;letter-spacing:.12em}.efBetaRepairPanel{border-radius:28px;padding:16px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center}.efBetaRepairPanel h2{margin:4px 0;font-size:22px}.efBetaRepairActions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.efBetaRepairActions button,.efBetaRepairActions a{min-height:38px;border-radius:999px;border:1px solid rgba(120,240,255,.22);background:rgba(120,240,255,.10);color:#e7f2ff;padding:0 13px;text-decoration:none;font-weight:1000;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}.efBetaRoutePanel{border-radius:22px;padding:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.efBetaRoutePanel b{margin-right:4px;color:#fff3a0}.efBetaRoutePanel code{font-size:12px;padding:6px 9px;border-radius:999px;background:rgba(2,16,27,.52);border:1px solid rgba(255,255,255,.08);color:rgba(231,242,255,.78)}@media(max-width:900px){.efBetaHomeHero,.efBetaRepairPanel{grid-template-columns:1fr}.efBetaHomeStats,.efBetaActionGrid{grid-template-columns:1fr 1fr}.efBetaRepairActions{justify-content:flex-start}.efBetaHomeHero h1{font-size:34px}}@media(max-width:560px){.efBetaHomeStats,.efBetaActionGrid{grid-template-columns:1fr}.efBetaAction{min-height:102px}}
+        .efBetaHome{min-height:100vh;background:#020b15;color:#e7f2ff;font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif}.efBetaHomeShell{width:min(1120px,calc(100vw - 28px));margin:0 auto;padding:max(22px,env(safe-area-inset-top)) 0 max(24px,env(safe-area-inset-bottom));display:grid;gap:14px}.efBetaHomeHero,.efBetaHomeStats article,.efBetaAction,.efBetaRepairPanel,.efBetaRoutePanel{border:1px solid rgba(150,230,255,.15);background:linear-gradient(180deg,rgba(255,255,255,.085),rgba(255,255,255,.035));box-shadow:0 24px 80px rgba(0,0,0,.30);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}.efBetaHomeHero{border-radius:32px;padding:18px;display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,.36fr);gap:14px;align-items:stretch;background:radial-gradient(circle at 10% 0,rgba(120,240,255,.18),transparent 38%),linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.035))}.efBetaHomeHero span,.efBetaHomeStats span,.efBetaRepairPanel span{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:rgba(231,242,255,.56);font-weight:1000}.efBetaHomeHero h1{margin:5px 0;font-size:42px;line-height:1}.efBetaHomeHero p,.efBetaAction span,.efBetaRepairPanel p,.efSaveStatus em{margin:0;color:rgba(231,242,255,.68);line-height:1.45}.efSaveStatus{border-radius:24px;border:1px solid rgba(255,255,255,.09);background:rgba(2,16,27,.42);padding:14px;display:grid;gap:6px}.efSaveStatus b{font-size:17px}.efSaveStatus.good{border-color:rgba(110,255,180,.22)}.efSaveStatus.good b{color:#9affc1}.efSaveStatus.warn{border-color:rgba(255,220,120,.26)}.efSaveStatus.warn b{color:#fff3a0}.efSaveStatus.bad{border-color:rgba(255,120,120,.28)}.efSaveStatus.bad b{color:#ffb0b0}.efBetaHomeStats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.efBetaHomeStats article{border-radius:22px;padding:12px;display:grid;gap:5px}.efBetaHomeStats b{font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.efBetaHomeStats small{color:rgba(231,242,255,.62);font-size:11px}.efBetaActionGrid{display:grid;grid-template-columns:1.2fr 1fr 1fr .95fr;gap:12px}.efBetaActionGrid.five{grid-template-columns:1.2fr 1fr 1fr 1fr .95fr}.efBetaAction{min-height:126px;border-radius:28px;padding:16px;text-decoration:none;color:#e7f2ff;display:grid;gap:7px;align-content:center;position:relative;overflow:hidden}.efBetaAction:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 84% 18%,rgba(120,240,255,.16),transparent 44%);pointer-events:none}.efBetaAction.primary{border-color:rgba(120,240,255,.30);background:linear-gradient(135deg,rgba(120,240,255,.20),rgba(255,220,120,.08))}.efBetaAction.qa{border-color:rgba(255,220,120,.24);background:linear-gradient(135deg,rgba(255,220,120,.11),rgba(120,240,255,.07))}.efBetaAction.classic{border-color:rgba(255,220,120,.18)}.efBetaAction b,.efBetaAction span,.efBetaAction em{position:relative}.efBetaAction b{font-size:20px}.efBetaAction em{font-style:normal;color:#fff3a0;font-size:11px;font-weight:1000;letter-spacing:.12em}.efBetaRepairPanel{border-radius:28px;padding:16px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center}.efBetaRepairPanel h2{margin:4px 0;font-size:22px}.efBetaRepairActions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.efBetaRepairActions button,.efBetaRepairActions a{min-height:38px;border-radius:999px;border:1px solid rgba(120,240,255,.22);background:rgba(120,240,255,.10);color:#e7f2ff;padding:0 13px;text-decoration:none;font-weight:1000;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}.efBetaRoutePanel{border-radius:22px;padding:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.efBetaRoutePanel b{margin-right:4px;color:#fff3a0}.efBetaRoutePanel code{font-size:12px;padding:6px 9px;border-radius:999px;background:rgba(2,16,27,.52);border:1px solid rgba(255,255,255,.08);color:rgba(231,242,255,.78)}@media(max-width:1060px){.efBetaActionGrid.five{grid-template-columns:1fr 1fr 1fr}.efBetaHomeHero,.efBetaRepairPanel{grid-template-columns:1fr}.efBetaRepairActions{justify-content:flex-start}}@media(max-width:900px){.efBetaHomeStats,.efBetaActionGrid,.efBetaActionGrid.five{grid-template-columns:1fr 1fr}.efBetaHomeHero h1{font-size:34px}}@media(max-width:560px){.efBetaHomeStats,.efBetaActionGrid,.efBetaActionGrid.five{grid-template-columns:1fr}.efBetaAction{min-height:102px}}
       `}</style>
     </main>
   );
