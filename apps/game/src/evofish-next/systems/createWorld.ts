@@ -1,6 +1,7 @@
 import type { EvoFishEconomyState, EvoFishFormId, EvoFishSkinDefinition } from "../core/types";
 import type { NextEngineState, NextFishEntity, NextQuestState, NextWorldConfig } from "../core/engineTypes";
 import { defaultNextAccount, normalizeNextAccount, type NextAccountState } from "../content/account";
+import { defaultAchievementState, type NextAchievementState } from "../content/achievements";
 import { chooseEnemyArchetype } from "../content/enemyArchetypes";
 import { pickEnemyFamily } from "../content/enemyFamilies";
 import { defaultCraftState } from "../content/craft";
@@ -29,6 +30,16 @@ function storedAccount(): NextAccountState {
     return normalizeNextAccount(JSON.parse(raw)?.account);
   } catch {
     return defaultNextAccount();
+  }
+}
+
+function storedAchievements(): NextAchievementState {
+  try {
+    const raw = localStorage.getItem("evofish_next_save_v1");
+    if (!raw) return defaultAchievementState();
+    return normalizeAchievementState(JSON.parse(raw)?.achievements);
+  } catch {
+    return defaultAchievementState();
   }
 }
 
@@ -149,6 +160,13 @@ function normalizeMutationState(mutations?: NextMutationState): NextMutationStat
   };
 }
 
+function normalizeAchievementState(achievements?: NextAchievementState): NextAchievementState {
+  return {
+    ...defaultAchievementState(),
+    unlocked: { ...(achievements?.unlocked || {}) }
+  };
+}
+
 export function makeEnemy(
   id: number,
   config: NextWorldConfig = NEXT_WORLD_CONFIG,
@@ -237,11 +255,13 @@ export function createNextWorld(
   savedEconomy?: EvoFishEconomyState,
   savedQuests?: NextQuestState,
   savedMutations?: NextMutationState,
-  savedAccount?: NextAccountState
+  savedAccount?: NextAccountState,
+  savedAchievements?: NextAchievementState
 ): NextEngineState {
   const form = savedProgress?.form || formFromSkin(playerSkin);
   const config = NEXT_WORLD_CONFIG;
   const account = normalizeNextAccount(savedAccount || storedAccount());
+  const achievements = normalizeAchievementState(savedAchievements || storedAchievements());
   const craft = defaultCraftState();
   const mutations = normalizeMutationState(savedMutations);
   const level = Math.max(1, Math.floor(savedProgress?.level || 1));
@@ -274,6 +294,7 @@ export function createNextWorld(
     config,
     account,
     economy,
+    achievements,
     craft,
     mutations,
     quests,
@@ -347,8 +368,9 @@ export function createNextWorld(
       pearls: economy.pearls,
       corals: economy.corals,
       mutationLevel: getMutationTotalLevel(mutations),
+      achievementsUnlocked: Object.keys(achievements.unlocked).length,
       craftUses: quests.counters?.craft || 0,
-      mutationPurchases: 0,
+      mutationPurchases: quests.counters?.mutations || 0,
       questDirectorFocus: board.directorFocus,
       dailyQuestKey: board.dailyKey,
       weeklyQuestKey: board.weeklyKey,
