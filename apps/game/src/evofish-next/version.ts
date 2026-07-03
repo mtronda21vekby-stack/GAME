@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-mutation-draft-3.6.0";
+export const EVOFISH_NEXT_VERSION = "next-perks-artifacts-3.7.0";
