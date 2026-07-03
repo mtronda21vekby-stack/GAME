@@ -15,6 +15,10 @@ function addFloat(state: NextEngineState, x: number, y: number, text: string, ki
   state.floats.push({ id: state.nextFloatId++, x, y, text, ttl: 0.9, kind });
 }
 
+function counter(state: NextEngineState, key: string) {
+  return Math.max(0, Math.floor(state.quests?.counters?.[key] || 0));
+}
+
 function hpWithMutations(state: NextEngineState, form: EvoFishFormId, tier: number) {
   return Math.round((hpFromForm(form) + tier * 12) * (1 + getMutationBonus(state.mutations, "hp")));
 }
@@ -92,6 +96,8 @@ export function syncProgressionStats(state: NextEngineState) {
   state.stats.corals = state.economy.corals;
   state.stats.mutationLevel = getMutationTotalLevel(state.mutations);
   state.stats.achievementsUnlocked = Object.keys(state.achievements?.unlocked || {}).length;
+  state.stats.perksPicked = Math.max(state.stats.perksPicked || 0, counter(state, "perks"));
+  state.stats.artifactsFound = Math.max(state.stats.artifactsFound || 0, counter(state, "artifacts"));
   state.stats.craftBarrierT = state.craft.barrierT;
   state.stats.craftBiteBoostT = state.craft.biteBoostT;
   state.stats.craftSonarT = state.craft.sonarT;
