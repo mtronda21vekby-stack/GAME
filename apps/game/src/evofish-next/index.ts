@@ -41,6 +41,7 @@ export * from "./systems/engineStep";
 export * from "./render/SkinPreview";
 export * from "./render/canvasSkinRenderer";
 export * from "./render/worldRenderer";
+export * from "./ui/BetaCacheDoctor";
 export * from "./ui/BetaChecklist";
 export * from "./ui/BetaErrorBoundary";
 export * from "./ui/BetaHome";
