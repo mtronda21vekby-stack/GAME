@@ -46,6 +46,7 @@ export type NextDamageFloat = {
 export type NextQuestState = {
   completed: Record<string, true>;
   baselines?: Record<string, number>;
+  counters?: Record<string, number>;
   dailyKey?: string;
   weeklyKey?: string;
   directorFocus?: string;
