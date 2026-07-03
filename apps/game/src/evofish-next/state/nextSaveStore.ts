@@ -58,11 +58,19 @@ function normalizeProgress(progress: Partial<EvoFishNextProgressState> | null | 
 }
 
 function normalizeQuests(quests: Partial<NextQuestState> | null | undefined): NextQuestState {
+  const fallback = defaultNextQuests();
   return {
     completed: {
-      ...defaultNextQuests().completed,
+      ...fallback.completed,
       ...(quests?.completed || {})
-    }
+    },
+    baselines: {
+      ...fallback.baselines,
+      ...(quests?.baselines || {})
+    },
+    dailyKey: quests?.dailyKey || fallback.dailyKey,
+    weeklyKey: quests?.weeklyKey || fallback.weeklyKey,
+    directorFocus: quests?.directorFocus || fallback.directorFocus
   };
 }
 
