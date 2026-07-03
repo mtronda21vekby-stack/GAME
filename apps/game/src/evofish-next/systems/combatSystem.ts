@@ -2,6 +2,7 @@ import type { NextEngineState, NextFishEntity, NextInputState, NextCameraState }
 import { enemyThreatLevel, makeEnemy } from "./createWorld";
 import { canDevour } from "./collisionSystem";
 import { awardKillReward } from "./progressionSystem";
+import { aimVector } from "./playerSystem";
 
 function addFloat(state: NextEngineState, x: number, y: number, text: string, kind: "damage" | "kill" | "danger") {
   state.floats.push({ id: state.nextFloatId++, x, y, text, ttl: 0.75, kind });
@@ -35,12 +36,9 @@ function killEnemy(state: NextEngineState, enemy: NextFishEntity, index: number,
 
 function findBiteTarget(state: NextEngineState, camera: NextCameraState, input: NextInputState) {
   const player = state.player;
-  const scale = camera.scale || 1;
-  const aimX = input.down ? camera.x + input.pointerX / scale - player.x : Math.cos(player.angle);
-  const aimY = input.down ? camera.y + input.pointerY / scale - player.y : Math.sin(player.angle);
-  const aimLen = Math.hypot(aimX, aimY) || 1;
-  const nx = aimX / aimLen;
-  const ny = aimY / aimLen;
+  const aim = input.down ? aimVector(state, input, camera) : { x: Math.cos(player.angle), y: Math.sin(player.angle) };
+  const nx = aim.x;
+  const ny = aim.y;
   let bestIndex = -1;
   let bestDistance = Infinity;
 
