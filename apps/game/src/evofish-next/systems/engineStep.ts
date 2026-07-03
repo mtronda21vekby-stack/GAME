@@ -1,4 +1,5 @@
 import type { NextEngineState, NextInputState, NextViewport } from "../core/engineTypes";
+import { updateAchievementSystem } from "./achievementSystem";
 import { getNextCamera } from "./cameraSystem";
 import { updateCollisionSystem } from "./collisionSystem";
 import { updateCombatSystem } from "./combatSystem";
@@ -46,6 +47,7 @@ export function stepNextEngine(state: NextEngineState, input: NextInputState, vi
   updateFeedbackSystem(state, dt);
   syncProgressionStats(state);
   updateQuestSystem(state);
+  updateAchievementSystem(state);
   updateEventSystem(state, dt);
 
   state.frame += 1;
