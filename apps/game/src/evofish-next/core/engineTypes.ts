@@ -6,6 +6,7 @@ import type { NextCraftState } from "../content/craft";
 import type { NextMapEventState } from "../content/events";
 import type { NextMutationState } from "../content/mutations";
 import type { NextResourceNode } from "../content/resources";
+import type { EvoFishWorldId } from "../content/worldMaps";
 import type { NextZoneId } from "../content/zones";
 
 export type NextRenderQuality = "low" | "balanced" | "high";
@@ -58,6 +59,23 @@ export type NextQuestState = {
   dailyKey?: string;
   weeklyKey?: string;
   directorFocus?: string;
+};
+
+export type NextPortalTransitionState = {
+  active: boolean;
+  fromWorld: EvoFishWorldId;
+  toWorld: EvoFishWorldId;
+  direction: "to_dark_cave" | "to_main";
+  progress: number;
+  message: string;
+};
+
+export type NextStoryState = {
+  darkCaveUnlocked: boolean;
+  darkCaveEntered: boolean;
+  currentTitle: string;
+  currentObjective: string;
+  completed: Record<string, true>;
 };
 
 export type NextAIState = "wander" | "hunt" | "flee" | "attack";
@@ -157,6 +175,10 @@ export type NextEngineStats = {
   activeEventTarget?: number;
   activeEventTime?: number;
   activeEventKind?: string;
+  worldName?: string;
+  storyTitle?: string;
+  storyObjective?: string;
+  portalLoading?: number;
   zoneId: NextZoneId;
   zoneName: string;
   zoneEffect: string;
@@ -181,6 +203,9 @@ export type NextEngineStats = {
 
 export type NextEngineState = {
   config: NextWorldConfig;
+  worldId: EvoFishWorldId;
+  portalTransition?: NextPortalTransitionState | null;
+  story: NextStoryState;
   account: NextAccountState;
   economy: EvoFishEconomyState;
   achievements: NextAchievementState;
