@@ -12,6 +12,18 @@ function isPredator(enemy: NextFishEntity) {
   return enemy.aiType === "hunter" || enemy.aiType === "brute" || isElite(enemy);
 }
 
+function isMidGameLevel(level: number) {
+  return level >= 14 && level <= 23;
+}
+
+function allowedPredatorsNear(level: number) {
+  if (level < 5) return 2;
+  if (level < 14) return 3;
+  if (level <= 23) return 2;
+  if (level < 35) return 4;
+  return 5;
+}
+
 function normalize(x: number, y: number) {
   const length = Math.hypot(x, y) || 1;
   return { x: x / length, y: y / length, length };
@@ -24,42 +36,46 @@ function push(enemy: NextFishEntity, x: number, y: number, force: number, dt: nu
 
 function keepAwayFromPlayer(state: NextEngineState, enemy: NextFishEntity, rank: number, dt: number) {
   const player = state.player;
+  const midGame = isMidGameLevel(player.level);
   const dx = enemy.x - player.x;
   const dy = enemy.y - player.y;
   const n = normalize(dx, dy);
-  const minGap = player.radius + enemy.radius + (isElite(enemy) ? 260 : enemy.aiType === "brute" ? 210 : 165);
+  const minGap = player.radius + enemy.radius + (isElite(enemy) ? (midGame ? 330 : 260) : enemy.aiType === "brute" ? (midGame ? 265 : 210) : (midGame ? 220 : 165));
 
   if (n.length < minGap) {
-    const force = (minGap - n.length) * (isElite(enemy) ? 10 : 8);
+    const force = (minGap - n.length) * (isElite(enemy) ? (midGame ? 13 : 10) : (midGame ? 11 : 8));
     push(enemy, n.x, n.y, force, dt);
-    if (!isElite(enemy)) enemy.aiState = "hunt";
+    if (!isElite(enemy)) enemy.aiState = midGame ? "wander" : "hunt";
   }
 
-  const laneAngle = ((enemy.id % 10) / 10) * Math.PI * 2 + (state.frame % 420) * 0.003;
-  const desired = player.radius + enemy.radius + 360 + (rank % 5) * 82;
+  const laneAngle = ((enemy.id % 10) / 10) * Math.PI * 2 + (state.frame % 420) * (midGame ? 0.002 : 0.003);
+  const desired = player.radius + enemy.radius + (midGame ? 470 : 360) + (rank % 5) * (midGame ? 106 : 82);
   const tx = clamp(player.x + Math.cos(laneAngle) * desired, 140, state.config.width - 140);
   const ty = clamp(player.y + Math.sin(laneAngle) * desired, 140, state.config.height - 140);
   const toSlot = normalize(tx - enemy.x, ty - enemy.y);
-  push(enemy, toSlot.x, toSlot.y, isElite(enemy) ? 74 : 92, dt);
+  push(enemy, toSlot.x, toSlot.y, isElite(enemy) ? (midGame ? 92 : 74) : (midGame ? 122 : 92), dt);
   enemy.wanderX = tx;
   enemy.wanderY = ty;
-  enemy.wanderT = Math.min(enemy.wanderT, 0.45);
+  enemy.wanderT = Math.min(enemy.wanderT, midGame ? 0.32 : 0.45);
 }
 
 function limitPredatorPressure(state: NextEngineState, dt: number) {
   const player = state.player;
+  const midGame = isMidGameLevel(player.level);
+  const pressureRange = midGame ? 700 : 560;
   const predators = state.enemies
     .filter(isPredator)
     .map((enemy) => ({ enemy, distance: Math.hypot(enemy.x - player.x, enemy.y - player.y) }))
-    .filter((item) => item.distance < 560)
+    .filter((item) => item.distance < pressureRange)
     .sort((a, b) => a.distance - b.distance);
 
-  const allowed = player.level < 5 ? 2 : player.level < 16 ? 3 : player.level < 35 ? 4 : 5;
+  const allowed = allowedPredatorsNear(player.level);
 
   for (let index = 0; index < predators.length; index += 1) {
     const enemy = predators[index].enemy;
     if (index < allowed) continue;
-    if (enemy.aiState === "attack") enemy.aiState = "hunt";
+    if (enemy.aiState === "attack") enemy.aiState = midGame ? "wander" : "hunt";
+    if (midGame && enemy.aiState === "hunt") enemy.aiState = "wander";
     keepAwayFromPlayer(state, enemy, index, dt);
   }
 }
