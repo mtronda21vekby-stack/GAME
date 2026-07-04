@@ -37,3 +37,18 @@ CREATE TABLE IF NOT EXISTS leaderboard_players (
   total_runs INTEGER NOT NULL DEFAULT 0,
   updated_at INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS leaderboard_presence (
+  player_id TEXT PRIMARY KEY,
+  nickname TEXT NOT NULL,
+  level INTEGER NOT NULL,
+  mass INTEGER NOT NULL,
+  kills INTEGER NOT NULL,
+  world_id TEXT,
+  skin_id TEXT,
+  form TEXT,
+  updated_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_leaderboard_presence_updated
+ON leaderboard_presence (updated_at DESC);
