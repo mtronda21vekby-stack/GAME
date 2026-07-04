@@ -31,6 +31,12 @@ function rowTone(row: LeaderboardRow, myId: string) {
   return row.playerId === myId ? "me" : row.rank && row.rank <= 3 ? "top" : "";
 }
 
+function playerSafeStatus(top: LeaderboardTopResponse | null) {
+  if (!top) return "Загрузка рейтинга…";
+  if (top.ok) return "Рейтинг обновлён.";
+  return "Онлайн-сезон скоро будет доступен.";
+}
+
 export function Leaderboard() {
   const [season, setSeason] = useState<LeaderboardSeasonResponse | null>(null);
   const [top, setTop] = useState<LeaderboardTopResponse | null>(null);
@@ -51,8 +57,7 @@ export function Leaderboard() {
     setTop(topResult);
     setMe(meResult);
     setLoading(false);
-    if (!topResult.ok) setMessage(topResult.error || "Онлайн-рейтинг пока не подключён.");
-    else setMessage("Рейтинг обновлён.");
+    setMessage(playerSafeStatus(topResult));
   };
 
   useEffect(() => {
@@ -66,13 +71,14 @@ export function Leaderboard() {
     setMessage("Отправляю текущий результат…");
     const result = await submitLeaderboardRun(buildLeaderboardPayloadFromSave());
     if (result.ok) setMessage(result.flagged ? "Результат отправлен, но отмечен для проверки." : `Результат отправлен${result.rank ? ` · место #${result.rank}` : ""}.`);
-    else setMessage(result.error || "Не удалось отправить результат.");
+    else setMessage("Онлайн-сезон сейчас недоступен. Результат можно отправить позже.");
     setSubmitting(false);
     await reload();
   };
 
   const rows = top?.rows || [];
   const best = me?.best || null;
+  const offline = top ? !top.ok : false;
 
   return (
     <main className="efLeaderboard">
@@ -82,22 +88,22 @@ export function Leaderboard() {
             <Link to="/game" className="efLbBack">← Назад</Link>
             <span>ONLINE · SEASONAL</span>
             <h1>Лидеры</h1>
-            <p>Еженедельный онлайн-рейтинг EvoFish. Результат отправляется после забега, а таблица обновляется каждые 30 секунд.</p>
+            <p>Еженедельный рейтинг EvoFish. Лучшие забеги попадают в сезонный TOP 100, таблица обновляется каждые 30 секунд.</p>
           </div>
-          <button onClick={submitCurrent} disabled={submitting}>{submitting ? "Отправка…" : "Отправить текущий результат"}</button>
+          <button onClick={submitCurrent} disabled={submitting || offline}>{offline ? "Сезон скоро" : submitting ? "Отправка…" : "Отправить текущий результат"}</button>
         </header>
 
         <section className="efLbStats">
           <article><span>Сезон</span><b>{season?.season?.title || "—"}</b><small>До конца: {timeLeft(season?.season?.endsAt)}</small></article>
           <article><span>Моё место</span><b>{me?.rank ? `#${me.rank}` : "—"}</b><small>ID: {myId.slice(0, 10)}…</small></article>
           <article><span>Мой лучший score</span><b>{best ? format(best.score) : "—"}</b><small>{best ? `LV ${best.level} · ${format(best.kills)} kills` : "ещё нет результата"}</small></article>
-          <article><span>Версия</span><b>{EVOFISH_NEXT_VERSION}</b><small>{message}</small></article>
+          <article><span>Статус</span><b>{offline ? "Сезон скоро" : "Online"}</b><small>{message}</small></article>
         </section>
 
-        {!top?.ok ? (
+        {offline ? (
           <section className="efLbOffline">
-            <h2>Онлайн-рейтинг ещё не подключён</h2>
-            <p>Нужно создать Cloudflare D1 database, применить migration `0001_leaderboard.sql` и добавить Pages binding `LEADERBOARD_DB`.</p>
+            <h2>Сезонный рейтинг запускается</h2>
+            <p>Рейтинг уже встроен в игру. Как только онлайн-база будет подключена на сервере, результаты начнут появляться здесь автоматически.</p>
           </section>
         ) : null}
 
