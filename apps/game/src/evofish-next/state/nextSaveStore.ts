@@ -18,6 +18,7 @@ import {
 
 export const EVOFISH_NEXT_SAVE_KEY = "evofish_next_save_v1";
 export const LEGACY_EVOFISH_SAVE_KEY = "evofish_save_v0_00_1_alpha";
+export const EVOFISH_NEXT_SAVE_EVENT = "evofish_next_save_changed";
 
 export type EvoFishSaveDoctorStatus = "healthy" | "needs_repair" | "repaired" | "reset" | "error";
 
@@ -40,6 +41,34 @@ export type EvoFishSaveDoctorReport = {
   };
 };
 
+function notifyEvoFishNextSaveChanged() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(EVOFISH_NEXT_SAVE_EVENT));
+}
+
+export function subscribeEvoFishNextSaveChanges(listener: () => void) {
+  if (typeof window === "undefined") return () => {};
+
+  const onSave = () => listener();
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === EVOFISH_NEXT_SAVE_KEY) listener();
+  };
+  const onFocus = () => listener();
+  const onVisible = () => { if (!document.hidden) listener(); };
+
+  window.addEventListener(EVOFISH_NEXT_SAVE_EVENT, onSave as EventListener);
+  window.addEventListener("storage", onStorage);
+  window.addEventListener("focus", onFocus);
+  document.addEventListener("visibilitychange", onVisible);
+
+  return () => {
+    window.removeEventListener(EVOFISH_NEXT_SAVE_EVENT, onSave as EventListener);
+    window.removeEventListener("storage", onStorage);
+    window.removeEventListener("focus", onFocus);
+    document.removeEventListener("visibilitychange", onVisible);
+  };
+}
+
 function safeReadJSON<T>(key: string): T | null {
   try {
     const raw = localStorage.getItem(key);
@@ -53,6 +82,7 @@ function safeReadJSON<T>(key: string): T | null {
 function safeWriteJSON(key: string, value: unknown) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
+    if (key === EVOFISH_NEXT_SAVE_KEY) notifyEvoFishNextSaveChanged();
   } catch {
     // local save is optional in blocked/private modes
   }
