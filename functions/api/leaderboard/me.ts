@@ -25,8 +25,13 @@ export const onRequestGet = async ({ request, env }: any) => {
   if (!best) return json({ ok: true, seasonId, best: null, rank: null });
 
   const rank = await db.prepare(
-    `SELECT COUNT(*) + 1 AS rank FROM leaderboard_runs
-     WHERE season_id = ? AND board = 'world' AND flagged = 0 AND score > ?`
+    `SELECT COUNT(*) + 1 AS rank FROM (
+       SELECT player_id, MAX(score) AS best_score
+       FROM leaderboard_runs
+       WHERE season_id = ? AND board = 'world' AND flagged = 0
+       GROUP BY player_id
+       HAVING best_score > ?
+     )`
   ).bind(seasonId, best.score).first<{ rank: number }>();
 
   return json({ ok: true, seasonId, rank: rank?.rank || null, best: publicRun(best, rank?.rank || undefined) });
