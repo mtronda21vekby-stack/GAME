@@ -11,6 +11,8 @@ import {
   type LeaderboardRunInput
 } from "./_shared";
 
+const SUBMIT_COOLDOWN_MS = 60_000;
+
 export const onRequestOptions = async () => json({ ok: true });
 
 export const onRequestPost = async ({ request, env }: any) => {
@@ -29,11 +31,27 @@ export const onRequestPost = async ({ request, env }: any) => {
   }
 
   const run = normalizeRunInput(body || {});
+  const lastSubmit = await db.prepare(
+    `SELECT created_at FROM leaderboard_runs
+     WHERE player_id = ?
+     ORDER BY created_at DESC
+     LIMIT 1`
+  ).bind(run.playerId).first<{ created_at: number }>();
+
+  const createdAt = Date.now();
+  const cooldownRemaining = lastSubmit?.created_at ? SUBMIT_COOLDOWN_MS - (createdAt - lastSubmit.created_at) : 0;
+  if (cooldownRemaining > 0) {
+    return json({
+      ok: false,
+      error: "submit_cooldown",
+      retryAfterSeconds: Math.ceil(cooldownRemaining / 1000)
+    }, { status: 429 });
+  }
+
   const seasonId = currentSeasonId();
   const score = calculateLeaderboardScore(run);
   const reasons = validateRun(run);
   const flagged = reasons.length ? 1 : 0;
-  const createdAt = Date.now();
   const runId = `run_${createdAt}_${crypto.randomUUID()}`;
 
   await db.prepare(
