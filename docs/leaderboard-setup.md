@@ -30,7 +30,8 @@ It creates:
 
 - `leaderboard_runs`
 - `leaderboard_players`
-- indexes for top 100 and per-player lookup
+- `leaderboard_presence`
+- indexes for top 100, per-player lookup and online presence
 
 ## 3. API endpoints
 
@@ -38,7 +39,9 @@ It creates:
 GET  /api/leaderboard/season
 GET  /api/leaderboard/top
 GET  /api/leaderboard/me?playerId=...
+GET  /api/leaderboard/online
 POST /api/leaderboard/submit
+POST /api/leaderboard/heartbeat
 ```
 
 ## 4. Client routes
@@ -51,7 +54,15 @@ POST /api/leaderboard/submit
 
 The public home screen links to `/game/leaderboard`.
 
-## 5. Score formula
+## 5. Automatic collection
+
+The game sends a heartbeat while the player is alive, throttled to once every 30 seconds.
+
+When the player dies or is downed, the game automatically submits the run once for that runtime session.
+
+Manual submit remains as a fallback, but both client and server enforce a 60-second cooldown.
+
+## 6. Score formula
 
 Score is calculated server-side in `functions/api/leaderboard/_shared.ts`:
 
@@ -66,7 +77,7 @@ level * 100
 + darkCaveCleared bonus
 ```
 
-## 6. Basic anti-cheat
+## 7. Basic anti-cheat
 
 The server flags suspicious runs:
 
