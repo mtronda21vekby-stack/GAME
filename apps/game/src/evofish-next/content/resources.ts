@@ -172,8 +172,8 @@ function hiddenArtifactPoint(slot: number, worldWidth: number, worldHeight: numb
 export function makeResourceNode(id: number, worldWidth: number, worldHeight: number, forcedKind?: NextResourceKind): NextResourceNode {
   const kind = forcedKind || weightedResourceKind();
   const def = resourceDef(kind);
-  const hiddenArtifact = kind === "artifact_shell" && id <= 3;
-  const hiddenPoint = hiddenArtifact ? hiddenArtifactPoint(id - 1, worldWidth, worldHeight) : null;
+  const hiddenArtifact = kind === "artifact_shell";
+  const hiddenPoint = hiddenArtifact ? hiddenArtifactPoint((id - 1) % 3, worldWidth, worldHeight) : null;
   return {
     id,
     kind,
@@ -186,9 +186,15 @@ export function makeResourceNode(id: number, worldWidth: number, worldHeight: nu
   };
 }
 
+function forcedResourceKind(index: number, count: number): NextResourceKind | undefined {
+  const opening: NextResourceKind[] = ["pearls", "plankton", "heal", "boost", "speed_perk", "damage_perk", "shield_perk"];
+  if (index < opening.length) return opening[index];
+  if (index >= Math.max(0, count - 3)) return "artifact_shell";
+  return undefined;
+}
+
 export function createResourceField(count: number, worldWidth: number, worldHeight: number) {
-  const forced: NextResourceKind[] = ["artifact_shell", "artifact_shell", "artifact_shell", "pearls", "plankton", "heal", "boost", "speed_perk", "damage_perk", "shield_perk"];
-  return Array.from({ length: count }, (_, index) => makeResourceNode(index + 1, worldWidth, worldHeight, forced[index]));
+  return Array.from({ length: count }, (_, index) => makeResourceNode(index + 1, worldWidth, worldHeight, forcedResourceKind(index, count)));
 }
 
 export function resourceRespawnDelay(kind: NextResourceKind) {
