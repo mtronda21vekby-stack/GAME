@@ -6,6 +6,7 @@ import { defaultMutationState, getMutationTotalLevel, NEXT_MUTATIONS, type NextM
 import { xpToNextLevel, xpToNextTier } from "../content/progression";
 import { canUnlockSkinInNext, canUseSkinInNext } from "../content/skinUnlockRules";
 import { EVOFISH_SKIN_BY_ID, getDefaultSkinId } from "../content/skins";
+import { syncLeaderboardForEngine } from "../leaderboard/leaderboardAuto";
 import {
   defaultNextProgress,
   defaultNextQuests,
@@ -265,6 +266,7 @@ export function saveEvoFishNextSave(save: EvoFishNextSkinSave) {
 }
 
 export function saveEvoFishNextProgress(engine: NextEngineState) {
+  syncLeaderboardForEngine(engine);
   const save = loadEvoFishNextSave();
   save.account = normalizeAccount(engine.account || save.account);
   save.economy = {
