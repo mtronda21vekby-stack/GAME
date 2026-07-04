@@ -13,6 +13,12 @@ apps/game/public/assets/evofish/
     shark/
     megalodon/
     npc/
+    quest/
+      artifacts/
+        artifact-shell.png
+      portals/
+        dark-cave-portal.png
+        ocean-return-portal.png
   resources/
     pearls.png
     crystal.png
@@ -22,7 +28,6 @@ apps/game/public/assets/evofish/
     perk-speed.png
     perk-damage.png
     perk-shield.png
-    artifact-shell.png
   ui/
     button-primary.png
     panel-frame.png
@@ -33,8 +38,6 @@ apps/game/public/assets/evofish/
     deep-violet.png
     abyss-gold.png
     dark-cave.png
-  portals/
-    dark-cave-portal.png
   maps/
     dark-cave-bg.png
 ```
@@ -53,4 +56,9 @@ apps/game/src/evofish-next/assets/visuals/visualCatalog.ts
 
 ## Dark Cave
 
-Портал тёмной пещеры открывается после 3 найденных артефактов (`artifact_shell`). Сейчас это визуальный gateway. Следующий шаг — отдельный map-state и полноценный вход в Dark Cave.
+Портал тёмной пещеры открывается только при двух условиях:
+
+- игрок достиг 45 уровня;
+- найдены ровно 3 спрятанных артефакта (`artifact_shell`).
+
+Артефакты не должны спавниться случайно и не должны появляться повторно после сбора.
