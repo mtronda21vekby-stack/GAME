@@ -31,6 +31,7 @@ export type EvoFishResourceVisual = {
 };
 
 export const EVOFISH_VISUAL_ASSET_ROOT = "/game/assets/evofish";
+export const DARK_CAVE_MIN_LEVEL = 45;
 export const DARK_CAVE_ARTIFACTS_REQUIRED = 3;
 
 export const EVOFISH_VISUALS = {
@@ -96,8 +97,18 @@ export function getWaterThemeForLevel(level: number, darkCaveActive = false): Ev
     .sort((a, b) => b.minLevel - a.minLevel)[0] || EVOFISH_VISUALS.waterThemes[0];
 }
 
-export function darkCavePortalUnlocked(artifactsFound = 0) {
-  return Math.max(0, Math.floor(artifactsFound || 0)) >= DARK_CAVE_ARTIFACTS_REQUIRED;
+export function darkCavePortalUnlocked(artifactsFound = 0, playerLevel = 0) {
+  return Math.max(0, Math.floor(artifactsFound || 0)) >= DARK_CAVE_ARTIFACTS_REQUIRED
+    && Math.max(1, Math.floor(playerLevel || 1)) >= DARK_CAVE_MIN_LEVEL;
+}
+
+export function darkCavePortalRequirementText(artifactsFound = 0, playerLevel = 1) {
+  const artifacts = Math.max(0, Math.floor(artifactsFound || 0));
+  const level = Math.max(1, Math.floor(playerLevel || 1));
+  if (darkCavePortalUnlocked(artifacts, level)) return "DARK CAVE";
+  if (level < DARK_CAVE_MIN_LEVEL && artifacts < DARK_CAVE_ARTIFACTS_REQUIRED) return `LV ${level}/${DARK_CAVE_MIN_LEVEL} · АРТЕФАКТЫ ${artifacts}/${DARK_CAVE_ARTIFACTS_REQUIRED}`;
+  if (level < DARK_CAVE_MIN_LEVEL) return `LV ${level}/${DARK_CAVE_MIN_LEVEL}`;
+  return `АРТЕФАКТЫ ${artifacts}/${DARK_CAVE_ARTIFACTS_REQUIRED}`;
 }
 
 export function darkCavePortalPosition(config: NextWorldConfig) {
