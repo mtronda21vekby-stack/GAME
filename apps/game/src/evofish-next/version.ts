@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-visual-pipeline-5.6.0";
+export const EVOFISH_NEXT_VERSION = "next-dark-cave-map-5.7.0";
