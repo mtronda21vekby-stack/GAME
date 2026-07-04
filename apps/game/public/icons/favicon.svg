@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="EvoFish favicon">
+  <defs>
+    <linearGradient id="bg" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse"><stop stop-color="#103446"/><stop offset="1" stop-color="#020b15"/></linearGradient>
+    <linearGradient id="fish" x1="12" y1="33" x2="54" y2="35" gradientUnits="userSpaceOnUse"><stop stop-color="#51f3ff"/><stop offset=".55" stop-color="#2aa9ff"/><stop offset="1" stop-color="#9affd8"/></linearGradient>
+    <linearGradient id="gold" x1="23" y1="9" x2="41" y2="22" gradientUnits="userSpaceOnUse"><stop stop-color="#fff3a0"/><stop offset="1" stop-color="#d68b2f"/></linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#bg)"/>
+  <circle cx="37" cy="25" r="28" fill="#62f3ff" opacity=".16"/>
+  <path d="M22 23l4-10 5 6 3-11 5 11 6-6 4 10h-9l-5-4-5 4z" fill="url(#gold)"/>
+  <path d="M13 35c10-14 29-16 45-4-7 13-22 20-35 14-4-2-7-5-10-10z" fill="url(#fish)"/>
+  <path d="M14 35 4 24v22l10-11z" fill="#188de8"/>
+  <circle cx="44" cy="31" r="4" fill="#f7fbff"/>
+  <circle cx="45" cy="32" r="1.7" fill="#031827"/>
+  <path d="M35 43c7 3 15 1 21-4" fill="none" stroke="#e8fff9" stroke-width="3" stroke-linecap="round" opacity=".9"/>
+</svg>
