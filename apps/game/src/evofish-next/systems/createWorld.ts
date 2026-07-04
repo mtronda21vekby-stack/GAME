@@ -15,8 +15,8 @@ import { getZoneAt } from "../content/zones";
 import { defaultNextQuests, type EvoFishNextProgressState } from "../state/skinSaveAdapter";
 
 export const NEXT_WORLD_CONFIG: NextWorldConfig = {
-  width: 2800,
-  height: 1800,
+  width: 3640,
+  height: 2340,
   enemyTarget: 46,
   resourceTarget: 42
 };
