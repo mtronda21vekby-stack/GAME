@@ -33,7 +33,7 @@ export const onRequestPost = async ({ request, env }: any) => {
   const run = normalizeRunInput(body || {});
   const lastSubmit = await db.prepare(
     `SELECT created_at FROM leaderboard_runs
-     WHERE player_id = ?
+     WHERE player_id = ? AND id NOT LIKE 'live_%'
      ORDER BY created_at DESC
      LIMIT 1`
   ).bind(run.playerId).first<{ created_at: number }>();
@@ -93,8 +93,13 @@ export const onRequestPost = async ({ request, env }: any) => {
   ).bind(run.playerId, run.nickname, score, runId, createdAt).run();
 
   const row = await db.prepare(
-    `SELECT COUNT(*) + 1 AS rank FROM leaderboard_runs
-     WHERE season_id = ? AND board = 'world' AND flagged = 0 AND score > ?`
+    `SELECT COUNT(*) + 1 AS rank FROM (
+       SELECT player_id, MAX(score) AS best_score
+       FROM leaderboard_runs
+       WHERE season_id = ? AND board = 'world' AND flagged = 0
+       GROUP BY player_id
+       HAVING best_score > ?
+     )`
   ).bind(seasonId, score).first<{ rank: number }>();
 
   const record = await db.prepare(`SELECT * FROM leaderboard_runs WHERE id = ?`).bind(runId).first<LeaderboardRunRecord>();
