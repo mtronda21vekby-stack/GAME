@@ -1,6 +1,7 @@
 export * from "./version";
 export * from "./core/types";
 export * from "./core/engineTypes";
+export * from "./assets/visuals/visualCatalog";
 export * from "./content/account";
 export * from "./content/achievements";
 export * from "./content/balance";
