@@ -2,7 +2,7 @@ name = "blackcrown-game"
 compatibility_date = "2026-07-02"
 pages_build_output_dir = "dist"
 
-# Important:
-# Do not declare D1 bindings here.
-# The previous Cloudflare Pages project setting referenced a missing D1 database as LOBBY_DB,
-# which caused Function publishing to fail after assets were uploaded.
+[[d1_databases]]
+binding = "LEADERBOARD_DB"
+database_name = "evofish-leaderboard-db"
+database_id = "272720c6-0967-42fb-bbc4-95257cc02abd"
