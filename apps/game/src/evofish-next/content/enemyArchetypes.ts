@@ -92,11 +92,11 @@ function midGameArchetype(id: number): NextEnemyArchetype {
 }
 
 export function chooseEnemyArchetype(id: number, threatLevel = 1): NextEnemyArchetype {
-  if (threatLevel >= 16 && threatLevel <= 23) return midGameArchetype(id);
-  if (threatLevel >= 38 && id % 17 === 0) return NEXT_ENEMY_ARCHETYPES.leviathan;
-  if (threatLevel >= 32 && id % 19 === 0) return NEXT_ENEMY_ARCHETYPES.apex;
-  if (threatLevel >= 28 && id % 13 === 0) return NEXT_ENEMY_ARCHETYPES.stalker;
-  if (threatLevel >= 24 && id % 11 === 0) return NEXT_ENEMY_ARCHETYPES.brute;
+  if (threatLevel >= 16 && threatLevel <= 31) return midGameArchetype(id);
+  if (threatLevel >= 48 && id % 17 === 0) return NEXT_ENEMY_ARCHETYPES.leviathan;
+  if (threatLevel >= 40 && id % 19 === 0) return NEXT_ENEMY_ARCHETYPES.apex;
+  if (threatLevel >= 34 && id % 13 === 0) return NEXT_ENEMY_ARCHETYPES.stalker;
+  if (threatLevel >= 28 && id % 11 === 0) return NEXT_ENEMY_ARCHETYPES.brute;
   if (threatLevel >= 10 && id % 8 === 0) return NEXT_ENEMY_ARCHETYPES.brute;
   if (id % 6 === 0) return NEXT_ENEMY_ARCHETYPES.hunter;
   if (id % 3 === 0) return NEXT_ENEMY_ARCHETYPES.neutral;
