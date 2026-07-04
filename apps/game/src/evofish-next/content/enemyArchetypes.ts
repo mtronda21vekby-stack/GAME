@@ -35,62 +35,70 @@ export const NEXT_ENEMY_ARCHETYPES: Record<NextEnemyArchetypeId, NextEnemyArchet
   hunter: {
     id: "hunter",
     name: "Hunter",
-    baseSpeed: 134,
-    aggroRadius: 340,
-    attackRange: 54,
-    courage: 1.1,
-    damageMultiplier: 1.12,
+    baseSpeed: 128,
+    aggroRadius: 310,
+    attackRange: 50,
+    courage: 1.02,
+    damageMultiplier: 1.02,
     description: "Aggressive fish. Hunts weaker player and pressures space."
   },
   brute: {
     id: "brute",
     name: "Brute",
-    baseSpeed: 94,
-    aggroRadius: 410,
-    attackRange: 72,
-    courage: 1.35,
-    damageMultiplier: 1.48,
+    baseSpeed: 90,
+    aggroRadius: 360,
+    attackRange: 66,
+    courage: 1.22,
+    damageMultiplier: 1.32,
     description: "Large predator. Slow but dangerous on contact."
   },
   stalker: {
     id: "stalker",
     name: "Stalker",
-    baseSpeed: 148,
-    aggroRadius: 520,
-    attackRange: 74,
-    courage: 1.6,
-    damageMultiplier: 1.82,
+    baseSpeed: 142,
+    aggroRadius: 480,
+    attackRange: 70,
+    courage: 1.45,
+    damageMultiplier: 1.62,
     description: "Late-game hunter that does not flee easily and punishes careless movement."
   },
   leviathan: {
     id: "leviathan",
     name: "Leviathan",
-    baseSpeed: 88,
-    aggroRadius: 640,
-    attackRange: 118,
-    courage: 2.2,
-    damageMultiplier: 2.65,
+    baseSpeed: 86,
+    aggroRadius: 610,
+    attackRange: 112,
+    courage: 2.05,
+    damageMultiplier: 2.42,
     description: "Huge late-game predator. Not meant to be devoured until the player is truly dominant."
   },
   apex: {
     id: "apex",
     name: "Apex",
-    baseSpeed: 112,
-    aggroRadius: 600,
-    attackRange: 104,
-    courage: 1.95,
-    damageMultiplier: 2.35,
+    baseSpeed: 106,
+    aggroRadius: 560,
+    attackRange: 98,
+    courage: 1.78,
+    damageMultiplier: 2.12,
     description: "Rare apex predator. High HP, high rewards, and strong map pressure."
   }
 };
 
+function midGameArchetype(id: number): NextEnemyArchetype {
+  if (id % 23 === 0) return NEXT_ENEMY_ARCHETYPES.brute;
+  if (id % 9 === 0) return NEXT_ENEMY_ARCHETYPES.hunter;
+  if (id % 4 === 0) return NEXT_ENEMY_ARCHETYPES.neutral;
+  return NEXT_ENEMY_ARCHETYPES.prey;
+}
+
 export function chooseEnemyArchetype(id: number, threatLevel = 1): NextEnemyArchetype {
-  if (threatLevel >= 35 && id % 13 === 0) return NEXT_ENEMY_ARCHETYPES.leviathan;
-  if (threatLevel >= 24 && id % 11 === 0) return NEXT_ENEMY_ARCHETYPES.stalker;
-  if (threatLevel >= 30 && id % 19 === 0) return NEXT_ENEMY_ARCHETYPES.apex;
-  if (threatLevel >= 18 && id % 31 === 0) return NEXT_ENEMY_ARCHETYPES.apex;
-  if (threatLevel >= 10 && id % 7 === 0) return NEXT_ENEMY_ARCHETYPES.brute;
-  if (id % 5 === 0) return NEXT_ENEMY_ARCHETYPES.hunter;
+  if (threatLevel >= 16 && threatLevel <= 23) return midGameArchetype(id);
+  if (threatLevel >= 38 && id % 17 === 0) return NEXT_ENEMY_ARCHETYPES.leviathan;
+  if (threatLevel >= 32 && id % 19 === 0) return NEXT_ENEMY_ARCHETYPES.apex;
+  if (threatLevel >= 28 && id % 13 === 0) return NEXT_ENEMY_ARCHETYPES.stalker;
+  if (threatLevel >= 24 && id % 11 === 0) return NEXT_ENEMY_ARCHETYPES.brute;
+  if (threatLevel >= 10 && id % 8 === 0) return NEXT_ENEMY_ARCHETYPES.brute;
+  if (id % 6 === 0) return NEXT_ENEMY_ARCHETYPES.hunter;
   if (id % 3 === 0) return NEXT_ENEMY_ARCHETYPES.neutral;
   return NEXT_ENEMY_ARCHETYPES.prey;
 }
