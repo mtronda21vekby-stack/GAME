@@ -2,7 +2,7 @@ import type { EvoFishEconomyState, EvoFishFormId, EvoFishSkinDefinition } from "
 import type { NextEngineState, NextFishEntity, NextQuestState, NextWorldConfig } from "../core/engineTypes";
 import { defaultNextAccount, normalizeNextAccount, type NextAccountState } from "../content/account";
 import { defaultAchievementState, type NextAchievementState } from "../content/achievements";
-import { chooseEnemyArchetype } from "../content/enemyArchetypes";
+import { chooseEnemyArchetype, type NextEnemyArchetypeId } from "../content/enemyArchetypes";
 import { pickEnemyFamily } from "../content/enemyFamilies";
 import { defaultCraftState } from "../content/craft";
 import { DARK_CAVE_STORY_TITLE, darkCaveStoryStep } from "../content/darkCaveStory";
@@ -14,6 +14,7 @@ import { buildQuestBoard } from "../content/quests";
 import { EVOFISH_SKIN_BY_ID } from "../content/skins";
 import { getWorldMap, EVOFISH_WORLD_CONFIG } from "../content/worldMaps";
 import { getZoneAt } from "../content/zones";
+import { darkCavePortalUnlocked } from "../assets/visuals/visualCatalog";
 import { defaultNextQuests, type EvoFishNextProgressState } from "../state/skinSaveAdapter";
 
 export const NEXT_WORLD_CONFIG: NextWorldConfig = EVOFISH_WORLD_CONFIG;
@@ -46,6 +47,28 @@ export function enemyThreatLevel(level: number, tier: number, mass: number) {
 
 function threatScale(threatLevel: number) {
   return 1 + Math.min(4.8, Math.max(0, threatLevel - 1) * 0.045);
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function enemyLevelBias(archetype: NextEnemyArchetypeId) {
+  if (archetype === "leviathan") return 18;
+  if (archetype === "apex") return 15;
+  if (archetype === "stalker") return 9;
+  if (archetype === "brute") return 6;
+  if (archetype === "hunter") return 3;
+  if (archetype === "neutral") return 0;
+  return -4;
+}
+
+function enemyNpcLevel(archetype: NextEnemyArchetypeId, threatLevel: number, mass: number, playerMass: number) {
+  const base = Math.max(1, Math.floor(threatLevel || 1));
+  const massPressure = Math.max(0, Math.round((mass - playerMass) * 1.15));
+  const bodyScale = Math.round(Math.sqrt(Math.max(1, mass)) * 1.9);
+  const variance = Math.floor(Math.random() * 5) - 2;
+  return Math.round(clamp(base + enemyLevelBias(archetype) + bodyScale + massPressure + variance, 1, 99));
 }
 
 function randomWorldPoint(config: NextWorldConfig, pad = 190): Point {
@@ -232,6 +255,7 @@ export function makeEnemy(
     skin: apex || leviathan ? fallbackSkin : familySkin(family.skinId, fallbackSkin),
     angle: 0,
     hitT: 0,
+    npcLevel: enemyNpcLevel(archetype.id, threatLevel, mass, playerMass),
     aiType: archetype.id,
     aiState: "wander",
     familyName: family.name,
@@ -288,14 +312,14 @@ export function createNextWorld(
   const playerSpeed = speedFromForm(form) * (1 + speedBonus);
   const startZone = getZoneAt(playerSpawn.x, playerSpawn.y, "main_reef");
   const artifactsFound = Math.max(0, Math.floor(quests.counters?.artifacts || 0));
-  const storyStep = darkCaveStoryStep(artifactsFound, false);
+  const storyStep = darkCaveStoryStep(artifactsFound, false, level);
 
   return {
     config,
     worldId: "main_reef",
     portalTransition: null,
     story: {
-      darkCaveUnlocked: artifactsFound >= 3,
+      darkCaveUnlocked: darkCavePortalUnlocked(artifactsFound, level),
       darkCaveEntered: false,
       currentTitle: storyStep.title,
       currentObjective: storyStep.objective,
