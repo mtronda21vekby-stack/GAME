@@ -1,9 +1,16 @@
 import type { NextEngineState, NextEngineStats } from "../core/engineTypes";
 import { loadEvoFishNextSave } from "../state/nextSaveStore";
 import { EVOFISH_NEXT_VERSION } from "../version";
+import {
+  getLeaderboardPlayerId,
+  leaderboardSubmitCooldownSeconds,
+  markLeaderboardSubmitAttempt,
+  EVOFISH_LEADERBOARD_LAST_SUBMIT_KEY,
+  EVOFISH_LEADERBOARD_PLAYER_ID_KEY,
+  EVOFISH_LEADERBOARD_SUBMIT_COOLDOWN_MS
+} from "./leaderboardIdentity";
 
-export const EVOFISH_LEADERBOARD_PLAYER_ID_KEY = "evofish_leaderboard_player_id_v1";
-export const EVOFISH_LEADERBOARD_LAST_SUBMIT_KEY = "evofish_leaderboard_last_submit_v1";
+export { getLeaderboardPlayerId, leaderboardSubmitCooldownSeconds, EVOFISH_LEADERBOARD_LAST_SUBMIT_KEY, EVOFISH_LEADERBOARD_PLAYER_ID_KEY, EVOFISH_LEADERBOARD_SUBMIT_COOLDOWN_MS };
 
 export type LeaderboardRunPayload = {
   playerId: string;
@@ -56,23 +63,22 @@ export type LeaderboardSeasonResponse = {
   };
 };
 
-function randomId() {
-  const cryptoApi = typeof crypto !== "undefined" ? crypto : null;
-  if (cryptoApi?.randomUUID) return cryptoApi.randomUUID();
-  return `${Date.now()}_${Math.random().toString(36).slice(2)}`;
-}
-
-export function getLeaderboardPlayerId() {
-  try {
-    const existing = localStorage.getItem(EVOFISH_LEADERBOARD_PLAYER_ID_KEY);
-    if (existing) return existing;
-    const id = `ef_${randomId()}`;
-    localStorage.setItem(EVOFISH_LEADERBOARD_PLAYER_ID_KEY, id);
-    return id;
-  } catch {
-    return "ef_private_mode";
-  }
-}
+export type LeaderboardOnlineResponse = {
+  ok: boolean;
+  error?: string;
+  online?: number;
+  players?: Array<{
+    playerId: string;
+    nickname: string;
+    level: number;
+    mass: number;
+    kills: number;
+    worldId: string | null;
+    skinId: string | null;
+    form: string | null;
+    updatedAt: number;
+  }>;
+};
 
 export function getLeaderboardNickname() {
   const save = loadEvoFishNextSave();
@@ -89,7 +95,7 @@ export function buildLeaderboardPayloadFromEngine(engine: NextEngineState): Lead
     tier: Math.max(1, Math.floor(player.tier || stats.tier || 1)),
     maxMass: Math.max(1, Math.floor(player.mass || stats.mass || 1)),
     kills: Math.max(0, Math.floor(stats.kills || 0)),
-    bossKills: stats.apexAlive === false && Math.max(0, Math.floor(stats.kills || 0)) > 0 ? Math.max(0, Math.floor(engine.quests.counters?.bosses || 0)) : Math.max(0, Math.floor(engine.quests.counters?.bosses || 0)),
+    bossKills: Math.max(0, Math.floor(engine.quests.counters?.bosses || 0)),
     artifacts: Math.max(0, Math.floor(stats.artifactsFound || engine.quests.counters?.artifacts || 0)),
     darkCaveCleared: Boolean(engine.story.completed?.dark_cave_return || engine.worldId === "dark_cave"),
     survivalSeconds: Math.max(20, Math.floor(engine.frame / 60)),
@@ -125,7 +131,7 @@ async function requestJSON<T>(url: string, init?: RequestInit): Promise<T> {
     }
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) return { ok: false, error: data?.error || response.statusText } as T;
+  if (!response.ok) return { ok: false, error: data?.error || response.statusText, retryAfterSeconds: data?.retryAfterSeconds } as T;
   return data as T;
 }
 
@@ -142,15 +148,21 @@ export async function fetchLeaderboardMe() {
   return requestJSON<LeaderboardMeResponse>(`/api/leaderboard/me?playerId=${playerId}`);
 }
 
+export async function fetchLeaderboardOnline() {
+  return requestJSON<LeaderboardOnlineResponse>("/api/leaderboard/online");
+}
+
 export async function submitLeaderboardRun(payload: LeaderboardRunPayload) {
-  const result = await requestJSON<{ ok: boolean; error?: string; rank?: number | null; flagged?: boolean; run?: LeaderboardRow | null }>("/api/leaderboard/submit", {
+  const cooldown = leaderboardSubmitCooldownSeconds();
+  if (cooldown > 0) {
+    return { ok: false, error: "submit_cooldown", retryAfterSeconds: cooldown, rank: null, flagged: false, run: null };
+  }
+
+  markLeaderboardSubmitAttempt({ ok: true, queued: true }, payload);
+  const result = await requestJSON<{ ok: boolean; error?: string; retryAfterSeconds?: number; rank?: number | null; flagged?: boolean; run?: LeaderboardRow | null }>("/api/leaderboard/submit", {
     method: "POST",
     body: JSON.stringify({ ...payload, version: EVOFISH_NEXT_VERSION })
   });
-  try {
-    localStorage.setItem(EVOFISH_LEADERBOARD_LAST_SUBMIT_KEY, JSON.stringify({ at: new Date().toISOString(), result, payload }));
-  } catch {
-    // optional cache only
-  }
+  markLeaderboardSubmitAttempt(result, payload);
   return result;
 }
