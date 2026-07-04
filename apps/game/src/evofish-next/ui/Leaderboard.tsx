@@ -21,6 +21,14 @@ function format(value: number) {
   return Math.max(0, Math.floor(value || 0)).toLocaleString("ru-RU");
 }
 
+function playerCode(value?: string | null) {
+  const clean = String(value || "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .slice(-6)
+    .toUpperCase();
+  return `ID ${clean || "LOCAL"}`;
+}
+
 function timeLeft(endsAt?: string) {
   if (!endsAt) return "—";
   const ms = new Date(endsAt).getTime() - Date.now();
@@ -109,9 +117,9 @@ export function Leaderboard() {
         <header className="efLbHero">
           <div>
             <Link to="/game" className="efLbBack">← Назад</Link>
-            <span>ONLINE · SEASONAL</span>
+            <span>ONLINE · LIVE SEASON</span>
             <h1>Лидеры</h1>
-            <p>Лучшие забеги отправляются автоматически после смерти. Ручная отправка оставлена как запасной вариант и защищена от спама.</p>
+            <p>Рейтинг обновляется сам по мере прогресса игроков. Каждый игрок имеет уникальный ID, поэтому один и тот же игрок не занимает несколько мест в TOP.</p>
           </div>
           <button onClick={submitCurrent} disabled={submitDisabled}>{offline ? "Сезон скоро" : submitting ? "Отправка…" : cooldown > 0 ? `Повтор через ${cooldown}с` : "Отправить вручную"}</button>
         </header>
@@ -119,7 +127,7 @@ export function Leaderboard() {
         <section className="efLbStats">
           <article><span>Сезон</span><b>{season?.season?.title || "—"}</b><small>До конца: {timeLeft(season?.season?.endsAt)}</small></article>
           <article><span>Online now</span><b>{format(onlineCount)}</b><small>{online?.ok ? "активны за 90 сек" : "ожидает подключение"}</small></article>
-          <article><span>Моё место</span><b>{me?.rank ? `#${me.rank}` : "—"}</b><small>ID: {myId.slice(0, 10)}…</small></article>
+          <article><span>Моё место</span><b>{me?.rank ? `#${me.rank}` : "—"}</b><small>{playerCode(myId)}</small></article>
           <article><span>Мой лучший score</span><b>{best ? format(best.score) : "—"}</b><small>{best ? `LV ${best.level} · ${format(best.kills)} kills` : "ещё нет результата"}</small></article>
           <article><span>Статус</span><b>{offline ? "Сезон скоро" : "Online"}</b><small>{message}</small></article>
         </section>
@@ -133,14 +141,14 @@ export function Leaderboard() {
 
         <section className="efLbBoard">
           <div className="efLbBoardHead">
-            <span>#</span><span>Игрок</span><span>Score</span><span>LV</span><span>Kills</span><span>Пещера</span>
+            <span>#</span><span>Игрок / ID</span><span>Score</span><span>LV</span><span>Kills</span><span>Пещера</span>
           </div>
           {loading ? <div className="efLbEmpty">Загрузка…</div> : null}
-          {!loading && rows.length === 0 ? <div className="efLbEmpty">Пока нет результатов. Сыграй забег — после смерти score отправится автоматически.</div> : null}
+          {!loading && rows.length === 0 ? <div className="efLbEmpty">Пока нет результатов. Играй — live score обновится автоматически.</div> : null}
           {rows.map((row) => (
             <article key={row.id} className={`efLbRow ${rowTone(row, myId)}`}>
               <span className="rank">#{row.rank || "—"}</span>
-              <span className="player"><b>{row.nickname}</b><small>{row.form || "fish"} · {row.skinId || "default"}</small></span>
+              <span className="player"><b>{row.nickname}</b><small>{playerCode(row.playerId)} · {row.form || "fish"} · {row.skinId || "default"}</small></span>
               <span>{format(row.score)}</span>
               <span>LV {row.level}</span>
               <span>{format(row.kills)}</span>
