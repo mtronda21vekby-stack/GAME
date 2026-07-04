@@ -1,6 +1,7 @@
 import {
   calculateLeaderboardScore,
   currentSeasonId,
+  ensureLeaderboardSchema,
   getLeaderboardDb,
   json,
   normalizeRunInput,
@@ -15,8 +16,10 @@ export const onRequestOptions = async () => json({ ok: true });
 export const onRequestPost = async ({ request, env }: any) => {
   const db = getLeaderboardDb(env || {});
   if (!db) {
-    return json({ ok: false, error: "LEADERBOARD_DB binding is not configured." }, { status: 503 });
+    return json({ ok: false, error: "leaderboard_database_not_connected" }, { status: 503 });
   }
+
+  await ensureLeaderboardSchema(db);
 
   let body: LeaderboardRunInput;
   try {
