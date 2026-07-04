@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-level-aware-combat-5.8.1";
+export const EVOFISH_NEXT_VERSION = "next-online-leaderboard-5.9.0";
