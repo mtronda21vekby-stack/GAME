@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-error-capture-5.1.0";
+export const EVOFISH_NEXT_VERSION = "next-midgame-balance-5.2.0";
