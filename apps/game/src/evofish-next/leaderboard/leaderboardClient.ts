@@ -122,11 +122,19 @@ export function buildLeaderboardPayloadFromSave(): LeaderboardRunPayload {
   };
 }
 
+function withCacheBust(url: string) {
+  const joiner = url.includes("?") ? "&" : "?";
+  return `${url}${joiner}_=${Date.now()}`;
+}
+
 async function requestJSON<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, {
+  const response = await fetch(withCacheBust(url), {
     ...init,
+    cache: "no-store",
     headers: {
       "content-type": "application/json",
+      "cache-control": "no-cache, no-store, must-revalidate",
+      pragma: "no-cache",
       ...(init?.headers || {})
     }
   });
