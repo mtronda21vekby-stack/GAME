@@ -146,7 +146,7 @@ function drawWorldPortal(ctx: CanvasRenderingContext2D, state: NextEngineState, 
   if (artifacts <= 0 && state.player.level < 8) return;
   const portal = darkCavePortalPosition(state.config);
   if (!isVisible(camera, portal.x, portal.y, portal.radius + 220)) return;
-  const unlocked = darkCavePortalUnlocked(artifacts);
+  const unlocked = darkCavePortalUnlocked(artifacts, state.player.level);
   drawPortalShape(ctx, state, portal.x, portal.y, portal.radius, unlocked, unlocked ? "DARK CAVE" : `АРТЕФАКТЫ ${artifacts}/${DARK_CAVE_ARTIFACTS_REQUIRED}`, quality);
 }
 
@@ -267,6 +267,57 @@ function drawHpBar(ctx: CanvasRenderingContext2D, entity: NextFishEntity, width:
   ctx.fillRect(x, y, width, 5);
   ctx.fillStyle = entity.aiType === "apex" || entity.aiType === "leviathan" ? "rgba(255,220,120,.92)" : pct > 0.45 ? "rgba(110,255,180,.88)" : "rgba(255,90,90,.9)";
   ctx.fillRect(x, y, width * pct, 5);
+}
+
+function npcDisplayLevel(enemy: NextFishEntity) {
+  return Math.max(1, Math.floor(enemy.npcLevel || Math.max(1, Math.round(enemy.mass * 4))));
+}
+
+function npcThreatInfo(state: NextEngineState, enemy: NextFishEntity, safeToEat: boolean) {
+  const level = npcDisplayLevel(enemy);
+  const levelDiff = level - state.player.level;
+  const massRatio = enemy.mass / Math.max(1, state.player.mass);
+
+  if (enemy.aiType === "apex" || enemy.aiType === "leviathan" || levelDiff >= 10 || massRatio >= 1.25) {
+    return { label: "ОЧЕНЬ НИЗКИЙ", color: "rgba(255,90,90,.94)", background: "rgba(64,8,14,.82)", level };
+  }
+
+  if (levelDiff >= 4 || massRatio >= 1.06) {
+    return { label: "НИЗКИЙ", color: "rgba(255,180,90,.94)", background: "rgba(64,38,8,.82)", level };
+  }
+
+  if (!safeToEat || levelDiff >= -2) {
+    return { label: "СРЕДНИЙ", color: "rgba(255,243,160,.94)", background: "rgba(56,48,8,.82)", level };
+  }
+
+  return { label: "ВЫСОКИЙ", color: "rgba(110,255,180,.94)", background: "rgba(8,54,34,.82)", level };
+}
+
+function drawNpcThreatBadge(ctx: CanvasRenderingContext2D, state: NextEngineState, enemy: NextFishEntity, safeToEat: boolean, quality: string) {
+  const boss = enemy.aiType === "apex" || enemy.aiType === "leviathan";
+  const distance = Math.hypot(enemy.x - state.player.x, enemy.y - state.player.y);
+  if (quality === "low" && !boss && distance > 520 && enemy.aiState === "wander") return;
+
+  const info = npcThreatInfo(state, enemy, safeToEat);
+  const text = `LV ${info.level} · ${info.label}`;
+  const y = enemy.y - enemy.radius * (boss ? 4.1 : 3.15) - 8;
+
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.font = boss ? "1000 15px system-ui, -apple-system, BlinkMacSystemFont, sans-serif" : "900 12px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+  const width = Math.max(boss ? 104 : 84, ctx.measureText(text).width + 18);
+  const height = boss ? 24 : 20;
+  const x = enemy.x - width / 2;
+  ctx.fillStyle = info.background;
+  ctx.strokeStyle = info.color;
+  ctx.lineWidth = boss ? 2 : 1.5;
+  ctx.beginPath();
+  ctx.roundRect(x, y - height * 0.5, width, height, height / 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = info.color;
+  ctx.fillText(text, enemy.x, y + 4);
+  ctx.restore();
 }
 
 function drawEvents(ctx: CanvasRenderingContext2D, state: NextEngineState, camera: NextCameraState, quality: string) {
@@ -559,7 +610,7 @@ function drawMiniMap(ctx: CanvasRenderingContext2D, state: NextEngineState, came
   }
 
   const portal = state.worldId === "dark_cave" ? oceanReturnPortalPosition(state.config) : darkCavePortalPosition(state.config);
-  const portalUnlocked = state.worldId === "dark_cave" || darkCavePortalUnlocked(state.stats.artifactsFound || 0);
+  const portalUnlocked = state.worldId === "dark_cave" || darkCavePortalUnlocked(state.stats.artifactsFound || 0, state.player.level);
   if (state.worldId === "dark_cave" || (state.stats.artifactsFound || 0) > 0 || state.player.level >= 8) {
     drawMapDot(ctx, mapX(state, portal.x, left, mapW), mapY(state, portal.y, top, mapH), portalUnlocked ? 4.8 : 3.2, portalUnlocked ? "rgba(190,140,255,.95)" : "rgba(150,150,190,.45)", portalUnlocked ? "rgba(255,220,120,.76)" : undefined);
   }
@@ -687,6 +738,7 @@ export function renderNextWorld(ctx: CanvasRenderingContext2D, state: NextEngine
     if (quality !== "low" || enemy.aiType === "apex" || enemy.aiType === "leviathan") {
       drawHpBar(ctx, enemy, enemy.radius * (enemy.aiType === "apex" || enemy.aiType === "leviathan" ? 4.1 : 2.8));
     }
+    drawNpcThreatBadge(ctx, state, enemy, safeToEat, quality);
   }
 
   drawCombatAura(ctx, state);
