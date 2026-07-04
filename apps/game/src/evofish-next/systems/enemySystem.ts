@@ -1,5 +1,5 @@
 import type { NextEngineState, NextFishEntity } from "../core/engineTypes";
-import { canDevour } from "./collisionSystem";
+import { canDevour, canPlayerDevour } from "./collisionSystem";
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -136,7 +136,7 @@ function aiTarget(state: NextEngineState, enemy: NextFishEntity) {
   const dx = player.x - enemy.x;
   const dy = player.y - enemy.y;
   const distance = Math.hypot(dx, dy) || 1;
-  const playerCanEat = canDevour(player.mass, enemy.mass);
+  const playerCanEat = canPlayerDevour(player, enemy);
   const enemyCanThreaten = canDevour(enemy.mass * 1.08, player.mass) || isPredator(enemy);
   const predatorPressure = countPredatorsNearPlayer(state);
   const pressureLimit = predatorPressureLimit(player.level);
