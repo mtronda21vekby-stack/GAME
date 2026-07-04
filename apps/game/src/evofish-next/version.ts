@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-level-18-balance-5.2.1";
+export const EVOFISH_NEXT_VERSION = "next-large-map-5.3.0";
