@@ -2,6 +2,10 @@
 
 This is the minimal production path for the online seasonal leaderboard.
 
+## Important
+
+The game code can create tables automatically, but it cannot create a Cloudflare D1 database or attach a Pages binding by itself. That must exist in the Cloudflare project environment.
+
 ## 1. Create Cloudflare D1 database
 
 Create a D1 database in Cloudflare, then bind it to the Cloudflare Pages project as:
@@ -10,11 +14,13 @@ Create a D1 database in Cloudflare, then bind it to the Cloudflare Pages project
 LEADERBOARD_DB
 ```
 
-Do not add the D1 binding to `wrangler.toml`; this project keeps Cloudflare Pages bindings in the dashboard.
+Do not add the D1 binding to `wrangler.toml` unless the real production database id is known. This project keeps Cloudflare Pages bindings in the dashboard to avoid broken deploys from placeholder bindings.
 
-## 2. Apply schema
+## 2. Schema
 
-Run the SQL from:
+The Functions API auto-creates the required tables on first request when `LEADERBOARD_DB` is bound.
+
+The SQL is still kept here for manual setup or inspection:
 
 ```text
 migrations/0001_leaderboard.sql
