@@ -7,7 +7,7 @@ type RuntimeLeaderboardState = NextEngineState & {
   leaderboardHeartbeatAt?: number;
 };
 
-function payloadFromEngine(engine: NextEngineState) {
+function runStatsFromEngine(engine: NextEngineState) {
   const player = engine.player;
   const stats = engine.stats;
   return {
@@ -27,20 +27,16 @@ function payloadFromEngine(engine: NextEngineState) {
   };
 }
 
+function payloadFromEngine(engine: NextEngineState) {
+  return runStatsFromEngine(engine);
+}
+
 function heartbeatPayload(engine: NextEngineState) {
-  const player = engine.player;
-  const stats = engine.stats;
   return {
-    playerId: getLeaderboardPlayerId(),
-    nickname: engine.account.name || "Player",
-    level: Math.max(1, Math.floor(player.level || stats.level || 1)),
-    mass: Math.max(1, Math.floor(player.mass || stats.mass || 1)),
-    kills: Math.max(0, Math.floor(stats.kills || 0)),
+    ...runStatsFromEngine(engine),
+    mass: Math.max(1, Math.floor(engine.player.mass || engine.stats.mass || 1)),
     worldId: engine.worldId,
-    skinId: player.skin.id,
-    form: player.form,
-    isAlive: !player.dead && !player.downed,
-    version: EVOFISH_NEXT_VERSION
+    isAlive: !engine.player.dead && !engine.player.downed
   };
 }
 
