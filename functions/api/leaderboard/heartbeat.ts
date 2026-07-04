@@ -57,6 +57,20 @@ export const onRequestPost = async ({ request, env }: any) => {
   const updatedAt = Date.now();
 
   await db.prepare(
+    `INSERT INTO leaderboard_players (player_id, nickname, best_score, best_run_id, total_runs, updated_at)
+     VALUES (?, ?, 0, NULL, 0, ?)
+     ON CONFLICT(player_id) DO UPDATE SET
+       nickname = excluded.nickname,
+       updated_at = excluded.updated_at`
+  ).bind(playerId, nickname, updatedAt).run();
+
+  await db.prepare(
+    `UPDATE leaderboard_runs
+     SET nickname = ?
+     WHERE player_id = ? AND nickname != ?`
+  ).bind(nickname, playerId, nickname).run();
+
+  await db.prepare(
     `INSERT INTO leaderboard_presence (player_id, nickname, level, mass, kills, world_id, skin_id, form, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(player_id) DO UPDATE SET
@@ -126,5 +140,5 @@ export const onRequestPost = async ({ request, env }: any) => {
     updatedAt
   ).run();
 
-  return json({ ok: true, onlineWindowSeconds: 90, liveScore: score });
+  return json({ ok: true, onlineWindowSeconds: 90, liveScore: score, nickname });
 };
