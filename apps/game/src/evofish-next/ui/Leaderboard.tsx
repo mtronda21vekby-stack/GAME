@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "../../router";
 import {
   buildLeaderboardPayloadFromSave,
@@ -9,6 +9,7 @@ import {
   getLeaderboardPlayerId,
   leaderboardSubmitCooldownSeconds,
   submitLeaderboardRun,
+  syncLeaderboardProfile,
   type LeaderboardMeResponse,
   type LeaderboardOnlineResponse,
   type LeaderboardRow,
@@ -66,11 +67,20 @@ export function Leaderboard() {
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
   const [message, setMessage] = useState("Загрузка рейтинга…");
   const [submitting, setSubmitting] = useState(false);
+  const profileSyncedRef = useRef(false);
   const myId = useMemo(() => getLeaderboardPlayerId(), []);
+
+  const ensureProfileSynced = useCallback(async () => {
+    if (profileSyncedRef.current) return;
+    profileSyncedRef.current = true;
+    await syncLeaderboardProfile().catch(() => {});
+  }, []);
 
   const reload = useCallback(async (mode: "initial" | "live" = "live") => {
     if (mode === "initial") setLoading(true);
     else setRefreshing(true);
+
+    if (mode === "initial") await ensureProfileSynced();
 
     const [seasonResult, topResult, meResult, onlineResult] = await Promise.all([
       fetchLeaderboardSeason(),
@@ -87,7 +97,7 @@ export function Leaderboard() {
     setLoading(false);
     setRefreshing(false);
     setMessage(playerSafeStatus(topResult));
-  }, []);
+  }, [ensureProfileSynced]);
 
   useEffect(() => {
     reload("initial");
@@ -140,7 +150,7 @@ export function Leaderboard() {
             <Link to="/game" className="efLbBack">← Назад</Link>
             <span>ONLINE · LIVE AUTO REFRESH</span>
             <h1>Лидеры</h1>
-            <p>Live-рейтинг обновляется сам каждые 5 секунд и сразу подтягивает новые score игроков без ручного обновления страницы.</p>
+            <p>Live-рейтинг обновляется сам каждые 5 секунд. Никнейм синхронизируется с аккаунтом перед загрузкой таблицы.</p>
           </div>
           <button onClick={submitCurrent} disabled={submitDisabled}>{offline ? "Сезон скоро" : submitting ? "Отправка…" : cooldown > 0 ? `Повтор через ${cooldown}с` : "Отправить вручную"}</button>
         </header>
