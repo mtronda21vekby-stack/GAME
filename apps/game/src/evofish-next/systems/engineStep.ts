@@ -9,6 +9,7 @@ import { updateEnemySystem } from "./enemySystem";
 import { updateEventSystem } from "./eventSystem";
 import { updateFeedbackSystem } from "./feedbackSystem";
 import { updateMutationDraftSystem } from "./mutationDraftSystem";
+import { updatePortalSystem } from "./portalSystem";
 import { syncProgressionStats } from "./progressionSystem";
 import { updateQuestDirectorSystem } from "./questDirectorSystem";
 import { updateQuestSystem } from "./questSystem";
@@ -17,25 +18,37 @@ import { updateResourceSystem } from "./resourceSystem";
 import { updateSurvivalSystem } from "./survivalSystem";
 import { updateZoneSystem } from "./zoneSystem";
 
+function freezeInput(input: NextInputState) {
+  input.bite = false;
+  input.dash = false;
+  input.down = false;
+  input.moveX = 0;
+  input.moveY = 0;
+}
+
+function finishPausedFrame(state: NextEngineState, input: NextInputState, dt: number) {
+  freezeInput(input);
+  updateFeedbackSystem(state, dt);
+  syncProgressionStats(state);
+  updateQuestSystem(state);
+  state.frame += 1;
+  return state;
+}
+
 export function stepNextEngine(state: NextEngineState, input: NextInputState, viewport: NextViewport, dt: number) {
   const camera = getNextCamera(state, viewport);
 
   updateMutationDraftSystem(state);
-  if (state.mutationDraft) {
-    input.bite = false;
-    input.dash = false;
-    input.down = false;
-    updateFeedbackSystem(state, dt);
-    syncProgressionStats(state);
-    state.frame += 1;
-    return state;
-  }
+  if (state.mutationDraft) return finishPausedFrame(state, input, dt);
 
   updateCraftSystem(state, dt);
   updateSurvivalSystem(state, dt);
 
+  if (state.portalTransition?.active && updatePortalSystem(state, dt)) return finishPausedFrame(state, input, dt);
+
   if (!state.player.downed) {
     updatePlayerSystem(state, input, camera, dt);
+    if (updatePortalSystem(state, dt)) return finishPausedFrame(state, input, dt);
     updateZoneSystem(state, dt);
     updateResourceSystem(state, dt);
     updateQuestDirectorSystem(state);
@@ -44,9 +57,8 @@ export function stepNextEngine(state: NextEngineState, input: NextInputState, vi
     updateDirectorSystem(state, dt);
     updateCollisionSystem(state);
   } else {
-    input.bite = false;
-    input.dash = false;
-    input.down = false;
+    freezeInput(input);
+    updatePortalSystem(state, dt);
     updateZoneSystem(state, dt);
     updateResourceSystem(state, dt);
     updateQuestDirectorSystem(state);
