@@ -1,6 +1,7 @@
 import type { NextAIState, NextCameraState, NextEngineState, NextFishEntity, NextViewport } from "../core/engineTypes";
-import { resourceDef, type NextResourceNode } from "../content/resources";
+import type { NextResourceNode } from "../content/resources";
 import { NEXT_MAP_ZONES } from "../content/zones";
+import { darkCavePortalPosition, darkCavePortalUnlocked, DARK_CAVE_ARTIFACTS_REQUIRED, getResourceVisual, getWaterThemeForLevel } from "../assets/visuals/visualCatalog";
 import { drawEvoFishSkin } from "./canvasSkinRenderer";
 import { getNextCamera } from "../systems/cameraSystem";
 import { canDevour } from "../systems/collisionSystem";
@@ -63,17 +64,95 @@ function eventColor(kind?: string) {
   return "rgba(255,220,120,.28)";
 }
 
+function drawWaterParticles(ctx: CanvasRenderingContext2D, state: NextEngineState, camera: NextCameraState, color: string) {
+  const step = 340;
+  const startX = Math.max(0, Math.floor(camera.x / step) * step);
+  const endX = Math.min(state.config.width, camera.x + camera.width + step);
+  const startY = Math.max(0, Math.floor(camera.y / step) * step);
+  const endY = Math.min(state.config.height, camera.y + camera.height + step);
+
+  ctx.fillStyle = color;
+  for (let x = startX; x <= endX; x += step) {
+    for (let y = startY; y <= endY; y += step) {
+      const wave = Math.sin((state.frame + x * 0.12 + y * 0.08) * 0.018);
+      ctx.beginPath();
+      ctx.arc(x + 70 * wave, y + 46 * Math.cos(wave), 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
+function drawDarkCavePortal(ctx: CanvasRenderingContext2D, state: NextEngineState, camera: NextCameraState, quality: string) {
+  const artifacts = state.stats.artifactsFound || 0;
+  if (artifacts <= 0 && state.player.level < 8) return;
+
+  const portal = darkCavePortalPosition(state.config);
+  if (!isVisible(camera, portal.x, portal.y, portal.radius + 220)) return;
+
+  const unlocked = darkCavePortalUnlocked(artifacts);
+  const pulse = Math.sin(state.frame * 0.045) * 0.5 + 0.5;
+  const outer = portal.radius + pulse * 14;
+  const inner = portal.radius * 0.58 + pulse * 6;
+
+  ctx.save();
+  ctx.translate(portal.x, portal.y);
+  ctx.globalAlpha = unlocked ? 1 : 0.56;
+
+  const aura = ctx.createRadialGradient(0, 0, inner * 0.25, 0, 0, outer * 1.75);
+  aura.addColorStop(0, unlocked ? "rgba(190,140,255,.76)" : "rgba(130,120,170,.34)");
+  aura.addColorStop(0.46, unlocked ? "rgba(90,60,210,.34)" : "rgba(90,90,120,.18)");
+  aura.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = aura;
+  ctx.beginPath();
+  ctx.arc(0, 0, outer * 1.75, 0, Math.PI * 2);
+  ctx.fill();
+
+  const core = ctx.createRadialGradient(-inner * 0.22, -inner * 0.18, 6, 0, 0, outer);
+  core.addColorStop(0, unlocked ? "rgba(255,243,160,.78)" : "rgba(220,220,240,.30)");
+  core.addColorStop(0.28, unlocked ? "rgba(135,92,255,.92)" : "rgba(70,72,100,.72)");
+  core.addColorStop(0.68, "rgba(8,4,22,.94)");
+  core.addColorStop(1, "rgba(1,3,8,.98)");
+  ctx.fillStyle = core;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, outer * 0.82, outer, 0.06 * Math.sin(state.frame * 0.02), 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = unlocked ? "rgba(255,220,120,.78)" : "rgba(190,190,220,.28)";
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, outer * 0.88, outer * 1.04, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.strokeStyle = unlocked ? "rgba(120,240,255,.34)" : "rgba(120,240,255,.12)";
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 3; i += 1) {
+    ctx.beginPath();
+    ctx.arc(0, 0, inner + i * 18 + pulse * 8, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  if (quality !== "low") {
+    ctx.textAlign = "center";
+    ctx.font = "1000 18px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.fillStyle = unlocked ? "rgba(255,243,160,.92)" : "rgba(231,242,255,.55)";
+    ctx.fillText(unlocked ? "DARK CAVE" : `АРТЕФАКТЫ ${artifacts}/${DARK_CAVE_ARTIFACTS_REQUIRED}`, 0, -outer - 28);
+  }
+
+  ctx.restore();
+}
+
 function drawWorldBackground(ctx: CanvasRenderingContext2D, state: NextEngineState, camera: NextCameraState, viewport: NextViewport) {
+  const theme = getWaterThemeForLevel(state.player.level);
   const g = ctx.createLinearGradient(0, 0, 0, viewport.height);
-  g.addColorStop(0, "#06304a");
-  g.addColorStop(1, "#020b15");
+  g.addColorStop(0, theme.top);
+  g.addColorStop(1, theme.bottom);
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, viewport.width, viewport.height);
 
   ctx.save();
   ctx.scale(camera.scale, camera.scale);
   ctx.translate(-camera.x, -camera.y);
-  ctx.strokeStyle = "rgba(150,230,255,.055)";
+  ctx.strokeStyle = theme.grid;
   ctx.lineWidth = 1 / camera.scale;
 
   const startX = Math.max(0, Math.floor(camera.x / 120) * 120);
@@ -95,6 +174,8 @@ function drawWorldBackground(ctx: CanvasRenderingContext2D, state: NextEngineSta
     ctx.stroke();
   }
 
+  if ((viewport.quality || "balanced") !== "low") drawWaterParticles(ctx, state, camera, theme.particle);
+
   for (const zone of NEXT_MAP_ZONES) {
     if (!isVisible(camera, zone.x, zone.y, zone.radius + 180)) continue;
     ctx.fillStyle = zone.color;
@@ -113,7 +194,9 @@ function drawWorldBackground(ctx: CanvasRenderingContext2D, state: NextEngineSta
     }
   }
 
-  ctx.strokeStyle = "rgba(150,230,255,.16)";
+  drawDarkCavePortal(ctx, state, camera, viewport.quality || "balanced");
+
+  ctx.strokeStyle = theme.border;
   ctx.lineWidth = 3 / camera.scale;
   ctx.strokeRect(0, 0, state.config.width, state.config.height);
   ctx.restore();
@@ -285,6 +368,39 @@ function drawCrystalPickup(ctx: CanvasRenderingContext2D, node: NextResourceNode
   ctx.restore();
 }
 
+function drawArtifactPickup(ctx: CanvasRenderingContext2D, node: NextResourceNode, pulse: number) {
+  const r = node.radius;
+  ctx.save();
+  ctx.translate(node.x, node.y);
+  ctx.rotate(Math.sin(node.pulse * 0.5) * 0.18);
+  ctx.fillStyle = "rgba(255,204,109,.24)";
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 2.45 + pulse, 0, Math.PI * 2);
+  ctx.fill();
+  const g = ctx.createLinearGradient(-r, -r, r, r);
+  g.addColorStop(0, "#fff3a0");
+  g.addColorStop(0.45, "#ffcc6d");
+  g.addColorStop(1, "#7d4c1a");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(0, -r * 1.2);
+  ctx.lineTo(r * 1.1, -r * 0.18);
+  ctx.lineTo(r * 0.52, r * 1.08);
+  ctx.lineTo(-r * 0.52, r * 1.08);
+  ctx.lineTo(-r * 1.1, -r * 0.18);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,.72)";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(255,255,255,.36)";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.42, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawOrbPickup(ctx: CanvasRenderingContext2D, node: NextResourceNode, fill: string, glow: string, pulse: number) {
   ctx.fillStyle = glow;
   ctx.beginPath();
@@ -309,7 +425,7 @@ function drawOrbPickup(ctx: CanvasRenderingContext2D, node: NextResourceNode, fi
 function drawResources(ctx: CanvasRenderingContext2D, state: NextEngineState, camera: NextCameraState, quality: string) {
   for (const node of state.resources) {
     if (node.respawnT > 0 || !isVisible(camera, node.x, node.y, 60)) continue;
-    const def = resourceDef(node.kind);
+    const visual = getResourceVisual(node.kind);
     const pulse = Math.sin(node.pulse) * 2;
 
     if (node.kind === "pearls") {
@@ -322,7 +438,12 @@ function drawResources(ctx: CanvasRenderingContext2D, state: NextEngineState, ca
       continue;
     }
 
-    drawOrbPickup(ctx, node, def.color, quality !== "low" ? def.glow : "rgba(255,255,255,.06)", pulse);
+    if (node.kind === "artifact_shell") {
+      drawArtifactPickup(ctx, node, pulse);
+      continue;
+    }
+
+    drawOrbPickup(ctx, node, visual.color, quality !== "low" ? visual.glow : "rgba(255,255,255,.06)", pulse);
   }
 }
 
@@ -428,14 +549,20 @@ function drawMiniMap(ctx: CanvasRenderingContext2D, state: NextEngineState, came
     drawMapDot(ctx, mapX(state, zone.x, left, mapW), mapY(state, zone.y, top, mapH), zone.id === state.stats.zoneId ? 3.6 : 2.6, zone.color, zone.id === state.stats.zoneId ? "rgba(255,255,255,.68)" : undefined);
   }
 
+  if ((state.stats.artifactsFound || 0) > 0 || state.player.level >= 8) {
+    const portal = darkCavePortalPosition(state.config);
+    const unlocked = darkCavePortalUnlocked(state.stats.artifactsFound || 0);
+    drawMapDot(ctx, mapX(state, portal.x, left, mapW), mapY(state, portal.y, top, mapH), unlocked ? 4.8 : 3.2, unlocked ? "rgba(190,140,255,.95)" : "rgba(150,150,190,.45)", unlocked ? "rgba(255,220,120,.76)" : undefined);
+  }
+
   for (const event of state.events || []) {
     drawMapDot(ctx, mapX(state, event.x, left, mapW), mapY(state, event.y, top, mapH), 4.2, eventColor(event.kind), "rgba(255,255,255,.68)");
   }
 
   for (const node of state.resources.slice(0, 18)) {
     if (node.respawnT > 0) continue;
-    const def = resourceDef(node.kind);
-    drawMapDot(ctx, mapX(state, node.x, left, mapW), mapY(state, node.y, top, mapH), node.kind === "coral" ? 2.5 : node.kind === "pearls" ? 2.2 : 1.7, def.color);
+    const visual = getResourceVisual(node.kind);
+    drawMapDot(ctx, mapX(state, node.x, left, mapW), mapY(state, node.y, top, mapH), node.kind === "coral" ? 2.5 : node.kind === "artifact_shell" ? 3 : node.kind === "pearls" ? 2.2 : 1.7, visual.color);
   }
 
   const camX = left + (camera.x / state.config.width) * mapW;
