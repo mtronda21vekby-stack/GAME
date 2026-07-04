@@ -5,21 +5,18 @@ import { defaultAchievementState, type NextAchievementState } from "../content/a
 import { chooseEnemyArchetype } from "../content/enemyArchetypes";
 import { pickEnemyFamily } from "../content/enemyFamilies";
 import { defaultCraftState } from "../content/craft";
+import { DARK_CAVE_STORY_TITLE, darkCaveStoryStep } from "../content/darkCaveStory";
 import { EVOFISH_FORMS } from "../content/forms";
 import { defaultMutationState, getMutationBonus, getMutationTotalLevel, type NextMutationState } from "../content/mutations";
 import { xpToNextLevel, xpToNextTier } from "../content/progression";
 import { createResourceField } from "../content/resources";
 import { buildQuestBoard } from "../content/quests";
 import { EVOFISH_SKIN_BY_ID } from "../content/skins";
+import { getWorldMap, EVOFISH_WORLD_CONFIG } from "../content/worldMaps";
 import { getZoneAt } from "../content/zones";
 import { defaultNextQuests, type EvoFishNextProgressState } from "../state/skinSaveAdapter";
 
-export const NEXT_WORLD_CONFIG: NextWorldConfig = {
-  width: 3640,
-  height: 2340,
-  enemyTarget: 46,
-  resourceTarget: 42
-};
+export const NEXT_WORLD_CONFIG: NextWorldConfig = EVOFISH_WORLD_CONFIG;
 
 type Point = { x: number; y: number };
 
@@ -76,7 +73,7 @@ function pointAwayFrom(config: NextWorldConfig, avoidX?: number, avoidY?: number
 export function safePlayerSpawn(config: NextWorldConfig, enemies: NextFishEntity[] = []): Point {
   for (let attempt = 0; attempt < 120; attempt += 1) {
     const point = randomWorldPoint(config, 260);
-    const zone = getZoneAt(point.x, point.y);
+    const zone = getZoneAt(point.x, point.y, "main_reef");
     const nearEnemy = enemies.some((enemy) => Math.hypot(enemy.x - point.x, enemy.y - point.y) < enemy.radius + 720);
     if (!nearEnemy && zone.risk <= 1) return point;
   }
@@ -259,7 +256,8 @@ export function createNextWorld(
   savedAchievements?: NextAchievementState
 ): NextEngineState {
   const form = savedProgress?.form || formFromSkin(playerSkin);
-  const config = NEXT_WORLD_CONFIG;
+  const world = getWorldMap("main_reef");
+  const config = world.config;
   const account = normalizeNextAccount(savedAccount || storedAccount());
   const achievements = normalizeAchievementState(savedAchievements || storedAchievements());
   const craft = defaultCraftState();
@@ -288,10 +286,21 @@ export function createNextWorld(
   const apexEnemy = enemies.find((enemy) => enemy.aiType === "apex");
   const playerDamage = Math.round((damageFromForm(form) + tier * 3) * (1 + damageBonus));
   const playerSpeed = speedFromForm(form) * (1 + speedBonus);
-  const startZone = getZoneAt(playerSpawn.x, playerSpawn.y);
+  const startZone = getZoneAt(playerSpawn.x, playerSpawn.y, "main_reef");
+  const artifactsFound = Math.max(0, Math.floor(quests.counters?.artifacts || 0));
+  const storyStep = darkCaveStoryStep(artifactsFound, false);
 
   return {
     config,
+    worldId: "main_reef",
+    portalTransition: null,
+    story: {
+      darkCaveUnlocked: artifactsFound >= 3,
+      darkCaveEntered: false,
+      currentTitle: storyStep.title,
+      currentObjective: storyStep.objective,
+      completed: {}
+    },
     account,
     economy,
     achievements,
@@ -379,6 +388,10 @@ export function createNextWorld(
       craftSonarT: 0,
       resourcesCollected: quests.counters?.resources || 0,
       activeResources: resources.length,
+      worldName: world.name,
+      storyTitle: DARK_CAVE_STORY_TITLE,
+      storyObjective: storyStep.objective,
+      portalLoading: 0,
       zoneId: startZone.id,
       zoneName: startZone.name,
       zoneEffect: startZone.description,
