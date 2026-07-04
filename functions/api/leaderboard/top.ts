@@ -16,9 +16,20 @@ export const onRequestGet = async ({ request, env }: any) => {
   const limit = Math.max(1, Math.min(100, Number(url.searchParams.get("limit") || 100)));
 
   const result = await db.prepare(
-    `SELECT * FROM leaderboard_runs
-     WHERE season_id = ? AND board = ? AND flagged = 0
-     ORDER BY score DESC, created_at ASC
+    `SELECT r.* FROM leaderboard_runs r
+     WHERE r.season_id = ?
+       AND r.board = ?
+       AND r.flagged = 0
+       AND r.id = (
+         SELECT rr.id FROM leaderboard_runs rr
+         WHERE rr.season_id = r.season_id
+           AND rr.board = r.board
+           AND rr.flagged = 0
+           AND rr.player_id = r.player_id
+         ORDER BY rr.score DESC, rr.created_at ASC
+         LIMIT 1
+       )
+     ORDER BY r.score DESC, r.created_at ASC
      LIMIT ?`
   ).bind(seasonId, board, limit).all<LeaderboardRunRecord>();
 
