@@ -2,7 +2,7 @@ import type { NextEngineState, NextPortalTransitionState } from "../core/engineT
 import { DARK_CAVE_STORY_TITLE, darkCaveStoryStep } from "../content/darkCaveStory";
 import { createResourceField } from "../content/resources";
 import { getWorldMap, type EvoFishWorldId } from "../content/worldMaps";
-import { darkCavePortalPosition, darkCavePortalUnlocked, oceanReturnPortalPosition } from "../assets/visuals/visualCatalog";
+import { darkCavePortalPosition, darkCavePortalRequirementText, darkCavePortalUnlocked, oceanReturnPortalPosition } from "../assets/visuals/visualCatalog";
 
 const PORTAL_LOAD_SECONDS = 2.35;
 const PORTAL_TRIGGER_PADDING = 34;
@@ -33,9 +33,9 @@ function randomizeWorldPopulation(state: NextEngineState) {
 function syncStory(state: NextEngineState) {
   const artifacts = state.stats.artifactsFound || 0;
   const inDarkCave = state.worldId === "dark_cave";
-  const step = darkCaveStoryStep(artifacts, inDarkCave);
+  const step = darkCaveStoryStep(artifacts, inDarkCave, state.player.level);
   state.story = state.story || { darkCaveUnlocked: false, darkCaveEntered: false, currentTitle: step.title, currentObjective: step.objective, completed: {} };
-  state.story.darkCaveUnlocked = darkCavePortalUnlocked(artifacts);
+  state.story.darkCaveUnlocked = darkCavePortalUnlocked(artifacts, state.player.level);
   state.story.currentTitle = step.title;
   state.story.currentObjective = step.objective;
   state.stats.storyTitle = DARK_CAVE_STORY_TITLE;
@@ -116,12 +116,18 @@ export function updatePortalSystem(state: NextEngineState, dt: number) {
 
   if (state.worldId === "main_reef") {
     const artifacts = state.stats.artifactsFound || 0;
-    if (!darkCavePortalUnlocked(artifacts)) return false;
     const portal = darkCavePortalPosition(state.config);
-    if (distanceToPlayer(state, portal.x, portal.y) <= state.player.radius + portal.radius + PORTAL_TRIGGER_PADDING) {
-      startPortalTransition(state, "dark_cave");
-      return true;
+    const nearPortal = distanceToPlayer(state, portal.x, portal.y) <= state.player.radius + portal.radius + PORTAL_TRIGGER_PADDING;
+    if (!nearPortal) return false;
+    if (!darkCavePortalUnlocked(artifacts, state.player.level)) {
+      if (state.frame % 50 === 0) {
+        state.stats.lastEvent = `Портал закрыт: ${darkCavePortalRequirementText(artifacts, state.player.level)}`;
+        addPortalFloat(state, darkCavePortalRequirementText(artifacts, state.player.level));
+      }
+      return false;
     }
+    startPortalTransition(state, "dark_cave");
+    return true;
   }
 
   if (state.worldId === "dark_cave") {
