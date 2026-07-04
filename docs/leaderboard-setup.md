@@ -58,11 +58,27 @@ The public home screen links to `/game/leaderboard`.
 
 The game sends a heartbeat while the player is alive, throttled to once every 30 seconds.
 
-When the player dies or is downed, the game automatically submits the run once for that runtime session.
+Heartbeat now also upserts the player's live leaderboard score into a deterministic row:
+
+```text
+live_<seasonId>_<playerId>
+```
+
+This means the public TOP updates as players progress, not only after death.
+
+When the player dies or is downed, the game automatically submits the final run once for that runtime session.
 
 Manual submit remains as a fallback, but both client and server enforce a 60-second cooldown.
 
-## 6. Score formula
+## 6. Duplicate prevention
+
+Every install/save gets a stable local `playerId`.
+
+`GET /api/leaderboard/top` returns only one best row per `player_id`, so one player cannot occupy multiple leaderboard slots with duplicate runs.
+
+The UI displays a short public ID such as `ID A1B2C3` under each player name.
+
+## 7. Score formula
 
 Score is calculated server-side in `functions/api/leaderboard/_shared.ts`:
 
@@ -77,7 +93,7 @@ level * 100
 + darkCaveCleared bonus
 ```
 
-## 7. Basic anti-cheat
+## 8. Basic anti-cheat
 
 The server flags suspicious runs:
 
