@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-app-icon-5.5.0";
+export const EVOFISH_NEXT_VERSION = "next-visual-pipeline-5.6.0";
