@@ -1,7 +1,7 @@
 import type { NextAIState, NextCameraState, NextEngineState, NextFishEntity, NextViewport } from "../core/engineTypes";
 import type { NextResourceNode } from "../content/resources";
-import { NEXT_MAP_ZONES } from "../content/zones";
-import { darkCavePortalPosition, darkCavePortalUnlocked, DARK_CAVE_ARTIFACTS_REQUIRED, getResourceVisual, getWaterThemeForLevel } from "../assets/visuals/visualCatalog";
+import { getZonesForWorld } from "../content/zones";
+import { darkCavePortalPosition, darkCavePortalUnlocked, DARK_CAVE_ARTIFACTS_REQUIRED, getResourceVisual, getWaterThemeForLevel, oceanReturnPortalPosition } from "../assets/visuals/visualCatalog";
 import { drawEvoFishSkin } from "./canvasSkinRenderer";
 import { getNextCamera } from "../systems/cameraSystem";
 import { canDevour } from "../systems/collisionSystem";
@@ -65,7 +65,7 @@ function eventColor(kind?: string) {
 }
 
 function drawWaterParticles(ctx: CanvasRenderingContext2D, state: NextEngineState, camera: NextCameraState, color: string) {
-  const step = 340;
+  const step = state.worldId === "dark_cave" ? 260 : 340;
   const startX = Math.max(0, Math.floor(camera.x / step) * step);
   const endX = Math.min(state.config.width, camera.x + camera.width + step);
   const startY = Math.max(0, Math.floor(camera.y / step) * step);
@@ -76,26 +76,19 @@ function drawWaterParticles(ctx: CanvasRenderingContext2D, state: NextEngineStat
     for (let y = startY; y <= endY; y += step) {
       const wave = Math.sin((state.frame + x * 0.12 + y * 0.08) * 0.018);
       ctx.beginPath();
-      ctx.arc(x + 70 * wave, y + 46 * Math.cos(wave), 3.5, 0, Math.PI * 2);
+      ctx.arc(x + 70 * wave, y + 46 * Math.cos(wave), state.worldId === "dark_cave" ? 4.6 : 3.5, 0, Math.PI * 2);
       ctx.fill();
     }
   }
 }
 
-function drawDarkCavePortal(ctx: CanvasRenderingContext2D, state: NextEngineState, camera: NextCameraState, quality: string) {
-  const artifacts = state.stats.artifactsFound || 0;
-  if (artifacts <= 0 && state.player.level < 8) return;
-
-  const portal = darkCavePortalPosition(state.config);
-  if (!isVisible(camera, portal.x, portal.y, portal.radius + 220)) return;
-
-  const unlocked = darkCavePortalUnlocked(artifacts);
+function drawPortalShape(ctx: CanvasRenderingContext2D, state: NextEngineState, x: number, y: number, radius: number, unlocked: boolean, label: string, quality: string) {
   const pulse = Math.sin(state.frame * 0.045) * 0.5 + 0.5;
-  const outer = portal.radius + pulse * 14;
-  const inner = portal.radius * 0.58 + pulse * 6;
+  const outer = radius + pulse * 14;
+  const inner = radius * 0.58 + pulse * 6;
 
   ctx.save();
-  ctx.translate(portal.x, portal.y);
+  ctx.translate(x, y);
   ctx.globalAlpha = unlocked ? 1 : 0.56;
 
   const aura = ctx.createRadialGradient(0, 0, inner * 0.25, 0, 0, outer * 1.75);
@@ -135,14 +128,30 @@ function drawDarkCavePortal(ctx: CanvasRenderingContext2D, state: NextEngineStat
     ctx.textAlign = "center";
     ctx.font = "1000 18px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
     ctx.fillStyle = unlocked ? "rgba(255,243,160,.92)" : "rgba(231,242,255,.55)";
-    ctx.fillText(unlocked ? "DARK CAVE" : `АРТЕФАКТЫ ${artifacts}/${DARK_CAVE_ARTIFACTS_REQUIRED}`, 0, -outer - 28);
+    ctx.fillText(label, 0, -outer - 28);
   }
 
   ctx.restore();
 }
 
+function drawWorldPortal(ctx: CanvasRenderingContext2D, state: NextEngineState, camera: NextCameraState, quality: string) {
+  if (state.worldId === "dark_cave") {
+    const portal = oceanReturnPortalPosition(state.config);
+    if (!isVisible(camera, portal.x, portal.y, portal.radius + 220)) return;
+    drawPortalShape(ctx, state, portal.x, portal.y, portal.radius, true, "OCEAN GATE", quality);
+    return;
+  }
+
+  const artifacts = state.stats.artifactsFound || 0;
+  if (artifacts <= 0 && state.player.level < 8) return;
+  const portal = darkCavePortalPosition(state.config);
+  if (!isVisible(camera, portal.x, portal.y, portal.radius + 220)) return;
+  const unlocked = darkCavePortalUnlocked(artifacts);
+  drawPortalShape(ctx, state, portal.x, portal.y, portal.radius, unlocked, unlocked ? "DARK CAVE" : `АРТЕФАКТЫ ${artifacts}/${DARK_CAVE_ARTIFACTS_REQUIRED}`, quality);
+}
+
 function drawWorldBackground(ctx: CanvasRenderingContext2D, state: NextEngineState, camera: NextCameraState, viewport: NextViewport) {
-  const theme = getWaterThemeForLevel(state.player.level);
+  const theme = getWaterThemeForLevel(state.player.level, state.worldId === "dark_cave");
   const g = ctx.createLinearGradient(0, 0, 0, viewport.height);
   g.addColorStop(0, theme.top);
   g.addColorStop(1, theme.bottom);
@@ -176,7 +185,7 @@ function drawWorldBackground(ctx: CanvasRenderingContext2D, state: NextEngineSta
 
   if ((viewport.quality || "balanced") !== "low") drawWaterParticles(ctx, state, camera, theme.particle);
 
-  for (const zone of NEXT_MAP_ZONES) {
+  for (const zone of getZonesForWorld(state.worldId || "main_reef")) {
     if (!isVisible(camera, zone.x, zone.y, zone.radius + 180)) continue;
     ctx.fillStyle = zone.color;
     ctx.strokeStyle = zone.id === state.stats.zoneId ? "rgba(255,255,255,.34)" : "rgba(255,255,255,.12)";
@@ -194,7 +203,7 @@ function drawWorldBackground(ctx: CanvasRenderingContext2D, state: NextEngineSta
     }
   }
 
-  drawDarkCavePortal(ctx, state, camera, viewport.quality || "balanced");
+  drawWorldPortal(ctx, state, camera, viewport.quality || "balanced");
 
   ctx.strokeStyle = theme.border;
   ctx.lineWidth = 3 / camera.scale;
@@ -545,14 +554,14 @@ function drawMiniMap(ctx: CanvasRenderingContext2D, state: NextEngineState, came
   for (let gx = 1; gx < 4; gx += 1) ctx.fillRect(left + (mapW / 4) * gx, top, 1, mapH);
   for (let gy = 1; gy < 3; gy += 1) ctx.fillRect(left, top + (mapH / 3) * gy, mapW, 1);
 
-  for (const zone of NEXT_MAP_ZONES) {
+  for (const zone of getZonesForWorld(state.worldId || "main_reef")) {
     drawMapDot(ctx, mapX(state, zone.x, left, mapW), mapY(state, zone.y, top, mapH), zone.id === state.stats.zoneId ? 3.6 : 2.6, zone.color, zone.id === state.stats.zoneId ? "rgba(255,255,255,.68)" : undefined);
   }
 
-  if ((state.stats.artifactsFound || 0) > 0 || state.player.level >= 8) {
-    const portal = darkCavePortalPosition(state.config);
-    const unlocked = darkCavePortalUnlocked(state.stats.artifactsFound || 0);
-    drawMapDot(ctx, mapX(state, portal.x, left, mapW), mapY(state, portal.y, top, mapH), unlocked ? 4.8 : 3.2, unlocked ? "rgba(190,140,255,.95)" : "rgba(150,150,190,.45)", unlocked ? "rgba(255,220,120,.76)" : undefined);
+  const portal = state.worldId === "dark_cave" ? oceanReturnPortalPosition(state.config) : darkCavePortalPosition(state.config);
+  const portalUnlocked = state.worldId === "dark_cave" || darkCavePortalUnlocked(state.stats.artifactsFound || 0);
+  if (state.worldId === "dark_cave" || (state.stats.artifactsFound || 0) > 0 || state.player.level >= 8) {
+    drawMapDot(ctx, mapX(state, portal.x, left, mapW), mapY(state, portal.y, top, mapH), portalUnlocked ? 4.8 : 3.2, portalUnlocked ? "rgba(190,140,255,.95)" : "rgba(150,150,190,.45)", portalUnlocked ? "rgba(255,220,120,.76)" : undefined);
   }
 
   for (const event of state.events || []) {
@@ -608,6 +617,49 @@ function drawMiniMap(ctx: CanvasRenderingContext2D, state: NextEngineState, came
   ctx.restore();
 }
 
+function drawLoadingOverlay(ctx: CanvasRenderingContext2D, state: NextEngineState, viewport: NextViewport) {
+  const progress = state.portalTransition?.active ? Math.max(0, Math.min(1, state.portalTransition.progress)) : 0;
+  if (progress <= 0) return;
+
+  const w = Math.min(440, viewport.width - 44);
+  const h = 104;
+  const x = (viewport.width - w) / 2;
+  const y = (viewport.height - h) / 2;
+
+  ctx.save();
+  ctx.fillStyle = "rgba(1,4,10,.66)";
+  ctx.fillRect(0, 0, viewport.width, viewport.height);
+  ctx.fillStyle = "rgba(2,16,27,.86)";
+  ctx.strokeStyle = "rgba(190,140,255,.34)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, 24);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.textAlign = "center";
+  ctx.font = "1000 18px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.fillStyle = "rgba(255,243,160,.94)";
+  ctx.fillText(state.portalTransition?.message || "Загрузка", viewport.width / 2, y + 32);
+
+  const barX = x + 22;
+  const barY = y + 56;
+  const barW = w - 44;
+  ctx.fillStyle = "rgba(255,255,255,.10)";
+  ctx.fillRect(barX, barY, barW, 14);
+  const g = ctx.createLinearGradient(barX, barY, barX + barW, barY);
+  g.addColorStop(0, "#78f0ff");
+  g.addColorStop(0.55, "#b48cff");
+  g.addColorStop(1, "#fff3a0");
+  ctx.fillStyle = g;
+  ctx.fillRect(barX, barY, barW * progress, 14);
+
+  ctx.font = "900 12px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.fillStyle = "rgba(231,242,255,.66)";
+  ctx.fillText(`${Math.round(progress * 100)}%`, viewport.width / 2, y + 90);
+  ctx.restore();
+}
+
 export function renderNextWorld(ctx: CanvasRenderingContext2D, state: NextEngineState, viewport: NextViewport) {
   const camera = getNextCamera(state, viewport);
   const playerDowned = Boolean(state.player.downed || state.player.dead);
@@ -644,4 +696,5 @@ export function renderNextWorld(ctx: CanvasRenderingContext2D, state: NextEngine
 
   ctx.restore();
   drawMiniMap(ctx, state, camera, viewport);
+  drawLoadingOverlay(ctx, state, viewport);
 }
