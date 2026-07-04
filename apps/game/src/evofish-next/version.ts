@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-connected-lobby-6.2.0";
+export const EVOFISH_NEXT_VERSION = "next-live-auto-refresh-6.3.0";
