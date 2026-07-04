@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-npc-levels-5.8.0";
+export const EVOFISH_NEXT_VERSION = "next-level-aware-combat-5.8.1";
