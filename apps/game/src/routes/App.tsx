@@ -8,6 +8,7 @@ import { BetaHome } from "../evofish-next/ui/BetaHome";
 import { BetaProgress } from "../evofish-next/ui/BetaProgress";
 import { BetaQA } from "../evofish-next/ui/BetaQA";
 import { BetaReport } from "../evofish-next/ui/BetaReport";
+import { Leaderboard } from "../evofish-next/ui/Leaderboard";
 import { SkinLab } from "../evofish-next/ui/SkinLab";
 import { NextLobby } from "../evofish-next/ui/NextLobby";
 import { NextPlaytest } from "../evofish-next/ui/NextPlaytest";
@@ -38,6 +39,7 @@ export function App() {
         { path: "/game/play", element: withBoundary(<NextPlaytest />) },
         { path: "/game/progress", element: withBoundary(<BetaProgress />) },
         { path: "/game/repair", element: withBoundary(<BetaProgress />) },
+        { path: "/game/leaderboard", element: withBoundary(<Leaderboard />) },
         { path: "/game/qa", element: withBoundary(<BetaQA />) },
         { path: "/game/report", element: withBoundary(<BetaReport />) },
         { path: "/game/checklist", element: withBoundary(<BetaChecklist />) },
@@ -47,6 +49,7 @@ export function App() {
         { path: "/game/next", element: withBoundary(<NextLobby />) },
         { path: "/game/next/lobby", element: withBoundary(<NextLobby />) },
         { path: "/game/next/progress", element: withBoundary(<BetaProgress />) },
+        { path: "/game/next/leaderboard", element: withBoundary(<Leaderboard />) },
         { path: "/game/next/qa", element: withBoundary(<BetaQA />) },
         { path: "/game/next/report", element: withBoundary(<BetaReport />) },
         { path: "/game/next/checklist", element: withBoundary(<BetaChecklist />) },
@@ -57,6 +60,7 @@ export function App() {
         { path: "/next", element: withBoundary(<BetaHome />) },
         { path: "/next/lobby", element: withBoundary(<NextLobby />) },
         { path: "/next/progress", element: withBoundary(<BetaProgress />) },
+        { path: "/next/leaderboard", element: withBoundary(<Leaderboard />) },
         { path: "/next/qa", element: withBoundary(<BetaQA />) },
         { path: "/next/report", element: withBoundary(<BetaReport />) },
         { path: "/next/checklist", element: withBoundary(<BetaChecklist />) },
