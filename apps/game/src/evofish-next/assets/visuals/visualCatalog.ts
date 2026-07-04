@@ -40,10 +40,12 @@ export const EVOFISH_VISUALS = {
     shark: `${EVOFISH_VISUAL_ASSET_ROOT}/skins/shark`,
     megalodon: `${EVOFISH_VISUAL_ASSET_ROOT}/skins/megalodon`,
     npc: `${EVOFISH_VISUAL_ASSET_ROOT}/skins/npc`,
+    questSkins: `${EVOFISH_VISUAL_ASSET_ROOT}/skins/quest`,
+    artifacts: `${EVOFISH_VISUAL_ASSET_ROOT}/skins/quest/artifacts`,
+    portals: `${EVOFISH_VISUAL_ASSET_ROOT}/skins/quest/portals`,
     resources: `${EVOFISH_VISUAL_ASSET_ROOT}/resources`,
     ui: `${EVOFISH_VISUAL_ASSET_ROOT}/ui`,
     water: `${EVOFISH_VISUAL_ASSET_ROOT}/water`,
-    portals: `${EVOFISH_VISUAL_ASSET_ROOT}/portals`,
     maps: `${EVOFISH_VISUAL_ASSET_ROOT}/maps`
   },
   waterThemes: [
@@ -51,7 +53,7 @@ export const EVOFISH_VISUALS = {
     { id: "kelp_green", minLevel: 8, name: "Kelp Green", top: "#073d38", bottom: "#020e16", grid: "rgba(110,255,180,.052)", border: "rgba(110,255,180,.15)", particle: "rgba(110,255,180,.14)" },
     { id: "deep_violet", minLevel: 16, name: "Deep Violet", top: "#171f4e", bottom: "#030914", grid: "rgba(180,140,255,.055)", border: "rgba(180,140,255,.18)", particle: "rgba(180,140,255,.14)" },
     { id: "abyss_gold", minLevel: 28, name: "Abyss Gold", top: "#2b2740", bottom: "#060810", grid: "rgba(255,220,120,.052)", border: "rgba(255,220,120,.18)", particle: "rgba(255,220,120,.14)" },
-    { id: "dark_cave", minLevel: 999, name: "Dark Cave", top: "#070812", bottom: "#01040a", grid: "rgba(120,80,255,.055)", border: "rgba(190,140,255,.20)", particle: "rgba(190,140,255,.15)" }
+    { id: "dark_cave", minLevel: DARK_CAVE_MIN_LEVEL, name: "Dark Cave", top: "#070812", bottom: "#01040a", grid: "rgba(120,80,255,.055)", border: "rgba(190,140,255,.20)", particle: "rgba(190,140,255,.15)" }
   ] satisfies EvoFishWaterTheme[],
   resources: {
     pearls: { id: "pearls", name: "Жемчуг", iconPath: `${EVOFISH_VISUAL_ASSET_ROOT}/resources/pearls.png`, color: "#fff3a0", glow: "rgba(255,220,120,.34)" },
@@ -62,19 +64,19 @@ export const EVOFISH_VISUALS = {
     speed_perk: { id: "speed_perk", name: "SPD", iconPath: `${EVOFISH_VISUAL_ASSET_ROOT}/resources/perk-speed.png`, color: "#5bf0ff", glow: "rgba(91,240,255,.30)" },
     damage_perk: { id: "damage_perk", name: "DMG", iconPath: `${EVOFISH_VISUAL_ASSET_ROOT}/resources/perk-damage.png`, color: "#ffd36d", glow: "rgba(255,180,90,.30)" },
     shield_perk: { id: "shield_perk", name: "SHD", iconPath: `${EVOFISH_VISUAL_ASSET_ROOT}/resources/perk-shield.png`, color: "#9affc1", glow: "rgba(110,255,180,.30)" },
-    artifact_shell: { id: "artifact_shell", name: "Артефакт", iconPath: `${EVOFISH_VISUAL_ASSET_ROOT}/resources/artifact-shell.png`, color: "#ffcc6d", glow: "rgba(255,204,109,.34)" }
+    artifact_shell: { id: "artifact_shell", name: "Артефакт", iconPath: `${EVOFISH_VISUAL_ASSET_ROOT}/skins/quest/artifacts/artifact-shell.png`, color: "#ffcc6d", glow: "rgba(255,204,109,.34)" }
   } satisfies Record<NextResourceKind, EvoFishResourceVisual>,
   portals: {
     darkCave: {
       id: "dark_cave_portal",
       name: "Портал тёмной пещеры",
-      path: `${EVOFISH_VISUAL_ASSET_ROOT}/portals/dark-cave-portal.png`,
+      path: `${EVOFISH_VISUAL_ASSET_ROOT}/skins/quest/portals/dark-cave-portal.png`,
       rarity: "legendary" as EvoFishVisualRarity
     },
     oceanReturn: {
       id: "ocean_return_portal",
       name: "Портал основного океана",
-      path: `${EVOFISH_VISUAL_ASSET_ROOT}/portals/ocean-return-portal.png`,
+      path: `${EVOFISH_VISUAL_ASSET_ROOT}/skins/quest/portals/ocean-return-portal.png`,
       rarity: "epic" as EvoFishVisualRarity
     }
   },
