@@ -35,7 +35,8 @@ export function App() {
       routes={[
         { path: "/", element: withBoundary(<BetaHome />) },
         { path: "/game", element: withBoundary(<BetaHome />) },
-        { path: "/game/lobby", element: withBoundary(<BetaHome />) },
+        { path: "/game/lobby", element: withBoundary(<NextLobby />) },
+        { path: "/game/account", element: withBoundary(<NextLobby />) },
         { path: "/game/play", element: withBoundary(<NextPlaytest />) },
         { path: "/game/progress", element: withBoundary(<BetaProgress />) },
         { path: "/game/repair", element: withBoundary(<BetaProgress />) },
@@ -59,6 +60,7 @@ export function App() {
         { path: "/classic", element: withBoundary(<Game />) },
         { path: "/next", element: withBoundary(<BetaHome />) },
         { path: "/next/lobby", element: withBoundary(<NextLobby />) },
+        { path: "/next/account", element: withBoundary(<NextLobby />) },
         { path: "/next/progress", element: withBoundary(<BetaProgress />) },
         { path: "/next/leaderboard", element: withBoundary(<Leaderboard />) },
         { path: "/next/qa", element: withBoundary(<BetaQA />) },
