@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-large-map-5.3.0";
+export const EVOFISH_NEXT_VERSION = "next-public-home-5.4.0";
