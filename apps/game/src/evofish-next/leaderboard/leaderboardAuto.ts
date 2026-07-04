@@ -2,6 +2,8 @@ import type { NextEngineState } from "../core/engineTypes";
 import { EVOFISH_NEXT_VERSION } from "../version";
 import { getLeaderboardPlayerId, leaderboardSubmitCooldownSeconds, markLeaderboardSubmitAttempt } from "./leaderboardIdentity";
 
+const LIVE_HEARTBEAT_MS = 5_000;
+
 type RuntimeLeaderboardState = NextEngineState & {
   leaderboardSubmittedForRun?: boolean;
   leaderboardHeartbeatAt?: number;
@@ -43,7 +45,8 @@ function heartbeatPayload(engine: NextEngineState) {
 async function postJSON(url: string, body: unknown) {
   const response = await fetch(url, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    cache: "no-store",
+    headers: { "content-type": "application/json", "cache-control": "no-cache, no-store, must-revalidate" },
     body: JSON.stringify(body)
   });
   return response.json().catch(() => ({ ok: response.ok }));
@@ -54,7 +57,7 @@ export function syncLeaderboardForEngine(engine: NextEngineState) {
   const now = Date.now();
   const isFinished = Boolean(engine.player.dead || engine.player.downed);
 
-  if (!isFinished && (!runtime.leaderboardHeartbeatAt || now - runtime.leaderboardHeartbeatAt >= 30_000)) {
+  if (!isFinished && (!runtime.leaderboardHeartbeatAt || now - runtime.leaderboardHeartbeatAt >= LIVE_HEARTBEAT_MS)) {
     runtime.leaderboardHeartbeatAt = now;
     postJSON("/api/leaderboard/heartbeat", heartbeatPayload(engine)).catch(() => {});
   }
