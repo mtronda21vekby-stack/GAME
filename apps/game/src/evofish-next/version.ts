@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-rating-nickname-fix-6.3.2";
+export const EVOFISH_NEXT_VERSION = "next-season-rewards-6.4.0";
