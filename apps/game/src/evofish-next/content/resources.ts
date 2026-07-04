@@ -155,14 +155,29 @@ function randomInt(min: number, max: number) {
   return Math.floor(min + Math.random() * (max - min + 1));
 }
 
+function hiddenArtifactPoint(slot: number, worldWidth: number, worldHeight: number) {
+  const points = [
+    { x: worldWidth * 0.18, y: worldHeight * 0.76 },
+    { x: worldWidth * 0.52, y: worldHeight * 0.18 },
+    { x: worldWidth * 0.82, y: worldHeight * 0.62 }
+  ];
+  const point = points[slot % points.length];
+  return {
+    x: Math.round(point.x + (Math.random() - 0.5) * 160),
+    y: Math.round(point.y + (Math.random() - 0.5) * 140)
+  };
+}
+
 export function makeResourceNode(id: number, worldWidth: number, worldHeight: number, forcedKind?: NextResourceKind): NextResourceNode {
   const kind = forcedKind || weightedResourceKind();
   const def = resourceDef(kind);
+  const hiddenArtifact = kind === "artifact_shell" && id <= 3;
+  const hiddenPoint = hiddenArtifact ? hiddenArtifactPoint(id - 1, worldWidth, worldHeight) : null;
   return {
     id,
     kind,
-    x: 120 + Math.random() * (worldWidth - 240),
-    y: 120 + Math.random() * (worldHeight - 240),
+    x: hiddenPoint?.x || 120 + Math.random() * (worldWidth - 240),
+    y: hiddenPoint?.y || 120 + Math.random() * (worldHeight - 240),
     radius: def.radius,
     value: randomInt(def.valueMin, def.valueMax),
     respawnT: 0,
@@ -171,7 +186,7 @@ export function makeResourceNode(id: number, worldWidth: number, worldHeight: nu
 }
 
 export function createResourceField(count: number, worldWidth: number, worldHeight: number) {
-  const forced: NextResourceKind[] = ["pearls", "plankton", "heal", "boost", "speed_perk", "damage_perk", "shield_perk"];
+  const forced: NextResourceKind[] = ["artifact_shell", "artifact_shell", "artifact_shell", "pearls", "plankton", "heal", "boost", "speed_perk", "damage_perk", "shield_perk"];
   return Array.from({ length: count }, (_, index) => makeResourceNode(index + 1, worldWidth, worldHeight, forced[index]));
 }
 
