@@ -1,15 +1,21 @@
 {
   "name": "EvoFish",
   "short_name": "EvoFish",
-  "description": "EvoFish mobile game inside BlackCrown.",
+  "description": "Grow, evolve and survive as EvoFish.",
   "start_url": "/game/",
   "scope": "/game/",
   "display": "fullscreen",
   "orientation": "landscape",
-  "background_color": "#031827",
+  "background_color": "#020b15",
   "theme_color": "#031827",
   "categories": ["games"],
   "icons": [
+    {
+      "src": "/game/icons/favicon.svg",
+      "sizes": "64x64",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
     {
       "src": "/game/icons/icon-192.svg",
       "sizes": "192x192",
