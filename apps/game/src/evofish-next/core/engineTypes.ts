@@ -165,7 +165,7 @@ export type NextEngineStats = {
   artifactsFound?: number;
   questDirectorFocus?: string;
   dailyQuestKey?: string;
-  weeklyKey?: string;
+  weeklyQuestKey?: string;
   craftBarrierT: number;
   craftBiteBoostT: number;
   craftSonarT: number;
