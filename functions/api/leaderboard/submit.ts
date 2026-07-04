@@ -82,6 +82,12 @@ export const onRequestPost = async ({ request, env }: any) => {
   ).run();
 
   await db.prepare(
+    `UPDATE leaderboard_runs
+     SET nickname = ?
+     WHERE player_id = ? AND nickname != ?`
+  ).bind(run.nickname, run.playerId, run.nickname).run();
+
+  await db.prepare(
     `INSERT INTO leaderboard_players (player_id, nickname, best_score, best_run_id, total_runs, updated_at)
      VALUES (?, ?, ?, ?, 1, ?)
      ON CONFLICT(player_id) DO UPDATE SET
