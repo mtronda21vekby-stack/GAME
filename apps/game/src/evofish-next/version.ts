@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-auto-leaderboard-6.0.0";
+export const EVOFISH_NEXT_VERSION = "next-auto-deploy-6.0.1";
