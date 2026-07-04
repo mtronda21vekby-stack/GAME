@@ -1,12 +1,14 @@
-import { currentSeasonId, getLeaderboardDb, json, publicRun, type LeaderboardRunRecord } from "./_shared";
+import { currentSeasonId, ensureLeaderboardSchema, getLeaderboardDb, json, publicRun, type LeaderboardRunRecord } from "./_shared";
 
 export const onRequestOptions = async () => json({ ok: true });
 
 export const onRequestGet = async ({ request, env }: any) => {
   const db = getLeaderboardDb(env || {});
   if (!db) {
-    return json({ ok: false, error: "LEADERBOARD_DB binding is not configured.", seasonId: currentSeasonId(), rows: [] }, { status: 503 });
+    return json({ ok: false, error: "leaderboard_database_not_connected", seasonId: currentSeasonId(), rows: [] }, { status: 503 });
   }
+
+  await ensureLeaderboardSchema(db);
 
   const url = new URL(request.url);
   const seasonId = url.searchParams.get("season") || currentSeasonId();
