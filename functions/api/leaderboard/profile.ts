@@ -1,5 +1,21 @@
 import { cleanString, ensureLeaderboardSchema, getLeaderboardDb, json } from "./_shared";
 
+async function ensurePresenceSchema(db: ReturnType<typeof getLeaderboardDb>) {
+  if (!db) return;
+  await db.prepare(`CREATE TABLE IF NOT EXISTS leaderboard_presence (
+    player_id TEXT PRIMARY KEY,
+    nickname TEXT NOT NULL,
+    level INTEGER NOT NULL,
+    mass INTEGER NOT NULL,
+    kills INTEGER NOT NULL,
+    world_id TEXT,
+    skin_id TEXT,
+    form TEXT,
+    updated_at INTEGER NOT NULL
+  )`).run();
+  await db.prepare(`CREATE INDEX IF NOT EXISTS idx_leaderboard_presence_updated ON leaderboard_presence (updated_at DESC)`).run();
+}
+
 export const onRequestOptions = async () => json({ ok: true });
 
 export const onRequestPost = async ({ request, env }: any) => {
@@ -7,6 +23,7 @@ export const onRequestPost = async ({ request, env }: any) => {
   if (!db) return json({ ok: false, error: "leaderboard_database_not_connected" }, { status: 503 });
 
   await ensureLeaderboardSchema(db);
+  await ensurePresenceSchema(db);
 
   let body: any;
   try {
