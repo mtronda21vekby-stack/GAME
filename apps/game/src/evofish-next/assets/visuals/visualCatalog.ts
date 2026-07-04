@@ -69,6 +69,12 @@ export const EVOFISH_VISUALS = {
       name: "Портал тёмной пещеры",
       path: `${EVOFISH_VISUAL_ASSET_ROOT}/portals/dark-cave-portal.png`,
       rarity: "legendary" as EvoFishVisualRarity
+    },
+    oceanReturn: {
+      id: "ocean_return_portal",
+      name: "Портал основного океана",
+      path: `${EVOFISH_VISUAL_ASSET_ROOT}/portals/ocean-return-portal.png`,
+      rarity: "epic" as EvoFishVisualRarity
     }
   },
   ui: {
@@ -99,5 +105,13 @@ export function darkCavePortalPosition(config: NextWorldConfig) {
     x: Math.round(config.width * 0.86),
     y: Math.round(config.height * 0.76),
     radius: 94
+  };
+}
+
+export function oceanReturnPortalPosition(config: NextWorldConfig) {
+  return {
+    x: Math.round(config.width * 0.14),
+    y: Math.round(config.height * 0.24),
+    radius: 88
   };
 }
