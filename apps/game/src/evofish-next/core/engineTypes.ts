@@ -96,6 +96,7 @@ export type NextFishEntity = {
   skin: EvoFishSkinDefinition;
   angle: number;
   hitT: number;
+  npcLevel?: number;
   aiType: NextEnemyArchetypeId;
   aiState: NextAIState;
   familyName?: string;
@@ -164,7 +165,7 @@ export type NextEngineStats = {
   artifactsFound?: number;
   questDirectorFocus?: string;
   dailyQuestKey?: string;
-  weeklyQuestKey?: string;
+  weeklyKey?: string;
   craftBarrierT: number;
   craftBiteBoostT: number;
   craftSonarT: number;
