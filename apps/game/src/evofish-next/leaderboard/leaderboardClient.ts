@@ -80,6 +80,13 @@ export type LeaderboardOnlineResponse = {
   }>;
 };
 
+export type LeaderboardProfileResponse = {
+  ok: boolean;
+  error?: string;
+  playerId?: string;
+  nickname?: string;
+};
+
 export function getLeaderboardNickname() {
   const save = loadEvoFishNextSave();
   return save.account.name || "Player";
@@ -141,6 +148,18 @@ async function requestJSON<T>(url: string, init?: RequestInit): Promise<T> {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) return { ok: false, error: data?.error || response.statusText, retryAfterSeconds: data?.retryAfterSeconds } as T;
   return data as T;
+}
+
+export async function syncLeaderboardProfile() {
+  const save = loadEvoFishNextSave();
+  return requestJSON<LeaderboardProfileResponse>("/api/leaderboard/profile", {
+    method: "POST",
+    body: JSON.stringify({
+      playerId: getLeaderboardPlayerId(),
+      nickname: save.account.name || "Player",
+      version: EVOFISH_NEXT_VERSION
+    })
+  });
 }
 
 export async function fetchLeaderboardSeason() {
