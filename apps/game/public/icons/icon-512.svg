@@ -1,10 +1,43 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#031827"/>
-  <circle cx="256" cy="256" r="196" fill="url(#g)" opacity=".28"/>
-  <path d="M130 256c62-78 176-100 278-20-48 90-166 118-278 20Z" fill="#42b8ff"/>
-  <path d="M126 256 58 194v124l68-62Z" fill="#2478dd"/>
-  <circle cx="334" cy="224" r="20" fill="#eaf7ff"/>
-  <circle cx="342" cy="228" r="8" fill="#06121c"/>
-  <path d="M300 304c32 12 70 6 102-16" stroke="#8affdf" stroke-width="16" stroke-linecap="round" opacity=".8"/>
-  <defs><radialGradient id="g" cx="50%" cy="42%" r="70%"><stop stop-color="#79f8ff"/><stop offset="1" stop-color="#0e3b5a"/></radialGradient></defs>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="EvoFish app icon">
+  <defs>
+    <radialGradient id="bgGlow" cx="56%" cy="33%" r="74%">
+      <stop offset="0" stop-color="#7df7ff" stop-opacity=".42"/>
+      <stop offset=".46" stop-color="#0d4e62" stop-opacity=".56"/>
+      <stop offset="1" stop-color="#020b15"/>
+    </radialGradient>
+    <linearGradient id="card" x1="58" y1="36" x2="448" y2="474" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#102c3b"/>
+      <stop offset=".55" stop-color="#041827"/>
+      <stop offset="1" stop-color="#06101b"/>
+    </linearGradient>
+    <linearGradient id="fish" x1="104" y1="245" x2="426" y2="278" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4af0ff"/>
+      <stop offset=".48" stop-color="#2aa9ff"/>
+      <stop offset="1" stop-color="#8fffd4"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="192" y1="88" x2="330" y2="180" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff3a0"/>
+      <stop offset=".56" stop-color="#ffc95a"/>
+      <stop offset="1" stop-color="#b87420"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="22" stdDeviation="18" flood-color="#000" flood-opacity=".42"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#card)"/>
+  <rect x="18" y="18" width="476" height="476" rx="98" fill="url(#bgGlow)" opacity=".92"/>
+  <path d="M74 354c74 54 276 58 364-32" fill="none" stroke="#69f4ff" stroke-width="8" stroke-linecap="round" opacity=".22"/>
+  <path d="M58 300c92 74 306 76 396-26" fill="none" stroke="#fff3a0" stroke-width="6" stroke-linecap="round" opacity=".18"/>
+  <g filter="url(#softShadow)">
+    <path d="M162 188l34-64 40 40 21-74 35 74 43-40 27 64h-49l-20-27-36 32-35-32-22 27z" fill="url(#gold)"/>
+    <circle cx="258" cy="142" r="10" fill="#fff8c8"/>
+    <path d="M101 263c75-102 222-127 351-26-48 86-122 136-216 126-50-5-96-34-135-100z" fill="url(#fish)"/>
+    <path d="M104 263 40 190v146l64-73z" fill="#198ee8"/>
+    <path d="M204 207c-35 33-45 84-18 132-38-14-68-38-85-76 24-32 58-51 103-56z" fill="#7cf8ff" opacity=".42"/>
+    <path d="M275 220c50 20 93 32 154 16-45 56-99 83-162 79 22-24 29-59 8-95z" fill="#0d6bd3" opacity=".32"/>
+    <path d="M270 315c48 18 112 4 155-32" fill="none" stroke="#e8fff9" stroke-width="17" stroke-linecap="round" opacity=".9"/>
+    <circle cx="333" cy="229" r="24" fill="#f5fbff"/>
+    <circle cx="342" cy="233" r="11" fill="#031827"/>
+    <path d="M368 264c16 7 36 6 49-5" fill="none" stroke="#031827" stroke-width="8" stroke-linecap="round" opacity=".55"/>
+  </g>
 </svg>
