@@ -1,9 +1,38 @@
-import type { NextEngineState, NextFishEntity } from "../core/engineTypes";
+import type { NextEngineState, NextFishEntity, NextPlayerState } from "../core/engineTypes";
 import { enemyThreatLevel, makeEnemy } from "./createWorld";
 import { awardKillReward } from "./progressionSystem";
 
+export const DEVOUR_MAX_LEVEL_GAP = 6;
+
 export function canDevour(attackerMass: number, targetMass: number) {
   return attackerMass >= targetMass * 1.18;
+}
+
+export function npcCombatLevel(enemy: NextFishEntity) {
+  return Math.max(1, Math.floor(enemy.npcLevel || Math.max(1, Math.round(enemy.mass * 4))));
+}
+
+export function npcLevelGap(player: Pick<NextPlayerState, "level">, enemy: NextFishEntity) {
+  return npcCombatLevel(enemy) - Math.max(1, Math.floor(player.level || 1));
+}
+
+export function canPlayerDevour(player: NextPlayerState, enemy: NextFishEntity) {
+  const gap = npcLevelGap(player, enemy);
+  if (gap > DEVOUR_MAX_LEVEL_GAP) return false;
+
+  const levelMassPenalty = 1 + Math.max(0, gap) * 0.055;
+  const elitePenalty = enemy.aiType === "apex" || enemy.aiType === "leviathan" ? 1.35 : enemy.aiType === "stalker" ? 1.18 : 1;
+  return player.mass >= enemy.mass * 1.18 * levelMassPenalty * elitePenalty;
+}
+
+export function playerDamageMultiplierAgainstEnemy(player: NextPlayerState, enemy: NextFishEntity) {
+  const gap = npcLevelGap(player, enemy);
+  if (gap <= 0) return 1;
+  if (gap >= 18) return 0.25;
+  if (gap >= 12) return 0.34;
+  if (gap >= 8) return 0.48;
+  if (gap >= 4) return 0.68;
+  return 0.84;
 }
 
 function addFloat(state: NextEngineState, x: number, y: number, text: string, kind: "damage" | "kill" | "danger") {
@@ -35,14 +64,16 @@ function contactDamage(state: NextEngineState, enemy: NextFishEntity) {
   const player = state.player;
   if (player.invulnT > 0) return;
 
-  const damage = Math.round(enemy.damage);
+  const gap = npcLevelGap(player, enemy);
+  const levelBonus = gap > 0 ? 1 + Math.min(0.75, gap * 0.045) : 1;
+  const damage = Math.round(enemy.damage * levelBonus);
   player.hp = Math.max(0, player.hp - damage);
   player.hitT = 0.22;
   player.invulnT = 0.55;
   player.vx -= Math.cos(player.angle) * 80;
   player.vy -= Math.sin(player.angle) * 80;
-  state.stats.lastEvent = `Урон -${damage}`;
-  addFloat(state, player.x, player.y - player.radius * 2, `-${damage} HP`, "danger");
+  state.stats.lastEvent = gap > DEVOUR_MAX_LEVEL_GAP ? `Слишком высокий LV ${npcCombatLevel(enemy)} · Урон -${damage}` : `Урон -${damage}`;
+  addFloat(state, player.x, player.y - player.radius * 2, gap > DEVOUR_MAX_LEVEL_GAP ? `LV ${npcCombatLevel(enemy)}` : `-${damage} HP`, "danger");
 }
 
 export function updateCollisionSystem(state: NextEngineState) {
@@ -53,7 +84,7 @@ export function updateCollisionSystem(state: NextEngineState) {
     const distance = Math.hypot(enemy.x - player.x, enemy.y - player.y);
 
     if (distance < player.radius + enemy.radius) {
-      if (canDevour(player.mass, enemy.mass)) devourEnemy(state, enemy, index);
+      if (canPlayerDevour(player, enemy)) devourEnemy(state, enemy, index);
       else contactDamage(state, enemy);
     }
   }
