@@ -129,9 +129,9 @@ export const NEXT_RESOURCE_DEFS: NextResourceDefinition[] = [
     radius: 20,
     valueMin: 1,
     valueMax: 1,
-    weight: 1,
-    respawnMin: 150,
-    respawnMax: 230
+    weight: 0,
+    respawnMin: 999999,
+    respawnMax: 999999
   }
 ];
 
@@ -140,10 +140,11 @@ export function resourceDef(kind: NextResourceKind) {
 }
 
 function weightedResourceKind(): NextResourceKind {
-  const total = NEXT_RESOURCE_DEFS.reduce((sum, item) => sum + item.weight, 0);
+  const spawnable = NEXT_RESOURCE_DEFS.filter((item) => item.kind !== "artifact_shell" && item.weight > 0);
+  const total = spawnable.reduce((sum, item) => sum + item.weight, 0);
   let roll = Math.random() * total;
 
-  for (const def of NEXT_RESOURCE_DEFS) {
+  for (const def of spawnable) {
     roll -= def.weight;
     if (roll <= 0) return def.kind;
   }
@@ -157,14 +158,14 @@ function randomInt(min: number, max: number) {
 
 function hiddenArtifactPoint(slot: number, worldWidth: number, worldHeight: number) {
   const points = [
-    { x: worldWidth * 0.18, y: worldHeight * 0.76 },
-    { x: worldWidth * 0.52, y: worldHeight * 0.18 },
-    { x: worldWidth * 0.82, y: worldHeight * 0.62 }
+    { x: worldWidth * 0.13, y: worldHeight * 0.83 },
+    { x: worldWidth * 0.58, y: worldHeight * 0.13 },
+    { x: worldWidth * 0.88, y: worldHeight * 0.58 }
   ];
   const point = points[slot % points.length];
   return {
-    x: Math.round(point.x + (Math.random() - 0.5) * 160),
-    y: Math.round(point.y + (Math.random() - 0.5) * 140)
+    x: Math.round(point.x + (Math.random() - 0.5) * 110),
+    y: Math.round(point.y + (Math.random() - 0.5) * 100)
   };
 }
 
@@ -191,6 +192,7 @@ export function createResourceField(count: number, worldWidth: number, worldHeig
 }
 
 export function resourceRespawnDelay(kind: NextResourceKind) {
+  if (kind === "artifact_shell") return Number.POSITIVE_INFINITY;
   const def = resourceDef(kind);
   return def.respawnMin + Math.random() * (def.respawnMax - def.respawnMin);
 }
