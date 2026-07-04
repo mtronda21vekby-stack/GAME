@@ -1,5 +1,6 @@
 import type { NextEngineState } from "../core/engineTypes";
 import { makeResourceNode, resourceDef, resourceRespawnDelay } from "../content/resources";
+import { DARK_CAVE_ARTIFACTS_REQUIRED } from "../assets/visuals/visualCatalog";
 import { getMutationBonus } from "../content/mutations";
 import { awardNextXp } from "./progressionSystem";
 
@@ -45,8 +46,11 @@ function collectPerk(state: NextEngineState, nodeKind: string, duration: number,
 }
 
 function collectArtifact(state: NextEngineState, x: number, y: number) {
+  const before = Math.max(0, Math.floor(state.quests.counters?.artifacts || 0));
+  if (before >= DARK_CAVE_ARTIFACTS_REQUIRED) return;
+
   bumpQuestCounter(state, "artifacts");
-  state.stats.artifactsFound = Math.max(state.stats.artifactsFound || 0, state.quests.counters?.artifacts || 0);
+  state.stats.artifactsFound = Math.min(DARK_CAVE_ARTIFACTS_REQUIRED, Math.max(state.stats.artifactsFound || 0, state.quests.counters?.artifacts || 0));
 
   const xp = awardNextXp(state, 420 + state.player.level * 12);
   const pearls = pickupAmount(state, 180 + state.player.tier * 14);
@@ -54,8 +58,8 @@ function collectArtifact(state: NextEngineState, x: number, y: number) {
   state.economy.pearls += pearls;
   state.economy.corals += corals;
   state.craft.sonarT = Math.max(state.craft.sonarT, 14);
-  state.stats.lastEvent = `Древняя раковина: +${xp} XP +${pearls} жемчуг +${corals} кристалл`;
-  addFloat(state, "ARTIFACT SHELL", x, y);
+  state.stats.lastEvent = `Артефакт ${state.stats.artifactsFound}/${DARK_CAVE_ARTIFACTS_REQUIRED}: +${xp} XP +${pearls} жемчуг +${corals} кристалл`;
+  addFloat(state, `ARTIFACT ${state.stats.artifactsFound}/${DARK_CAVE_ARTIFACTS_REQUIRED}`, x, y);
 }
 
 function collectResource(state: NextEngineState, index: number) {
