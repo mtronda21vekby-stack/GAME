@@ -1,7 +1,7 @@
 import type { EvoFishCurrency, EvoFishSkinDefinition } from "../core/types";
 
 export const EVOFISH_SKIN_ASSET_BASE = "/game/skins/custom";
-export const EVOFISH_SKIN_ASSET_VERSION = "heif-default-fish-1";
+export const EVOFISH_SKIN_ASSET_VERSION = "blue-default-fish-2";
 
 export function getSkinAssetPath(id: string) {
   const file = id === "default" ? "default-blue-fish.svg" : `${id}.svg`;
@@ -94,7 +94,7 @@ function coralSkin(
 }
 
 export const EVOFISH_SKINS: EvoFishSkinDefinition[] = [
-  freeSkin("default", "Стандарт", "any", "HEIF default fish, fitted for EvoFish gameplay.", {
+  freeSkin("default", "Синяя рыбка", "any", "Стандартный скин новой игры: яркая синяя рыбка.", {
     primary: "#9fe6ff",
     secondary: "#78c8ff",
     accent: "#ffffff"
