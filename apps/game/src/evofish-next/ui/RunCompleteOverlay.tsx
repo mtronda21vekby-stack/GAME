@@ -5,6 +5,8 @@ import { fetchLeaderboardMe, type LeaderboardMeResponse } from "../leaderboard/l
 import { EVOFISH_LEADERBOARD_LAST_SUBMIT_KEY, EVOFISH_LEADERBOARD_SUBMIT_EVENT } from "../leaderboard/leaderboardIdentity";
 import { resetEvoFishNextRun } from "../state/nextSaveStore";
 
+const RUN_COMPLETE_DISMISSED_KEY = "evofish_run_complete_dismissed_v1";
+
 type RunPayload = {
   playerId?: string;
   nickname?: string;
@@ -71,6 +73,22 @@ function format(value: number) {
   return Math.max(0, Math.floor(value || 0)).toLocaleString("ru-RU");
 }
 
+function readDismissedId() {
+  try {
+    return sessionStorage.getItem(RUN_COMPLETE_DISMISSED_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeDismissedId(id: string) {
+  try {
+    sessionStorage.setItem(RUN_COMPLETE_DISMISSED_KEY, id);
+  } catch {
+    // optional replay UX only
+  }
+}
+
 function readLastAutomaticSubmit(): Snapshot | null {
   try {
     const raw = localStorage.getItem(EVOFISH_LEADERBOARD_LAST_SUBMIT_KEY);
@@ -100,7 +118,7 @@ function readLastAutomaticSubmit(): Snapshot | null {
 export function RunCompleteOverlay() {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [me, setMe] = useState<LeaderboardMeResponse | null>(null);
-  const [dismissedId, setDismissedId] = useState<string | null>(null);
+  const [dismissedId, setDismissedId] = useState<string | null>(() => readDismissedId());
 
   useEffect(() => {
     const sync = () => {
@@ -137,19 +155,21 @@ export function RunCompleteOverlay() {
 
   const payload = snapshot.payload;
   const flagged = Boolean(snapshot.result.flagged);
-  const handlePlayAgain = () => {
-    resetEvoFishNextRun();
-    window.location.assign(`/game/play?run=${Date.now()}`);
-  };
-  const handleClose = () => {
+  const dismiss = () => {
+    writeDismissedId(snapshot.id);
     setDismissedId(snapshot.id);
     setSnapshot(null);
+  };
+  const handlePlayAgain = () => {
+    dismiss();
+    resetEvoFishNextRun();
+    window.location.assign(`/game/play?run=${Date.now()}`);
   };
 
   return (
     <div className="efRunCompleteOverlay" role="dialog" aria-modal="true">
       <section className="efRunCompleteCard">
-        <button className="efRunCompleteClose" onClick={handleClose} aria-label="Закрыть">×</button>
+        <button className="efRunCompleteClose" onClick={dismiss} aria-label="Закрыть">×</button>
         <span className="efRunCompleteEyebrow">RUN COMPLETE · SEASON LIVE</span>
         <h2>Забег завершён</h2>
         <p className="efRunCompleteLead">Результат отправлен в онлайн-рейтинг. Лучший score по твоему ID остаётся в сезоне.</p>
@@ -179,9 +199,9 @@ export function RunCompleteOverlay() {
 
         <div className="efRunCompleteActions">
           <button className="primary" onClick={handlePlayAgain}>Играть снова</button>
-          <Link to="/game/leaderboard">Лидеры</Link>
-          <Link to="/game/season">Сезон</Link>
-          <Link to="/game/skins">Улучшения</Link>
+          <Link to="/game/leaderboard" onClick={dismiss}>Лидеры</Link>
+          <Link to="/game/season" onClick={dismiss}>Сезон</Link>
+          <Link to="/game/skins" onClick={dismiss}>Улучшения</Link>
         </div>
       </section>
 
