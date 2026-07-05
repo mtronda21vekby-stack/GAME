@@ -1,12 +1,12 @@
 {
-  "version": 5,
+  "version": 6,
   "basePath": "/game/skins/custom",
   "defaultSkinId": "default",
   "skins": {
     "default": "default-blue-fish.png",
     "premium_fish": "default-blue-fish.png",
-    "neon_koi": "neon_koi.svg",
-    "reef_royal": "reef_royal.svg",
+    "neon_koi": "neon_koi.png",
+    "reef_royal": "reef_royal.png",
     "clown_pop": "clown_pop.svg",
     "angler_glow": "angler_glow.svg",
     "deep_sapphire": "deep_sapphire.svg",
