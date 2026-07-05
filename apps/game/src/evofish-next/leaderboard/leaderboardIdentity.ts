@@ -1,5 +1,6 @@
 export const EVOFISH_LEADERBOARD_PLAYER_ID_KEY = "evofish_leaderboard_player_id_v1";
 export const EVOFISH_LEADERBOARD_LAST_SUBMIT_KEY = "evofish_leaderboard_last_submit_v1";
+export const EVOFISH_LEADERBOARD_SUBMIT_EVENT = "evofish_leaderboard_submit_changed";
 export const EVOFISH_LEADERBOARD_SUBMIT_COOLDOWN_MS = 60_000;
 
 function randomId() {
@@ -35,13 +36,16 @@ export function leaderboardSubmitCooldownSeconds() {
 }
 
 export function markLeaderboardSubmitAttempt(result?: unknown, payload?: unknown) {
+  const entry = {
+    at: new Date().toISOString(),
+    attemptAt: Date.now(),
+    result,
+    payload
+  };
+
   try {
-    localStorage.setItem(EVOFISH_LEADERBOARD_LAST_SUBMIT_KEY, JSON.stringify({
-      at: new Date().toISOString(),
-      attemptAt: Date.now(),
-      result,
-      payload
-    }));
+    localStorage.setItem(EVOFISH_LEADERBOARD_LAST_SUBMIT_KEY, JSON.stringify(entry));
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(EVOFISH_LEADERBOARD_SUBMIT_EVENT, { detail: entry }));
   } catch {
     // optional local anti-spam marker only
   }
