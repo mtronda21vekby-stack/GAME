@@ -12,7 +12,7 @@ import { Leaderboard } from "../evofish-next/ui/Leaderboard";
 import { SeasonHub } from "../evofish-next/ui/SeasonHub";
 import { SkinLab } from "../evofish-next/ui/SkinLab";
 import { NextLobby } from "../evofish-next/ui/NextLobby";
-import { NextPlaytest } from "../evofish-next/ui/NextPlaytest";
+import { NextPlaySession } from "../evofish-next/ui/NextPlaySession";
 import { attachConsoleAnalytics, track } from "@blackcrown/core";
 
 function disableGameServiceWorker() {
@@ -38,7 +38,7 @@ export function App() {
         { path: "/game", element: withBoundary(<BetaHome />) },
         { path: "/game/lobby", element: withBoundary(<NextLobby />) },
         { path: "/game/account", element: withBoundary(<NextLobby />) },
-        { path: "/game/play", element: withBoundary(<NextPlaytest />) },
+        { path: "/game/play", element: withBoundary(<NextPlaySession />) },
         { path: "/game/progress", element: withBoundary(<BetaProgress />) },
         { path: "/game/repair", element: withBoundary(<BetaProgress />) },
         { path: "/game/leaderboard", element: withBoundary(<Leaderboard />) },
@@ -59,7 +59,7 @@ export function App() {
         { path: "/game/next/checklist", element: withBoundary(<BetaChecklist />) },
         { path: "/game/next/cache", element: withBoundary(<BetaCacheDoctor />) },
         { path: "/game/next/skins", element: withBoundary(<SkinLab />) },
-        { path: "/game/next/play", element: withBoundary(<NextPlaytest />) },
+        { path: "/game/next/play", element: withBoundary(<NextPlaySession />) },
         { path: "/classic", element: withBoundary(<Game />) },
         { path: "/next", element: withBoundary(<BetaHome />) },
         { path: "/next/lobby", element: withBoundary(<NextLobby />) },
@@ -72,7 +72,7 @@ export function App() {
         { path: "/next/checklist", element: withBoundary(<BetaChecklist />) },
         { path: "/next/cache", element: withBoundary(<BetaCacheDoctor />) },
         { path: "/next/skins", element: withBoundary(<SkinLab />) },
-        { path: "/next/play", element: withBoundary(<NextPlaytest />) },
+        { path: "/next/play", element: withBoundary(<NextPlaySession />) },
       ]}
     />
   );
