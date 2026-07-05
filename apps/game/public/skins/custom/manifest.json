@@ -1,5 +1,5 @@
 {
-  "version": 7,
+  "version": 8,
   "basePath": "/game/skins/custom",
   "defaultSkinId": "default",
   "skins": {
@@ -9,10 +9,10 @@
     "reef_royal": "reef_royal.png",
     "clown_pop": "clown_pop.png",
     "angler_glow": "angler_glow.png",
-    "deep_sapphire": "deep_sapphire.svg",
-    "gold_scale": "gold_scale.svg",
-    "cyber_fish": "cyber_fish.svg",
-    "pirate_fish": "pirate_fish.svg",
+    "deep_sapphire": "deep_sapphire.png",
+    "gold_scale": "gold_scale.png",
+    "cyber_fish": "cyber_fish.png",
+    "pirate_fish": "pirate_fish.png",
     "shark_classic": "shark_classic.svg",
     "shark_tiger": "shark_tiger.svg",
     "shark_shadow": "shark_shadow.svg",

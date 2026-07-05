@@ -1,13 +1,17 @@
 import type { EvoFishCurrency, EvoFishSkinDefinition } from "../core/types";
 
 export const EVOFISH_SKIN_ASSET_BASE = "/game/skins/custom";
-export const EVOFISH_SKIN_ASSET_VERSION = "fish-skins-7";
+export const EVOFISH_SKIN_ASSET_VERSION = "fish-skins-8";
 
 const DEFAULT_BLUE_FISH_ASSET = new URL("../assets/skins/default-blue-fish.png", import.meta.url).href;
 const NEON_KOI_ASSET = new URL("../assets/skins/neon-koi.png", import.meta.url).href;
 const REEF_ROYAL_ASSET = new URL("../assets/skins/reef-royal.png", import.meta.url).href;
 const CLOWN_POP_ASSET = new URL("../assets/skins/clown-pop.png", import.meta.url).href;
 const ANGLER_GLOW_ASSET = new URL("../assets/skins/angler-glow.png", import.meta.url).href;
+const DEEP_SAPPHIRE_ASSET = new URL("../assets/skins/deep-sapphire.png", import.meta.url).href;
+const GOLD_SCALE_ASSET = new URL("../assets/skins/gold-scale.png", import.meta.url).href;
+const CYBER_FISH_ASSET = new URL("../assets/skins/cyber-fish.png", import.meta.url).href;
+const PIRATE_FISH_ASSET = new URL("../assets/skins/pirate-fish.png", import.meta.url).href;
 
 const SKIN_ASSET_URLS: Record<string, string> = {
   default: DEFAULT_BLUE_FISH_ASSET,
@@ -15,7 +19,11 @@ const SKIN_ASSET_URLS: Record<string, string> = {
   neon_koi: NEON_KOI_ASSET,
   reef_royal: REEF_ROYAL_ASSET,
   clown_pop: CLOWN_POP_ASSET,
-  angler_glow: ANGLER_GLOW_ASSET
+  angler_glow: ANGLER_GLOW_ASSET,
+  deep_sapphire: DEEP_SAPPHIRE_ASSET,
+  gold_scale: GOLD_SCALE_ASSET,
+  cyber_fish: CYBER_FISH_ASSET,
+  pirate_fish: PIRATE_FISH_ASSET
 };
 
 export function getSkinAssetPath(id: string) {
