@@ -71,6 +71,6 @@ export function syncLeaderboardForEngine(engine: NextEngineState) {
   const payload = payloadFromEngine(engine);
   markLeaderboardSubmitAttempt({ ok: true, automatic: true, queued: true }, payload);
   postJSON("/api/leaderboard/submit", payload)
-    .then((result) => markLeaderboardSubmitAttempt(result, payload))
+    .then((result) => markLeaderboardSubmitAttempt({ ...(result as object), automatic: true }, payload))
     .catch(() => {});
 }
