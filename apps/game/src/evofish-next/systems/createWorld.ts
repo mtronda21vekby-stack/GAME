@@ -6,6 +6,7 @@ import { chooseEnemyArchetype, type NextEnemyArchetypeId } from "../content/enem
 import { pickEnemyFamily } from "../content/enemyFamilies";
 import { defaultCraftState } from "../content/craft";
 import { DARK_CAVE_STORY_TITLE, darkCaveStoryStep } from "../content/darkCaveStory";
+import { EVOFISH_SHARED_FISH_HITBOX_RADIUS } from "../content/fishHitbox";
 import { EVOFISH_FORMS } from "../content/forms";
 import { defaultMutationState, getMutationBonus, getMutationTotalLevel, type NextMutationState } from "../content/mutations";
 import { xpToNextLevel, xpToNextTier } from "../content/progression";
@@ -114,10 +115,8 @@ export function formFromSkin(skin: EvoFishSkinDefinition): EvoFishFormId {
   return skin.form === "any" ? "fish" : skin.form;
 }
 
-export function radiusFromForm(form: EvoFishFormId) {
-  if (form === "fish") return 24;
-  if (form === "shark") return 31;
-  return 39;
+export function radiusFromForm(_form: EvoFishFormId) {
+  return EVOFISH_SHARED_FISH_HITBOX_RADIUS;
 }
 
 export function massFromForm(form: EvoFishFormId) {
@@ -245,7 +244,7 @@ export function makeEnemy(
     y: spawn.y,
     vx: -50 + Math.random() * 100,
     vy: -50 + Math.random() * 100,
-    radius: apex ? 46 : leviathan ? 52 : stalker ? 30 : big ? 25 : archetype.id === "hunter" ? 21 : 14 + Math.random() * 8,
+    radius: radiusFromForm(form),
     mass,
     hp,
     hpMax: hp,
@@ -339,7 +338,7 @@ export function createNextWorld(
       y: playerSpawn.y,
       vx: 0,
       vy: 0,
-      radius: Math.max(radiusFromForm(form), Math.min(58, 18 + Math.sqrt(mass) * 5.2)),
+      radius: radiusFromForm(form),
       mass,
       hp,
       hpMax,

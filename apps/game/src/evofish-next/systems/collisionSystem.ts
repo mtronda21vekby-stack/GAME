@@ -1,5 +1,5 @@
 import type { NextEngineState, NextFishEntity, NextPlayerState } from "../core/engineTypes";
-import { enemyThreatLevel, makeEnemy } from "./createWorld";
+import { enemyThreatLevel, makeEnemy, radiusFromForm } from "./createWorld";
 import { awardKillReward } from "./progressionSystem";
 
 export const DEVOUR_MAX_LEVEL_GAP = 6;
@@ -51,7 +51,7 @@ function devourEnemy(state: NextEngineState, enemy: NextFishEntity, index: numbe
   const reward = awardKillReward(state, enemy, "devour");
 
   player.mass += massGain;
-  player.radius = Math.min(player.radius + enemy.radius * 0.012, 58);
+  player.radius = radiusFromForm(player.form);
   player.hp = Math.min(player.hpMax, player.hp + player.hpMax * 0.055);
   state.stats.kills += 1;
   state.stats.lastEvent = `Поглощение +${reward.xp} XP +${reward.pearls} жемчуг${reward.corals ? ` +${reward.corals} коралл` : ""} +${massGain.toFixed(2)} Mass`;

@@ -86,6 +86,7 @@ export type NextFishEntity = {
   y: number;
   vx: number;
   vy: number;
+  /** Shared gameplay hitbox radius. Visual sprite size is calculated separately. */
   radius: number;
   mass: number;
   hp: number;

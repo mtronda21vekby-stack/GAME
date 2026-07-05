@@ -65,7 +65,7 @@ function applyPlayerForm(state: NextEngineState, nextForm: EvoFishFormId) {
 
   const hpRatio = player.hp / Math.max(1, player.hpMax);
   player.form = nextForm;
-  player.radius = Math.max(player.radius, radiusFromForm(nextForm));
+  player.radius = radiusFromForm(nextForm);
   player.speed = speedWithMutations(state, nextForm);
   player.damage = damageWithMutations(state, nextForm, player.tier);
   player.hpMax = hpWithMutations(state, nextForm, player.tier);

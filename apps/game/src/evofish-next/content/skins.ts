@@ -1,11 +1,20 @@
 import type { EvoFishCurrency, EvoFishSkinDefinition } from "../core/types";
 
 export const EVOFISH_SKIN_ASSET_BASE = "/game/skins/custom";
-export const EVOFISH_SKIN_ASSET_VERSION = "heif-default-fish-1";
+export const EVOFISH_SKIN_ASSET_VERSION = "blue-default-fish-5";
+
+const DEFAULT_BLUE_FISH_ASSET = new URL("../assets/skins/default-blue-fish.png", import.meta.url).href;
+
+const SKIN_ASSET_URLS: Record<string, string> = {
+  default: DEFAULT_BLUE_FISH_ASSET,
+  premium_fish: DEFAULT_BLUE_FISH_ASSET
+};
 
 export function getSkinAssetPath(id: string) {
-  const file = id === "default" ? "default-blue-fish.svg" : `${id}.svg`;
-  return `${EVOFISH_SKIN_ASSET_BASE}/${file}?v=${EVOFISH_SKIN_ASSET_VERSION}`;
+  const assetUrl = SKIN_ASSET_URLS[id];
+  if (assetUrl) return assetUrl;
+
+  return `${EVOFISH_SKIN_ASSET_BASE}/${id}.svg?v=${EVOFISH_SKIN_ASSET_VERSION}`;
 }
 
 function withAsset(skin: Omit<EvoFishSkinDefinition, "assetPath" | "image">): EvoFishSkinDefinition {

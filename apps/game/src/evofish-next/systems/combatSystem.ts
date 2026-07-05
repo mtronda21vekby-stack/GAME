@@ -1,5 +1,5 @@
 import type { NextEngineState, NextFishEntity, NextInputState, NextCameraState } from "../core/engineTypes";
-import { enemyThreatLevel, makeEnemy } from "./createWorld";
+import { enemyThreatLevel, makeEnemy, radiusFromForm } from "./createWorld";
 import { canPlayerDevour, npcCombatLevel, npcLevelGap, playerDamageMultiplierAgainstEnemy } from "./collisionSystem";
 import { awardKillReward } from "./progressionSystem";
 import { aimVector } from "./playerSystem";
@@ -24,7 +24,7 @@ function killEnemy(state: NextEngineState, enemy: NextFishEntity, index: number,
   const reward = awardKillReward(state, enemy, source);
 
   player.mass += massGain;
-  player.radius = Math.min(player.radius + enemy.radius * 0.009, 58);
+  player.radius = radiusFromForm(player.form);
   player.hp = Math.min(player.hpMax, player.hp + player.hpMax * 0.045);
 
   state.stats.kills += 1;

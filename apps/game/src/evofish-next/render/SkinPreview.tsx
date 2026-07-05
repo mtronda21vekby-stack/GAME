@@ -132,6 +132,12 @@ export function SkinPreview({ skin, form, size = "md", className }: SkinPreviewP
   const resolvedForm = resolveForm(skin, form);
   const cls = ["efSkinPreview", size, className].filter(Boolean).join(" ");
   const assetPath = skin.assetPath || skin.image;
+  const [assetFailed, setAssetFailed] = React.useState(false);
+  const showAsset = Boolean(assetPath && !assetFailed);
+
+  React.useEffect(() => {
+    setAssetFailed(false);
+  }, [assetPath]);
 
   return (
     <div className={cls} aria-label={skin.name}>
@@ -145,10 +151,10 @@ export function SkinPreview({ skin, form, size = "md", className }: SkinPreviewP
         </defs>
         <rect width="256" height="144" rx="28" fill="#031827" />
         <circle cx="128" cy="72" r="66" fill={skin.palette.glow || skin.palette.accent} opacity="0.14" />
-        {assetPath ? <image href={assetPath} x="28" y="26" width="200" height="92" preserveAspectRatio="xMidYMid meet" /> : null}
-        {!assetPath && resolvedForm === "fish" ? <Fish skin={skin} /> : null}
-        {!assetPath && resolvedForm === "shark" ? <Shark skin={skin} /> : null}
-        {!assetPath && resolvedForm === "megalodon" ? <Mega skin={skin} /> : null}
+        {showAsset ? <image href={assetPath} x="28" y="26" width="200" height="92" preserveAspectRatio="xMidYMid meet" onError={() => setAssetFailed(true)} /> : null}
+        {!showAsset && resolvedForm === "fish" ? <Fish skin={skin} /> : null}
+        {!showAsset && resolvedForm === "shark" ? <Shark skin={skin} /> : null}
+        {!showAsset && resolvedForm === "megalodon" ? <Mega skin={skin} /> : null}
       </svg>
     </div>
   );

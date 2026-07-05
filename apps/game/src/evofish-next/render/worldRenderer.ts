@@ -5,6 +5,7 @@ import { darkCavePortalPosition, darkCavePortalUnlocked, DARK_CAVE_ARTIFACTS_REQ
 import { drawEvoFishSkin } from "./canvasSkinRenderer";
 import { getNextCamera } from "../systems/cameraSystem";
 import { canDevour } from "../systems/collisionSystem";
+import { visualRadiusForFish } from "../content/fishHitbox";
 
 const spriteCache = new Map<string, HTMLImageElement>();
 
@@ -28,13 +29,17 @@ function getSprite(src: string) {
   return img;
 }
 
+function entityVisualRadius(entity: NextFishEntity) {
+  return visualRadiusForFish(entity.form, entity.mass, entity.aiType);
+}
+
 function drawSpriteSkin(ctx: CanvasRenderingContext2D, entity: NextFishEntity, alpha: number) {
   const src = skinSpriteSource(entity);
   const img = getSprite(src);
   if (!img || !img.complete || img.naturalWidth <= 0) return false;
 
   const formScale = entity.form === "megalodon" ? 5.3 : entity.form === "shark" ? 5.0 : 4.75;
-  const width = entity.radius * formScale;
+  const width = entityVisualRadius(entity) * formScale;
   const height = width * (img.naturalHeight / Math.max(1, img.naturalWidth));
 
   ctx.save();
@@ -52,7 +57,7 @@ function drawEntitySkin(ctx: CanvasRenderingContext2D, entity: NextFishEntity, a
   drawEvoFishSkin(ctx, entity.skin, entity.form, {
     x: entity.x,
     y: entity.y,
-    radius: entity.radius,
+    radius: entityVisualRadius(entity),
     angle: entity.angle,
     alpha
   });
@@ -220,41 +225,43 @@ function aiColor(state: NextAIState) {
 
 function drawApexFrame(ctx: CanvasRenderingContext2D, enemy: NextFishEntity) {
   if (enemy.aiType !== "apex" && enemy.aiType !== "leviathan") return;
+  const visualRadius = entityVisualRadius(enemy);
 
   ctx.save();
   ctx.strokeStyle = enemy.aiType === "leviathan" ? "rgba(180,140,255,.50)" : "rgba(255,220,120,.50)";
   ctx.lineWidth = 5;
   ctx.beginPath();
-  ctx.arc(enemy.x, enemy.y, enemy.radius * 2.55, 0, Math.PI * 2);
+  ctx.arc(enemy.x, enemy.y, visualRadius * 2.55, 0, Math.PI * 2);
   ctx.stroke();
 
   ctx.strokeStyle = "rgba(255,90,90,.34)";
   ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.arc(enemy.x, enemy.y, enemy.radius * 3.05, 0, Math.PI * 2);
+  ctx.arc(enemy.x, enemy.y, visualRadius * 3.05, 0, Math.PI * 2);
   ctx.stroke();
 
   ctx.textAlign = "center";
   ctx.font = "1000 16px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
   ctx.fillStyle = enemy.aiType === "leviathan" ? "rgba(220,205,255,.96)" : "rgba(255,240,180,.95)";
-  ctx.fillText(enemy.aiType === "leviathan" ? "LEVIATHAN" : "APEX", enemy.x, enemy.y - enemy.radius * 3.2);
+  ctx.fillText(enemy.aiType === "leviathan" ? "LEVIATHAN" : "APEX", enemy.x, enemy.y - visualRadius * 3.2);
   ctx.restore();
 }
 
 function drawAiRing(ctx: CanvasRenderingContext2D, enemy: NextFishEntity, quality: string) {
   drawApexFrame(ctx, enemy);
   if (quality === "low" && enemy.aiState === "wander" && enemy.aiType !== "apex" && enemy.aiType !== "leviathan") return;
+  const visualRadius = entityVisualRadius(enemy);
 
   ctx.strokeStyle = enemy.aiType === "apex" || enemy.aiType === "leviathan" ? "rgba(255,220,120,.42)" : aiColor(enemy.aiState);
   ctx.lineWidth = enemy.aiType === "apex" || enemy.aiType === "leviathan" ? 4 : enemy.aiState === "attack" ? 4 : enemy.aiState === "hunt" ? 3 : 2;
   ctx.beginPath();
-  ctx.arc(enemy.x, enemy.y, enemy.radius * (enemy.aiType === "apex" || enemy.aiType === "leviathan" ? 2.05 : enemy.aiState === "attack" ? 2.2 : 1.85), 0, Math.PI * 2);
+  ctx.arc(enemy.x, enemy.y, visualRadius * (enemy.aiType === "apex" || enemy.aiType === "leviathan" ? 2.05 : enemy.aiState === "attack" ? 2.2 : 1.85), 0, Math.PI * 2);
   ctx.stroke();
 
   if (enemy.aiState === "hunt" || enemy.aiState === "attack") {
     ctx.fillStyle = enemy.aiType === "apex" || enemy.aiType === "leviathan" ? "rgba(255,220,120,.72)" : aiColor(enemy.aiState);
     ctx.beginPath();
-    ctx.arc(enemy.x + Math.cos(enemy.angle) * enemy.radius * 1.8, enemy.y + Math.sin(enemy.angle) * enemy.radius * 1.8, enemy.aiType === "apex" || enemy.aiType === "leviathan" ? 6 : 4, 0, Math.PI * 2);
+    ctx.arc(enemy.x + Math.cos(enemy.angle) * visualRadius * 1.8, enemy.y + Math.sin(enemy.angle) * visualRadius * 1.8, enemy.aiType === "apex" || enemy.aiType === "leviathan" ? 6 : 4, 0, Math.PI * 2);
     ctx.fill();
   }
 }
@@ -262,7 +269,7 @@ function drawAiRing(ctx: CanvasRenderingContext2D, enemy: NextFishEntity, qualit
 function drawHpBar(ctx: CanvasRenderingContext2D, entity: NextFishEntity, width: number) {
   const pct = Math.max(0, Math.min(1, entity.hp / entity.hpMax));
   const x = entity.x - width / 2;
-  const y = entity.y - entity.radius * 2.15;
+  const y = entity.y - entityVisualRadius(entity) * 2.15;
   ctx.fillStyle = "rgba(2,12,20,.64)";
   ctx.fillRect(x, y, width, 5);
   ctx.fillStyle = entity.aiType === "apex" || entity.aiType === "leviathan" ? "rgba(255,220,120,.92)" : pct > 0.45 ? "rgba(110,255,180,.88)" : "rgba(255,90,90,.9)";
@@ -300,7 +307,7 @@ function drawNpcThreatBadge(ctx: CanvasRenderingContext2D, state: NextEngineStat
 
   const info = npcThreatInfo(state, enemy, safeToEat);
   const text = `LV ${info.level} · ${info.label}`;
-  const y = enemy.y - enemy.radius * (boss ? 4.1 : 3.15) - 8;
+  const y = enemy.y - entityVisualRadius(enemy) * (boss ? 4.1 : 3.15) - 8;
 
   ctx.save();
   ctx.textAlign = "center";
@@ -509,12 +516,13 @@ function drawResources(ctx: CanvasRenderingContext2D, state: NextEngineState, ca
 
 function drawCombatAura(ctx: CanvasRenderingContext2D, state: NextEngineState) {
   const player = state.player;
+  const visualRadius = entityVisualRadius(player);
 
   if (player.downed || player.dead) {
     ctx.strokeStyle = "rgba(255,120,120,.42)";
     ctx.lineWidth = 5;
     ctx.beginPath();
-    ctx.arc(player.x, player.y, player.radius * 2.35, 0, Math.PI * 2);
+    ctx.arc(player.x, player.y, visualRadius * 2.35, 0, Math.PI * 2);
     ctx.stroke();
     return;
   }
@@ -523,7 +531,7 @@ function drawCombatAura(ctx: CanvasRenderingContext2D, state: NextEngineState) {
     ctx.strokeStyle = "rgba(255,240,160,.50)";
     ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.arc(player.x, player.y, player.radius * 2.38, 0, Math.PI * 2);
+    ctx.arc(player.x, player.y, visualRadius * 2.38, 0, Math.PI * 2);
     ctx.stroke();
   }
 
@@ -531,7 +539,7 @@ function drawCombatAura(ctx: CanvasRenderingContext2D, state: NextEngineState) {
     ctx.strokeStyle = "rgba(120,240,255,.38)";
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.arc(player.x, player.y, player.radius * 2.05, 0, Math.PI * 2);
+    ctx.arc(player.x, player.y, visualRadius * 2.05, 0, Math.PI * 2);
     ctx.stroke();
   }
 
@@ -539,7 +547,7 @@ function drawCombatAura(ctx: CanvasRenderingContext2D, state: NextEngineState) {
     ctx.strokeStyle = "rgba(120,240,255,.42)";
     ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.arc(player.x, player.y, player.radius * 2.25, 0, Math.PI * 2);
+    ctx.arc(player.x, player.y, visualRadius * 2.25, 0, Math.PI * 2);
     ctx.stroke();
   }
 
@@ -547,7 +555,7 @@ function drawCombatAura(ctx: CanvasRenderingContext2D, state: NextEngineState) {
     ctx.strokeStyle = state.craft.biteBoostT > 0 ? "rgba(255,220,120,.48)" : "rgba(255,255,255,.34)";
     ctx.lineWidth = 5;
     ctx.beginPath();
-    ctx.arc(player.x + Math.cos(player.angle) * player.radius * 1.25, player.y + Math.sin(player.angle) * player.radius * 1.25, player.radius * 1.35, 0, Math.PI * 2);
+    ctx.arc(player.x + Math.cos(player.angle) * visualRadius * 1.25, player.y + Math.sin(player.angle) * visualRadius * 1.25, visualRadius * 1.35, 0, Math.PI * 2);
     ctx.stroke();
   }
 }
@@ -725,25 +733,26 @@ export function renderNextWorld(ctx: CanvasRenderingContext2D, state: NextEngine
   drawEvents(ctx, state, camera, quality);
   drawResources(ctx, state, camera, quality);
 
-  const visibleEnemies = state.enemies.filter((enemy) => isVisible(camera, enemy.x, enemy.y, enemy.radius * 4));
+  const visibleEnemies = state.enemies.filter((enemy) => isVisible(camera, enemy.x, enemy.y, entityVisualRadius(enemy) * 4));
   for (const enemy of visibleEnemies) {
+    const visualRadius = entityVisualRadius(enemy);
     const safeToEat = canDevour(state.player.mass, enemy.mass);
     drawAiRing(ctx, enemy, quality);
     ctx.strokeStyle = enemy.aiType === "apex" || enemy.aiType === "leviathan" ? "rgba(255,220,120,.30)" : safeToEat ? "rgba(110,255,180,.24)" : "rgba(255,90,90,.32)";
     ctx.lineWidth = enemy.hitT > 0 ? 4 : 2;
     ctx.beginPath();
-    ctx.arc(enemy.x, enemy.y, enemy.radius * 1.52, 0, Math.PI * 2);
+    ctx.arc(enemy.x, enemy.y, visualRadius * 1.52, 0, Math.PI * 2);
     ctx.stroke();
     drawEntitySkin(ctx, enemy, enemy.hitT > 0 ? 0.55 : safeToEat ? 0.82 : 0.92);
     if (quality !== "low" || enemy.aiType === "apex" || enemy.aiType === "leviathan") {
-      drawHpBar(ctx, enemy, enemy.radius * (enemy.aiType === "apex" || enemy.aiType === "leviathan" ? 4.1 : 2.8));
+      drawHpBar(ctx, enemy, visualRadius * (enemy.aiType === "apex" || enemy.aiType === "leviathan" ? 4.1 : 2.8));
     }
     drawNpcThreatBadge(ctx, state, enemy, safeToEat, quality);
   }
 
   drawCombatAura(ctx, state);
   drawEntitySkin(ctx, state.player, playerDowned ? 0.34 : state.player.hitT > 0 ? 0.68 : 1);
-  drawHpBar(ctx, state.player, state.player.radius * 3.2);
+  drawHpBar(ctx, state.player, entityVisualRadius(state.player) * 3.2);
   drawFloatText(ctx, state);
 
   ctx.restore();
