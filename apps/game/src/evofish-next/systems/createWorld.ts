@@ -19,6 +19,7 @@ import { darkCavePortalUnlocked } from "../assets/visuals/visualCatalog";
 import { defaultNextQuests, type EvoFishNextProgressState } from "../state/skinSaveAdapter";
 
 export const NEXT_WORLD_CONFIG: NextWorldConfig = EVOFISH_WORLD_CONFIG;
+export const POST_LEVEL_21_BALANCE_START = 21;
 
 type Point = { x: number; y: number };
 
@@ -42,18 +43,27 @@ function storedAchievements(): NextAchievementState {
   }
 }
 
+export function postLevel21EnemyThreatBonus(level: number) {
+  const playerLevel = Math.max(1, Math.floor(level || 1));
+  const late = Math.max(0, playerLevel - POST_LEVEL_21_BALANCE_START);
+  if (late <= 0) return 0;
+  return Math.min(24, Math.floor(late * 0.52 + Math.sqrt(late) * 0.95));
+}
+
 export function enemyThreatLevel(level: number, tier: number, mass: number) {
   const playerLevel = Math.max(1, Math.floor(level || 1));
   const playerTier = Math.max(1, Math.floor(tier || 1));
   const playerMass = Math.max(1, Number(mass || 1));
+  const post21Bonus = postLevel21EnemyThreatBonus(playerLevel);
   const midPressure = Math.max(0, playerTier - 6) * 0.32 + Math.max(0, playerMass - 6) * 0.42;
   const pressureCap = playerLevel < 30 ? 4.5 : 7;
-  const lateBonus = playerLevel >= 45 ? Math.floor((playerLevel - 44) * 0.36) : 0;
-  return Math.max(1, Math.round(playerLevel + Math.min(pressureCap, midPressure) + lateBonus));
+  const pressureScore = Math.min(pressureCap, midPressure);
+  const levelScore = playerLevel + post21Bonus;
+  return Math.max(1, Math.round(levelScore + pressureScore));
 }
 
 function threatScale(threatLevel: number) {
-  return 1 + Math.min(4.2, Math.max(0, threatLevel - 1) * 0.036);
+  return 1 + Math.min(4.4, Math.max(0, threatLevel - 1) * 0.038);
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -61,24 +71,34 @@ function clamp(value: number, min: number, max: number) {
 }
 
 function enemyLevelBias(archetype: NextEnemyArchetypeId) {
-  if (archetype === "leviathan") return 13;
-  if (archetype === "apex") return 11;
+  if (archetype === "leviathan") return 14;
+  if (archetype === "apex") return 12;
   if (archetype === "stalker") return 7;
   if (archetype === "brute") return 5;
   if (archetype === "hunter") return 2;
   if (archetype === "neutral") return -2;
-  return -8;
+  return -7;
+}
+
+function post21MinimumLevelOffset(archetype: NextEnemyArchetypeId, playerLevel: number) {
+  const late = Math.max(0, Math.floor(playerLevel || 1) - POST_LEVEL_21_BALANCE_START);
+  if (late <= 0) return 0;
+  const ramp = Math.min(8, Math.floor(late * 0.22 + Math.sqrt(late) * 0.6));
+  const role = archetype === "prey" ? -2 : archetype === "neutral" ? -1 : archetype === "hunter" ? 1 : archetype === "brute" ? 3 : archetype === "stalker" ? 5 : 8;
+  return Math.max(0, ramp + role);
 }
 
 function enemyNpcLevel(archetype: NextEnemyArchetypeId, threatLevel: number, mass: number, playerMass: number, playerLevel = 1) {
   const base = Math.max(1, Math.floor(threatLevel || 1));
   const levelAnchor = Math.max(1, Math.floor(playerLevel || 1));
-  const massPressure = clamp(Math.round((mass - playerMass) * 0.38), -5, 9);
-  const bodyScale = Math.round(Math.sqrt(Math.max(1, mass)) * 1.05);
+  const massPressure = clamp(Math.round((mass - playerMass) * 0.42), -5, 10);
+  const bodyScale = Math.round(Math.sqrt(Math.max(1, mass)) * 1.08);
   const variance = Math.floor(Math.random() * 5) - 2;
-  const softCap = archetype === "apex" || archetype === "leviathan" ? levelAnchor + 18 : levelAnchor + 9;
-  const floor = archetype === "prey" ? Math.max(1, levelAnchor - 9) : 1;
-  return Math.round(clamp(base + enemyLevelBias(archetype) + bodyScale + massPressure + variance, floor, Math.max(softCap, levelAnchor + 3)));
+  const minimum = levelAnchor + post21MinimumLevelOffset(archetype, levelAnchor);
+  const capBonus = Math.max(10, post21MinimumLevelOffset(archetype, levelAnchor) + 10);
+  const softCap = archetype === "apex" || archetype === "leviathan" ? levelAnchor + 24 : levelAnchor + capBonus;
+  const raw = base + enemyLevelBias(archetype) + bodyScale + massPressure + variance;
+  return Math.round(clamp(Math.max(raw, minimum), 1, Math.max(softCap, levelAnchor + 4)));
 }
 
 function randomWorldPoint(config: NextWorldConfig, pad = 190): Point {
@@ -213,9 +233,13 @@ export function makeEnemy(
   const stalker = archetype.id === "stalker";
   const big = archetype.id === "brute" || apex || leviathan || stalker;
   const form: EvoFishFormId = apex || leviathan ? "megalodon" : big ? "shark" : "fish";
+  const late = Math.max(0, Math.floor(playerLevel || 1) - POST_LEVEL_21_BALANCE_START);
+  const lateBodyMultiplier = 1 + Math.min(0.34, late * 0.011);
+  const lateHpMultiplier = 1 + Math.min(0.38, late * 0.014);
+  const lateDamageMultiplier = 1 + Math.min(0.2, late * 0.007);
 
   const baseSmall = 0.48 + Math.random() * 0.72;
-  const mass = apex
+  const rawMass = apex
     ? Math.max(9.2 * scale, playerMass * 1.2)
     : leviathan
       ? Math.max(6.8 * scale, playerMass * 1.06)
@@ -226,6 +250,7 @@ export function makeEnemy(
           : archetype.id === "hunter"
             ? Math.max((1.05 + Math.random() * 0.78) * scale, playerMass * 0.24)
             : baseSmall * Math.max(1, scale * 0.68);
+  const mass = rawMass * lateBodyMultiplier;
 
   const baseHp = apex
     ? Math.round(680 + mass * 62)
@@ -234,7 +259,7 @@ export function makeEnemy(
       : stalker
         ? Math.round(190 + mass * 42)
         : Math.round((big ? 150 : archetype.id === "hunter" ? 92 : 42 + Math.random() * 38) * Math.max(0.8, mass));
-  const hp = Math.round(baseHp * family.hpMultiplier * (1 + Math.min(1.15, threatLevel * 0.014)));
+  const hp = Math.round(baseHp * family.hpMultiplier * (1 + Math.min(1.15, threatLevel * 0.014)) * lateHpMultiplier);
   const spawn = pointAwayFrom(config, avoidX, avoidY, safeRadius + (apex || leviathan ? 260 : stalker ? 160 : 0));
   const target = wanderPoint(config);
   const fallbackSkin = apex
@@ -258,7 +283,7 @@ export function makeEnemy(
     mass,
     hp,
     hpMax: hp,
-    damage: damageBase * archetype.damageMultiplier * (1 + Math.min(1.0, threatLevel * 0.017)),
+    damage: damageBase * archetype.damageMultiplier * (1 + Math.min(1.0, threatLevel * 0.017)) * lateDamageMultiplier,
     speed: archetype.baseSpeed * family.speedMultiplier * (1 + Math.min(0.34, threatLevel * 0.0048)),
     form,
     skin: apex || leviathan ? fallbackSkin : familySkin(family.skinId, fallbackSkin),
