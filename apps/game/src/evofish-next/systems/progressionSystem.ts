@@ -3,7 +3,7 @@ import type { NextEngineState, NextFishEntity } from "../core/engineTypes";
 import { EVOFISH_FORMS } from "../content/forms";
 import { getMutationBonus, getMutationTotalLevel } from "../content/mutations";
 import { formForLevel, NEXT_MAX_TIER, tierMassBonus, xpToNextLevel, xpToNextTier } from "../content/progression";
-import { damageFromForm, hpFromForm, radiusFromForm, speedFromForm } from "./createWorld";
+import { damageFromForm, hpFromForm, POST_LEVEL_21_BALANCE_START, radiusFromForm, speedFromForm } from "./createWorld";
 
 export type NextKillReward = {
   xp: number;
@@ -59,17 +59,31 @@ function npcLevel(enemy: NextFishEntity) {
   return Math.max(1, Math.floor(enemy.npcLevel || Math.round(enemy.mass * 4)));
 }
 
+function post21RewardFloor(state: NextEngineState) {
+  const playerLevel = Math.max(1, Math.floor(state.player.level || 1));
+  const late = Math.max(0, playerLevel - POST_LEVEL_21_BALANCE_START);
+  if (late <= 0) return 1;
+  return 1 + Math.min(0.95, late * 0.034);
+}
+
 function npcLevelRewardBonus(state: NextEngineState, enemy: NextFishEntity) {
   const enemyLevel = npcLevel(enemy);
   const playerLevel = Math.max(1, Math.floor(state.player.level || 1));
   const diff = enemyLevel - playerLevel;
+  const post21 = post21RewardFloor(state);
+  const diffBonus = diff >= 16
+    ? 2.35
+    : diff >= 10
+      ? 1.95
+      : diff >= 6
+        ? 1.62
+        : diff >= 3
+          ? 1.36
+          : diff >= 0
+            ? 1.15
+            : clamp(1 + diff * 0.018, 0.78, 1);
 
-  if (diff >= 16) return 2.35;
-  if (diff >= 10) return 1.95;
-  if (diff >= 6) return 1.6;
-  if (diff >= 3) return 1.32;
-  if (diff >= 0) return 1.12;
-  return clamp(1 + diff * 0.018, 0.78, 1);
+  return clamp(diffBonus * post21, 0.78, 3.25);
 }
 
 function syncApexStats(state: NextEngineState) {
@@ -192,10 +206,10 @@ function awardKillEconomy(state: NextEngineState, enemy: NextFishEntity, source:
   const zoneBonus = state.stats.zoneRewardBoost || 1;
   const familyBonus = enemy.familyRewardMultiplier || 1;
   const archetypeBonus = archetypeCurrencyBonus(enemy);
-  const levelBonus = 1 + (npcLevelRewardBonus(state, enemy) - 1) * 0.42;
+  const levelBonus = 1 + (npcLevelRewardBonus(state, enemy) - 1) * 0.55;
   const pearls = Math.max(1, Math.round((1 + enemy.mass * 1.35) * sourceBonus * archetypeBonus * mutationBonus * zoneBonus * familyBonus * levelBonus));
   const bossCorals = enemy.aiType === "apex" ? 3 : enemy.aiType === "leviathan" ? 2 : 0;
-  const coralChance = Math.min(0.095, (0.004 + enemy.mass * 0.003 + (enemy.aiType === "brute" ? 0.018 : 0) + (enemy.aiType === "stalker" ? 0.012 : 0)) * Math.max(0.75, Math.min(1.35, zoneBonus)) * levelBonus);
+  const coralChance = Math.min(0.13, (0.004 + enemy.mass * 0.003 + (enemy.aiType === "brute" ? 0.018 : 0) + (enemy.aiType === "stalker" ? 0.012 : 0)) * Math.max(0.75, Math.min(1.35, zoneBonus)) * levelBonus);
   const corals = bossCorals || (Math.random() < coralChance ? 1 : 0);
 
   state.economy.pearls += pearls;
@@ -210,7 +224,8 @@ export function awardKillReward(state: NextEngineState, enemy: NextFishEntity, s
   const familyBonus = enemy.familyRewardMultiplier || 1;
   const archetypeBonus = archetypeXpBonus(enemy);
   const levelBonus = npcLevelRewardBonus(state, enemy);
-  const xp = awardNextXp(state, (28 + enemy.mass * 17 + enemy.hpMax * 0.088 + npcLevel(enemy) * 3.4) * formBonus * sourceBonus * archetypeBonus * zoneBonus * familyBonus * levelBonus);
+  const lateLevelBase = Math.max(0, Math.floor(state.player.level || 1) - POST_LEVEL_21_BALANCE_START) > 0 ? 38 : 28;
+  const xp = awardNextXp(state, (lateLevelBase + enemy.mass * 18 + enemy.hpMax * 0.092 + npcLevel(enemy) * 4.8) * formBonus * sourceBonus * archetypeBonus * zoneBonus * familyBonus * levelBonus);
   const economy = awardKillEconomy(state, enemy, source);
 
   if (levelBonus > 1.25) {
