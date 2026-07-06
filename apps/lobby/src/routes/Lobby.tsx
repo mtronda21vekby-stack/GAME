@@ -131,15 +131,24 @@ type HubProfile = {
 type NavItem = {
   label: string;
   path: string;
+  icon: string;
+  notify?: boolean;
 };
 
 const SIDE_NAV_ITEMS: NavItem[] = [
-  { label: "Магазин", path: "/game/skins" },
-  { label: "Инвентарь", path: "/game/progress" },
-  { label: "Скины", path: "/game/skins" },
-  { label: "Мутации", path: "/game/progress" },
-  { label: "Квесты", path: "/game/progress" },
-  { label: "События", path: "/game/season" },
+  { label: "Магазин", path: "/game/skins", icon: "◇" },
+  { label: "Инвентарь", path: "/game/progress", icon: "▣" },
+  { label: "Квесты", path: "/game/progress", icon: "✦", notify: true },
+  { label: "События", path: "/game/season", icon: "◎" },
+  { label: "Крафт", path: "/game/play", icon: "⬡" },
+];
+
+const BOTTOM_NAV_ITEMS: NavItem[] = [
+  { label: "Сообщество", path: "/", icon: "◌" },
+  { label: "Лобби", path: "/lobby", icon: "◎" },
+  { label: "PvP", path: "/game/?mode=next", icon: "◇" },
+  { label: "Достижения", path: "/game/progress", icon: "✦" },
+  { label: "Профиль", path: "/game/account", icon: "◉" },
 ];
 
 function readNumber(value: unknown, fallback = 0) {
@@ -559,6 +568,18 @@ export function Lobby() {
         font-size: 22px;
         font-weight: 950;
         cursor: pointer;
+        transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
+      }
+
+      .hubSettings:hover {
+        border-color: rgba(101,232,255,.62);
+        background: rgba(53,216,255,.12);
+        box-shadow: 0 0 26px rgba(53,216,255,.18);
+        transform: translateY(-1px) scale(1.03);
+      }
+
+      .hubSettings:active {
+        transform: scale(.96);
       }
 
       .hubShell {
@@ -577,21 +598,76 @@ export function Lobby() {
         padding: 8px;
       }
 
-      .hubSideItem,
-      .hubBottomItem {
-        min-height: 42px;
-        border: 1px solid rgba(234,247,255,.10);
+      .hubSideNavButton {
+        position: relative;
+        min-height: 48px;
+        width: 100%;
+        display: grid;
+        grid-template-columns: 28px minmax(0, 1fr);
+        align-items: center;
+        gap: 9px;
+        border: 1px solid rgba(88,210,255,.18);
         border-radius: 8px;
         color: var(--text);
-        background: rgba(2,9,21,.34);
+        background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.018)), rgba(5,18,32,.62);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 12px 28px rgba(0,0,0,.18);
+        padding: 8px 10px;
+        font: inherit;
         font-weight: 950;
+        text-align: left;
         cursor: pointer;
+        transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
       }
 
-      .hubSideItem:hover,
-      .hubBottomItem:hover {
-        border-color: var(--panel-border);
-        background: rgba(53,216,255,.12);
+      .hubSideNavButton:hover {
+        border-color: rgba(88,210,255,.44);
+        background: linear-gradient(180deg, rgba(53,216,255,.12), rgba(255,255,255,.025)), rgba(5,18,32,.76);
+        box-shadow: inset 0 0 22px rgba(53,216,255,.09), 0 0 26px rgba(53,216,255,.15), 0 12px 28px rgba(0,0,0,.20);
+        transform: translateX(2px);
+      }
+
+      .hubSideNavButton:active {
+        transform: translateX(0) scale(.98);
+      }
+
+      .hubSideNavButton.isActive {
+        border-color: rgba(101,232,255,.82);
+        background: linear-gradient(180deg, rgba(53,216,255,.18), rgba(255,255,255,.04)), var(--panel-strong);
+        box-shadow: inset 0 0 26px rgba(53,216,255,.18), 0 0 30px rgba(53,216,255,.20);
+      }
+
+      .hubSideIcon {
+        width: 28px;
+        height: 28px;
+        display: grid;
+        place-items: center;
+        border-radius: 8px;
+        color: var(--cyan);
+        background: rgba(53,216,255,.10);
+        border: 1px solid rgba(88,210,255,.16);
+        font-size: 15px;
+        line-height: 1;
+        text-shadow: 0 0 14px rgba(53,216,255,.45);
+      }
+
+      .hubSideLabel {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 13px;
+        letter-spacing: 0;
+      }
+
+      .hubNotifyDot {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #ff4c73;
+        box-shadow: 0 0 0 3px rgba(255,76,115,.14), 0 0 14px rgba(255,76,115,.55);
       }
 
       .hubCenter {
@@ -767,30 +843,72 @@ export function Lobby() {
         text-align: center;
       }
 
-      .hubPrimary {
+      .hubPrimaryPlayButton {
         position: relative;
         z-index: 1;
-        width: min(100%, 360px);
-        min-height: 58px;
+        width: min(100%, 420px);
+        min-height: 68px;
         overflow: hidden;
-        border: 1px solid rgba(152,240,255,.72);
+        border: 1px solid rgba(166,245,255,.82);
         border-radius: 999px;
-        color: #02131f;
-        background: linear-gradient(90deg, #67eaff, #b7fff0 52%, #35d8ff);
-        box-shadow: 0 0 34px rgba(53,216,255,.34), 0 18px 42px rgba(0,0,0,.34);
-        font-size: 16px;
+        color: var(--text);
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.20), rgba(255,255,255,.045)),
+          radial-gradient(ellipse at 50% 0%, rgba(183,255,240,.34), transparent 48%),
+          rgba(5,18,32,.66);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,.34),
+          inset 0 -18px 34px rgba(53,216,255,.14),
+          0 0 0 1px rgba(53,216,255,.12),
+          0 0 42px rgba(53,216,255,.44),
+          0 22px 54px rgba(0,0,0,.38);
+        font-size: clamp(21px, 4.8vw, 30px);
         font-weight: 950;
+        letter-spacing: .18em;
+        text-align: center;
         cursor: pointer;
+        transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
       }
 
-      .hubPrimary:before {
+      .hubPrimaryPlayButton:before {
         content: "";
         position: absolute;
         inset: -80% auto -80% -40%;
-        width: 38%;
+        width: 32%;
         transform: rotate(18deg);
-        background: rgba(255,255,255,.58);
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,.78), transparent);
         animation: hubButtonShine 3.6s ease-in-out infinite;
+      }
+
+      .hubPrimaryPlayButton:after {
+        content: "";
+        position: absolute;
+        inset: 6px;
+        border-radius: inherit;
+        pointer-events: none;
+        border: 1px solid rgba(255,255,255,.12);
+      }
+
+      .hubPrimaryPlayButton span {
+        position: relative;
+        z-index: 1;
+        display: inline-block;
+        text-shadow: 0 0 18px rgba(53,216,255,.56);
+      }
+
+      .hubPrimaryPlayButton:hover {
+        border-color: rgba(215,255,255,.96);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,.38),
+          inset 0 -18px 34px rgba(53,216,255,.20),
+          0 0 0 1px rgba(53,216,255,.16),
+          0 0 56px rgba(53,216,255,.60),
+          0 26px 62px rgba(0,0,0,.42);
+        transform: translateY(-2px) scale(1.025);
+      }
+
+      .hubPrimaryPlayButton:active {
+        transform: scale(.975);
       }
 
       .hubModes {
@@ -934,7 +1052,8 @@ export function Lobby() {
         gap: 8px;
       }
 
-      .hubInfoCard {
+      .hubOnlineCard,
+      .hubInfoCardButton {
         min-height: 84px;
         padding: 10px;
         border-radius: 8px;
@@ -945,10 +1064,72 @@ export function Lobby() {
         gap: 8px;
       }
 
-      .hubInfoCard strong {
+      .hubOnlineCard strong,
+      .hubInfoCardButton strong {
         display: block;
         font-size: 20px;
         line-height: 1;
+      }
+
+      .hubInfoCardButton {
+        position: relative;
+        width: 100%;
+        color: var(--text);
+        text-align: left;
+        font: inherit;
+        cursor: pointer;
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.018)),
+          rgba(2,9,21,.34);
+        transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
+      }
+
+      .hubInfoCardButton:hover {
+        border-color: rgba(88,210,255,.50);
+        background:
+          radial-gradient(ellipse at 12% 10%, rgba(53,216,255,.16), transparent 52%),
+          linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.022)),
+          rgba(2,9,21,.42);
+        box-shadow: inset 0 0 24px rgba(53,216,255,.08), 0 0 24px rgba(53,216,255,.15);
+        transform: translateY(-1px);
+      }
+
+      .hubInfoCardButton:active {
+        transform: scale(.985);
+      }
+
+      .hubInfoIconRow {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .hubInfoIcon {
+        width: 26px;
+        height: 26px;
+        display: grid;
+        place-items: center;
+        border-radius: 8px;
+        color: var(--cyan);
+        background: rgba(53,216,255,.11);
+        border: 1px solid rgba(88,210,255,.18);
+        font-size: 14px;
+      }
+
+      .hubInfoProgress {
+        height: 5px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(234,247,255,.11);
+      }
+
+      .hubInfoProgress span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--cyan), #78ffd8);
+        box-shadow: 0 0 16px rgba(53,216,255,.34);
       }
 
       .hubPlayerRows {
@@ -1053,10 +1234,66 @@ export function Lobby() {
         bottom: 10px;
         z-index: 5;
         display: none;
-        grid-template-columns: repeat(6, minmax(76px, 1fr));
-        gap: 6px;
-        padding: 7px;
+        grid-template-columns: repeat(5, minmax(58px, 1fr));
+        gap: 5px;
+        padding: 6px;
         overflow-x: auto;
+      }
+
+      .hubBottomNavButton {
+        min-width: 0;
+        min-height: 58px;
+        display: grid;
+        place-items: center;
+        align-content: center;
+        gap: 4px;
+        border: 1px solid transparent;
+        border-radius: 999px;
+        color: var(--muted);
+        background: transparent;
+        font: inherit;
+        font-weight: 950;
+        cursor: pointer;
+        transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, color .18s ease, background .18s ease;
+      }
+
+      .hubBottomNavButton:hover {
+        color: var(--text);
+        background: rgba(53,216,255,.08);
+        transform: translateY(-1px);
+      }
+
+      .hubBottomNavButton:active {
+        transform: scale(.96);
+      }
+
+      .hubBottomNavButton.isActive {
+        color: var(--text);
+        border-color: rgba(88,210,255,.44);
+        background:
+          linear-gradient(180deg, rgba(53,216,255,.18), rgba(255,255,255,.035)),
+          rgba(5,18,32,.72);
+        box-shadow: inset 0 0 18px rgba(53,216,255,.12), 0 0 22px rgba(53,216,255,.18);
+      }
+
+      .hubBottomIcon {
+        font-size: 17px;
+        line-height: 1;
+      }
+
+      .hubBottomNavButton.isActive .hubBottomIcon {
+        color: var(--cyan);
+        text-shadow: 0 0 14px rgba(53,216,255,.54);
+        animation: hubActivePulse 2.4s ease-in-out infinite;
+      }
+
+      .hubBottomLabel {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 10px;
+        letter-spacing: 0;
       }
 
       @keyframes hubParticles {
@@ -1083,6 +1320,11 @@ export function Lobby() {
         0%, 42% { transform: translateX(0) rotate(18deg); opacity: 0; }
         54% { opacity: .82; }
         100% { transform: translateX(430%) rotate(18deg); opacity: 0; }
+      }
+
+      @keyframes hubActivePulse {
+        0%, 100% { transform: scale(1); opacity: .82; }
+        50% { transform: scale(1.12); opacity: 1; }
       }
 
       @media (max-width: 1120px) {
@@ -1184,11 +1426,16 @@ export function Lobby() {
         .hubDrops,
         .hubSphere,
         .hubFish,
-        .hubPrimary:before {
+        .hubPrimaryPlayButton:before,
+        .hubBottomNavButton.isActive .hubBottomIcon {
           animation: none !important;
         }
 
-        .hubModeCard {
+        .hubModeCard,
+        .hubSideNavButton,
+        .hubBottomNavButton,
+        .hubInfoCardButton,
+        .hubPrimaryPlayButton {
           transition: none !important;
         }
       }
@@ -1618,7 +1865,7 @@ export function Lobby() {
 
                 <FishSphere mode={selectedMode} />
 
-                <PlayButton mode={selectedMode} onClick={playSelectedMode} />
+                <PrimaryPlayButton mode={selectedMode} onClick={playSelectedMode} />
               </div>
 
               <ModeSelector selectedMode={selectedMode} onSelect={setSelectedMode} onPlay={playMode} />
@@ -1751,10 +1998,15 @@ function FishSphere({ mode }: { mode: HubMode }) {
   );
 }
 
-function PlayButton({ mode, onClick }: { mode: HubMode; onClick: () => void }) {
+function PrimaryPlayButton({ mode, onClick }: { mode: HubMode; onClick: () => void }) {
   return (
-    <button className="hubPrimary" type="button" onClick={onClick}>
-      {mode === "next" ? "Играть в Next" : "Играть в Classic"}
+    <button
+      className="hubPrimaryPlayButton"
+      type="button"
+      aria-label={mode === "next" ? "PLAY EvoFish Next" : "PLAY EvoFish Classic"}
+      onClick={onClick}
+    >
+      <span>PLAY</span>
     </button>
   );
 }
@@ -1852,14 +2104,45 @@ function ModeCard({
 }
 
 function SideNav() {
+  const currentPath = window.location.pathname;
+
   return (
     <nav className="hubSideNav" aria-label="Разделы">
       {SIDE_NAV_ITEMS.map((item) => (
-        <button className="hubSideItem" type="button" key={item.label} onClick={() => nav(item.path)}>
-          {item.label}
-        </button>
+        <SideNavButton
+          key={item.label}
+          icon={item.icon}
+          label={item.label}
+          active={currentPath === item.path || currentPath.startsWith(`${item.path}/`)}
+          notify={item.notify}
+          onClick={() => nav(item.path)}
+        />
       ))}
     </nav>
+  );
+}
+
+function SideNavButton({
+  icon,
+  label,
+  active = false,
+  notify = false,
+  onClick,
+}: {
+  icon: string;
+  label: string;
+  active?: boolean;
+  notify?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button className={`hubSideNavButton ${active ? "isActive" : ""}`} type="button" aria-current={active ? "page" : undefined} onClick={onClick}>
+      <span className="hubSideIcon" aria-hidden="true">
+        {icon}
+      </span>
+      <span className="hubSideLabel">{label}</span>
+      {notify ? <span className="hubNotifyDot" aria-hidden="true" /> : null}
+    </button>
   );
 }
 
@@ -1885,28 +2168,62 @@ function LobbyInfoCards({
         <span className={`hubStatusPill ${status === "online" ? "isOnline" : ""}`}>{lobbyStatusText(status)}</span>
       </div>
       <div className="hubInfoGrid">
-        <div className="hubInfoCard">
+        <div className="hubOnlineCard">
           <span className="hubTiny">Online players</span>
           <strong>{onlineCount}/8</strong>
           <span className="hubTiny">{readyCount} готовы</span>
         </div>
-        <div className="hubInfoCard">
-          <span className="hubTiny">Season progress</span>
-          <strong>{seasonProgress}%</strong>
-          <span className="hubTiny">LV {profile.level}</span>
-        </div>
-        <div className="hubInfoCard">
-          <span className="hubTiny">Daily reward</span>
-          <strong>{profile.pearls > 0 ? formatCount(profile.pearls) : "0"}</strong>
-          <span className="hubTiny">жемчуг</span>
-        </div>
-        <div className="hubInfoCard">
-          <span className="hubTiny">Leaderboard</span>
-          <strong>Top 100</strong>
-          <span className="hubTiny">матч: {matchLabel}</span>
-        </div>
+        <InfoCardButton icon="◎" title="Season" value={`${seasonProgress}%`} detail={`LV ${profile.level}`} progress={seasonProgress} onClick={() => nav("/game/season")} />
+        <InfoCardButton
+          icon="◇"
+          title="Leaderboard"
+          value="Top 100"
+          detail={`матч: ${matchLabel}`}
+          progress={Math.max(8, Math.min(100, readyCount * 12 + onlineCount * 6))}
+          onClick={() => nav("/game/leaderboard")}
+        />
+        <InfoCardButton
+          icon="✦"
+          title="Daily Reward"
+          value={profile.pearls > 0 ? formatCount(profile.pearls) : "0"}
+          detail="жемчуг"
+          progress={profile.pearls > 0 ? 100 : 18}
+          onClick={() => nav("/game/progress")}
+        />
       </div>
     </section>
+  );
+}
+
+function InfoCardButton({
+  icon,
+  title,
+  value,
+  detail,
+  progress,
+  onClick,
+}: {
+  icon: string;
+  title: string;
+  value: string;
+  detail: string;
+  progress: number;
+  onClick: () => void;
+}) {
+  return (
+    <button className="hubInfoCardButton" type="button" onClick={onClick}>
+      <span className="hubInfoIconRow">
+        <span className="hubTiny">{title}</span>
+        <span className="hubInfoIcon" aria-hidden="true">
+          {icon}
+        </span>
+      </span>
+      <strong>{value}</strong>
+      <span className="hubTiny">{detail}</span>
+      <span className="hubInfoProgress" aria-hidden="true">
+        <span style={{ width: `${Math.max(0, Math.min(100, progress))}%` }} />
+      </span>
+    </button>
   );
 }
 
@@ -2024,12 +2341,37 @@ function LobbyChatPanel({
 function BottomNav() {
   return (
     <nav className="hubBottomNav" aria-label="Быстрая навигация">
-      {SIDE_NAV_ITEMS.map((item) => (
-        <button className="hubBottomItem" type="button" key={item.label} onClick={() => nav(item.path)}>
-          {item.label}
-        </button>
+      {BOTTOM_NAV_ITEMS.map((item) => (
+        <BottomNavButton
+          key={item.label}
+          icon={item.icon}
+          label={item.label}
+          active={item.label === "Лобби"}
+          onClick={() => nav(item.path)}
+        />
       ))}
     </nav>
+  );
+}
+
+function BottomNavButton({
+  icon,
+  label,
+  active = false,
+  onClick,
+}: {
+  icon: string;
+  label: string;
+  active?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button className={`hubBottomNavButton ${active ? "isActive" : ""}`} type="button" aria-current={active ? "page" : undefined} onClick={onClick}>
+      <span className="hubBottomIcon" aria-hidden="true">
+        {icon}
+      </span>
+      <span className="hubBottomLabel">{label}</span>
+    </button>
   );
 }
 
