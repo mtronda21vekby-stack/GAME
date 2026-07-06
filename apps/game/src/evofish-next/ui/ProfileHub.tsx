@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "../../router";
-import { createEvoFishProfile, deleteEvoFishProfile, loadEvoFishProfileIndex, renameEvoFishProfile, switchEvoFishProfile, syncActiveEvoFishProfile } from "../state/profileStore";
+import { createEvoFishProfile, deleteEvoFishProfile, loadEvoFishProfileIndex, renameEvoFishProfile, switchEvoFishProfile, syncActiveEvoFishProfile } from "../state/profileStoreCompat";
 
 function fmt(value: number) {
   return Math.max(0, Math.floor(value || 0)).toLocaleString("ru-RU");
