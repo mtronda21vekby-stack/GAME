@@ -19,6 +19,23 @@ import {
 export const EVOFISH_NEXT_SAVE_KEY = "evofish_next_save_v1";
 export const LEGACY_EVOFISH_SAVE_KEY = "evofish_save_v0_00_1_alpha";
 export const EVOFISH_NEXT_SAVE_EVENT = "evofish_next_save_changed";
+export const EVOFISH_PROFILE_INDEX_KEY = "evofish_next_profiles_v1";
+export const EVOFISH_ACTIVE_PROFILE_KEY = "evofish_next_active_profile_v1";
+export const EVOFISH_DEFAULT_PROFILE_ID = "main";
+
+export type EvoFishLocalProfile = {
+  id: string;
+  name: string;
+  saveKey: string;
+  createdAt: string;
+  updatedAt: string;
+  level: number;
+  accountLevel: number;
+  pearls: number;
+  corals: number;
+  equippedSkinId: string;
+  isDefault?: boolean;
+};
 
 export type EvoFishSaveDoctorStatus = "healthy" | "needs_repair" | "repaired" | "reset" | "error";
 
@@ -46,12 +63,20 @@ function notifyEvoFishNextSaveChanged() {
   window.dispatchEvent(new CustomEvent(EVOFISH_NEXT_SAVE_EVENT));
 }
 
+function isProfileStorageKey(key: string | null | undefined) {
+  if (!key) return false;
+  return key === EVOFISH_NEXT_SAVE_KEY
+    || key === EVOFISH_PROFILE_INDEX_KEY
+    || key === EVOFISH_ACTIVE_PROFILE_KEY
+    || key.startsWith(`${EVOFISH_NEXT_SAVE_KEY}__profile_`);
+}
+
 export function subscribeEvoFishNextSaveChanges(listener: () => void) {
   if (typeof window === "undefined") return () => {};
 
   const onSave = () => listener();
   const onStorage = (event: StorageEvent) => {
-    if (event.key === EVOFISH_NEXT_SAVE_KEY) listener();
+    if (isProfileStorageKey(event.key)) listener();
   };
   const onFocus = () => listener();
   const onVisible = () => { if (!document.hidden) listener(); };
@@ -82,10 +107,55 @@ function safeReadJSON<T>(key: string): T | null {
 function safeWriteJSON(key: string, value: unknown) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
-    if (key === EVOFISH_NEXT_SAVE_KEY) notifyEvoFishNextSaveChanged();
+    if (isProfileStorageKey(key)) notifyEvoFishNextSaveChanged();
   } catch {
     // local save is optional in blocked/private modes
   }
+}
+
+function safeRemoveKey(key: string) {
+  try {
+    localStorage.removeItem(key);
+    if (isProfileStorageKey(key)) notifyEvoFishNextSaveChanged();
+  } catch {
+    // optional cleanup
+  }
+}
+
+function safeReadString(key: string) {
+  try {
+    return localStorage.getItem(key) || "";
+  } catch {
+    return "";
+  }
+}
+
+function safeWriteString(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
+    if (isProfileStorageKey(key)) notifyEvoFishNextSaveChanged();
+  } catch {
+    // local save is optional
+  }
+}
+
+function isoNow() {
+  return new Date().toISOString();
+}
+
+function normalizeProfileId(value: string | null | undefined) {
+  const id = String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 36);
+  return id || EVOFISH_DEFAULT_PROFILE_ID;
+}
+
+function profileSaveKey(profileId: string) {
+  const id = normalizeProfileId(profileId);
+  return id === EVOFISH_DEFAULT_PROFILE_ID ? EVOFISH_NEXT_SAVE_KEY : `${EVOFISH_NEXT_SAVE_KEY}__profile_${id}`;
 }
 
 function normalizeProgress(progress: Partial<EvoFishNextProgressState> | null | undefined): EvoFishNextProgressState {
@@ -197,9 +267,126 @@ function normalizeSave(save: EvoFishNextSkinSave): EvoFishNextSkinSave {
   };
 }
 
+function profileSummaryFromSave(id: string, save: EvoFishNextSkinSave, previous?: Partial<EvoFishLocalProfile>): EvoFishLocalProfile {
+  const profileId = normalizeProfileId(id);
+  const now = isoNow();
+  return {
+    id: profileId,
+    name: save.account.name || previous?.name || (profileId === EVOFISH_DEFAULT_PROFILE_ID ? "Главный профиль" : "Player"),
+    saveKey: profileSaveKey(profileId),
+    createdAt: previous?.createdAt || now,
+    updatedAt: now,
+    level: save.progress.level,
+    accountLevel: save.account.level,
+    pearls: save.economy.pearls,
+    corals: save.economy.corals,
+    equippedSkinId: save.loadout.equippedSkinId,
+    isDefault: profileId === EVOFISH_DEFAULT_PROFILE_ID
+  };
+}
+
+function readProfileIndexRaw(): EvoFishLocalProfile[] {
+  const raw = safeReadJSON<EvoFishLocalProfile[]>(EVOFISH_PROFILE_INDEX_KEY);
+  return Array.isArray(raw) ? raw : [];
+}
+
+function readSaveForProfile(profileId: string): EvoFishNextSkinSave | null {
+  const raw = safeReadJSON<EvoFishNextSkinSave>(profileSaveKey(profileId));
+  return raw?.schemaVersion === 1 ? normalizeSave(raw) : null;
+}
+
+function readActiveProfileIdUnsafe() {
+  const active = normalizeProfileId(safeReadString(EVOFISH_ACTIVE_PROFILE_KEY));
+  const profiles = readProfileIndexRaw();
+  if (active === EVOFISH_DEFAULT_PROFILE_ID || profiles.some((profile) => normalizeProfileId(profile.id) === active)) return active;
+  return EVOFISH_DEFAULT_PROFILE_ID;
+}
+
+function writeProfileIndex(profiles: EvoFishLocalProfile[]) {
+  const unique = new Map<string, EvoFishLocalProfile>();
+  for (const profile of profiles) {
+    const id = normalizeProfileId(profile.id);
+    unique.set(id, { ...profile, id, saveKey: profileSaveKey(id), isDefault: id === EVOFISH_DEFAULT_PROFILE_ID });
+  }
+  safeWriteJSON(EVOFISH_PROFILE_INDEX_KEY, Array.from(unique.values()));
+}
+
+function ensureProfileIndex() {
+  const profiles = readProfileIndexRaw();
+  const mainSave = readSaveForProfile(EVOFISH_DEFAULT_PROFILE_ID) || normalizeSave(migrateLegacySkinSave(safeReadJSON<LegacyEvoFishSave>(LEGACY_EVOFISH_SAVE_KEY)));
+  if (!readSaveForProfile(EVOFISH_DEFAULT_PROFILE_ID)) safeWriteJSON(EVOFISH_NEXT_SAVE_KEY, mainSave);
+
+  const existingMain = profiles.find((profile) => normalizeProfileId(profile.id) === EVOFISH_DEFAULT_PROFILE_ID);
+  const next = [profileSummaryFromSave(EVOFISH_DEFAULT_PROFILE_ID, mainSave, existingMain), ...profiles.filter((profile) => normalizeProfileId(profile.id) !== EVOFISH_DEFAULT_PROFILE_ID)];
+  const normalized = next.map((profile) => ({ ...profile, id: normalizeProfileId(profile.id), saveKey: profileSaveKey(profile.id), isDefault: normalizeProfileId(profile.id) === EVOFISH_DEFAULT_PROFILE_ID }));
+  writeProfileIndex(normalized);
+  if (!safeReadString(EVOFISH_ACTIVE_PROFILE_KEY)) safeWriteString(EVOFISH_ACTIVE_PROFILE_KEY, EVOFISH_DEFAULT_PROFILE_ID);
+  return normalized;
+}
+
+function touchProfileSummary(profileId: string, save: EvoFishNextSkinSave) {
+  const profiles = ensureProfileIndex();
+  const id = normalizeProfileId(profileId);
+  const previous = profiles.find((profile) => normalizeProfileId(profile.id) === id);
+  writeProfileIndex([...profiles.filter((profile) => normalizeProfileId(profile.id) !== id), profileSummaryFromSave(id, save, previous)]);
+}
+
+export function getActiveEvoFishProfileId() {
+  ensureProfileIndex();
+  return readActiveProfileIdUnsafe();
+}
+
+export function getActiveEvoFishSaveKey() {
+  return profileSaveKey(getActiveEvoFishProfileId());
+}
+
+export function listEvoFishProfiles() {
+  const profiles = ensureProfileIndex();
+  return profiles.sort((a, b) => Number(Boolean(b.isDefault)) - Number(Boolean(a.isDefault)) || a.createdAt.localeCompare(b.createdAt));
+}
+
+export function getActiveEvoFishProfile() {
+  const activeId = getActiveEvoFishProfileId();
+  return listEvoFishProfiles().find((profile) => profile.id === activeId) || listEvoFishProfiles()[0];
+}
+
+export function switchEvoFishProfile(profileId: string) {
+  const id = normalizeProfileId(profileId);
+  const profiles = ensureProfileIndex();
+  const target = profiles.find((profile) => normalizeProfileId(profile.id) === id) || profiles[0];
+  safeWriteString(EVOFISH_ACTIVE_PROFILE_KEY, target.id);
+  notifyEvoFishNextSaveChanged();
+  return target;
+}
+
+export function createEvoFishProfile(name: string) {
+  const cleanName = String(name || "").replace(/[<>]/g, "").replace(/\s+/g, " ").trim().slice(0, 18) || `Игрок ${listEvoFishProfiles().length + 1}`;
+  const baseId = normalizeProfileId(cleanName.replace(/[а-яё]/gi, "kid"));
+  const id = normalizeProfileId(`${baseId}-${Date.now().toString(36)}`);
+  const save = normalizeSave(migrateLegacySkinSave(null));
+  save.account = normalizeAccount({ ...save.account, id: `local-${id}`, name: cleanName });
+  safeWriteJSON(profileSaveKey(id), save);
+  const profiles = ensureProfileIndex();
+  writeProfileIndex([...profiles, profileSummaryFromSave(id, save)]);
+  safeWriteString(EVOFISH_ACTIVE_PROFILE_KEY, id);
+  notifyEvoFishNextSaveChanged();
+  return profileSummaryFromSave(id, save);
+}
+
+export function deleteEvoFishProfile(profileId: string) {
+  const id = normalizeProfileId(profileId);
+  if (id === EVOFISH_DEFAULT_PROFILE_ID) return false;
+  const profiles = ensureProfileIndex().filter((profile) => normalizeProfileId(profile.id) !== id);
+  safeRemoveKey(profileSaveKey(id));
+  writeProfileIndex(profiles);
+  if (getActiveEvoFishProfileId() === id) safeWriteString(EVOFISH_ACTIVE_PROFILE_KEY, EVOFISH_DEFAULT_PROFILE_ID);
+  notifyEvoFishNextSaveChanged();
+  return true;
+}
+
 function readRawSave() {
   try {
-    return localStorage.getItem(EVOFISH_NEXT_SAVE_KEY);
+    return localStorage.getItem(getActiveEvoFishSaveKey());
   } catch {
     return null;
   }
@@ -246,18 +433,25 @@ function inspectIssues(raw: string | null, parsed: EvoFishNextSkinSave | null, n
 }
 
 export function loadEvoFishNextSave(): EvoFishNextSkinSave {
-  const next = safeReadJSON<EvoFishNextSkinSave>(EVOFISH_NEXT_SAVE_KEY);
-  if (next?.schemaVersion === 1) return normalizeSave(next);
+  const profileId = getActiveEvoFishProfileId();
+  const key = profileSaveKey(profileId);
+  const next = safeReadJSON<EvoFishNextSkinSave>(key);
+  if (next?.schemaVersion === 1) {
+    const save = normalizeSave(next);
+    touchProfileSummary(profileId, save);
+    return save;
+  }
 
-  const legacy = safeReadJSON<LegacyEvoFishSave>(LEGACY_EVOFISH_SAVE_KEY);
+  const legacy = profileId === EVOFISH_DEFAULT_PROFILE_ID ? safeReadJSON<LegacyEvoFishSave>(LEGACY_EVOFISH_SAVE_KEY) : null;
   const migrated = normalizeSave(migrateLegacySkinSave(legacy));
-  safeWriteJSON(EVOFISH_NEXT_SAVE_KEY, migrated);
+  safeWriteJSON(key, migrated);
+  touchProfileSummary(profileId, migrated);
   return migrated;
 }
 
 export function inspectEvoFishNextSave(): EvoFishSaveDoctorReport {
   const raw = readRawSave();
-  const parsed = safeReadJSON<EvoFishNextSkinSave>(EVOFISH_NEXT_SAVE_KEY);
+  const parsed = safeReadJSON<EvoFishNextSkinSave>(getActiveEvoFishSaveKey());
   const save = parsed?.schemaVersion === 1 ? normalizeSave(parsed) : loadEvoFishNextSave();
   const issues = inspectIssues(raw, parsed, save);
   return makeDoctorReport(issues.length ? "needs_repair" : "healthy", save, issues);
@@ -266,12 +460,12 @@ export function inspectEvoFishNextSave(): EvoFishSaveDoctorReport {
 export function repairEvoFishNextSave(): EvoFishSaveDoctorReport {
   try {
     const save = loadEvoFishNextSave();
-    safeWriteJSON(EVOFISH_NEXT_SAVE_KEY, save);
-    const issues = inspectIssues(readRawSave(), safeReadJSON<EvoFishNextSkinSave>(EVOFISH_NEXT_SAVE_KEY), save);
+    saveEvoFishNextSave(save);
+    const issues = inspectIssues(readRawSave(), safeReadJSON<EvoFishNextSkinSave>(getActiveEvoFishSaveKey()), save);
     return makeDoctorReport("repaired", save, issues.length ? issues : ["Save normalized and rewritten safely."]);
   } catch {
     const fallback = normalizeSave(migrateLegacySkinSave(null));
-    safeWriteJSON(EVOFISH_NEXT_SAVE_KEY, fallback);
+    saveEvoFishNextSave(fallback);
     return makeDoctorReport("error", fallback, ["Repair failed; safe fallback save was created."]);
   }
 }
@@ -279,7 +473,7 @@ export function repairEvoFishNextSave(): EvoFishSaveDoctorReport {
 export function resetEvoFishNextRun(): EvoFishSaveDoctorReport {
   const save = loadEvoFishNextSave();
   const next = normalizeSave({ ...save, progress: defaultNextProgress() });
-  safeWriteJSON(EVOFISH_NEXT_SAVE_KEY, next);
+  saveEvoFishNextSave(next);
   return makeDoctorReport("reset", next, ["Current run reset. Account, wallet, skins, quests, mutations and achievements were preserved."]);
 }
 
@@ -292,17 +486,21 @@ export function resetEvoFishNextProgressKeepSkins(): EvoFishSaveDoctorReport {
     mutations: defaultMutationState(),
     achievements: defaultAchievementState()
   });
-  safeWriteJSON(EVOFISH_NEXT_SAVE_KEY, next);
+  saveEvoFishNextSave(next);
   return makeDoctorReport("reset", next, ["Progress reset. Account, wallet and owned skins were preserved."]);
 }
 
 export function exportEvoFishNextDebugSave() {
+  const profile = getActiveEvoFishProfile();
   const save = loadEvoFishNextSave();
-  return JSON.stringify({ key: EVOFISH_NEXT_SAVE_KEY, exportedAt: new Date().toISOString(), save }, null, 2);
+  return JSON.stringify({ key: getActiveEvoFishSaveKey(), profile, exportedAt: new Date().toISOString(), save }, null, 2);
 }
 
 export function saveEvoFishNextSave(save: EvoFishNextSkinSave) {
-  safeWriteJSON(EVOFISH_NEXT_SAVE_KEY, normalizeSave(save));
+  const normalized = normalizeSave(save);
+  const profileId = getActiveEvoFishProfileId();
+  safeWriteJSON(profileSaveKey(profileId), normalized);
+  touchProfileSummary(profileId, normalized);
 }
 
 export function saveEvoFishNextProgress(engine: NextEngineState) {
