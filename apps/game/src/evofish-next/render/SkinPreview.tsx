@@ -10,15 +10,13 @@ type SkinPreviewProps = {
   className?: string;
 };
 
-const ANIMATED_SHOWCASE_SKINS = new Set(["default", "premium_fish"]);
-
 function resolveForm(skin: EvoFishSkinDefinition, form?: EvoFishFormId): EvoFishFormId {
   if (form) return form;
   return skin.form === "any" ? "fish" : skin.form;
 }
 
-function shouldUseAnimatedShowcase(skin: EvoFishSkinDefinition) {
-  return ANIMATED_SHOWCASE_SKINS.has(skin.id);
+function shouldUseAnimatedShowcase(form: EvoFishFormId) {
+  return form === "fish";
 }
 
 function Pattern(props: { skin: EvoFishSkinDefinition; form: EvoFishFormId }) {
@@ -150,7 +148,15 @@ function AnimatedSkinShowcase(props: { skin: EvoFishSkinDefinition; assetPath: s
     <div className="efSkinShowcase" style={sceneStyle}>
       <div className="efSkinLightCone" />
       <div className="efSkinShaderBloom" />
-      <div className="efSkinShaderWater" />
+      <div className="efSkinShaderFog" />
+      <div className="efSkinShaderDroplets">
+        <span className="d1" />
+        <span className="d2" />
+        <span className="d3" />
+        <span className="d4" />
+        <span className="d5" />
+        <span className="d6" />
+      </div>
       <div className="efSkinShaderChromatic" />
       <div className="efSkinStars">
         <i />
@@ -192,15 +198,17 @@ const SKIN_PREVIEW_STYLE = `
 .efSkinShowcase:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 1%,rgba(255,255,255,.35),rgba(125,235,255,.14) 17%,transparent 36%);opacity:.88;mix-blend-mode:screen;pointer-events:none}
 .efSkinShowcase:after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 76%,rgba(68,230,255,.16),transparent 30%),linear-gradient(90deg,rgba(0,0,0,.22),transparent 16%,transparent 84%,rgba(0,0,0,.22));pointer-events:none}
 .efSkinLightCone{position:absolute;left:50%;top:-5%;width:36%;height:58%;transform:translateX(-50%);background:linear-gradient(180deg,rgba(190,252,255,.34),rgba(95,225,255,.13) 46%,transparent);clip-path:polygon(43% 0,57% 0,100% 100%,0 100%);filter:blur(7px);mix-blend-mode:screen;animation:efLightSweep 5.8s ease-in-out infinite;opacity:.66}
-.efSkinShaderBloom,.efSkinShaderWater,.efSkinShaderChromatic{position:absolute;inset:0;pointer-events:none}
+.efSkinShaderBloom,.efSkinShaderFog,.efSkinShaderDroplets,.efSkinShaderChromatic{position:absolute;inset:0;pointer-events:none}
 .efSkinShaderBloom{background:radial-gradient(circle at 50% 1%,rgba(255,255,255,.42),rgba(120,238,255,.20) 10%,transparent 28%),radial-gradient(ellipse at 50% 88%,rgba(61,231,255,.42),rgba(30,160,255,.13) 34%,transparent 62%);filter:blur(5px) saturate(1.3);mix-blend-mode:screen;opacity:.72;animation:efShaderBloom 5.6s ease-in-out infinite}
-.efSkinShaderWater{inset:-18%;background:repeating-linear-gradient(112deg,transparent 0 16px,rgba(125,240,255,.12) 17px 19px,transparent 20px 34px),repeating-linear-gradient(68deg,transparent 0 22px,rgba(92,220,255,.08) 23px 25px,transparent 26px 42px),linear-gradient(90deg,rgba(0,90,255,.10),transparent 42%,rgba(0,255,245,.10));filter:blur(.45px) contrast(1.18);mask-image:linear-gradient(180deg,transparent 0%,rgba(0,0,0,.58) 22%,rgba(0,0,0,.76) 72%,transparent 100%);mix-blend-mode:screen;opacity:.36;animation:efShaderWater 6.8s linear infinite}
+.efSkinShaderFog{inset:-8%;background:radial-gradient(ellipse at 24% 68%,rgba(140,234,255,.18),transparent 36%),radial-gradient(ellipse at 76% 62%,rgba(99,205,255,.16),transparent 34%),radial-gradient(ellipse at 50% 92%,rgba(76,231,255,.22),transparent 38%),radial-gradient(ellipse at 50% 28%,rgba(230,252,255,.10),transparent 42%);filter:blur(14px) saturate(1.18);mix-blend-mode:screen;opacity:.72;animation:efShaderFog 8.4s ease-in-out infinite}
+.efSkinShaderDroplets span{position:absolute;border-radius:54% 46% 62% 38%;background:radial-gradient(circle at 34% 24%,rgba(255,255,255,.82),rgba(180,245,255,.20) 28%,rgba(70,205,255,.08) 62%,transparent 70%);border:1px solid rgba(180,245,255,.20);box-shadow:inset 0 1px 2px rgba(255,255,255,.28),0 0 10px rgba(95,220,255,.12);backdrop-filter:blur(1.5px);-webkit-backdrop-filter:blur(1.5px);opacity:.42;animation:efDropletDrift 7.6s ease-in-out infinite}
+.efSkinShaderDroplets .d1{left:9%;top:13%;width:3.2%;height:5.6%;animation-delay:-.8s}.efSkinShaderDroplets .d2{left:15%;top:47%;width:2.2%;height:4.2%;animation-delay:-3.1s}.efSkinShaderDroplets .d3{right:11%;top:14%;width:3.6%;height:6.4%;animation-delay:-1.9s}.efSkinShaderDroplets .d4{right:18%;top:54%;width:2%;height:4%;animation-delay:-4.6s}.efSkinShaderDroplets .d5{left:49%;top:8%;width:2.1%;height:3.8%;animation-delay:-2.4s}.efSkinShaderDroplets .d6{right:42%;bottom:12%;width:2.5%;height:4.8%;animation-delay:-5.5s}
 .efSkinShaderChromatic{background:radial-gradient(circle at 43% 45%,rgba(0,198,255,.15),transparent 28%),radial-gradient(circle at 57% 48%,rgba(92,122,255,.12),transparent 25%),linear-gradient(90deg,rgba(0,180,255,.08),transparent 36%,transparent 64%,rgba(115,241,255,.10));filter:blur(2px) saturate(1.5);mix-blend-mode:color-dodge;opacity:.48;animation:efShaderChromatic 7.2s ease-in-out infinite}
 .efSkinSphere{position:absolute;left:50%;top:49%;width:48%;aspect-ratio:1;border-radius:999px;transform:translate(-50%,-50%);background:transparent;box-shadow:none;animation:efSphereBreath 4.8s ease-in-out infinite}
 .efSkinPreview.sm .efSkinSphere{width:50%}
 .efSkinPreview.lg .efSkinSphere{width:49%}
 .efSphereGlass{position:absolute;inset:-1%;border-radius:inherit;background:radial-gradient(circle at 44% 8%,rgba(255,255,255,.20),rgba(255,255,255,.04) 20%,transparent 36%),linear-gradient(135deg,rgba(255,255,255,.08),transparent 40%,rgba(135,240,255,.08));box-shadow:inset 0 0 18px rgba(110,233,255,.16);mix-blend-mode:screen}
-.efSphereCaustics{position:absolute;left:16%;right:16%;bottom:11%;height:28%;border-radius:50%;background:repeating-radial-gradient(ellipse at center,rgba(112,238,255,.18) 0 2px,transparent 3px 12px),repeating-linear-gradient(120deg,transparent 0 10px,rgba(115,242,255,.08) 11px 13px,transparent 14px 25px);filter:blur(.15px);opacity:.34;mix-blend-mode:screen;animation:efCaustics 4.3s linear infinite}
+.efSphereCaustics{position:absolute;left:12%;right:12%;bottom:7%;height:34%;border-radius:50%;background:radial-gradient(ellipse at 48% 62%,rgba(118,240,255,.22),transparent 30%),radial-gradient(ellipse at 56% 76%,rgba(255,255,255,.16),transparent 18%),radial-gradient(ellipse at 38% 82%,rgba(58,220,255,.16),transparent 24%);filter:blur(1.6px) saturate(1.35);opacity:.46;mix-blend-mode:screen;animation:efCaustics 5.4s ease-in-out infinite}
 .efSphereFish{position:absolute;left:50%;top:50%;width:56%;height:38%;object-fit:contain;transform:translate(-50%,-50%);filter:drop-shadow(0 14px 18px rgba(0,0,0,.42)) drop-shadow(0 0 14px color-mix(in srgb,var(--ef-skin-glow) 52%,transparent));animation:efFishFloat 3.8s ease-in-out infinite;user-select:none;-webkit-user-drag:none}
 .efSkinPreview.sm .efSphereFish{width:69%;height:48%}
 .efSphereHighlight{position:absolute;inset:0;border-radius:inherit;background:linear-gradient(120deg,rgba(255,255,255,.12),transparent 31%,transparent 64%,rgba(126,235,255,.07));mix-blend-mode:screen;animation:efHighlight 6.4s ease-in-out infinite}
@@ -214,7 +222,7 @@ const SKIN_PREVIEW_STYLE = `
 .efSkinDepthFish.one{left:12%;top:31%}.efSkinDepthFish.two{right:11%;top:34%;transform:scaleX(-1);animation-delay:-4.2s}
 @keyframes efFishFloat{0%,100%{transform:translate(-50%,-50%) rotate(-1.3deg) scale(1)}45%{transform:translate(-49%,-54%) rotate(1deg) scale(1.035)}70%{transform:translate(-51%,-48%) rotate(-.6deg) scale(.992)}}
 @keyframes efSphereBreath{0%,100%{transform:translate(-50%,-50%) scale(1);box-shadow:0 0 0 1px rgba(132,236,255,.34),inset -14px -20px 34px rgba(0,0,0,.32),inset 14px 12px 28px rgba(161,244,255,.12),0 0 42px rgba(60,210,255,.32)}50%{transform:translate(-50%,-51%) scale(1.025);box-shadow:0 0 0 1px rgba(166,245,255,.52),inset -14px -20px 34px rgba(0,0,0,.28),inset 14px 12px 32px rgba(161,244,255,.18),0 0 58px rgba(60,210,255,.44)}}
-@keyframes efCaustics{0%{background-position:0 0,0 0;transform:scale(1)}100%{background-position:28px 18px,44px 0;transform:scale(1.025)}}
+@keyframes efCaustics{0%,100%{transform:translate3d(-1%,1%,0) scale(1);opacity:.34}50%{transform:translate3d(1%,-1%,0) scale(1.08);opacity:.56}}
 @keyframes efBubbleRise{0%{transform:translateY(22px) scale(.62);opacity:0}16%{opacity:.86}78%{opacity:.72}100%{transform:translateY(-118px) scale(1.12);opacity:0}}
 @keyframes efLightSweep{0%,100%{transform:translateX(-52%) skewX(-2deg);opacity:.64}50%{transform:translateX(-48%) skewX(3deg);opacity:.95}}
 @keyframes efHighlight{0%,100%{opacity:.66;transform:rotate(0deg)}50%{opacity:.92;transform:rotate(5deg)}}
@@ -222,7 +230,8 @@ const SKIN_PREVIEW_STYLE = `
 @keyframes efStarPulse{0%,100%{opacity:.32;transform:scale(.72)}50%{opacity:1;transform:scale(1.22)}}
 @keyframes efDepthDrift{0%,100%{transform:translateX(0);opacity:.10}50%{transform:translateX(18px);opacity:.20}}
 @keyframes efShaderBloom{0%,100%{opacity:.62;transform:scale(1)}50%{opacity:.86;transform:scale(1.035)}}
-@keyframes efShaderWater{0%{background-position:0 0,0 0,0 0;transform:translate3d(-1%,0,0) scale(1.02)}100%{background-position:62px 34px,84px 0,0 0;transform:translate3d(1%,0,0) scale(1.045)}}
+@keyframes efShaderFog{0%,100%{transform:translate3d(-1.5%,.5%,0) scale(1);opacity:.58}50%{transform:translate3d(1.5%,-1%,0) scale(1.05);opacity:.82}}
+@keyframes efDropletDrift{0%,100%{transform:translate3d(0,0,0) scale(1);opacity:.30}45%{transform:translate3d(3px,6px,0) scale(1.08);opacity:.56}72%{transform:translate3d(-2px,10px,0) scale(.96);opacity:.38}}
 @keyframes efShaderChromatic{0%,100%{opacity:.36;transform:translateX(-1.5%) scale(1.01)}50%{opacity:.58;transform:translateX(1.5%) scale(1.025)}}
 @media(prefers-reduced-motion:reduce){.efSkinShowcase *{animation-duration:.01ms!important;animation-iteration-count:1!important}}
 `;
@@ -233,7 +242,7 @@ export function SkinPreview({ skin, form, size = "md", className }: SkinPreviewP
   const assetPath = skin.assetPath || skin.image;
   const [assetFailed, setAssetFailed] = React.useState(false);
   const showAsset = Boolean(assetPath && !assetFailed);
-  const showAnimatedShowcase = Boolean(showAsset && assetPath && shouldUseAnimatedShowcase(skin));
+  const showAnimatedShowcase = Boolean(showAsset && assetPath && shouldUseAnimatedShowcase(resolvedForm));
 
   React.useEffect(() => {
     setAssetFailed(false);
