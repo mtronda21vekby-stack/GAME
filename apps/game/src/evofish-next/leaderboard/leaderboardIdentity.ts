@@ -2,6 +2,7 @@ export const EVOFISH_LEADERBOARD_PLAYER_ID_KEY = "evofish_leaderboard_player_id_
 export const EVOFISH_LEADERBOARD_LAST_SUBMIT_KEY = "evofish_leaderboard_last_submit_v1";
 export const EVOFISH_LEADERBOARD_SUBMIT_EVENT = "evofish_leaderboard_submit_changed";
 export const EVOFISH_LEADERBOARD_SUBMIT_COOLDOWN_MS = 60_000;
+const EVOFISH_ACTIVE_PROFILE_KEY = "evofish_next_active_profile_v1";
 
 function randomId() {
   const cryptoApi = typeof crypto !== "undefined" ? crypto : null;
@@ -9,8 +10,16 @@ function randomId() {
   return `${Date.now()}_${Math.random().toString(36).slice(2)}`;
 }
 
+function activeProfileScope() {
+  try {
+    return localStorage.getItem(EVOFISH_ACTIVE_PROFILE_KEY) || "main";
+  } catch {
+    return "main";
+  }
+}
+
 function safeScope(scope?: string) {
-  return String(scope || "main").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 64) || "main";
+  return String(scope || activeProfileScope() || "main").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 64) || "main";
 }
 
 function scopedKey(base: string, scope?: string) {
