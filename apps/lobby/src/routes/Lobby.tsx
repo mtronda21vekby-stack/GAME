@@ -344,7 +344,7 @@ export function Lobby() {
         overflow-x: hidden;
         background:
           linear-gradient(180deg, rgba(2,9,21,.08), rgba(2,9,21,.72) 52%, #020915 100%),
-          url("/assets/lobby/lobby-bg-station-16x9.png"),
+          url("/lobby/assets/lobby/lobby-bg-station-16x9.png"),
           radial-gradient(ellipse at 50% 8%, rgba(53,216,255,.24), transparent 36%),
           linear-gradient(180deg, #061827 0%, #020915 100%);
         background-size: cover, cover, cover, cover;
@@ -1985,7 +1985,7 @@ function FishSphere({ mode }: { mode: HubMode }) {
             <div className="hubFishFallback" aria-hidden="true" />
           ) : (
             <img
-              src="/assets/fish/fish_standard.png"
+              src="/lobby/assets/fish/fish_standard.png"
               alt="Стандартная рыба EvoFish"
               draggable={false}
               onError={() => setImageFailed(true)}
