@@ -342,34 +342,43 @@ export function Lobby() {
         position: relative;
         isolation: isolate;
         overflow-x: hidden;
+        background: var(--bg-deep);
+        color: var(--text);
+      }
+
+      .hubStationBackdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
         background:
-          linear-gradient(180deg, rgba(2,9,21,.08), rgba(2,9,21,.72) 52%, #020915 100%),
+          linear-gradient(180deg, rgba(2,9,21,.02) 0%, rgba(2,9,21,.34) 58%, rgba(2,9,21,.72) 100%),
           url("/lobby/assets/lobby/lobby-bg-station-16x9.png"),
           radial-gradient(ellipse at 50% 8%, rgba(53,216,255,.24), transparent 36%),
           linear-gradient(180deg, #061827 0%, #020915 100%);
         background-size: cover, cover, cover, cover;
-        background-position: center top, center center, center, center;
-        color: var(--text);
+        background-position: center center, center center, center top, center center;
       }
 
       .bcSiteRoot:before {
         content: "";
         position: fixed;
         inset: 0;
-        z-index: -3;
+        z-index: 1;
         pointer-events: none;
+        opacity: .62;
         background:
           radial-gradient(ellipse at 50% 18%, rgba(53,216,255,.26), transparent 38%),
           radial-gradient(ellipse at 18% 88%, rgba(245,184,75,.14), transparent 30%),
           radial-gradient(ellipse at 86% 78%, rgba(84,255,215,.11), transparent 32%),
-          linear-gradient(180deg, rgba(2,9,21,.18), rgba(2,9,21,.82));
+          linear-gradient(180deg, rgba(2,9,21,.04), rgba(2,9,21,.38));
       }
 
       .bcSiteRoot:after {
         content: "";
         position: fixed;
         inset: 0;
-        z-index: -2;
+        z-index: 2;
         opacity: .26;
         pointer-events: none;
         background-image:
@@ -397,7 +406,7 @@ export function Lobby() {
         position: fixed;
         inset: auto -12% -22% -12%;
         height: 48%;
-        z-index: -1;
+        z-index: 3;
         pointer-events: none;
         background:
           radial-gradient(ellipse at 50% 30%, rgba(53,216,255,.18), transparent 58%),
@@ -408,7 +417,7 @@ export function Lobby() {
       .hubDrops {
         position: fixed;
         inset: 0;
-        z-index: -1;
+        z-index: 3;
         pointer-events: none;
         opacity: .34;
         background-image:
@@ -1922,6 +1931,7 @@ function lobbyStatusText(status: LobbyStatus) {
 function LobbyBackground() {
   return (
     <>
+      <div className="hubStationBackdrop" aria-hidden="true" />
       <div className="hubMist" aria-hidden="true" />
       <div className="hubDrops" aria-hidden="true" />
     </>
