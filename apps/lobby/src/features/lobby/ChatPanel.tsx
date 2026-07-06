@@ -29,15 +29,15 @@ export function ChatPanel(props: {
   return (
     <div className="glassStrong" style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10, height: "100%" }}>
       <div className="bc-row" style={{ justifyContent: "space-between" }}>
-        <div style={{ fontWeight: 900 }}>Chat</div>
-        <div className="bc-faint">8 players</div>
+        <div style={{ fontWeight: 900 }}>Чат</div>
+        <div className="bc-faint">до 8 игроков</div>
       </div>
 
       <div ref={listRef} style={{ flex: 1, overflow: "auto", borderRadius: 16, border: "1px solid var(--stroke)", background: "rgba(255,255,255,0.04)", padding: 10 }}>
         {props.chat.map((m) => (
           <div key={m.id} style={{ marginBottom: 10, opacity: 0.96 }}>
             <div className="bc-row" style={{ gap: 8 }}>
-              <span style={{ fontWeight: 850, letterSpacing: "-0.01em" }}>{m.name === props.me ? "You" : m.name}</span>
+              <span style={{ fontWeight: 850, letterSpacing: "-0.01em" }}>{m.name === props.me ? "Вы" : m.name}</span>
               <span className="bc-faint" style={{ fontSize: 12 }}>
                 {new Date(m.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
               </span>
@@ -52,15 +52,14 @@ export function ChatPanel(props: {
           className="bc-focus"
           value={text}
           onChange={(e) => { setText(e.target.value); setErr(""); }}
-          placeholder="Message…"
+          placeholder="Написать сообщение"
           style={{ flex: 1, minHeight: 44, borderRadius: 14, border: "1px solid var(--stroke)", background: "rgba(255,255,255,0.06)", color: "var(--text)", padding: "10px 12px", fontSize: 15 }}
           onKeyDown={(e) => { if (e.key === "Enter") send(); }}
         />
-        <Button variant="primary" onClick={send}>Send</Button>
+        <Button variant="primary" onClick={send}>Отправить</Button>
       </div>
 
       {err ? <div className="bc-p" style={{ color: "rgba(255,140,140,0.95)" }}>{err}</div> : null}
-      <div className="bc-p" style={{ opacity: 0.72 }}>Transparent chat, transform/opacity motion only.</div>
     </div>
   );
 }

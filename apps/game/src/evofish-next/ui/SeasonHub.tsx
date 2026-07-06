@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "../../router";
 import { fetchLeaderboardMe, fetchLeaderboardOnline, fetchLeaderboardSeason, fetchLeaderboardTop, getLeaderboardPlayerId, syncLeaderboardProfile, type LeaderboardMeResponse, type LeaderboardOnlineResponse, type LeaderboardRow, type LeaderboardSeasonResponse, type LeaderboardTopResponse } from "../leaderboard/leaderboardClient";
 import { EVOFISH_SEASON_1, rewardForRank } from "../content/seasonRewards";
-import { EVOFISH_NEXT_VERSION } from "../version";
 
 function format(value: number) {
   return Math.max(0, Math.floor(value || 0)).toLocaleString("ru-RU");
@@ -82,7 +81,7 @@ export function SeasonHub() {
 
         <header className="efSeasonHero">
           <div>
-            <span>BLACKCROWN · SEASON · {EVOFISH_NEXT_VERSION}</span>
+            <span>BLACKCROWN SEASON</span>
             <h1>{EVOFISH_SEASON_1.title}</h1>
             <p>{EVOFISH_SEASON_1.description}</p>
           </div>
@@ -91,9 +90,9 @@ export function SeasonHub() {
 
         <section className="efSeasonStats">
           <article><span>До конца</span><b>{timeLeft(season?.season?.endsAt)}</b><small>{season?.season?.title || EVOFISH_SEASON_1.theme}</small></article>
-          <article><span>Online now</span><b>{format(onlineCount)}</b><small>активные игроки</small></article>
+          <article><span>В игре сейчас</span><b>{format(onlineCount)}</b><small>активные игроки</small></article>
           <article><span>Моё место</span><b>{myRank ? `#${myRank}` : "—"}</b><small>{playerCode(myId)}</small></article>
-          <article><span>Мой score</span><b>{myBest ? format(myBest.score) : "—"}</b><small>{myBest ? `LV ${myBest.level} · ${format(myBest.kills)} kills` : "сыграй live-забег"}</small></article>
+          <article><span>Мой счёт</span><b>{myBest ? format(myBest.score) : "—"}</b><small>{myBest ? `LV ${myBest.level} · ${format(myBest.kills)} убийств` : "сыграй забег"}</small></article>
         </section>
 
         <section className="efSeasonRewardNow">
@@ -123,8 +122,8 @@ export function SeasonHub() {
           <article className="efSeasonPanel">
             <span>TOP 3 сейчас</span>
             <h2>Зал славы</h2>
-            {loading ? <p>Загрузка live TOP…</p> : null}
-            {!loading && podium.length === 0 ? <p>Пока нет результатов. Первый live-забег откроет таблицу.</p> : null}
+            {loading ? <p>Загрузка TOP 3…</p> : null}
+            {!loading && podium.length === 0 ? <p>Пока нет результатов. Первый забег откроет таблицу.</p> : null}
             {podium.map((row) => (
               <div key={row.id} className={`efSeasonPodium ${row.playerId === myId ? "me" : ""}`}>
                 <b>#{row.rank || "—"}</b>

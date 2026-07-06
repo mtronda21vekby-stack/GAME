@@ -1,4 +1,4 @@
-import type { WSClient, WSMessage } from "./types";
+import type { WSClient, WSMessage, WSState } from "./types";
 import { createMockWS } from "./mockTransport";
 
 /**
@@ -43,28 +43,31 @@ function normalizeToWsUrl(input: string): string | null {
 
 function createBrowserWS(wsUrl: string): WSClient {
   let ws: WebSocket | null = null;
-  let isOpen = false;
+  let st: WSState = "idle";
 
   const messageListeners = new Set<(msg: WSMessage) => void>();
-  const openListeners = new Set<() => void>();
-  const closeListeners = new Set<() => void>();
-  const errorListeners = new Set<(err: unknown) => void>();
+  const stateListeners = new Set<(state: WSState) => void>();
+
+  const setState = (state: WSState) => {
+    st = state;
+    for (const fn of stateListeners) fn(st);
+  };
 
   const connect = () => {
+    if (ws && (st === "open" || st === "connecting")) return;
+    setState("connecting");
     ws = new WebSocket(wsUrl);
 
     ws.addEventListener("open", () => {
-      isOpen = true;
-      for (const fn of openListeners) fn();
+      setState("open");
     });
 
     ws.addEventListener("close", () => {
-      isOpen = false;
-      for (const fn of closeListeners) fn();
+      setState("closed");
     });
 
-    ws.addEventListener("error", (e) => {
-      for (const fn of errorListeners) fn(e);
+    ws.addEventListener("error", () => {
+      setState("closed");
     });
 
     ws.addEventListener("message", (ev) => {
@@ -82,8 +85,11 @@ function createBrowserWS(wsUrl: string): WSClient {
   connect();
 
   return {
+    state: () => st,
+    connect,
+
     send(msg: WSMessage) {
-      if (!ws || !isOpen) return;
+      if (!ws || st !== "open") return;
       try {
         ws.send(JSON.stringify(msg));
       } catch {
@@ -96,19 +102,10 @@ function createBrowserWS(wsUrl: string): WSClient {
       return () => messageListeners.delete(fn);
     },
 
-    onOpen(fn: () => void) {
-      openListeners.add(fn);
-      return () => openListeners.delete(fn);
-    },
-
-    onClose(fn: () => void) {
-      closeListeners.add(fn);
-      return () => closeListeners.delete(fn);
-    },
-
-    onError(fn: (err: unknown) => void) {
-      errorListeners.add(fn);
-      return () => errorListeners.delete(fn);
+    onState(fn: (state: WSState) => void) {
+      stateListeners.add(fn);
+      fn(st);
+      return () => stateListeners.delete(fn);
     },
 
     close() {
@@ -118,7 +115,7 @@ function createBrowserWS(wsUrl: string): WSClient {
         // ignore
       }
       ws = null;
-      isOpen = false;
+      setState("closed");
     },
   };
 }

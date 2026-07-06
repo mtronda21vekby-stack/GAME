@@ -1,5 +1,5 @@
 import type { NextEngineState, NextQuestState } from "../core/engineTypes";
-import type { EvoFishCurrency } from "../core/types";
+import type { EvoFishCurrency, SkinLoadoutState } from "../core/types";
 import { normalizeNextAccount, type NextAccountState } from "../content/account";
 import { defaultAchievementState, type NextAchievementState } from "../content/achievements";
 import { defaultMutationState, getMutationTotalLevel, NEXT_MUTATIONS, type NextMutationState } from "../content/mutations";
@@ -156,15 +156,28 @@ function normalizeAccount(account: Partial<NextAccountState> | null | undefined)
   return normalizeNextAccount(account);
 }
 
+function normalizeOwnedSkins(ownedSkins: SkinLoadoutState["ownedSkins"] | null | undefined) {
+  const normalized: SkinLoadoutState["ownedSkins"] = { default: true };
+
+  for (const [skinId, owned] of Object.entries(ownedSkins || {})) {
+    if (owned && EVOFISH_SKIN_BY_ID[skinId]) normalized[skinId] = true;
+  }
+
+  return normalized;
+}
+
 function bumpCounter(quests: NextQuestState, key: string, amount = 1) {
   quests.counters = quests.counters || {};
   quests.counters[key] = Math.max(0, Math.floor((quests.counters[key] || 0) + amount));
 }
 
 function normalizeSave(save: EvoFishNextSkinSave): EvoFishNextSkinSave {
-  const equipped = EVOFISH_SKIN_BY_ID[save.loadout.equippedSkinId]
-    ? save.loadout.equippedSkinId
+  const ownedSkins = normalizeOwnedSkins(save.loadout?.ownedSkins);
+  const equippedId = save.loadout?.equippedSkinId;
+  const equipped = equippedId && EVOFISH_SKIN_BY_ID[equippedId]
+    ? equippedId
     : getDefaultSkinId();
+  const safeEquipped = ownedSkins[equipped] ? equipped : getDefaultSkinId();
 
   return {
     schemaVersion: 1,
@@ -174,11 +187,8 @@ function normalizeSave(save: EvoFishNextSkinSave): EvoFishNextSkinSave {
       corals: Math.max(0, Math.floor(save.economy?.corals || 0))
     },
     loadout: {
-      equippedSkinId: equipped,
-      ownedSkins: {
-        default: true,
-        ...(save.loadout.ownedSkins || {})
-      }
+      equippedSkinId: safeEquipped,
+      ownedSkins
     },
     progress: normalizeProgress(save.progress),
     quests: normalizeQuests(save.quests),

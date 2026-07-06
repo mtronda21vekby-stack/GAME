@@ -231,9 +231,15 @@ export function Lobby() {
   const ClickFix = (
     <style>{`
       /* make lobby UI top-most and always clickable */
-      .bcSiteRoot { position: relative; isolation: isolate; }
+      .bcSiteRoot { min-height: 100vh; position: relative; isolation: isolate; overflow: hidden; background: linear-gradient(180deg, #031827 0%, #020b15 68%, #010711 100%); color: #e7f2ff; }
+      .bcSiteRoot:before { content: ""; position: fixed; inset: -18%; background: radial-gradient(ellipse at 20% 8%, rgba(120,240,255,.22), transparent 36%), radial-gradient(ellipse at 84% 18%, rgba(255,220,120,.12), transparent 32%), linear-gradient(115deg, transparent 0 42%, rgba(255,255,255,.045) 50%, transparent 60%); pointer-events: none; }
+      .bcSiteRoot:after { content: ""; position: fixed; inset: 0; opacity: .20; background-image: radial-gradient(circle at 18% 24%, rgba(220,250,255,.48) 0 1px, transparent 2px), radial-gradient(circle at 80% 26%, rgba(120,240,255,.36) 0 1px, transparent 2px), radial-gradient(circle at 62% 82%, rgba(255,255,255,.28) 0 1px, transparent 2px); background-size: 280px 240px, 340px 300px, 300px 280px; pointer-events: none; }
       .bcLobbyUiLayer { position: relative; z-index: 2147483647; pointer-events: auto; }
       .bcLobbyUiLayer * { pointer-events: auto; }
+      .glassStrong { border: 1px solid rgba(150,230,255,.16) !important; background: linear-gradient(180deg, rgba(255,255,255,.095), rgba(255,255,255,.038)) !important; box-shadow: 0 24px 80px rgba(0,0,0,.35) !important; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+      .bcLobbyTitle { display: grid; gap: 4px; }
+      .bcLobbyTitle b { font-size: 24px; line-height: 1; }
+      .bcLobbyTitle span { color: rgba(231,242,255,.62); font-weight: 850; font-size: 13px; }
 
       /* kill any background overlays/canvas capturing touches */
       canvas,
@@ -644,8 +650,7 @@ export function Lobby() {
               }}
             >
               <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                <div style={{ fontWeight: 980 }}>Lobby</div>
-                <div style={{ opacity: 0.75, fontWeight: 850 }}>Комната: {room}</div>
+                <div className="bcLobbyTitle"><b>EvoFish Лобби</b><span>Океанская комната</span></div>
                 <div style={{ opacity: 0.75, fontWeight: 850 }}>Игроки: {onlineCount}/8</div>
                 <div style={{ opacity: 0.75, fontWeight: 850 }}>
                   Статус: {status === "online" ? "онлайн" : status === "connecting" ? "подключение" : "офлайн"}
@@ -655,7 +660,7 @@ export function Lobby() {
 
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <Button variant="secondary" onClick={() => nav("/game/")}>
-                  Игры
+                  Играть
                 </Button>
                 <Button variant="ghost" onClick={() => nav("/")}>
                   Главная
@@ -701,7 +706,7 @@ export function Lobby() {
                       }}
                     >
                       <div style={{ fontWeight: 900 }}>{p.name}</div>
-                      <div style={{ opacity: 0.78, fontWeight: 900 }}>{p.ready ? "ready" : "…"}</div>
+                      <div style={{ opacity: 0.78, fontWeight: 900 }}>{p.ready ? "готов" : "ждёт"}</div>
                     </div>
                   ))}
                 </div>
@@ -712,7 +717,7 @@ export function Lobby() {
               <div className="glassStrong" style={{ borderRadius: 22, padding: 14 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
                   <div style={{ fontWeight: 950 }}>Чат</div>
-                  <div style={{ opacity: 0.72, fontWeight: 850, fontSize: 12 }}>{isOnline ? "live" : "offline"}</div>
+                  <div style={{ opacity: 0.72, fontWeight: 850, fontSize: 12 }}>{isOnline ? "в эфире" : "нет связи"}</div>
                 </div>
 
                 <div

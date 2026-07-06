@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Link } from "../../router";
 import { NEXT_ACHIEVEMENTS, type NextAchievementDefinition } from "../content/achievements";
-import { NEXT_BETA_BALANCE_TARGETS, NEXT_BETA_BALANCE_VERSION, NEXT_BETA_ECONOMY_TARGETS } from "../content/balance";
+import { NEXT_BETA_BALANCE_TARGETS, NEXT_BETA_ECONOMY_TARGETS } from "../content/balance";
 import { getMutationTotalLevel, NEXT_MUTATIONS } from "../content/mutations";
 import { buildQuestBoard, type NextQuestDefinition } from "../content/quests";
 import { NEXT_RESOURCE_DEFS } from "../content/resources";
@@ -14,7 +14,6 @@ import {
   resetEvoFishNextRun,
   type EvoFishSaveDoctorReport
 } from "../state/nextSaveStore";
-import { EVOFISH_NEXT_VERSION } from "../version";
 
 function format(value: number) {
   return Math.max(0, Math.floor(value || 0)).toLocaleString("ru-RU");
@@ -58,17 +57,17 @@ function achievementValue(save: ReturnType<typeof loadEvoFishNextSave>, achievem
 }
 
 function questGroupTitle(scope: "daily" | "weekly" | "story") {
-  if (scope === "daily") return "Daily";
-  if (scope === "weekly") return "Weekly";
-  return "Story";
+  if (scope === "daily") return "Ежедневные";
+  if (scope === "weekly") return "Еженедельные";
+  return "История";
 }
 
 function statusLabel(report: EvoFishSaveDoctorReport) {
-  if (report.status === "healthy") return "HEALTHY";
-  if (report.status === "needs_repair") return "NEEDS REPAIR";
-  if (report.status === "repaired") return "REPAIRED";
-  if (report.status === "reset") return "RESET DONE";
-  return "ERROR";
+  if (report.status === "healthy") return "Сохранение в порядке";
+  if (report.status === "needs_repair") return "Нужно восстановление";
+  if (report.status === "repaired") return "Сохранение восстановлено";
+  if (report.status === "reset") return "Прогресс сброшен";
+  return "Ошибка сохранения";
 }
 
 export function BetaProgress() {
@@ -107,7 +106,7 @@ export function BetaProgress() {
         </div>
         <p>{quest.description}</p>
         <i><em style={{ width: pct(current, quest.target) }} /></i>
-        <small>Reward: {format(quest.reward.xp)} XP · {format(quest.reward.pearls)} жемчуг{quest.reward.corals ? ` · ${quest.reward.corals} кристалл` : ""}</small>
+        <small>Награда: {format(quest.reward.xp)} XP · {format(quest.reward.pearls)} жемчуг{quest.reward.corals ? ` · ${quest.reward.corals} кристалл` : ""}</small>
       </article>
     );
   };
@@ -118,12 +117,12 @@ export function BetaProgress() {
     return (
       <article key={achievement.id} className={`efBetaCard ${done ? "done" : ""}`}>
         <div className="efBetaRow">
-          <b>🏆 {achievement.title}</b>
+          <b>{achievement.title}</b>
           <span>{Math.floor(current)} / {achievement.target}</span>
         </div>
         <p>{achievement.description}</p>
         <i><em style={{ width: pct(current, achievement.target) }} /></i>
-        <small>Reward: {format(achievement.reward.xp)} XP · {format(achievement.reward.pearls)} жемчуг{achievement.reward.corals ? ` · ${achievement.reward.corals} кристалл` : ""}</small>
+        <small>Награда: {format(achievement.reward.xp)} XP · {format(achievement.reward.pearls)} жемчуг{achievement.reward.corals ? ` · ${achievement.reward.corals} кристалл` : ""}</small>
       </article>
     );
   };
@@ -133,28 +132,28 @@ export function BetaProgress() {
       <section className="efBetaShell">
         <header className="efBetaHero">
           <div>
-            <span>BLACKCROWN BETA HUB · {EVOFISH_NEXT_VERSION}</span>
-            <h1>Progress + Save Doctor</h1>
-            <p>Центр беты: прогресс, задания, достижения, pickups, мутации, баланс и безопасное восстановление сохранения.</p>
+            <span>BLACKCROWN PROGRESS</span>
+            <h1>Прогресс</h1>
+            <p>Задания, достижения, ресурсы, мутации, баланс наград и состояние сохранения.</p>
           </div>
           <nav>
-            <Link to="/game/next/play">PLAY</Link>
-            <Link to="/game/next/skins">SKINS</Link>
-            <Link to="/game">LOBBY</Link>
+            <Link to="/game/next/play">Играть</Link>
+            <Link to="/game/next/skins">Скины</Link>
+            <Link to="/game">Главная</Link>
           </nav>
         </header>
 
         <section className="efBetaStats">
-          <article><span>Run LV</span><b>{save.progress.level}</b><small>Tier {save.progress.tier}</small></article>
-          <article><span>Wallet</span><b>🦪 {format(save.economy.pearls)}</b><small>💎 {format(save.economy.corals)}</small></article>
-          <article><span>Mutations</span><b>{mutationsTotal}</b><small>{NEXT_MUTATIONS.length} branches</small></article>
-          <article><span>Skins</span><b>{ownedSkins}</b><small>Equipped: {save.loadout.equippedSkinId}</small></article>
-          <article><span>Achievements</span><b>{achievementsUnlocked}/{NEXT_ACHIEVEMENTS.length}</b><small>Unlocked</small></article>
-          <article><span>Pickups</span><b>{format(counter(save, "resources"))}</b><small>{counter(save, "perks")} perks · {counter(save, "artifacts")} artifacts</small></article>
+          <article><span>Уровень</span><b>{save.progress.level}</b><small>Tier {save.progress.tier}</small></article>
+          <article><span>Кошелёк</span><b>{format(save.economy.pearls)} жемчуг</b><small>{format(save.economy.corals)} кораллы</small></article>
+          <article><span>Мутации</span><b>{mutationsTotal}</b><small>{NEXT_MUTATIONS.length} веток</small></article>
+          <article><span>Скины</span><b>{ownedSkins}</b><small>обликов в коллекции</small></article>
+          <article><span>Достижения</span><b>{achievementsUnlocked}/{NEXT_ACHIEVEMENTS.length}</b><small>открыто</small></article>
+          <article><span>Ресурсы</span><b>{format(counter(save, "resources"))}</b><small>{counter(save, "perks")} перков · {counter(save, "artifacts")} артефактов</small></article>
         </section>
 
         <section className="efBetaPanel">
-          <div className="efBetaPanelHead"><h2>Beta Balance Pass</h2><span>{NEXT_BETA_BALANCE_VERSION}</span></div>
+          <div className="efBetaPanelHead"><h2>Баланс наград</h2><span>цели / 10 мин</span></div>
           <div className="efBalanceStats">
             <article><span>Жемчуг / 10 мин</span><b>{NEXT_BETA_ECONOMY_TARGETS.pearlsPerTenMinutes}</b></article>
             <article><span>Кристаллы / 10 мин</span><b>{NEXT_BETA_ECONOMY_TARGETS.coralsPerTenMinutes}</b></article>
@@ -175,26 +174,26 @@ export function BetaProgress() {
         <section className="efBetaDoctor">
           <div className="efBetaPanelHead">
             <div>
-              <span>Save Doctor</span>
+              <span>Сохранение</span>
               <h2>{statusLabel(doctor)}</h2>
             </div>
             <small>{new Date(doctor.timestamp).toLocaleString("ru-RU")}</small>
           </div>
           <div className="efDoctorGrid">
-            <button onClick={() => refresh(inspectEvoFishNextSave())}>Inspect</button>
-            <button onClick={() => refresh(repairEvoFishNextSave())}>Repair Save</button>
-            <button onClick={() => refresh(resetEvoFishNextRun())}>Reset Run</button>
-            <button onClick={() => refresh(resetEvoFishNextProgressKeepSkins())}>Reset Progress · Keep Skins</button>
-            <button onClick={copyDebug}>{copied ? "Copied" : "Copy Debug Save"}</button>
+            <button onClick={() => refresh(inspectEvoFishNextSave())}>Проверить</button>
+            <button onClick={() => refresh(repairEvoFishNextSave())}>Восстановить</button>
+            <button onClick={() => refresh(resetEvoFishNextRun())}>Новый забег</button>
+            <button onClick={() => refresh(resetEvoFishNextProgressKeepSkins())}>Сбросить прогресс</button>
+            <button onClick={copyDebug}>{copied ? "Скопировано" : "Скопировать сохранение"}</button>
           </div>
           <div className="efDoctorIssues">
-            {(doctor.issues.length ? doctor.issues : ["No issues detected."]).map((issue) => <span key={issue}>{issue}</span>)}
+            {(doctor.issues.length ? doctor.issues : ["Проблем не найдено."]).map((issue) => <span key={issue}>{issue}</span>)}
           </div>
         </section>
 
         <section className="efBetaGrid two">
           <div className="efBetaPanel">
-            <div className="efBetaPanelHead"><h2>Daily / Weekly / Story</h2><span>{board.dailyKey} · {board.weeklyKey}</span></div>
+            <div className="efBetaPanelHead"><h2>Задания</h2><span>{board.dailyKey} · {board.weeklyKey}</span></div>
             {(["daily", "weekly", "story"] as const).map((scope) => (
               <div key={scope} className="efQuestGroup">
                 <h3>{questGroupTitle(scope)}</h3>
@@ -204,7 +203,7 @@ export function BetaProgress() {
           </div>
 
           <div className="efBetaPanel">
-            <div className="efBetaPanelHead"><h2>Achievements</h2><span>{achievementsUnlocked}/{NEXT_ACHIEVEMENTS.length}</span></div>
+            <div className="efBetaPanelHead"><h2>Достижения</h2><span>{achievementsUnlocked}/{NEXT_ACHIEVEMENTS.length}</span></div>
             <div className="efAchievementList">
               {NEXT_ACHIEVEMENTS.map(renderAchievementCard)}
             </div>
@@ -213,20 +212,20 @@ export function BetaProgress() {
 
         <section className="efBetaGrid two compact">
           <div className="efBetaPanel">
-            <div className="efBetaPanelHead"><h2>Pickups Guide</h2><span>resources / perks / artifacts</span></div>
+            <div className="efBetaPanelHead"><h2>Ресурсы</h2><span>ресурсы / перки / артефакты</span></div>
             <div className="efPickupGrid">
               {NEXT_RESOURCE_DEFS.map((item) => (
                 <article key={item.kind} className="efPickupCard">
                   <b>{item.name}</b>
                   <span>{item.kind}</span>
-                  <small>Value {item.valueMin}-{item.valueMax} · weight {item.weight} · respawn {item.respawnMin}-{item.respawnMax}s</small>
+                  <small>Награда {item.valueMin}-{item.valueMax} · шанс {item.weight} · появление {item.respawnMin}-{item.respawnMax}с</small>
                 </article>
               ))}
             </div>
           </div>
 
           <div className="efBetaPanel">
-            <div className="efBetaPanelHead"><h2>Mutations</h2><span>{mutationsTotal} total LV</span></div>
+            <div className="efBetaPanelHead"><h2>Мутации</h2><span>{mutationsTotal} уровней</span></div>
             <div className="efPickupGrid">
               {NEXT_MUTATIONS.map((mutation) => (
                 <article key={mutation.id} className="efPickupCard">

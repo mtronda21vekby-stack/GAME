@@ -4,7 +4,6 @@ import type { GameSettings } from "./SettingsPanel";
 import { EVOFISH_MOBILE_CSS } from "./evoFishMobileCss";
 import { InstallAppHint } from "./InstallAppHint";
 import { applyEvoFishRuntime, EVOFISH_VERSION } from "./evoFishRuntime";
-import { EVOFISH_NEXT_VERSION } from "../../evofish-next/version";
 
 type EvoFishFrameProps = {
   src: string;
@@ -260,7 +259,7 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
         onClick={openLobby}
         aria-label="Открыть общее лобби"
       >
-        LOBBY<span>Next {EVOFISH_NEXT_VERSION}</span>
+        Лобби<span>EvoFish</span>
       </button>
 
       <InstallAppHint />
@@ -270,10 +269,10 @@ export function EvoFishFrame(props: EvoFishFrameProps) {
           <div className="bcMenuHeader">
             EvoFish Classic
             <span>Classic {EVOFISH_VERSION}</span>
-            <span>Lobby / Next {EVOFISH_NEXT_VERSION}</span>
+            <span>Лобби EvoFish</span>
           </div>
-          <button className="bcPill bcPillNext" onPointerDown={openLobby} onClick={openLobby}>LOBBY — общее меню</button>
-          <button className="bcPill bcPillNextGhost" onPointerDown={openSkinLab} onClick={openSkinLab}>Skin Lab — скины Next</button>
+          <button className="bcPill bcPillNext" onPointerDown={openLobby} onClick={openLobby}>Лобби</button>
+          <button className="bcPill bcPillNextGhost" onPointerDown={openSkinLab} onClick={openSkinLab}>Скины</button>
           <button className="bcPill bcPillPrimary" onClick={() => openGameTab("tHud")}>Игра</button>
           <button className="bcPill" onClick={() => openGameTab("tShop")}>Магазин</button>
           <button className="bcPill" onClick={() => openGameTab("tCraft")}>Мутации</button>

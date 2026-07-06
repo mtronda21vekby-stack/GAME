@@ -26,7 +26,6 @@ import {
   saveEvoFishNextProgress,
   saveEvoFishNextSave
 } from "../state/nextSaveStore";
-import { EVOFISH_NEXT_VERSION } from "../version";
 
 type NextPanel = "menu" | "map" | "craft" | "mutations" | "quests" | "shop" | "settings" | null;
 type ControlMode = "pointer" | "joystick" | "gamepad";
@@ -89,7 +88,7 @@ const UI_TEXT = {
     tutorialButtons: { back: "Назад", next: "Далее", finish: "Готово", skip: "Пропустить" },
     hud: { uiLocked: "UI ЗАБЛОКИРОВАН", hp: "Здоровье", mass: "Масса", kills: "Убийства", zone: "Зона", risk: "Риск", downs: "Нокауты", tierXp: "Tier XP", quest: "Задание", revive: "Возрождение через" },
     map: { player: "Игрок", apex: "Апекс", hunter: "Хищник", event: "Событие" },
-    shop: { equipped: "Надето", equip: "Надеть", buy: "Купить", fullSkinLab: "Полный Skin Lab", pearls: "жемчуг", crystals: "кристаллы", free: "Бесплатно" },
+    shop: { equipped: "Надето", equip: "Надеть", buy: "Купить", fullSkinLab: "Все скины", pearls: "жемчуг", crystals: "кристаллы", free: "Бесплатно" },
     rewards: { reward: "Награда", crystal: "кристалл", instant: "мгновенно", seconds: "сек" }
   },
   en: {
@@ -113,7 +112,7 @@ const UI_TEXT = {
     tutorialButtons: { back: "Back", next: "Next", finish: "Finish", skip: "Skip" },
     hud: { uiLocked: "UI LOCKED", hp: "HP", mass: "Mass", kills: "Kills", zone: "Zone", risk: "Risk", downs: "Downs", tierXp: "Tier XP", quest: "Quest", revive: "Respawn in" },
     map: { player: "Player", apex: "Apex", hunter: "Hunter", event: "Event" },
-    shop: { equipped: "Equipped", equip: "Equip", buy: "Buy", fullSkinLab: "Full Skin Lab", pearls: "pearls", crystals: "crystals", free: "Free" },
+    shop: { equipped: "Equipped", equip: "Equip", buy: "Buy", fullSkinLab: "All skins", pearls: "pearls", crystals: "crystals", free: "Free" },
     rewards: { reward: "Reward", crystal: "crystal", instant: "instant", seconds: "sec" }
   }
 } as const;
@@ -736,7 +735,7 @@ export function NextPlaytest() {
       <canvas ref={canvasRef} className="efNextCanvas" />
 
       <div className={`efNextHud ${uiLocked ? "compact" : ""}`}>
-        <div className="efHudTitle"><b>EvoFish Next</b><em>{EVOFISH_NEXT_VERSION}</em></div>
+        <div className="efHudTitle"><b>EvoFish</b><em>{stats.skinName}</em></div>
         <div className="efHudChips">
           <span><b>LV</b>{stats.level}</span><span><b>TIER</b>{stats.tier}</span><span><b>🦪</b>{formatNumber(stats.pearls)}</span><span><b>💎</b>{formatNumber(stats.corals)}</span>
         </div>

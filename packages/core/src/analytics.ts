@@ -7,6 +7,7 @@ type AnalyticsEvent =
   | { type: "error"; message: string; ts: number };
 
 type Events = { analytics: AnalyticsEvent };
+type AnalyticsEventInput<T> = T extends { ts: number } ? Omit<T, "ts"> : never;
 
 const bus = new EventBus<Events>();
 
@@ -14,7 +15,7 @@ export function onAnalytics(handler: (e: AnalyticsEvent) => void) {
   return bus.on("analytics", handler);
 }
 
-export function track(e: Omit<AnalyticsEvent, "ts">) {
+export function track(e: AnalyticsEventInput<AnalyticsEvent>) {
   bus.emit("analytics", { ...e, ts: Date.now() } as AnalyticsEvent);
 }
 

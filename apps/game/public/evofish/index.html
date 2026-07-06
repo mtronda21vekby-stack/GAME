@@ -145,7 +145,6 @@
   .skinThumb:after{content:'';position:absolute;inset:-6px;border-radius:14px;opacity:.65;
     background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.25), transparent 55%);}
   .skin_default{background:linear-gradient(135deg, rgba(120,180,220,.35), rgba(40,70,120,.35));}
-  .skin_premium_fish{background:linear-gradient(135deg, rgba(70,220,255,.65), rgba(190,255,230,.35));}
   .skin_neon_koi{background:linear-gradient(135deg, rgba(255,120,220,.45), rgba(120,240,255,.35));}
   .skin_reef_royal{background:linear-gradient(135deg, rgba(255,220,120,.35), rgba(120,180,255,.30));}
   .skin_shark_classic{background:linear-gradient(135deg, rgba(190,210,220,.45), rgba(70,90,110,.30));}
@@ -710,7 +709,6 @@ function mutAllowed(m){
 /* ======= Skins ======= */
 var SKINS=[
  {id:'default', name:'Стандарт', price:0, form:'any', desc:'Базовый скин.'},
- {id:'premium_fish', name:'Премиум Рыбка', price:100, form:'fish', desc:'Красивая 2D-рыбка (не овал).'},
  {id:'neon_koi', name:'Неон-Кои', price:160, form:'fish', desc:'Неоновый рисунок + лёгкое свечение.'},
  {id:'reef_royal', name:'Рифовый Роял', price:220, form:'fish', desc:'Контрастный «премиум» градиент.'},
  {id:'shark_classic', name:'Акула Классик', price:180, form:'shark', desc:'Классический серый скин для акулы.'},
@@ -735,7 +733,6 @@ var SKINS=[
 
 // palette-driven skin rendering (keeps one-file, fast)
 var SKIN_STYLE={
-  premium_fish:{c1:'#46dcff',c2:'#beffe6',c3:'#5078ff',pattern:'none'},
   neon_koi:{c1:'#ff6ad5',c2:'#6af0ff',c3:'#fff3a0',pattern:'koi'},
   reef_royal:{c1:'#8cffc1',c2:'#4ad4ff',c3:'#b98cff',pattern:'royal'},
   clown_pop:{c1:'#ffb36a',c2:'#fff7d0',c3:'#ff5a5a',pattern:'stripes'},

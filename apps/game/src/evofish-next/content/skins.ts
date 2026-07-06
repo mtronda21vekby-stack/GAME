@@ -1,7 +1,7 @@
 import type { EvoFishCurrency, EvoFishSkinDefinition } from "../core/types";
 
 export const EVOFISH_SKIN_ASSET_BASE = "/game/skins/custom";
-export const EVOFISH_SKIN_ASSET_VERSION = "fish-skins-8";
+export const EVOFISH_SKIN_ASSET_VERSION = "fish-skins-9";
 
 const DEFAULT_BLUE_FISH_ASSET = new URL("../assets/skins/default-blue-fish.png", import.meta.url).href;
 const NEON_KOI_ASSET = new URL("../assets/skins/neon-koi.png", import.meta.url).href;
@@ -15,7 +15,6 @@ const PIRATE_FISH_ASSET = new URL("../assets/skins/pirate-fish.png", import.meta
 
 const SKIN_ASSET_URLS: Record<string, string> = {
   default: DEFAULT_BLUE_FISH_ASSET,
-  premium_fish: DEFAULT_BLUE_FISH_ASSET,
   neon_koi: NEON_KOI_ASSET,
   reef_royal: REEF_ROYAL_ASSET,
   clown_pop: CLOWN_POP_ASSET,
@@ -119,18 +118,12 @@ function coralSkin(
 }
 
 export const EVOFISH_SKINS: EvoFishSkinDefinition[] = [
-  freeSkin("default", "Стандарт", "any", "HEIF default fish, fitted for EvoFish gameplay.", {
+  freeSkin("default", "Стандарт", "any", "Базовая синяя рыбка EvoFish.", {
     primary: "#9fe6ff",
     secondary: "#78c8ff",
     accent: "#ffffff"
   }),
 
-  pearlSkin("premium_fish", "Премиум Рыбка", "fish", 650, "premium", "Красивая 2D-рыбка, не овал.", {
-    primary: "#46dcff",
-    secondary: "#beffe6",
-    accent: "#5078ff",
-    glow: "#7cf7ff"
-  }),
   pearlSkin("neon_koi", "Неон-Кои", "fish", 1800, "rare", "Неоновый рисунок и лёгкое свечение.", {
     primary: "#ff6ad5",
     secondary: "#6af0ff",

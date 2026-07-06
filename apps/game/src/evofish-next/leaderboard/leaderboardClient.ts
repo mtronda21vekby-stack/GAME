@@ -67,6 +67,7 @@ export type LeaderboardOnlineResponse = {
   ok: boolean;
   error?: string;
   online?: number;
+  updatedAt?: number;
   players?: Array<{
     playerId: string;
     nickname: string;
@@ -84,6 +85,15 @@ export type LeaderboardProfileResponse = {
   ok: boolean;
   error?: string;
   playerId?: string;
+  nickname?: string;
+};
+
+export type LeaderboardHeartbeatResponse = {
+  ok: boolean;
+  error?: string;
+  skipped?: boolean;
+  onlineWindowSeconds?: number;
+  liveScore?: number;
   nickname?: string;
 };
 
@@ -135,19 +145,23 @@ function withCacheBust(url: string) {
 }
 
 async function requestJSON<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(withCacheBust(url), {
-    ...init,
-    cache: "no-store",
-    headers: {
-      "content-type": "application/json",
-      "cache-control": "no-cache, no-store, must-revalidate",
-      pragma: "no-cache",
-      ...(init?.headers || {})
-    }
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) return { ok: false, error: data?.error || response.statusText, retryAfterSeconds: data?.retryAfterSeconds } as T;
-  return data as T;
+  try {
+    const response = await fetch(withCacheBust(url), {
+      ...init,
+      cache: "no-store",
+      headers: {
+        "content-type": "application/json",
+        "cache-control": "no-cache, no-store, must-revalidate",
+        pragma: "no-cache",
+        ...(init?.headers || {})
+      }
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) return { ok: false, error: data?.error || response.statusText, retryAfterSeconds: data?.retryAfterSeconds } as T;
+    return data as T;
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "network_error" } as T;
+  }
 }
 
 export async function syncLeaderboardProfile() {
@@ -177,6 +191,20 @@ export async function fetchLeaderboardMe() {
 
 export async function fetchLeaderboardOnline() {
   return requestJSON<LeaderboardOnlineResponse>("/api/leaderboard/online");
+}
+
+export async function heartbeatLeaderboardFromSave() {
+  const payload = buildLeaderboardPayloadFromSave();
+  return requestJSON<LeaderboardHeartbeatResponse>("/api/leaderboard/heartbeat", {
+    method: "POST",
+    body: JSON.stringify({
+      ...payload,
+      mass: payload.maxMass,
+      worldId: "lobby",
+      isAlive: true,
+      version: EVOFISH_NEXT_VERSION
+    })
+  });
 }
 
 export async function submitLeaderboardRun(payload: LeaderboardRunPayload) {

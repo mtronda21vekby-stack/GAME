@@ -30,7 +30,6 @@ apps/game/public/skins/custom/manifest.json
 
 ```text
 default -> default-blue-fish.svg
-premium_fish -> premium_fish.svg
 neon_koi -> neon_koi.svg
 reef_royal -> reef_royal.svg
 clown_pop -> clown_pop.svg
@@ -58,7 +57,7 @@ Replace the matching file with your new asset and keep the same filename.
 Example:
 
 ```text
-apps/game/public/skins/custom/premium_fish.svg
+apps/game/public/skins/custom/neon_koi.svg
 ```
 
 ## Recommended asset rules

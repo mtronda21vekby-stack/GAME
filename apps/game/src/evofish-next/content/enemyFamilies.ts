@@ -14,7 +14,7 @@ export const NEXT_ENEMY_FAMILIES: NextEnemyFamily[] = [
   {
     id: "reeflets",
     name: "Reeflets",
-    skinId: "premium_fish",
+    skinId: "default",
     hpMultiplier: 0.92,
     speedMultiplier: 1.04,
     rewardMultiplier: 0.95,
