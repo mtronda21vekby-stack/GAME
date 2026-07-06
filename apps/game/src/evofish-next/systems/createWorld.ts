@@ -46,10 +46,10 @@ export function enemyThreatLevel(level: number, tier: number, mass: number) {
   const playerLevel = Math.max(1, Math.floor(level || 1));
   const playerTier = Math.max(1, Math.floor(tier || 1));
   const playerMass = Math.max(1, Number(mass || 1));
-  const massScore = Math.floor(playerLevel * 0.38 + Math.sqrt(playerMass) * 6.1);
-  const tierScore = Math.floor(playerLevel * 0.52 + playerTier * 1.45);
-  const lateBonus = playerLevel >= 45 ? Math.floor((playerLevel - 44) * 0.42) : 0;
-  return Math.max(1, playerLevel, massScore, tierScore) + lateBonus;
+  const midPressure = Math.max(0, playerTier - 6) * 0.32 + Math.max(0, playerMass - 6) * 0.42;
+  const pressureCap = playerLevel < 30 ? 4.5 : 7;
+  const lateBonus = playerLevel >= 45 ? Math.floor((playerLevel - 44) * 0.36) : 0;
+  return Math.max(1, Math.round(playerLevel + Math.min(pressureCap, midPressure) + lateBonus));
 }
 
 function threatScale(threatLevel: number) {
@@ -61,23 +61,24 @@ function clamp(value: number, min: number, max: number) {
 }
 
 function enemyLevelBias(archetype: NextEnemyArchetypeId) {
-  if (archetype === "leviathan") return 14;
-  if (archetype === "apex") return 12;
+  if (archetype === "leviathan") return 13;
+  if (archetype === "apex") return 11;
   if (archetype === "stalker") return 7;
   if (archetype === "brute") return 5;
   if (archetype === "hunter") return 2;
   if (archetype === "neutral") return -2;
-  return -7;
+  return -8;
 }
 
 function enemyNpcLevel(archetype: NextEnemyArchetypeId, threatLevel: number, mass: number, playerMass: number, playerLevel = 1) {
   const base = Math.max(1, Math.floor(threatLevel || 1));
   const levelAnchor = Math.max(1, Math.floor(playerLevel || 1));
-  const massPressure = Math.max(0, Math.round((mass - playerMass) * 0.72));
-  const bodyScale = Math.round(Math.sqrt(Math.max(1, mass)) * 1.25);
+  const massPressure = clamp(Math.round((mass - playerMass) * 0.38), -5, 9);
+  const bodyScale = Math.round(Math.sqrt(Math.max(1, mass)) * 1.05);
   const variance = Math.floor(Math.random() * 5) - 2;
-  const softCap = archetype === "apex" || archetype === "leviathan" ? levelAnchor + 24 : levelAnchor + 14;
-  return Math.round(clamp(base + enemyLevelBias(archetype) + bodyScale + massPressure + variance, 1, Math.max(softCap, levelAnchor + 4)));
+  const softCap = archetype === "apex" || archetype === "leviathan" ? levelAnchor + 18 : levelAnchor + 9;
+  const floor = archetype === "prey" ? Math.max(1, levelAnchor - 9) : 1;
+  return Math.round(clamp(base + enemyLevelBias(archetype) + bodyScale + massPressure + variance, floor, Math.max(softCap, levelAnchor + 3)));
 }
 
 function randomWorldPoint(config: NextWorldConfig, pad = 190): Point {
