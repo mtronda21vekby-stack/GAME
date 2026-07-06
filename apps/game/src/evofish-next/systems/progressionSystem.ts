@@ -15,6 +15,10 @@ function addFloat(state: NextEngineState, x: number, y: number, text: string, ki
   state.floats.push({ id: state.nextFloatId++, x, y, text, ttl: 0.9, kind });
 }
 
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
+}
+
 function counter(state: NextEngineState, key: string) {
   return Math.max(0, Math.floor(state.quests?.counters?.[key] || 0));
 }
@@ -49,6 +53,19 @@ function archetypeCurrencyBonus(enemy: NextFishEntity) {
   if (enemy.aiType === "hunter") return 1.35;
   if (enemy.aiType === "neutral") return 1.05;
   return 0.9;
+}
+
+function npcLevelRewardBonus(state: NextEngineState, enemy: NextFishEntity) {
+  const enemyLevel = Math.max(1, Math.floor(enemy.npcLevel || Math.round(enemy.mass * 4)));
+  const playerLevel = Math.max(1, Math.floor(state.player.level || 1));
+  const diff = enemyLevel - playerLevel;
+
+  if (diff >= 16) return 2.15;
+  if (diff >= 10) return 1.78;
+  if (diff >= 6) return 1.48;
+  if (diff >= 3) return 1.25;
+  if (diff >= 0) return 1.1;
+  return clamp(1 + diff * 0.018, 0.78, 1);
 }
 
 function syncApexStats(state: NextEngineState) {
@@ -171,9 +188,10 @@ function awardKillEconomy(state: NextEngineState, enemy: NextFishEntity, source:
   const zoneBonus = state.stats.zoneRewardBoost || 1;
   const familyBonus = enemy.familyRewardMultiplier || 1;
   const archetypeBonus = archetypeCurrencyBonus(enemy);
-  const pearls = Math.max(1, Math.round((1 + enemy.mass * 1.35) * sourceBonus * archetypeBonus * mutationBonus * zoneBonus * familyBonus));
+  const levelBonus = 1 + (npcLevelRewardBonus(state, enemy) - 1) * 0.42;
+  const pearls = Math.max(1, Math.round((1 + enemy.mass * 1.35) * sourceBonus * archetypeBonus * mutationBonus * zoneBonus * familyBonus * levelBonus));
   const bossCorals = enemy.aiType === "apex" ? 3 : enemy.aiType === "leviathan" ? 2 : 0;
-  const coralChance = Math.min(0.075, (0.004 + enemy.mass * 0.003 + (enemy.aiType === "brute" ? 0.018 : 0) + (enemy.aiType === "stalker" ? 0.012 : 0)) * Math.max(0.75, Math.min(1.35, zoneBonus)));
+  const coralChance = Math.min(0.095, (0.004 + enemy.mass * 0.003 + (enemy.aiType === "brute" ? 0.018 : 0) + (enemy.aiType === "stalker" ? 0.012 : 0)) * Math.max(0.75, Math.min(1.35, zoneBonus)) * levelBonus);
   const corals = bossCorals || (Math.random() < coralChance ? 1 : 0);
 
   state.economy.pearls += pearls;
@@ -187,7 +205,8 @@ export function awardKillReward(state: NextEngineState, enemy: NextFishEntity, s
   const zoneBonus = state.stats.zoneRewardBoost || 1;
   const familyBonus = enemy.familyRewardMultiplier || 1;
   const archetypeBonus = archetypeXpBonus(enemy);
-  const xp = awardNextXp(state, (24 + enemy.mass * 16 + enemy.hpMax * 0.08) * formBonus * sourceBonus * archetypeBonus * zoneBonus * familyBonus);
+  const levelBonus = npcLevelRewardBonus(state, enemy);
+  const xp = awardNextXp(state, (24 + enemy.mass * 16 + enemy.hpMax * 0.08) * formBonus * sourceBonus * archetypeBonus * zoneBonus * familyBonus * levelBonus);
   const economy = awardKillEconomy(state, enemy, source);
 
   if (enemy.aiType === "apex" || enemy.aiType === "leviathan") {
