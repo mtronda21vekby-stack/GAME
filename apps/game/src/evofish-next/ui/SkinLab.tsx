@@ -33,7 +33,7 @@ function lockLabel(reasons: { label: string }[]) {
 
 export function SkinLab() {
   const [form, setForm] = useState<EvoFishFormId>("fish");
-  const [selectedId, setSelectedId] = useState("premium_fish");
+  const [selectedId, setSelectedId] = useState("default");
   const [save, setSave] = useState(() => loadEvoFishNextSave());
 
   const skins = useMemo(() => getSkinsForForm(form), [form]);
