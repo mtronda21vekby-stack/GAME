@@ -7,6 +7,7 @@ type SkinPreviewProps = {
   skin: EvoFishSkinDefinition;
   form?: EvoFishFormId;
   size?: "sm" | "md" | "lg";
+  variant?: "showcase" | "sprite";
   className?: string;
 };
 
@@ -188,6 +189,9 @@ function AnimatedSkinShowcase(props: { skin: EvoFishSkinDefinition; assetPath: s
 
 const SKIN_PREVIEW_STYLE = `
 .efSkinPreview{position:relative;width:100%;isolation:isolate}
+.efSkinPreview.sprite{display:grid;place-items:center}
+.efSkinSpriteImg{display:block;width:100%;height:auto;object-fit:contain;filter:drop-shadow(0 24px 34px rgba(0,0,0,.34)) drop-shadow(0 0 22px rgba(53,216,255,.18));user-select:none;-webkit-user-drag:none}
+.efSkinSpriteSvg{display:block;width:100%;height:auto;filter:drop-shadow(0 24px 34px rgba(0,0,0,.34)) drop-shadow(0 0 22px rgba(53,216,255,.18))}
 .efSkinPreview>svg{display:block;width:100%;height:auto;border-radius:28px}
 .efSkinPreview.sm>svg{border-radius:15px}
 .efSkinPreview.md{max-width:360px}
@@ -236,17 +240,41 @@ const SKIN_PREVIEW_STYLE = `
 @media(prefers-reduced-motion:reduce){.efSkinShowcase *{animation-duration:.01ms!important;animation-iteration-count:1!important}}
 `;
 
-export function SkinPreview({ skin, form, size = "md", className }: SkinPreviewProps) {
+export function SkinPreview({ skin, form, size = "md", variant = "showcase", className }: SkinPreviewProps) {
   const resolvedForm = resolveForm(skin, form);
-  const cls = ["efSkinPreview", size, className].filter(Boolean).join(" ");
+  const cls = ["efSkinPreview", size, variant === "sprite" ? "sprite" : "", className].filter(Boolean).join(" ");
   const assetPath = skin.assetPath || skin.image;
   const [assetFailed, setAssetFailed] = React.useState(false);
   const showAsset = Boolean(assetPath && !assetFailed);
-  const showAnimatedShowcase = Boolean(showAsset && assetPath && shouldUseAnimatedShowcase(resolvedForm));
+  const showAnimatedShowcase = Boolean(variant !== "sprite" && showAsset && assetPath && shouldUseAnimatedShowcase(resolvedForm));
 
   React.useEffect(() => {
     setAssetFailed(false);
   }, [assetPath]);
+
+  if (variant === "sprite") {
+    return (
+      <div className={cls} aria-label={skin.name}>
+        {showAsset && assetPath ? (
+          <img className="efSkinSpriteImg" src={assetPath} alt="" draggable={false} onError={() => setAssetFailed(true)} />
+        ) : (
+          <svg className="efSkinSpriteSvg" viewBox="0 0 256 144" role="img">
+            <defs>
+              <linearGradient id="body" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0" stopColor={skin.palette.primary} />
+                <stop offset="0.62" stopColor={skin.palette.secondary} />
+                <stop offset="1" stopColor={skin.palette.shadow || skin.palette.accent} />
+              </linearGradient>
+            </defs>
+            {!showAsset && resolvedForm === "fish" ? <Fish skin={skin} /> : null}
+            {!showAsset && resolvedForm === "shark" ? <Shark skin={skin} /> : null}
+            {!showAsset && resolvedForm === "megalodon" ? <Mega skin={skin} /> : null}
+          </svg>
+        )}
+        <style>{SKIN_PREVIEW_STYLE}</style>
+      </div>
+    );
+  }
 
   return (
     <div className={cls} aria-label={skin.name}>
