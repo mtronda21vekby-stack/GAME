@@ -1,6 +1,7 @@
 import type { NextDirectorState, NextEngineState, NextFishEntity } from "../core/engineTypes";
 
 const CELL_SIZE = 320;
+const LATE_EASE_LEVEL = 40;
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -22,11 +23,15 @@ function isBridgeLevel(level: number) {
   return level >= 14 && level <= 25;
 }
 
+function isLateEaseLevel(level: number) {
+  return Math.max(1, Math.floor(level || 1)) >= LATE_EASE_LEVEL;
+}
+
 function eliteLimit(level: number) {
   if (level < 18) return 1;
   if (level <= 29) return 1;
-  if (level < 45) return 2;
-  return 3;
+  if (level < LATE_EASE_LEVEL) return 2;
+  return 2;
 }
 
 function predatorPressureLimit(level: number) {
@@ -34,7 +39,8 @@ function predatorPressureLimit(level: number) {
   if (level < 14) return 3;
   if (level <= 25) return 2;
   if (level < 35) return 3;
-  return 5;
+  if (level < LATE_EASE_LEVEL) return 5;
+  return 4;
 }
 
 function normalize(x: number, y: number) {
@@ -99,58 +105,86 @@ function nearby(grid: Map<string, NextFishEntity[]>, enemy: NextFishEntity, radi
   return items;
 }
 
+function applyLateGameEase(state: NextEngineState) {
+  const player = state.player;
+  if (!isLateEaseLevel(player.level)) return;
+
+  const maxGap = player.level >= 55 ? 17 : 14;
+  for (const enemy of state.enemies) {
+    const tuned = enemy as NextFishEntity & { lateEaseApplied?: boolean };
+    if (!tuned.lateEaseApplied) {
+      enemy.mass *= isElite(enemy) ? 0.9 : 0.92;
+      enemy.hpMax = Math.max(1, Math.round(enemy.hpMax * 0.8));
+      enemy.hp = Math.min(enemy.hp, enemy.hpMax);
+      enemy.damage *= 0.8;
+      enemy.speed *= isPredator(enemy) ? 0.92 : 0.96;
+      enemy.attackRange *= isPredator(enemy) ? 0.92 : 0.96;
+      enemy.aggroRadius *= isPredator(enemy) ? 0.88 : 0.94;
+      enemy.attackCd = Math.max(enemy.attackCd, isElite(enemy) ? 1.25 : 0.9);
+      tuned.lateEaseApplied = true;
+    }
+
+    if (enemy.npcLevel && enemy.npcLevel > player.level + maxGap) {
+      enemy.npcLevel = player.level + maxGap;
+    }
+  }
+}
+
 function enemyThreatScore(state: NextEngineState, enemy: NextFishEntity, distance: number) {
   const player = state.player;
   const levelGap = npcLevel(enemy) - Math.max(1, player.level);
   const massGap = enemy.mass / Math.max(0.5, player.mass);
   const role = enemy.aiType === "leviathan" ? 4.4 : enemy.aiType === "apex" ? 4 : enemy.aiType === "stalker" ? 2.7 : enemy.aiType === "brute" ? 2.1 : enemy.aiType === "hunter" ? 1.5 : 0.5;
-  const proximity = clamp(1 - distance / 980, 0, 1.5);
-  return Math.max(0, role + Math.max(0, levelGap) * 0.22 + Math.max(0, massGap - 1) * 1.2) * (0.35 + proximity);
+  const proximity = clamp(1 - distance / (isLateEaseLevel(player.level) ? 1080 : 980), 0, 1.5);
+  const score = Math.max(0, role + Math.max(0, levelGap) * 0.22 + Math.max(0, massGap - 1) * 1.2) * (0.35 + proximity);
+  return isLateEaseLevel(player.level) ? score * 0.8 : score;
 }
 
 function keepAwayFromPlayer(state: NextEngineState, enemy: NextFishEntity, rank: number, dt: number) {
   const player = state.player;
   const bridge = isBridgeLevel(player.level);
+  const lateEase = isLateEaseLevel(player.level);
   const dx = enemy.x - player.x;
   const dy = enemy.y - player.y;
   const n = normalize(dx, dy);
-  const baseGap = isElite(enemy) ? (bridge ? 390 : 310) : enemy.aiType === "brute" ? (bridge ? 300 : 230) : (bridge ? 240 : 180);
+  const baseGap = isElite(enemy) ? (bridge ? 390 : lateEase ? 380 : 310) : enemy.aiType === "brute" ? (bridge ? 300 : lateEase ? 285 : 230) : (bridge ? 240 : lateEase ? 220 : 180);
   const minGap = player.radius + enemy.radius + baseGap;
 
   if (n.length < minGap) {
-    const force = (minGap - n.length) * (isElite(enemy) ? 15 : 11);
+    const force = (minGap - n.length) * (isElite(enemy) ? (lateEase ? 17 : 15) : (lateEase ? 13 : 11));
     push(enemy, n.x, n.y, force, dt);
-    if (enemy.aiState === "attack" || enemy.aiState === "hunt") enemy.aiState = "regroup";
+    if (enemy.aiState === "attack" || enemy.aiState === "hunt" || enemy.aiState === "ambush") enemy.aiState = "regroup";
   }
 
-  const laneAngle = ((enemy.id % 12) / 12) * Math.PI * 2 + (state.frame % 480) * (bridge ? 0.0014 : 0.0022);
-  const desired = player.radius + enemy.radius + (bridge ? 560 : 430) + (rank % 6) * (bridge ? 116 : 88);
+  const laneAngle = ((enemy.id % 12) / 12) * Math.PI * 2 + (state.frame % 480) * (bridge ? 0.0014 : lateEase ? 0.0018 : 0.0022);
+  const desired = player.radius + enemy.radius + (bridge ? 560 : lateEase ? 520 : 430) + (rank % 6) * (bridge ? 116 : lateEase ? 104 : 88);
   const tx = clamp(player.x + Math.cos(laneAngle) * desired, 160, state.config.width - 160);
   const ty = clamp(player.y + Math.sin(laneAngle) * desired, 160, state.config.height - 160);
   const toSlot = normalize(tx - enemy.x, ty - enemy.y);
-  push(enemy, toSlot.x, toSlot.y, isElite(enemy) ? 94 : 128, dt);
+  push(enemy, toSlot.x, toSlot.y, isElite(enemy) ? (lateEase ? 108 : 94) : (lateEase ? 138 : 128), dt);
   enemy.wanderX = tx;
   enemy.wanderY = ty;
-  enemy.wanderT = Math.min(enemy.wanderT, 0.34);
+  enemy.wanderT = Math.min(enemy.wanderT, lateEase ? 0.26 : 0.34);
 }
 
 function applySafeWindow(state: NextEngineState, threatScore: number, nearbyPredators: number, dt: number) {
   const director = directorState(state);
   const player = state.player;
+  const lateEase = isLateEaseLevel(player.level);
   const hpDrop = Math.max(0, director.lastPlayerHp - player.hp);
   const hpRatio = player.hp / Math.max(1, player.hpMax);
   director.safeWindowT = Math.max(0, director.safeWindowT - dt);
 
-  if (hpRatio < 0.38) director.lowHpFrames += 1;
+  if (hpRatio < (lateEase ? 0.46 : 0.38)) director.lowHpFrames += 1;
   else director.lowHpFrames = Math.max(0, director.lowHpFrames - 2);
 
-  const heavyHit = hpDrop >= player.hpMax * 0.18;
-  const unfairPressure = hpRatio < 0.42 && (nearbyPredators > predatorPressureLimit(player.level) || threatScore > 9);
+  const heavyHit = hpDrop >= player.hpMax * (lateEase ? 0.14 : 0.18);
+  const unfairPressure = hpRatio < (lateEase ? 0.5 : 0.42) && (nearbyPredators > predatorPressureLimit(player.level) || threatScore > (lateEase ? 7.2 : 9));
 
   if (!player.downed && !player.dead && (heavyHit || unfairPressure) && director.safeWindowT <= 0) {
-    director.safeWindowT = heavyHit ? 1.8 : 1.25;
+    director.safeWindowT = heavyHit ? (lateEase ? 2.25 : 1.8) : (lateEase ? 1.65 : 1.25);
     player.invulnT = Math.max(player.invulnT, director.safeWindowT);
-    player.dashCd = Math.min(player.dashCd, 0.28);
+    player.dashCd = Math.min(player.dashCd, lateEase ? 0.18 : 0.28);
     state.stats.lastEvent = heavyHit ? "SAFE WINDOW · heavy hit" : "SAFE WINDOW · pressure";
   }
 
@@ -180,7 +214,7 @@ function updateDebugStats(state: NextEngineState, grid: Map<string, NextFishEnti
   const avg = state.enemies.length ? totalLevel / state.enemies.length : 0;
 
   director.spatialCells = grid.size;
-  director.directorMode = director.safeWindowT > 0 ? "safe-window" : threatScore > 9 ? "pressure-relief" : elite > eliteLimit(state.player.level) ? "elite-limit" : "normal";
+  director.directorMode = director.safeWindowT > 0 ? "safe-window" : threatScore > (isLateEaseLevel(state.player.level) ? 7.2 : 9) ? "pressure-relief" : elite > eliteLimit(state.player.level) ? "elite-limit" : isLateEaseLevel(state.player.level) ? "late-ease" : "normal";
 
   state.stats.aiDirectorMode = director.directorMode;
   state.stats.aiNearEnemies = near;
@@ -195,7 +229,7 @@ function updateDebugStats(state: NextEngineState, grid: Map<string, NextFishEnti
 
 function limitEliteAndPredatorPressure(state: NextEngineState, dt: number) {
   const player = state.player;
-  const pressureRange = isBridgeLevel(player.level) ? 820 : 640;
+  const pressureRange = isBridgeLevel(player.level) ? 820 : isLateEaseLevel(player.level) ? 780 : 640;
   const predators = state.enemies
     .filter(isPredator)
     .map((enemy) => ({ enemy, distance: Math.hypot(enemy.x - player.x, enemy.y - player.y) }))
@@ -287,6 +321,7 @@ export function updateDirectorSystem(state: NextEngineState, dt: number) {
   director.nearbyChecks = 0;
   if (state.enemies.length <= 0) return;
 
+  applyLateGameEase(state);
   const grid = buildSpatialGrid(state.enemies);
   const player = state.player;
   let near = 0;
@@ -296,7 +331,7 @@ export function updateDirectorSystem(state: NextEngineState, dt: number) {
 
   for (const enemy of state.enemies) {
     const distance = Math.hypot(enemy.x - player.x, enemy.y - player.y);
-    if (distance > 960) continue;
+    if (distance > (isLateEaseLevel(player.level) ? 1040 : 960)) continue;
     near += 1;
     if (isPredator(enemy)) predators += 1;
     if (isElite(enemy)) elites += 1;
