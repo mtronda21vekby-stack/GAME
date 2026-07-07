@@ -9,7 +9,6 @@ import { BetaProgress } from "../evofish-next/ui/BetaProgress";
 import { BetaQA } from "../evofish-next/ui/BetaQA";
 import { BetaReport } from "../evofish-next/ui/BetaReport";
 import { Leaderboard } from "../evofish-next/ui/Leaderboard";
-import { ProfileHub } from "../evofish-next/ui/ProfileHub";
 import { SeasonHub } from "../evofish-next/ui/SeasonHub";
 import { SkinLab } from "../evofish-next/ui/SkinLab";
 import { NextLobby } from "../evofish-next/ui/NextLobby";
@@ -39,7 +38,6 @@ export function App() {
         { path: "/game", element: withBoundary(<BetaHome />) },
         { path: "/game/lobby", element: withBoundary(<NextLobby />) },
         { path: "/game/account", element: withBoundary(<NextLobby />) },
-        { path: "/game/profiles", element: withBoundary(<ProfileHub />) },
         { path: "/game/play", element: withBoundary(<NextPlaySession />) },
         { path: "/game/progress", element: withBoundary(<BetaProgress />) },
         { path: "/game/repair", element: withBoundary(<BetaProgress />) },
@@ -53,7 +51,6 @@ export function App() {
         { path: "/game/classic", element: withBoundary(<Game />) },
         { path: "/game/next", element: withBoundary(<NextLobby />) },
         { path: "/game/next/lobby", element: withBoundary(<NextLobby />) },
-        { path: "/game/next/profiles", element: withBoundary(<ProfileHub />) },
         { path: "/game/next/progress", element: withBoundary(<BetaProgress />) },
         { path: "/game/next/leaderboard", element: withBoundary(<Leaderboard />) },
         { path: "/game/next/season", element: withBoundary(<SeasonHub />) },
@@ -67,7 +64,6 @@ export function App() {
         { path: "/next", element: withBoundary(<BetaHome />) },
         { path: "/next/lobby", element: withBoundary(<NextLobby />) },
         { path: "/next/account", element: withBoundary(<NextLobby />) },
-        { path: "/next/profiles", element: withBoundary(<ProfileHub />) },
         { path: "/next/progress", element: withBoundary(<BetaProgress />) },
         { path: "/next/leaderboard", element: withBoundary(<Leaderboard />) },
         { path: "/next/season", element: withBoundary(<SeasonHub />) },
@@ -78,6 +74,7 @@ export function App() {
         { path: "/next/skins", element: withBoundary(<SkinLab />) },
         { path: "/next/play", element: withBoundary(<NextPlaySession />) },
       ]}
+      notFound={withBoundary(<BetaHome />)}
     />
   );
 }
