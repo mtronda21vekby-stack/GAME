@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-global-balance-easy40-6.8.5";
+export const EVOFISH_NEXT_VERSION = "next-craft-inventory-6.8.6";
