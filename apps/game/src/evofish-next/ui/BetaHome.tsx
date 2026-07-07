@@ -180,19 +180,26 @@ export function BetaHome() {
       <style>{`
         .efBetaHome{position:relative;isolation:isolate;background:#020915;background-image:linear-gradient(180deg,rgba(2,9,21,.16),rgba(2,9,21,.66)),url("/game/assets/lobby/lobby-bg-station-16x9.png");background-size:cover;background-position:center;background-attachment:fixed}
         .efBetaHome:before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse at 50% 18%,rgba(53,216,255,.20),transparent 36%),linear-gradient(90deg,rgba(2,9,21,.42),transparent 32%,transparent 68%,rgba(2,9,21,.42))}
+        .efBetaHome:before,.efHubAtmosphere,.efHubAtmosphere:before,.efHubAtmosphere:after,.efHubAtmosphere i,.efHubSphereGlass,.efHubSphereGlass:after,.efHubBubble,.efHubPlay:after{pointer-events:none!important}
+        .efBetaHomeShell{pointer-events:auto!important}
+        .efHubProfile,.efHubProfile a,.efHubWallet,.efHubWallet a,.efHubSectionMenu,.efHubSectionMenu summary,.efHubSectionMenuPanel,.efHubSectionMenuPanel a,.efHubCenter,.efHubPlay,.efModeCard,.efModeCard a,.efHubInfoCards,.efHubInfoCards a,.efHubBottomNav,.efHubBottomNav a,.efPlayerSupport button{pointer-events:auto!important}
+        .efHubTop,.efHubScene,.efHubCenter,.efHubInfoCards{position:relative;z-index:2}
+        .efHubBottomNav{position:fixed!important;z-index:20!important}
+        .efHubSectionMenu{position:relative;z-index:6!important}
         .efBetaHomeShell{width:min(1540px,calc(100vw - 28px))!important;grid-template-rows:auto 1fr!important;gap:clamp(10px,1.5vw,18px)!important}
         .efHubTop{align-items:center!important}
         .efHubProfile,.efHubWallet,.efHubSectionMenu,.efHubInfoCard,.efHubQuickGrid a,.efHubBottomNav{background:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.025)),rgba(5,18,32,.62)!important;border-color:rgba(88,210,255,.25)!important;border-radius:8px!important}
         .efHubCenter{min-height:unset!important;border:0!important;background:transparent!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;padding:clamp(8px,2vw,22px)!important}
-        .efHubSphere{width:clamp(300px,38vw,560px)!important;margin:clamp(4px,1.5vh,14px) auto 4px!important}
+        .efHubSphere{width:clamp(280px,32vw,470px)!important;margin:clamp(4px,1.5vh,14px) auto 4px!important}
         .efHubSphereGlass{background:radial-gradient(circle at 34% 22%,rgba(255,255,255,.28),transparent 18%),radial-gradient(circle at 48% 58%,rgba(53,216,255,.13),transparent 44%),radial-gradient(circle at 50% 50%,rgba(3,18,32,.04),rgba(3,18,32,.18) 63%,rgba(53,216,255,.18))!important}
         .efHubSphereFish{width:82%!important}
         .efHubPlay{height:82px!important;max-width:min(560px,100%)!important}
         .efHubScene{grid-template-columns:minmax(190px,250px) minmax(420px,1fr) minmax(260px,340px)!important;align-items:center!important}
         .efHubSectionMenu{align-self:start!important}
         .efHubQuickGrid,.efHubRename{display:none!important}
-        @media(max-width:1023px){.efBetaHome{background-position:center top}.efBetaHomeShell{width:min(100%,calc(100vw - 20px))!important}.efHubScene{grid-template-columns:1fr!important}.efHubInfoCards{display:none!important}.efHubSectionMenu{width:min(100%,390px)!important}.efHubCenter{padding-top:10px!important}.efHubSphere{width:clamp(320px,86vw,430px)!important}.efHubPlay{width:min(100%,520px)!important}.efModeGrid{display:grid!important;grid-template-columns:1fr 1fr!important}}
-        @media(max-width:640px){.efBetaHomeShell{padding-bottom:calc(92px + env(safe-area-inset-bottom))!important}.efHubTop{grid-template-columns:minmax(0,1fr) auto!important}.efHubProfile{grid-template-columns:50px minmax(0,1fr)!important}.efHubWalletLink{display:none!important}.efHubCenter h1{font-size:42px!important}.efHubSphere{width:min(90vw,380px)!important}.efHubPlay{height:70px!important}.efModeGrid{grid-template-columns:1fr!important}.efModeCard{min-height:84px!important}.efModeCard:not(.active){display:none!important}}
+        @media(min-width:1024px){.efHubBottomNav{display:none!important}.efBetaHomeShell{padding-bottom:max(20px,env(safe-area-inset-bottom))!important}}
+        @media(max-width:1023px){.efBetaHome{background-position:center top}.efBetaHomeShell{width:min(100%,calc(100vw - 20px))!important;padding-bottom:calc(132px + env(safe-area-inset-bottom))!important}.efHubScene{grid-template-columns:1fr!important}.efHubInfoCards{display:none!important}.efHubSectionMenu{width:min(100%,390px)!important}.efHubCenter{padding-top:10px!important}.efHubSphere{width:clamp(320px,86vw,430px)!important}.efHubPlay{width:min(100%,520px)!important}.efModeGrid{display:grid!important;grid-template-columns:1fr 1fr!important;margin-bottom:18px!important}}
+        @media(max-width:640px){.efBetaHomeShell{padding-bottom:calc(118px + env(safe-area-inset-bottom))!important}.efHubTop{grid-template-columns:minmax(0,1fr) auto!important}.efHubProfile{grid-template-columns:50px minmax(0,1fr)!important}.efHubWalletLink{display:none!important}.efHubCenter h1{font-size:40px!important}.efHubSphere{order:4;width:min(76vw,300px)!important}.efHubModeText{order:5}.efHubPlay{order:6;height:66px!important}.efModeGrid{order:3;grid-template-columns:1fr 1fr!important;margin:10px 0 8px!important}.efModeCard{min-height:54px!important;padding:9px!important;border-radius:999px!important;align-content:center!important;text-align:center!important}.efModeCard:not(.active){display:grid!important}.efModeCard div{justify-content:center!important}.efModeCard b{font-size:12px!important}.efModeCard span,.efModeCard small,.efModeCard a{display:none!important}}
       `}</style>
     </main>
   );
