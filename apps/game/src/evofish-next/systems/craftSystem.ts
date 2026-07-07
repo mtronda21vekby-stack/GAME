@@ -1,9 +1,28 @@
 import type { NextEngineState } from "../core/engineTypes";
-import { NEXT_CRAFT_RECIPES, normalizeCraftState, type NextCraftRecipe } from "../content/craft";
+import { NEXT_CRAFT_RECIPES, normalizeCraftState, type NextCraftInventory, type NextCraftRecipe } from "../content/craft";
+
+const CRAFT_INVENTORY_KEY = "evofish_next_craft_inventory_v1";
 
 function addFloat(state: NextEngineState, text: string) {
   const player = state.player;
   state.floats.push({ id: state.nextFloatId++, x: player.x, y: player.y - player.radius * 2.9, text, ttl: 1.05, kind: "kill" });
+}
+
+function readStoredInventory(): Partial<NextCraftInventory> {
+  try {
+    const raw = localStorage.getItem(CRAFT_INVENTORY_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeStoredInventory(inventory: NextCraftInventory) {
+  try {
+    localStorage.setItem(CRAFT_INVENTORY_KEY, JSON.stringify(inventory));
+  } catch {
+    // local craft inventory is optional in private modes
+  }
 }
 
 function recipeById(recipeId: string) {
@@ -11,8 +30,18 @@ function recipeById(recipeId: string) {
 }
 
 function normalizeCraft(state: NextEngineState) {
-  state.craft = normalizeCraftState(state.craft);
+  state.craft = normalizeCraftState({
+    ...state.craft,
+    inventory: {
+      ...readStoredInventory(),
+      ...(state.craft?.inventory || {})
+    }
+  });
   return state.craft;
+}
+
+function persistCraft(state: NextEngineState) {
+  writeStoredInventory(normalizeCraft(state).inventory);
 }
 
 function stock(state: NextEngineState, recipeId: string) {
@@ -112,6 +141,7 @@ export function buyCraftItem(state: NextEngineState, recipeId: string, amount = 
   if (bought <= 0) return false;
   state.stats.lastEvent = `${recipe.name}: куплено x${bought}`;
   addFloat(state, `+${recipe.shortName} x${bought}`);
+  persistCraft(state);
   syncCraftStats(state);
   return true;
 }
@@ -132,6 +162,7 @@ export function useCraftItem(state: NextEngineState, recipeId: string) {
   state.stats.craftUses = (state.stats.craftUses || 0) + 1;
   bumpQuestCounter(state, "craft");
   activateCraftEffect(state, recipe);
+  persistCraft(state);
   syncCraftStats(state);
   return true;
 }
