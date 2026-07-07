@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-visual-safe-performance-6.8.3";
+export const EVOFISH_NEXT_VERSION = "next-level40-xp-fix-6.8.4";
