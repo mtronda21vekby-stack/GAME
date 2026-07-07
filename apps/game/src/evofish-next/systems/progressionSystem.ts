@@ -63,7 +63,7 @@ function post21RewardFloor(state: NextEngineState) {
   const playerLevel = Math.max(1, Math.floor(state.player.level || 1));
   const late = Math.max(0, playerLevel - POST_LEVEL_21_BALANCE_START);
   if (late <= 0) return 1;
-  return 1 + Math.min(0.95, late * 0.034);
+  return 1 + Math.min(0.75, late * 0.026);
 }
 
 function npcLevelRewardBonus(state: NextEngineState, enemy: NextFishEntity) {
@@ -83,7 +83,7 @@ function npcLevelRewardBonus(state: NextEngineState, enemy: NextFishEntity) {
             ? 1.15
             : clamp(1 + diff * 0.018, 0.78, 1);
 
-  return clamp(diffBonus * post21, 0.78, 3.25);
+  return clamp(diffBonus * post21, 0.78, 2.65);
 }
 
 function syncApexStats(state: NextEngineState) {
