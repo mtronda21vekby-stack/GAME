@@ -2,6 +2,7 @@ import type { NextQuestState } from "../core/engineTypes";
 import type { EvoFishEconomyState, EvoFishFormId, SkinLoadoutState } from "../core/types";
 import { defaultNextAccount, type NextAccountState } from "../content/account";
 import { defaultAchievementState, type NextAchievementState } from "../content/achievements";
+import { defaultCraftState, type NextCraftState } from "../content/craft";
 import { defaultMutationState, type NextMutationState } from "../content/mutations";
 import { xpToNextLevel, xpToNextTier } from "../content/progression";
 import { EVOFISH_SKIN_BY_ID, getDefaultSkinId } from "../content/skins";
@@ -45,6 +46,7 @@ export type EvoFishNextSkinSave = {
   loadout: SkinLoadoutState;
   progress: EvoFishNextProgressState;
   quests: NextQuestState;
+  craft: NextCraftState;
   mutations: NextMutationState;
   achievements: NextAchievementState;
 };
@@ -118,6 +120,7 @@ export function migrateLegacySkinSave(legacy: LegacyEvoFishSave | null | undefin
       deaths: Math.max(0, Math.floor(legacy?.deaths || 0))
     },
     quests: defaultNextQuests(),
+    craft: defaultCraftState(),
     mutations: defaultMutationState(),
     achievements: migrateLegacyAchievements(legacy)
   };
