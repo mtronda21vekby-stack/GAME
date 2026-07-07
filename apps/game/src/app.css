@@ -10,3 +10,506 @@ html,body{height:100%;margin:0}*{box-sizing:border-box}
   .efGamePanel.mapPanel .efWorldMapFrame{height:calc(100vh - 104px)!important}
   .efGamePanel.mapPanel .efWorldMapSvg{width:170vh!important;min-width:1280px!important;height:calc(100vh - 118px)!important;min-height:820px!important}
 }
+
+:root{
+  --ef-bg-deep:#020915;
+  --ef-bg-navy:#061827;
+  --ef-cyan:#35d8ff;
+  --ef-cyan-soft:rgba(53,216,255,.35);
+  --ef-panel:rgba(5,18,32,.72);
+  --ef-panel-strong:rgba(7,27,45,.86);
+  --ef-panel-border:rgba(88,210,255,.25);
+  --ef-text:#eaf7ff;
+  --ef-muted:rgba(234,247,255,.62);
+  --ef-gold:#f5b84b;
+  --ef-lobby-bg:url("/game/assets/lobby/lobby-bg-station-16x9.png");
+}
+
+body{
+  background:var(--ef-bg-deep)!important;
+  color:var(--ef-text)!important;
+}
+
+.apple-bg,
+.efBetaHome,
+.efLobby,
+.efProfilesPage,
+.efNextLab,
+.efBetaProgress,
+.efSeason,
+.efLeaderboard,
+.efChecklist,
+.efBetaQa,
+.efReport,
+.efCacheDoctor,
+.efBetaError{
+  min-height:100vh!important;
+  min-height:100dvh!important;
+  position:relative!important;
+  isolation:isolate!important;
+  overflow-x:hidden!important;
+  color:var(--ef-text)!important;
+  background:
+    linear-gradient(180deg,rgba(2,9,21,.08),rgba(2,9,21,.68) 54%,rgba(1,6,14,.94)),
+    radial-gradient(circle at 50% 18%,rgba(53,216,255,.20),transparent 34%),
+    var(--ef-lobby-bg) center/cover no-repeat,
+    linear-gradient(180deg,var(--ef-bg-navy),var(--ef-bg-deep))!important;
+}
+
+.efLobby{overflow-y:auto!important}
+
+.efBetaHome::before,
+.efLobby::before,
+.efProfilesPage::before,
+.efNextLab::before,
+.efBetaProgress::before,
+.efSeason::before,
+.efLeaderboard::before,
+.efChecklist::before,
+.efBetaQa::before,
+.efReport::before,
+.efCacheDoctor::before,
+.efBetaError::before{
+  content:""!important;
+  position:fixed!important;
+  inset:0!important;
+  z-index:0!important;
+  pointer-events:none!important;
+  background:
+    radial-gradient(ellipse at 50% -8%,rgba(90,220,255,.38),transparent 32%),
+    linear-gradient(100deg,transparent 28%,rgba(53,216,255,.08) 46%,transparent 62%),
+    radial-gradient(circle at 20% 80%,rgba(39,180,210,.16),transparent 34%),
+    radial-gradient(circle at 88% 72%,rgba(245,184,75,.08),transparent 30%);
+  mix-blend-mode:screen!important;
+}
+
+.efBetaHome::after,
+.efLobby::after,
+.efProfilesPage::after,
+.efNextLab::after,
+.efBetaProgress::after,
+.efSeason::after,
+.efLeaderboard::after,
+.efChecklist::after,
+.efBetaQa::after,
+.efReport::after,
+.efCacheDoctor::after,
+.efBetaError::after{
+  content:""!important;
+  position:fixed!important;
+  inset:0!important;
+  z-index:0!important;
+  pointer-events:none!important;
+  opacity:.42!important;
+  background-image:
+    radial-gradient(circle at 14% 24%,rgba(234,247,255,.42) 0 1px,transparent 2px),
+    radial-gradient(circle at 78% 18%,rgba(53,216,255,.38) 0 1px,transparent 2px),
+    radial-gradient(circle at 88% 72%,rgba(234,247,255,.28) 0 1px,transparent 2px),
+    radial-gradient(circle at 32% 84%,rgba(53,216,255,.30) 0 1px,transparent 2px);
+  background-size:230px 260px,310px 340px,260px 300px,360px 300px!important;
+  animation:efAmbientDrift 18s linear infinite!important;
+}
+
+.efBetaHome > *,
+.efLobby > *,
+.efProfilesPage > *,
+.efNextLab > *,
+.efBetaProgress > *,
+.efSeason > *,
+.efLeaderboard > *,
+.efChecklist > *,
+.efBetaQa > *,
+.efReport > *,
+.efCacheDoctor > *,
+.efBetaError > *{
+  position:relative!important;
+  z-index:1!important;
+}
+
+.efLobbyBg{
+  opacity:.22!important;
+  background:
+    radial-gradient(ellipse at 50% 18%,rgba(53,216,255,.24),transparent 34%),
+    linear-gradient(180deg,rgba(2,9,21,.08),rgba(2,9,21,.70))!important;
+}
+
+.efBetaHomeShell,
+.efLobbyHero,
+.efProfilesShell,
+.efBetaShell,
+.efSeasonShell,
+.efLbShell,
+.efChecklistShell,
+.efQaShell,
+.efReportShell,
+.efCacheShell{
+  width:min(1160px,calc(100vw - 28px))!important;
+}
+
+.efLobbyNav,
+.efProfilesNav,
+.efSeasonNav,
+.efNextTopbar,
+.efFormTabs,
+.bcOverlayInner{
+  border:1px solid var(--ef-panel-border)!important;
+  background:linear-gradient(180deg,rgba(9,34,56,.70),rgba(2,12,23,.58))!important;
+  box-shadow:0 18px 58px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.08)!important;
+  backdrop-filter:blur(20px) saturate(1.2)!important;
+  -webkit-backdrop-filter:blur(20px) saturate(1.2)!important;
+}
+
+.efLobbyNav a,
+.efProfilesNav a,
+.efSeasonNav a,
+.efBack,
+.bcPill,
+.bcMenuButton,
+.bcNextQuick,
+.efHeroPlay,
+.efSeasonPlay,
+.efPrimaryAction,
+.efNameEdit button,
+.efNameEditInline button,
+.efProfileCreate button,
+.efProfilesCreate button,
+.efProfileActions button,
+.efPlayerSupportActions button,
+.efPanelHead button,
+.efMenuGrid button,
+.efQuickBar button,
+.efUnlockPill,
+.efNextControls button{
+  border:1px solid rgba(88,210,255,.25)!important;
+  color:var(--ef-text)!important;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.04)),
+    rgba(5,18,32,.62)!important;
+  box-shadow:0 10px 30px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.09)!important;
+  text-decoration:none!important;
+  transition:transform 160ms ease,border-color 160ms ease,box-shadow 160ms ease,background 160ms ease!important;
+}
+
+.efHeroPlay,
+.efSeasonPlay,
+.efPrimaryAction,
+.efModeCard.primary,
+.efBetaAction.primary,
+.bcPillPrimary{
+  border-color:rgba(53,216,255,.48)!important;
+  background:
+    linear-gradient(135deg,rgba(53,216,255,.30),rgba(53,216,255,.08) 55%,rgba(245,184,75,.12)),
+    rgba(7,27,45,.78)!important;
+  box-shadow:0 18px 60px rgba(0,0,0,.34),0 0 34px rgba(53,216,255,.22),inset 0 1px 0 rgba(255,255,255,.14)!important;
+}
+
+.bcNextQuick,
+.bcPillNext,
+.efModeCard.season,
+.efBetaAction.season{
+  border-color:rgba(245,184,75,.42)!important;
+  background:
+    linear-gradient(135deg,rgba(245,184,75,.22),rgba(53,216,255,.10)),
+    rgba(7,27,45,.78)!important;
+  color:#fff3c7!important;
+}
+
+.efLobbyNav a:hover,
+.efProfilesNav a:hover,
+.efSeasonNav a:hover,
+.efBack:hover,
+.efHeroPlay:hover,
+.efSeasonPlay:hover,
+.efPrimaryAction:hover:not(:disabled),
+.efModeCard:hover,
+.efBetaAction:hover,
+.efSkinCard:hover,
+.efProfileActions button:hover:not(:disabled),
+.efQuickBar button:hover,
+.bcPill:hover,
+.bcMenuButton:hover,
+.bcNextQuick:hover{
+  transform:translateY(-1px)!important;
+  border-color:rgba(53,216,255,.50)!important;
+  box-shadow:0 18px 54px rgba(0,0,0,.34),0 0 24px rgba(53,216,255,.18),inset 0 1px 0 rgba(255,255,255,.14)!important;
+}
+
+.efBetaHomeHero,
+.efAccountQuickCard,
+.efProfileCard,
+.efBetaHomeStats article,
+.efBetaAction,
+.efPlayerSupport,
+.efLobbyAccount,
+.efLevelCard,
+.efFishStage,
+.efStatsPanel,
+.efModeCard,
+.efProfilesHero,
+.efProfilesCreate,
+.efNextTopbar,
+.efHeroPreview,
+.efHeroInfo,
+.efSkinCard,
+.efBetaHero,
+.efBetaPanel,
+.efBetaDoctor,
+.efPickupCard,
+.efSeasonHero,
+.efSeasonStats article,
+.efSeasonRewardNow,
+.efSeasonPanel,
+.efSeasonGrid article,
+.efLbHero,
+.efLbStats article,
+.efLbOffline,
+.efLeaderboard table,
+.efChecklistHero,
+.efChecklistStats article,
+.efChecklistGrid article,
+.efChecklistFooter,
+.efQaHero,
+.efQaStats article,
+.efQaPanel,
+.efQaGrid article,
+.efQaRepair,
+.efReportHero,
+.efReportLastError,
+.efReportPanel,
+.efCacheHero,
+.efCacheStats article,
+.efCacheActions,
+.efCacheGrid article,
+.efBetaErrorCard,
+.efRunCompleteCard,
+.efTutorialCard,
+.efGamePanel,
+.efNextHud{
+  border-color:var(--ef-panel-border)!important;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.105),rgba(255,255,255,.035)),
+    linear-gradient(140deg,rgba(53,216,255,.08),rgba(2,9,21,.02) 56%,rgba(245,184,75,.035)),
+    var(--ef-panel)!important;
+  box-shadow:0 24px 80px rgba(0,0,0,.36),inset 0 1px 0 rgba(255,255,255,.10)!important;
+  backdrop-filter:blur(18px) saturate(1.15)!important;
+  -webkit-backdrop-filter:blur(18px) saturate(1.15)!important;
+}
+
+.efHomeHeroPreview,
+.efFishStage,
+.efHeroPreview,
+.efSkinShowcase{
+  background:
+    radial-gradient(circle at 50% 42%,rgba(53,216,255,.20),transparent 36%),
+    radial-gradient(circle at 50% 55%,rgba(234,247,255,.06),transparent 52%),
+    rgba(4,18,31,.42)!important;
+  overflow:hidden!important;
+}
+
+.efHomeHeroPreview::before,
+.efFishStage::before,
+.efHeroPreview::before{
+  content:""!important;
+  position:absolute!important;
+  inset:10px!important;
+  border-radius:inherit!important;
+  border:1px solid rgba(88,210,255,.18)!important;
+  background:
+    radial-gradient(circle at 50% 40%,rgba(53,216,255,.18),transparent 34%),
+    radial-gradient(circle at 50% 64%,rgba(234,247,255,.08),transparent 46%)!important;
+  box-shadow:inset 0 0 80px rgba(53,216,255,.12),0 0 34px rgba(53,216,255,.08)!important;
+  pointer-events:none!important;
+}
+
+.efSkinShowcase{
+  border-radius:26px!important;
+}
+
+.efSkinSphere,
+.efSphereFish,
+.efSkinShowcase img{
+  filter:drop-shadow(0 22px 34px rgba(0,0,0,.32)) drop-shadow(0 0 18px rgba(53,216,255,.16))!important;
+}
+
+.efStatsPanel article,
+.efInfoGrid div,
+.efBetaRow,
+.efDoctorGrid article,
+.efQuestGroup,
+.efAchievementList article,
+.efSeasonGoals article,
+.efPanelItem,
+.efQuestItem,
+.efSettingBlock,
+.efSettingRow,
+.efShopCard,
+.efShopBalance span,
+.efProfileGrid button{
+  border-color:rgba(88,210,255,.18)!important;
+  background:rgba(5,18,32,.50)!important;
+}
+
+.efNameEdit input,
+.efNameEditInline input,
+.efProfileCreate input,
+.efProfilesCreate input,
+.efProfileRename input{
+  border:1px solid rgba(88,210,255,.22)!important;
+  background:rgba(2,9,21,.56)!important;
+  color:var(--ef-text)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06)!important;
+}
+
+.efNameEdit input:focus,
+.efNameEditInline input:focus,
+.efProfileCreate input:focus,
+.efProfilesCreate input:focus,
+.efProfileRename input:focus{
+  outline:none!important;
+  border-color:rgba(53,216,255,.56)!important;
+  box-shadow:0 0 0 3px rgba(53,216,255,.12),inset 0 1px 0 rgba(255,255,255,.08)!important;
+}
+
+.efBetaHomeHero h1,
+.efLobbyAccount h1,
+.efProfilesHero h1,
+.efNextTopbar h1,
+.efBetaHero h1,
+.efSeasonHero h1,
+.efLbHero h1,
+.efChecklistHero h1,
+.efQaHero h1,
+.efReportHero h1,
+.efCacheHero h1{
+  text-shadow:0 0 28px rgba(53,216,255,.20)!important;
+}
+
+.efBetaHomeHero span,
+.efLobbyAccount span,
+.efAccountInfo span,
+.efProfileHeader span,
+.efProfilesHero span,
+.efProfilesCreate span,
+.efProfileMain span,
+.efNextKicker,
+.efRarity,
+.efBetaHero span,
+.efSeasonHero span,
+.efLbHero span,
+.efChecklistHero span,
+.efQaHero span,
+.efReportHero span,
+.efCacheHero span{
+  color:rgba(150,232,255,.78)!important;
+}
+
+.efModeCard,
+.efBetaAction,
+.efSkinCard,
+.efProfileCard{
+  transform:translateZ(0)!important;
+}
+
+.efModeCard::after,
+.efBetaAction::after,
+.efHeroPlay::after,
+.efSeasonPlay::after,
+.efPrimaryAction::after{
+  content:""!important;
+  position:absolute!important;
+  inset:-35% auto -35% -70%!important;
+  width:46%!important;
+  transform:skewX(-18deg)!important;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent)!important;
+  animation:efButtonShine 4.8s ease-in-out infinite!important;
+  pointer-events:none!important;
+}
+
+.efHeroPlay,
+.efSeasonPlay,
+.efPrimaryAction,
+.efModeCard,
+.efBetaAction{
+  position:relative!important;
+  overflow:hidden!important;
+}
+
+.efNextHud,
+.efGamePanel,
+.efQuickBar,
+.efNextControls button,
+.efMoveStick,
+.bcOverlayInner,
+.bcMenuButton,
+.bcNextQuick{
+  border-color:rgba(88,210,255,.25)!important;
+  background:
+    linear-gradient(180deg,rgba(9,34,56,.78),rgba(2,12,23,.64)),
+    rgba(5,18,32,.72)!important;
+}
+
+.efNextCanvas{
+  background:var(--ef-bg-navy)!important;
+}
+
+.bcPseudoFs,
+.bcImmersive{
+  background:
+    linear-gradient(180deg,rgba(2,9,21,.08),rgba(2,9,21,.72)),
+    var(--ef-lobby-bg) center/cover no-repeat,
+    var(--ef-bg-deep)!important;
+}
+
+@keyframes efAmbientDrift{
+  from{background-position:0 0,0 0,0 0,0 0}
+  to{background-position:0 -260px,0 -340px,0 -300px,0 -300px}
+}
+
+@keyframes efButtonShine{
+  0%,58%{left:-70%;opacity:0}
+  68%{opacity:.9}
+  88%,100%{left:126%;opacity:0}
+}
+
+@media(max-width:760px){
+  .efBetaHomeShell,
+  .efLobbyHero,
+  .efProfilesShell,
+  .efBetaShell,
+  .efSeasonShell,
+  .efLbShell,
+  .efChecklistShell,
+  .efQaShell,
+  .efReportShell,
+  .efCacheShell{
+    width:min(100%,calc(100vw - 18px))!important;
+  }
+
+  .efLobbyNav,
+  .efProfilesNav,
+  .efSeasonNav{
+    border-radius:24px!important;
+  }
+
+  .efBetaHomeHero,
+  .efLobbyAccount,
+  .efFishStage,
+  .efProfilesHero,
+  .efLabStage,
+  .efBetaHero,
+  .efSeasonHero,
+  .efLbHero{
+    border-radius:26px!important;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  *,
+  *::before,
+  *::after{
+    animation-duration:.001ms!important;
+    animation-iteration-count:1!important;
+    scroll-behavior:auto!important;
+    transition-duration:.001ms!important;
+  }
+}

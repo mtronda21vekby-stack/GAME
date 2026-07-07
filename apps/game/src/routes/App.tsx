@@ -12,7 +12,6 @@ import { BetaReport } from "../evofish-next/ui/BetaReport";
 import { Leaderboard } from "../evofish-next/ui/Leaderboard";
 import { SeasonHub } from "../evofish-next/ui/SeasonHub";
 import { SkinLab } from "../evofish-next/ui/SkinLab";
-import { NextLobby } from "../evofish-next/ui/NextLobby";
 import { NextPlaySession } from "../evofish-next/ui/NextPlaySession";
 import { attachConsoleAnalytics, track } from "@blackcrown/core";
 
@@ -27,6 +26,13 @@ function withBoundary(element: React.ReactNode) {
   return <BetaErrorBoundary>{element}</BetaErrorBoundary>;
 }
 
+function GameModeEntry() {
+  const mode = new URLSearchParams(window.location.search).get("mode");
+  if (mode === "classic") return <Game />;
+  if (mode === "next") return <NextPlaySession />;
+  return <BetaHome />;
+}
+
 export function App() {
   useEffect(() => attachConsoleAnalytics(), []);
   useEffect(() => track({ type: "page_view", path: window.location.pathname }), []);
@@ -36,9 +42,9 @@ export function App() {
     <Router
       routes={[
         { path: "/", element: withBoundary(<BetaHome />) },
-        { path: "/game", element: withBoundary(<BetaHome />) },
-        { path: "/game/lobby", element: withBoundary(<NextLobby />) },
-        { path: "/game/account", element: withBoundary(<NextLobby />) },
+        { path: "/game", element: withBoundary(<GameModeEntry />) },
+        { path: "/game/lobby", element: withBoundary(<BetaHome />) },
+        { path: "/game/account", element: withBoundary(<BetaHome />) },
         { path: "/game/play", element: withBoundary(<NextPlaySession />) },
         { path: "/game/debug", element: withBoundary(<AIDebugLab />) },
         { path: "/game/progress", element: withBoundary(<BetaProgress />) },
@@ -51,8 +57,8 @@ export function App() {
         { path: "/game/cache", element: withBoundary(<BetaCacheDoctor />) },
         { path: "/game/skins", element: withBoundary(<SkinLab />) },
         { path: "/game/classic", element: withBoundary(<Game />) },
-        { path: "/game/next", element: withBoundary(<NextLobby />) },
-        { path: "/game/next/lobby", element: withBoundary(<NextLobby />) },
+        { path: "/game/next", element: withBoundary(<BetaHome />) },
+        { path: "/game/next/lobby", element: withBoundary(<BetaHome />) },
         { path: "/game/next/debug", element: withBoundary(<AIDebugLab />) },
         { path: "/game/next/progress", element: withBoundary(<BetaProgress />) },
         { path: "/game/next/leaderboard", element: withBoundary(<Leaderboard />) },
@@ -65,8 +71,8 @@ export function App() {
         { path: "/game/next/play", element: withBoundary(<NextPlaySession />) },
         { path: "/classic", element: withBoundary(<Game />) },
         { path: "/next", element: withBoundary(<BetaHome />) },
-        { path: "/next/lobby", element: withBoundary(<NextLobby />) },
-        { path: "/next/account", element: withBoundary(<NextLobby />) },
+        { path: "/next/lobby", element: withBoundary(<BetaHome />) },
+        { path: "/next/account", element: withBoundary(<BetaHome />) },
         { path: "/next/debug", element: withBoundary(<AIDebugLab />) },
         { path: "/next/progress", element: withBoundary(<BetaProgress />) },
         { path: "/next/leaderboard", element: withBoundary(<Leaderboard />) },
