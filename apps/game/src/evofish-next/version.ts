@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-profile-hub-removed-6.7.5";
+export const EVOFISH_NEXT_VERSION = "next-max-ai-engine-pass-6.8.0";
