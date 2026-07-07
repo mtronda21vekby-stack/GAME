@@ -20,8 +20,16 @@ type CombatReadability = {
   priority: number;
 };
 
+type ReadabilityCache = Map<number, CombatReadability>;
+
 function isVisible(camera: NextCameraState, x: number, y: number, pad = 160) {
   return x >= camera.x - pad && x <= camera.x + camera.width + pad && y >= camera.y - pad && y <= camera.y + camera.height + pad;
+}
+
+function distSq(ax: number, ay: number, bx: number, by: number) {
+  const dx = ax - bx;
+  const dy = ay - by;
+  return dx * dx + dy * dy;
 }
 
 function entityVisualRadius(entity: NextFishEntity) {
@@ -47,23 +55,19 @@ function drawEntitySkin(ctx: CanvasRenderingContext2D, entity: NextFishEntity, a
   const src = skinSpriteSource(entity);
   const img = getSprite(src);
   const radius = entityVisualRadius(entity);
-
-  ctx.save();
-  ctx.translate(entity.x, entity.y);
-  ctx.rotate(entity.angle);
-  ctx.globalAlpha = alpha;
-
-  if (img?.complete && img.naturalWidth > 0) {
-    const formScale = entity.form === "megalodon" ? 5.3 : entity.form === "shark" ? 5.0 : 4.75;
-    const width = radius * formScale;
-    const height = width * (img.naturalHeight / Math.max(1, img.naturalWidth));
-    ctx.drawImage(img, -width * 0.5, -height * 0.5, width, height);
-  } else {
-    ctx.restore();
+  if (!img?.complete || img.naturalWidth <= 0) {
     drawEvoFishSkin(ctx, entity.skin, entity.form, { x: entity.x, y: entity.y, radius, angle: entity.angle, alpha });
     return;
   }
 
+  const formScale = entity.form === "megalodon" ? 5.3 : entity.form === "shark" ? 5.0 : 4.75;
+  const width = radius * formScale;
+  const height = width * (img.naturalHeight / Math.max(1, img.naturalWidth));
+  ctx.save();
+  ctx.translate(entity.x, entity.y);
+  ctx.rotate(entity.angle);
+  ctx.globalAlpha = alpha;
+  ctx.drawImage(img, -width * 0.5, -height * 0.5, width, height);
   ctx.globalAlpha = 1;
   ctx.restore();
 }
@@ -85,23 +89,19 @@ function combatReadability(state: NextEngineState, enemy: NextFishEntity): Comba
   const massRatio = enemy.mass / Math.max(0.5, state.player.mass);
   const canEat = canPlayerDevour(state.player, enemy);
 
-  if (isBoss(enemy)) {
-    return { id: "boss", label: "BOSS", sub: "держи дистанцию", ring: "rgba(180,140,255,.82)", fill: "rgba(180,140,255,.14)", badge: "rgba(36,16,74,.88)", text: "rgba(230,210,255,.98)", priority: 5 };
-  }
-
-  if (canEat) {
-    return { id: "eat", label: "EAT", sub: "можно съесть", ring: "rgba(90,255,170,.95)", fill: "rgba(90,255,170,.12)", badge: "rgba(8,54,34,.88)", text: "rgba(130,255,190,.98)", priority: 1 };
-  }
-
-  if (gap >= 7 || massRatio >= 1.22) {
-    return { id: "run", label: "RUN", sub: "слишком силён", ring: "rgba(255,78,92,.95)", fill: "rgba(255,78,92,.13)", badge: "rgba(68,8,18,.9)", text: "rgba(255,150,150,.98)", priority: 4 };
-  }
-
-  if (gap >= 3 || massRatio >= 1.06 || isPredator(enemy)) {
-    return { id: "danger", label: "DANGER", sub: "опасно", ring: "rgba(255,176,72,.95)", fill: "rgba(255,176,72,.13)", badge: "rgba(66,38,8,.88)", text: "rgba(255,214,120,.98)", priority: 3 };
-  }
-
+  if (isBoss(enemy)) return { id: "boss", label: "BOSS", sub: "держи дистанцию", ring: "rgba(180,140,255,.82)", fill: "rgba(180,140,255,.14)", badge: "rgba(36,16,74,.88)", text: "rgba(230,210,255,.98)", priority: 5 };
+  if (canEat) return { id: "eat", label: "EAT", sub: "можно съесть", ring: "rgba(90,255,170,.95)", fill: "rgba(90,255,170,.12)", badge: "rgba(8,54,34,.88)", text: "rgba(130,255,190,.98)", priority: 1 };
+  if (gap >= 7 || massRatio >= 1.22) return { id: "run", label: "RUN", sub: "слишком силён", ring: "rgba(255,78,92,.95)", fill: "rgba(255,78,92,.13)", badge: "rgba(68,8,18,.9)", text: "rgba(255,150,150,.98)", priority: 4 };
+  if (gap >= 3 || massRatio >= 1.06 || isPredator(enemy)) return { id: "danger", label: "DANGER", sub: "опасно", ring: "rgba(255,176,72,.95)", fill: "rgba(255,176,72,.13)", badge: "rgba(66,38,8,.88)", text: "rgba(255,214,120,.98)", priority: 3 };
   return { id: "fight", label: "FIGHT", sub: "можно бить", ring: "rgba(255,240,130,.92)", fill: "rgba(255,240,130,.10)", badge: "rgba(58,52,10,.88)", text: "rgba(255,244,170,.98)", priority: 2 };
+}
+
+function cachedReadability(state: NextEngineState, enemy: NextFishEntity, cache: ReadabilityCache) {
+  const cached = cache.get(enemy.id);
+  if (cached) return cached;
+  const next = combatReadability(state, enemy);
+  cache.set(enemy.id, next);
+  return next;
 }
 
 function aiColor(state: NextAIState) {
@@ -113,14 +113,31 @@ function aiColor(state: NextAIState) {
   return "rgba(150,230,255,.18)";
 }
 
-function drawWorldBackground(ctx: CanvasRenderingContext2D, state: NextEngineState, camera: NextCameraState, viewport: NextViewport) {
-  const theme = getWaterThemeForLevel(state.player.level, state.worldId === "dark_cave");
-  const g = ctx.createLinearGradient(0, 0, 0, viewport.height);
-  g.addColorStop(0, theme.top);
-  g.addColorStop(1, theme.bottom);
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, viewport.width, viewport.height);
+function drawWaterParticles(ctx: CanvasRenderingContext2D, state: NextEngineState, camera: NextCameraState, color: string) {
+  const step = state.worldId === "dark_cave" ? 260 : 340;
+  const startX = Math.max(0, Math.floor(camera.x / step) * step);
+  const endX = Math.min(state.config.width, camera.x + camera.width + step);
+  const startY = Math.max(0, Math.floor(camera.y / step) * step);
+  const endY = Math.min(state.config.height, camera.y + camera.height + step);
+  ctx.fillStyle = color;
+  for (let x = startX; x <= endX; x += step) {
+    for (let y = startY; y <= endY; y += step) {
+      const wave = Math.sin((state.frame + x * 0.12 + y * 0.08) * 0.018);
+      ctx.beginPath();
+      ctx.arc(x + 70 * wave, y + 46 * Math.cos(wave), state.worldId === "dark_cave" ? 4.6 : 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
 
+function drawWorldBackground(ctx: CanvasRenderingContext2D, state: NextEngineState, camera: NextCameraState, viewport: NextViewport) {
+  const quality = viewport.quality || "balanced";
+  const theme = getWaterThemeForLevel(state.player.level, state.worldId === "dark_cave");
+  const gradient = ctx.createLinearGradient(0, 0, 0, viewport.height);
+  gradient.addColorStop(0, theme.top);
+  gradient.addColorStop(1, theme.bottom);
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, viewport.width, viewport.height);
   ctx.save();
   ctx.scale(camera.scale, camera.scale);
   ctx.translate(-camera.x, -camera.y);
@@ -132,20 +149,19 @@ function drawWorldBackground(ctx: CanvasRenderingContext2D, state: NextEngineSta
   const endX = Math.min(state.config.width, camera.x + camera.width + grid);
   const startY = Math.max(0, Math.floor(camera.y / grid) * grid);
   const endY = Math.min(state.config.height, camera.y + camera.height + grid);
-
   for (let x = startX; x <= endX; x += grid) {
     ctx.beginPath();
     ctx.moveTo(x, Math.max(0, camera.y - grid));
     ctx.lineTo(x, Math.min(state.config.height, camera.y + camera.height + grid));
     ctx.stroke();
   }
-
   for (let y = startY; y <= endY; y += grid) {
     ctx.beginPath();
     ctx.moveTo(Math.max(0, camera.x - grid), y);
     ctx.lineTo(Math.min(state.config.width, camera.x + camera.width + grid), y);
     ctx.stroke();
   }
+  if (quality !== "low") drawWaterParticles(ctx, state, camera, theme.particle);
 
   for (const zone of getZonesForWorld(state.worldId || "main_reef")) {
     if (!isVisible(camera, zone.x, zone.y, zone.radius + 180)) continue;
@@ -156,15 +172,14 @@ function drawWorldBackground(ctx: CanvasRenderingContext2D, state: NextEngineSta
     ctx.arc(zone.x, zone.y, zone.radius, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
-    if ((viewport.quality || "balanced") !== "low") {
+    if (quality !== "low") {
       ctx.textAlign = "center";
       ctx.font = "900 24px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
       ctx.fillStyle = "rgba(231,242,255,.28)";
       ctx.fillText(zone.name.toUpperCase(), zone.x, zone.y - zone.radius * 0.12);
     }
   }
-
-  drawPortal(ctx, state, camera, viewport.quality || "balanced");
+  drawPortal(ctx, state, camera, quality);
   ctx.strokeStyle = theme.border;
   ctx.lineWidth = 3 / camera.scale;
   ctx.strokeRect(0, 0, state.config.width, state.config.height);
@@ -176,7 +191,6 @@ function drawPortal(ctx: CanvasRenderingContext2D, state: NextEngineState, camer
   const unlocked = state.worldId === "dark_cave" || darkCavePortalUnlocked(state.stats.artifactsFound || 0, state.player.level);
   if (state.worldId !== "dark_cave" && !unlocked && (state.stats.artifactsFound || 0) <= 0 && state.player.level < 8) return;
   if (!isVisible(camera, portal.x, portal.y, portal.radius + 220)) return;
-
   const pulse = Math.sin(state.frame * 0.045) * 0.5 + 0.5;
   const outer = portal.radius + pulse * 14;
   ctx.save();
@@ -213,7 +227,6 @@ function drawResource(ctx: CanvasRenderingContext2D, node: NextResourceNode, qua
   ctx.beginPath();
   ctx.arc(node.x, node.y, node.radius * 2.15 + pulse, 0, Math.PI * 2);
   ctx.fill();
-
   if (node.kind === "coral" || node.kind === "artifact_shell") {
     ctx.translate(node.x, node.y);
     ctx.rotate(Math.sin(node.pulse * 0.6) * 0.2);
@@ -285,13 +298,11 @@ function drawHpBar(ctx: CanvasRenderingContext2D, entity: NextFishEntity, width:
   ctx.fillRect(x, y, width * pct, 5);
 }
 
-function drawReadabilityRing(ctx: CanvasRenderingContext2D, state: NextEngineState, enemy: NextFishEntity, quality: string) {
-  const info = combatReadability(state, enemy);
+function drawReadabilityRing(ctx: CanvasRenderingContext2D, state: NextEngineState, enemy: NextFishEntity, quality: string, info: CombatReadability) {
   const radius = entityVisualRadius(enemy);
   const boss = isBoss(enemy);
-  const distance = Math.hypot(enemy.x - state.player.x, enemy.y - state.player.y);
-  if (quality === "low" && !boss && distance > 480 && info.id !== "eat" && enemy.aiState !== "attack") return;
-
+  const farSq = distSq(enemy.x, enemy.y, state.player.x, state.player.y);
+  if (quality === "low" && !boss && farSq > 480 * 480 && info.id !== "eat" && enemy.aiState !== "attack") return;
   ctx.save();
   ctx.fillStyle = info.fill;
   ctx.strokeStyle = info.ring;
@@ -300,32 +311,26 @@ function drawReadabilityRing(ctx: CanvasRenderingContext2D, state: NextEngineSta
   ctx.arc(enemy.x, enemy.y, radius * (boss ? 2.42 : info.id === "run" ? 2.2 : 1.82), 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
-
   ctx.strokeStyle = aiColor(enemy.aiState);
   ctx.lineWidth = enemy.aiState === "attack" || enemy.aiState === "ambush" ? 4 : 2;
   ctx.beginPath();
   ctx.arc(enemy.x, enemy.y, radius * (enemy.aiState === "attack" ? 2.55 : enemy.aiState === "ambush" ? 2.35 : 2.0), 0, Math.PI * 2);
   ctx.stroke();
-
   if (enemy.aiState === "hunt" || enemy.aiState === "attack" || enemy.aiState === "ambush") {
     ctx.fillStyle = info.ring;
     ctx.beginPath();
     ctx.arc(enemy.x + Math.cos(enemy.angle) * radius * 1.9, enemy.y + Math.sin(enemy.angle) * radius * 1.9, boss ? 7 : 4.8, 0, Math.PI * 2);
     ctx.fill();
   }
-
   ctx.restore();
 }
 
-function drawReadabilityBadge(ctx: CanvasRenderingContext2D, state: NextEngineState, enemy: NextFishEntity, quality: string) {
-  const info = combatReadability(state, enemy);
+function drawReadabilityBadge(ctx: CanvasRenderingContext2D, state: NextEngineState, enemy: NextFishEntity, quality: string, info: CombatReadability) {
   const boss = isBoss(enemy);
-  const distance = Math.hypot(enemy.x - state.player.x, enemy.y - state.player.y);
-  if (quality === "low" && !boss && distance > 440 && info.id !== "eat") return;
-
+  const farSq = distSq(enemy.x, enemy.y, state.player.x, state.player.y);
+  if (quality === "low" && !boss && farSq > 440 * 440 && info.id !== "eat") return;
   const text = `${info.label} · LV ${npcDisplayLevel(enemy)}`;
   const y = enemy.y - entityVisualRadius(enemy) * (boss ? 4.05 : 3.18) - 8;
-
   ctx.save();
   ctx.textAlign = "center";
   ctx.font = boss ? "1000 15px system-ui, -apple-system, BlinkMacSystemFont, sans-serif" : "950 12px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
@@ -341,8 +346,7 @@ function drawReadabilityBadge(ctx: CanvasRenderingContext2D, state: NextEngineSt
   ctx.stroke();
   ctx.fillStyle = info.text;
   ctx.fillText(text, enemy.x, y + 4);
-
-  if (quality === "high" || boss || distance < 320) {
+  if (quality === "high" || boss || farSq < 320 * 320) {
     ctx.font = "850 10px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
     ctx.fillStyle = "rgba(231,242,255,.72)";
     ctx.fillText(info.sub, enemy.x, y + height * 0.88 + 8);
@@ -375,7 +379,6 @@ function drawCombatAura(ctx: CanvasRenderingContext2D, state: NextEngineState) {
   const player = state.player;
   const radius = entityVisualRadius(player);
   ctx.save();
-
   if (player.downed || player.dead) {
     ctx.strokeStyle = "rgba(255,120,120,.42)";
     ctx.lineWidth = 5;
@@ -385,7 +388,6 @@ function drawCombatAura(ctx: CanvasRenderingContext2D, state: NextEngineState) {
     ctx.restore();
     return;
   }
-
   if (state.craft.barrierT > 0) {
     ctx.strokeStyle = "rgba(255,240,160,.50)";
     ctx.lineWidth = 4;
@@ -393,7 +395,6 @@ function drawCombatAura(ctx: CanvasRenderingContext2D, state: NextEngineState) {
     ctx.arc(player.x, player.y, radius * 2.38, 0, Math.PI * 2);
     ctx.stroke();
   }
-
   if (player.invulnT > 0) {
     ctx.strokeStyle = "rgba(120,240,255,.42)";
     ctx.lineWidth = 3;
@@ -401,7 +402,6 @@ function drawCombatAura(ctx: CanvasRenderingContext2D, state: NextEngineState) {
     ctx.arc(player.x, player.y, radius * 2.05, 0, Math.PI * 2);
     ctx.stroke();
   }
-
   if (player.dashT > 0 || player.biteCd > 0.25) {
     const biteX = player.x + Math.cos(player.angle) * radius * 1.35;
     const biteY = player.y + Math.sin(player.angle) * radius * 1.35;
@@ -411,7 +411,6 @@ function drawCombatAura(ctx: CanvasRenderingContext2D, state: NextEngineState) {
     ctx.arc(biteX, biteY, radius * 1.45, 0, Math.PI * 2);
     ctx.stroke();
   }
-
   ctx.restore();
 }
 
@@ -427,13 +426,8 @@ function drawFloatText(ctx: CanvasRenderingContext2D, state: NextEngineState) {
   ctx.globalAlpha = 1;
 }
 
-function mapX(state: NextEngineState, x: number, left: number, width: number) {
-  return left + (x / state.config.width) * width;
-}
-
-function mapY(state: NextEngineState, y: number, top: number, height: number) {
-  return top + (y / state.config.height) * height;
-}
+function mapX(state: NextEngineState, x: number, left: number, width: number) { return left + (x / state.config.width) * width; }
+function mapY(state: NextEngineState, y: number, top: number, height: number) { return top + (y / state.config.height) * height; }
 
 function drawMapDot(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, fill: string, stroke?: string) {
   ctx.fillStyle = fill;
@@ -447,7 +441,7 @@ function drawMapDot(ctx: CanvasRenderingContext2D, x: number, y: number, r: numb
   }
 }
 
-function drawMiniMap(ctx: CanvasRenderingContext2D, state: NextEngineState, camera: NextCameraState, viewport: NextViewport) {
+function drawMiniMap(ctx: CanvasRenderingContext2D, state: NextEngineState, camera: NextCameraState, viewport: NextViewport, cache: ReadabilityCache) {
   const mapW = Math.min(150, Math.max(112, viewport.width * 0.18));
   const mapH = Math.round(mapW * (state.config.height / state.config.width));
   const left = Math.max(12, viewport.width - mapW - 12);
@@ -458,12 +452,13 @@ function drawMiniMap(ctx: CanvasRenderingContext2D, state: NextEngineState, came
   ctx.lineWidth = 1;
   ctx.fillRect(left, top, mapW, mapH);
   ctx.strokeRect(left, top, mapW, mapH);
-
-  for (const enemy of state.enemies.slice(0, 42)) {
-    const info = combatReadability(state, enemy);
+  const nearest = [...state.enemies]
+    .sort((a, b) => distSq(a.x, a.y, state.player.x, state.player.y) - distSq(b.x, b.y, state.player.x, state.player.y))
+    .slice(0, 42);
+  for (const enemy of nearest) {
+    const info = cachedReadability(state, enemy, cache);
     drawMapDot(ctx, mapX(state, enemy.x, left, mapW), mapY(state, enemy.y, top, mapH), isBoss(enemy) ? 5 : info.id === "run" ? 3 : 2.2, info.ring);
   }
-
   drawMapDot(ctx, mapX(state, state.player.x, left, mapW), mapY(state, state.player.y, top, mapH), 4.5, "rgba(110,255,180,.95)", "rgba(255,255,255,.72)");
   ctx.textAlign = "left";
   ctx.font = "900 10px system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
@@ -504,35 +499,34 @@ export function renderNextWorld(ctx: CanvasRenderingContext2D, state: NextEngine
   const camera = getNextCamera(state, viewport);
   const playerDowned = Boolean(state.player.downed || state.player.dead);
   const quality = viewport.quality || "balanced";
+  const readabilityCache: ReadabilityCache = new Map();
 
   drawWorldBackground(ctx, state, camera, viewport);
-
   ctx.save();
   ctx.scale(camera.scale, camera.scale);
   ctx.translate(-camera.x, -camera.y);
-
   drawEvents(ctx, state, camera, quality);
   drawResources(ctx, state, camera, quality);
 
-  const visibleEnemies = state.enemies.filter((enemy) => isVisible(camera, enemy.x, enemy.y, entityVisualRadius(enemy) * 4.2));
-  visibleEnemies.sort((a, b) => combatReadability(state, b).priority - combatReadability(state, a).priority);
+  const visibleEnemies = state.enemies
+    .filter((enemy) => isVisible(camera, enemy.x, enemy.y, entityVisualRadius(enemy) * 4.2))
+    .map((enemy) => ({ enemy, info: cachedReadability(state, enemy, readabilityCache) }))
+    .sort((a, b) => b.info.priority - a.info.priority);
 
-  for (const enemy of visibleEnemies) {
+  for (const item of visibleEnemies) {
+    const enemy = item.enemy;
     const radius = entityVisualRadius(enemy);
-    const info = combatReadability(state, enemy);
     drawApexFrame(ctx, enemy);
-    drawReadabilityRing(ctx, state, enemy, quality);
-    drawEntitySkin(ctx, enemy, enemy.hitT > 0 ? 0.55 : info.id === "eat" ? 0.86 : 0.94);
+    drawReadabilityRing(ctx, state, enemy, quality, item.info);
+    drawEntitySkin(ctx, enemy, enemy.hitT > 0 ? 0.55 : item.info.id === "eat" ? 0.86 : 0.94);
     if (quality !== "low" || isBoss(enemy)) drawHpBar(ctx, enemy, radius * (isBoss(enemy) ? 4.1 : 2.8));
-    drawReadabilityBadge(ctx, state, enemy, quality);
+    drawReadabilityBadge(ctx, state, enemy, quality, item.info);
   }
-
   drawCombatAura(ctx, state);
   drawEntitySkin(ctx, state.player, playerDowned ? 0.34 : state.player.hitT > 0 ? 0.68 : 1);
   drawHpBar(ctx, state.player, entityVisualRadius(state.player) * 3.2);
   drawFloatText(ctx, state);
-
   ctx.restore();
-  drawMiniMap(ctx, state, camera, viewport);
+  drawMiniMap(ctx, state, camera, viewport, readabilityCache);
   drawLoadingOverlay(ctx, state, viewport);
 }
