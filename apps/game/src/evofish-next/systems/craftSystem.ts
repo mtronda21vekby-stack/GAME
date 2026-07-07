@@ -2,6 +2,10 @@ import type { NextEngineState } from "../core/engineTypes";
 import { NEXT_CRAFT_RECIPES, normalizeCraftState, type NextCraftInventory, type NextCraftRecipe } from "../content/craft";
 
 const CRAFT_INVENTORY_KEY = "evofish_next_craft_inventory_v1";
+const CRAFT_REQUEST_KEY = "evofish_next_craft_requests_v1";
+
+type CraftActionType = "buy" | "use";
+type CraftRequest = { type: CraftActionType; recipeId: string; amount: number; id: number };
 
 function addFloat(state: NextEngineState, text: string) {
   const player = state.player;
@@ -22,6 +26,46 @@ function writeStoredInventory(inventory: NextCraftInventory) {
     localStorage.setItem(CRAFT_INVENTORY_KEY, JSON.stringify(inventory));
   } catch {
     // local craft inventory is optional in private modes
+  }
+}
+
+function readRequests(): CraftRequest[] {
+  try {
+    const raw = localStorage.getItem(CRAFT_REQUEST_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeRequests(requests: CraftRequest[]) {
+  try {
+    localStorage.setItem(CRAFT_REQUEST_KEY, JSON.stringify(requests.slice(-24)));
+  } catch {
+    // optional
+  }
+}
+
+export function readCraftInventorySnapshot(): NextCraftInventory {
+  return normalizeCraftState({ inventory: readStoredInventory() }).inventory;
+}
+
+export function queueCraftAction(type: CraftActionType, recipeId: string, amount = 1) {
+  const recipe = NEXT_CRAFT_RECIPES.find((item) => item.id === recipeId);
+  if (!recipe) return false;
+  const next = [...readRequests(), { type, recipeId, amount: Math.max(1, Math.min(99, Math.floor(amount || 1))), id: Date.now() + Math.floor(Math.random() * 9999) }];
+  writeRequests(next);
+  return true;
+}
+
+function consumeRequests(state: NextEngineState) {
+  const requests = readRequests();
+  if (!requests.length) return;
+  writeRequests([]);
+  for (const request of requests.slice(0, 12)) {
+    if (request.type === "buy") buyCraftItem(state, request.recipeId, request.amount);
+    else useCraftItem(state, request.recipeId);
   }
 }
 
@@ -181,6 +225,7 @@ export function getCraftStock(state: NextEngineState, recipeId: string) {
 }
 
 export function updateCraftSystem(state: NextEngineState, dt: number) {
+  consumeRequests(state);
   const craft = normalizeCraft(state);
   craft.barrierT = Math.max(0, craft.barrierT - dt);
   craft.biteBoostT = Math.max(0, craft.biteBoostT - dt);
