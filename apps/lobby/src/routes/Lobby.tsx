@@ -84,7 +84,9 @@ function readHubProfile(fallbackNick: string): HubProfile {
   };
 
   try {
-    const raw = localStorage.getItem("evofish_next_save_v1");
+    const activeProfileId = (localStorage.getItem("evofish_next_active_profile_v1") || "main").trim() || "main";
+    const activeSaveKey = activeProfileId === "main" ? "evofish_next_save_v1" : `evofish_next_save_v1__profile_${activeProfileId}`;
+    const raw = localStorage.getItem(activeSaveKey) || localStorage.getItem("evofish_next_save_v1");
     if (!raw) return base;
 
     const save = readRecord(JSON.parse(raw));
@@ -194,17 +196,17 @@ function LobbyAtmosphere() {
   );
 }
 
-function PlayerPanel(_props: { profile: HubProfile }) {
-  const displayName = "Игрок";
-  const displayLevel = 1;
-  const displayXp = 0;
-  const displayXpToNext = 260;
+function PlayerPanel({ profile }: { profile: HubProfile }) {
+  const displayName = profile.nickname;
+  const displayLevel = profile.level;
+  const displayXp = profile.xp;
+  const displayXpToNext = profile.xpToNext;
   const progress = progressPercent(displayXp, displayXpToNext);
 
   return (
     <section className="hubProfilePanel" aria-label="Профиль игрока">
       <div className="hubAvatar" aria-hidden="true">
-        И
+        {displayName.slice(0, 1).toUpperCase()}
       </div>
       <div className="hubProfileText">
         <strong className="hubProfileName">{displayName}</strong>
