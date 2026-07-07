@@ -18,14 +18,18 @@ function isPredator(enemy: NextFishEntity) {
 }
 
 function isMidGameLevel(level: number) {
-  return level >= 14 && level <= 23;
+  return level >= 14 && level <= 25;
+}
+
+function isPost21SoftBridge(level: number) {
+  return level >= 21 && level <= 25;
 }
 
 function predatorPressureLimit(level: number) {
   if (level < 5) return 2;
   if (level < 14) return 3;
-  if (level <= 23) return 2;
-  if (level < 35) return 4;
+  if (level <= 25) return 2;
+  if (level < 35) return 3;
   return 5;
 }
 
@@ -137,7 +141,10 @@ function aiTarget(state: NextEngineState, enemy: NextFishEntity) {
   const dy = player.y - enemy.y;
   const distance = Math.hypot(dx, dy) || 1;
   const playerCanEat = canPlayerDevour(player, enemy);
-  const enemyCanThreaten = canDevour(enemy.mass * 1.08, player.mass) || isPredator(enemy);
+  const levelGap = Math.max(0, Math.floor(enemy.npcLevel || 1) - Math.floor(player.level || 1));
+  const enemyCanThreaten =
+    canDevour(enemy.mass * 1.08, player.mass) ||
+    (isPredator(enemy) && levelGap <= (isPost21SoftBridge(player.level) ? 10 : 14));
   const predatorPressure = countPredatorsNearPlayer(state);
   const pressureLimit = predatorPressureLimit(player.level);
   const midGame = isMidGameLevel(player.level);
