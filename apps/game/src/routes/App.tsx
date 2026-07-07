@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { Router } from "../router";
 import { Game } from "./Game";
+import { AIDebugLab } from "../evofish-next/ui/AIDebugLab";
 import { BetaCacheDoctor } from "../evofish-next/ui/BetaCacheDoctor";
 import { BetaChecklist } from "../evofish-next/ui/BetaChecklist";
 import { BetaErrorBoundary } from "../evofish-next/ui/BetaErrorBoundary";
@@ -39,6 +40,7 @@ export function App() {
         { path: "/game/lobby", element: withBoundary(<NextLobby />) },
         { path: "/game/account", element: withBoundary(<NextLobby />) },
         { path: "/game/play", element: withBoundary(<NextPlaySession />) },
+        { path: "/game/debug", element: withBoundary(<AIDebugLab />) },
         { path: "/game/progress", element: withBoundary(<BetaProgress />) },
         { path: "/game/repair", element: withBoundary(<BetaProgress />) },
         { path: "/game/leaderboard", element: withBoundary(<Leaderboard />) },
@@ -51,6 +53,7 @@ export function App() {
         { path: "/game/classic", element: withBoundary(<Game />) },
         { path: "/game/next", element: withBoundary(<NextLobby />) },
         { path: "/game/next/lobby", element: withBoundary(<NextLobby />) },
+        { path: "/game/next/debug", element: withBoundary(<AIDebugLab />) },
         { path: "/game/next/progress", element: withBoundary(<BetaProgress />) },
         { path: "/game/next/leaderboard", element: withBoundary(<Leaderboard />) },
         { path: "/game/next/season", element: withBoundary(<SeasonHub />) },
@@ -64,6 +67,7 @@ export function App() {
         { path: "/next", element: withBoundary(<BetaHome />) },
         { path: "/next/lobby", element: withBoundary(<NextLobby />) },
         { path: "/next/account", element: withBoundary(<NextLobby />) },
+        { path: "/next/debug", element: withBoundary(<AIDebugLab />) },
         { path: "/next/progress", element: withBoundary(<BetaProgress />) },
         { path: "/next/leaderboard", element: withBoundary(<Leaderboard />) },
         { path: "/next/season", element: withBoundary(<SeasonHub />) },
