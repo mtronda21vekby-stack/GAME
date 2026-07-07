@@ -78,7 +78,7 @@ export type NextStoryState = {
   completed: Record<string, true>;
 };
 
-export type NextAIState = "wander" | "hunt" | "flee" | "attack";
+export type NextAIState = "idle" | "patrol" | "wander" | "hunt" | "flee" | "attack" | "regroup" | "guard" | "ambush";
 
 export type NextFishEntity = {
   id: number;
@@ -98,8 +98,10 @@ export type NextFishEntity = {
   angle: number;
   hitT: number;
   npcLevel?: number;
+  threatScore?: number;
   aiType: NextEnemyArchetypeId;
   aiState: NextAIState;
+  aiMood?: "calm" | "pressing" | "danger" | "retreat";
   familyName?: string;
   familyRewardMultiplier?: number;
   aggroRadius: number;
@@ -135,6 +137,22 @@ export type NextWorldConfig = {
   height: number;
   enemyTarget: number;
   resourceTarget: number;
+};
+
+export type NextDirectorState = {
+  safeWindowT: number;
+  lastPlayerHp: number;
+  lowHpFrames: number;
+  economyClock: number;
+  economyStartPearls: number;
+  economyStartCorals: number;
+  economyStartXp: number;
+  economyXpPerMinute: number;
+  pearlsPerTenMinutes: number;
+  coralsPerTenMinutes: number;
+  nearbyChecks: number;
+  spatialCells: number;
+  directorMode: string;
 };
 
 export type NextEngineStats = {
@@ -200,6 +218,19 @@ export type NextEngineStats = {
   reviveTime?: number;
   skinName: string;
   formName: string;
+  aiDirectorMode?: string;
+  aiNearEnemies?: number;
+  aiNearPredators?: number;
+  aiNearElite?: number;
+  aiAvgNpcLevel?: number;
+  aiThreatScore?: number;
+  aiSafeWindow?: number;
+  perfSpatialCells?: number;
+  perfNearbyChecks?: number;
+  economyXpPerMinute?: number;
+  economyPearlsPerTenMinutes?: number;
+  economyCoralsPerTenMinutes?: number;
+  debugSimLevel?: number;
   lastEvent: string;
 };
 
@@ -214,6 +245,7 @@ export type NextEngineState = {
   craft: NextCraftState;
   mutations: NextMutationState;
   mutationDraft?: NextMutationDraftState | null;
+  director?: NextDirectorState;
   quests: NextQuestState;
   player: NextPlayerState;
   enemies: NextFishEntity[];
