@@ -111,15 +111,28 @@ function applyPlayerForm(state: NextEngineState, nextForm: EvoFishFormId) {
   addFloat(state, player.x, player.y - player.radius * 2.2, state.stats.lastEvent, "kill");
 }
 
+function isTierCapped(player: { tier: number }) {
+  return Math.max(1, Math.floor(player.tier || 1)) >= NEXT_MAX_TIER;
+}
+
+function capTierXpAtMaxTier(state: NextEngineState) {
+  const player = state.player;
+  if (!isTierCapped(player)) return;
+  player.tier = NEXT_MAX_TIER;
+  player.xpToNext = xpToNextTier(NEXT_MAX_TIER);
+  player.xp = Math.min(Math.max(0, Math.floor(player.xp || 0)), Math.max(0, player.xpToNext - 1));
+}
+
 export function syncProgressionStats(state: NextEngineState) {
   const player = state.player;
+  const showLevelXp = isTierCapped(player);
   state.stats.mass = player.mass;
   state.stats.hp = player.hp;
   state.stats.hpMax = player.hpMax;
   state.stats.level = player.level;
   state.stats.tier = player.tier;
-  state.stats.xp = player.xp;
-  state.stats.xpToNext = player.xpToNext;
+  state.stats.xp = showLevelXp ? player.levelXp : player.xp;
+  state.stats.xpToNext = showLevelXp ? player.levelXpToNext : player.xpToNext;
   state.stats.levelXp = player.levelXp;
   state.stats.levelXpToNext = player.levelXpToNext;
   state.stats.accountName = state.account.name;
@@ -160,8 +173,13 @@ export function refreshMutationStats(state: NextEngineState) {
 export function awardNextXp(state: NextEngineState, amount: number) {
   const player = state.player;
   const xp = Math.max(1, Math.round(amount));
-  player.xp += xp;
   player.levelXp += xp;
+
+  if (isTierCapped(player)) {
+    capTierXpAtMaxTier(state);
+  } else {
+    player.xp += xp;
+  }
 
   let leveled = false;
   let tiered = false;
@@ -173,7 +191,7 @@ export function awardNextXp(state: NextEngineState, amount: number) {
     leveled = true;
   }
 
-  while (player.xp >= player.xpToNext) {
+  while (!isTierCapped(player) && player.xp >= player.xpToNext) {
     player.xp -= player.xpToNext;
     player.tier = Math.min(NEXT_MAX_TIER, player.tier + 1);
     player.xpToNext = xpToNextTier(player.tier);
@@ -182,8 +200,9 @@ export function awardNextXp(state: NextEngineState, amount: number) {
     player.hpMax = hpWithMutations(state, player.form, player.tier);
     player.hp = player.hpMax;
     tiered = true;
-    if (player.tier >= NEXT_MAX_TIER) break;
   }
+
+  capTierXpAtMaxTier(state);
 
   const nextForm = formForLevel(player.level, player.form);
   applyPlayerForm(state, nextForm);
