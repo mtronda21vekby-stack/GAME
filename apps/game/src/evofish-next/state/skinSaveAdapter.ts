@@ -46,7 +46,7 @@ export type EvoFishNextSkinSave = {
   loadout: SkinLoadoutState;
   progress: EvoFishNextProgressState;
   quests: NextQuestState;
-  craft: NextCraftState;
+  craft?: NextCraftState;
   mutations: NextMutationState;
   achievements: NextAchievementState;
 };
