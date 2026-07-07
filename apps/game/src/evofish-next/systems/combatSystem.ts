@@ -15,10 +15,11 @@ function rewardText(reward: { xp: number; pearls: number; corals: number }) {
 function respawnEnemy(state: NextEngineState) {
   const player = state.player;
   const threat = enemyThreatLevel(player.level, player.tier, player.mass);
-  return makeEnemy(1000 + state.stats.kills + state.frame, state.config, threat, player.mass, player.x, player.y, 720);
+  const safeRadius = player.level <= 25 ? 980 : player.level <= 35 ? 780 : 720;
+  return makeEnemy(1000 + state.stats.kills + state.frame, state.config, threat, player.mass, player.x, player.y, safeRadius, player.level);
 }
 
-function killEnemy(state: NextEngineState, enemy: NextFishEntity, index: number, source: "bite" | "devour") {
+function defeatEnemy(state: NextEngineState, enemy: NextFishEntity, index: number, source: "bite" | "devour") {
   const player = state.player;
   const massGain = enemy.mass * (source === "devour" ? 0.055 : 0.032);
   const reward = awardKillReward(state, enemy, source);
@@ -28,10 +29,19 @@ function killEnemy(state: NextEngineState, enemy: NextFishEntity, index: number,
   player.hp = Math.min(player.hpMax, player.hp + player.hpMax * 0.045);
 
   state.stats.kills += 1;
-  state.stats.lastEvent = `Убийство LV ${npcCombatLevel(enemy)} ${rewardText(reward)} +${massGain.toFixed(2)} Mass`;
-  addFloat(state, enemy.x, enemy.y, `KILL LV${npcCombatLevel(enemy)} +${reward.xp}XP`, "kill");
+  state.stats.lastEvent = `Победа LV ${npcCombatLevel(enemy)} ${rewardText(reward)} +${massGain.toFixed(2)} Mass`;
+  addFloat(state, enemy.x, enemy.y, `LV${npcCombatLevel(enemy)} +${reward.xp}XP`, "kill");
   if (reward.corals) addFloat(state, enemy.x, enemy.y - enemy.radius * 2.5, `+${reward.corals} CORAL`, "kill");
   state.enemies.splice(index, 1, respawnEnemy(state));
+}
+
+function biteTargetScore(state: NextEngineState, enemy: NextFishEntity, distance: number, dot: number, range: number) {
+  const player = state.player;
+  const edible = canPlayerDevour(player, enemy) ? 70 : 0;
+  const finishable = enemy.hp <= player.damage * 1.45 ? 36 : 0;
+  const levelGap = npcLevelGap(player, enemy);
+  const levelPenalty = levelGap > 6 ? Math.min(42, (levelGap - 6) * 4) : 0;
+  return edible + finishable + dot * 22 + (range - distance) * 0.35 - levelPenalty;
 }
 
 function findBiteTarget(state: NextEngineState, camera: NextCameraState, input: NextInputState) {
@@ -40,19 +50,20 @@ function findBiteTarget(state: NextEngineState, camera: NextCameraState, input: 
   const nx = aim.x;
   const ny = aim.y;
   let bestIndex = -1;
-  let bestDistance = Infinity;
+  let bestScore = -Infinity;
 
   for (let i = 0; i < state.enemies.length; i += 1) {
     const enemy = state.enemies[i];
     const dx = enemy.x - player.x;
     const dy = enemy.y - player.y;
     const distance = Math.hypot(dx, dy);
-    const range = player.radius * 2.45 + enemy.radius;
+    const range = player.radius * 2.55 + enemy.radius;
     if (distance > range) continue;
     const dot = (dx / (distance || 1)) * nx + (dy / (distance || 1)) * ny;
-    if (dot < 0.25) continue;
-    if (distance < bestDistance) {
-      bestDistance = distance;
+    if (dot < 0.2) continue;
+    const score = biteTargetScore(state, enemy, distance, dot, range);
+    if (score > bestScore) {
+      bestScore = score;
       bestIndex = i;
     }
   }
@@ -79,29 +90,30 @@ export function updateCombatSystem(state: NextEngineState, input: NextInputState
   const enemy = state.enemies[targetIndex];
   const craftBoost = state.craft.biteBoostT > 0 ? 1.35 : 1;
   const levelMultiplier = playerDamageMultiplierAgainstEnemy(player, enemy);
-  const damage = Math.max(1, Math.round(player.damage * (player.dashT > 0 ? 1.35 : 1) * craftBoost * levelMultiplier));
+  const gap = npcLevelGap(player, enemy);
+  const readableBonus = gap <= 2 ? 1.08 : gap >= 10 ? 0.92 : 1;
+  const damage = Math.max(1, Math.round(player.damage * (player.dashT > 0 ? 1.35 : 1) * craftBoost * levelMultiplier * readableBonus));
   enemy.hp -= damage;
   enemy.hitT = 0.18;
   enemy.vx += Math.cos(player.angle) * 120;
   enemy.vy += Math.sin(player.angle) * 120;
 
-  const gap = npcLevelGap(player, enemy);
   const nerfed = levelMultiplier < 1;
   state.stats.lastEvent = nerfed ? `Укус по LV ${npcCombatLevel(enemy)} x${levelMultiplier.toFixed(2)} -${damage}` : state.craft.biteBoostT > 0 ? `Укус BOOST -${damage}` : `Укус -${damage}`;
   addFloat(state, enemy.x, enemy.y - enemy.radius * 1.8, nerfed ? `LV${npcCombatLevel(enemy)} -${damage}` : `-${damage}`, "damage");
 
   if (enemy.hp <= 0) {
-    killEnemy(state, enemy, targetIndex, "bite");
+    defeatEnemy(state, enemy, targetIndex, "bite");
     return;
   }
 
   if (canPlayerDevour(player, enemy)) {
-    killEnemy(state, enemy, targetIndex, "bite");
+    defeatEnemy(state, enemy, targetIndex, "bite");
   } else if (gap > 6 && enemy.hp > 0) {
     addFloat(state, enemy.x, enemy.y - enemy.radius * 2.6, "TOO HIGH LV", "danger");
   }
 }
 
 export function devourEnemyOnContact(state: NextEngineState, enemy: NextFishEntity, index: number) {
-  killEnemy(state, enemy, index, "devour");
+  defeatEnemy(state, enemy, index, "devour");
 }
