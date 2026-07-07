@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-max-ai-engine-pass-6.8.0";
+export const EVOFISH_NEXT_VERSION = "next-combat-engine-2.0-6.8.1";
