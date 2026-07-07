@@ -88,6 +88,24 @@ function post21MinimumLevelOffset(archetype: NextEnemyArchetypeId, playerLevel: 
   return Math.max(0, ramp + role);
 }
 
+function enemyMaxLevelGap(archetype: NextEnemyArchetypeId, playerLevel: number) {
+  const levelAnchor = Math.max(1, Math.floor(playerLevel || 1));
+  const post30 = Math.max(0, levelAnchor - 30);
+
+  if (levelAnchor < POST_LEVEL_21_BALANCE_START) {
+    if (archetype === "apex" || archetype === "leviathan") return 24;
+    return Math.max(10, post21MinimumLevelOffset(archetype, levelAnchor) + 10);
+  }
+
+  if (archetype === "leviathan") return levelAnchor < 30 ? 12 : Math.min(22, 12 + Math.floor(post30 * 0.45));
+  if (archetype === "apex") return levelAnchor < 30 ? 11 : Math.min(20, 11 + Math.floor(post30 * 0.42));
+  if (archetype === "stalker") return levelAnchor < 30 ? 9 : Math.min(16, 9 + Math.floor(post30 * 0.32));
+  if (archetype === "brute") return levelAnchor < 30 ? 7 : Math.min(13, 7 + Math.floor(post30 * 0.25));
+  if (archetype === "hunter") return levelAnchor < 30 ? 5 : Math.min(10, 5 + Math.floor(post30 * 0.22));
+  if (archetype === "neutral") return levelAnchor < 30 ? 3 : Math.min(7, 3 + Math.floor(post30 * 0.18));
+  return levelAnchor < 30 ? 1 : Math.min(4, 1 + Math.floor(post30 * 0.15));
+}
+
 function enemyNpcLevel(archetype: NextEnemyArchetypeId, threatLevel: number, mass: number, playerMass: number, playerLevel = 1) {
   const base = Math.max(1, Math.floor(threatLevel || 1));
   const levelAnchor = Math.max(1, Math.floor(playerLevel || 1));
@@ -95,10 +113,10 @@ function enemyNpcLevel(archetype: NextEnemyArchetypeId, threatLevel: number, mas
   const bodyScale = Math.round(Math.sqrt(Math.max(1, mass)) * 1.08);
   const variance = Math.floor(Math.random() * 5) - 2;
   const minimum = levelAnchor + post21MinimumLevelOffset(archetype, levelAnchor);
-  const capBonus = Math.max(10, post21MinimumLevelOffset(archetype, levelAnchor) + 10);
-  const softCap = archetype === "apex" || archetype === "leviathan" ? levelAnchor + 24 : levelAnchor + capBonus;
+  const softCap = levelAnchor + enemyMaxLevelGap(archetype, levelAnchor);
+  const cappedMinimum = Math.min(minimum, softCap);
   const raw = base + enemyLevelBias(archetype) + bodyScale + massPressure + variance;
-  return Math.round(clamp(Math.max(raw, minimum), 1, Math.max(softCap, levelAnchor + 4)));
+  return Math.round(clamp(Math.max(raw, cappedMinimum), 1, softCap));
 }
 
 function randomWorldPoint(config: NextWorldConfig, pad = 190): Point {
@@ -260,7 +278,8 @@ export function makeEnemy(
         ? Math.round(190 + mass * 42)
         : Math.round((big ? 150 : archetype.id === "hunter" ? 92 : 42 + Math.random() * 38) * Math.max(0.8, mass));
   const hp = Math.round(baseHp * family.hpMultiplier * (1 + Math.min(1.15, threatLevel * 0.014)) * lateHpMultiplier);
-  const spawn = pointAwayFrom(config, avoidX, avoidY, safeRadius + (apex || leviathan ? 260 : stalker ? 160 : 0));
+  const eliteSpawnExtraRadius = apex || leviathan ? 420 : stalker ? 180 : 0;
+  const spawn = pointAwayFrom(config, avoidX, avoidY, safeRadius + eliteSpawnExtraRadius);
   const target = wanderPoint(config);
   const fallbackSkin = apex
     ? (EVOFISH_SKIN_BY_ID.mega_lava || EVOFISH_SKIN_BY_ID.mega_deep)
@@ -338,7 +357,7 @@ export function createNextWorld(
   const completedQuests = Object.keys(quests.completed).length;
   const spawnThreat = enemyThreatLevel(level, tier, mass);
   const playerSpawn = safePlayerSpawn(config);
-  const enemySafeRadius = level <= 3 ? 920 : 680;
+  const enemySafeRadius = level <= 3 ? 920 : level <= 25 ? 980 : level <= 35 ? 780 : 680;
   const enemies = Array.from({ length: config.enemyTarget }, (_, index) => makeEnemy(index + 1, config, spawnThreat, mass, playerSpawn.x, playerSpawn.y, enemySafeRadius, level));
   const resources = createResourceField(config.resourceTarget, config.width, config.height);
   const apexEnemy = enemies.find((enemy) => enemy.aiType === "apex");
