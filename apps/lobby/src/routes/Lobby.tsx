@@ -126,7 +126,24 @@ function formatCount(value: number) {
 
 export function Lobby() {
   const [selectedMode, setSelectedMode] = React.useState<HubMode>("next");
-  const profile = React.useMemo(() => readHubProfile(getNick()), []);
+  const [profile, setProfile] = React.useState<HubProfile>(() => readHubProfile(getNick()));
+
+  React.useEffect(() => {
+    const refreshProfile = () => setProfile(readHubProfile(getNick()));
+    const onVisible = () => {
+      if (!document.hidden) refreshProfile();
+    };
+
+    window.addEventListener("focus", refreshProfile);
+    window.addEventListener("storage", refreshProfile);
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      window.removeEventListener("focus", refreshProfile);
+      window.removeEventListener("storage", refreshProfile);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, []);
 
   const playMode = React.useCallback((mode: HubMode) => {
     nav(launchPath(mode));
