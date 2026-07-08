@@ -1,5 +1,5 @@
 import type { NextEngineState } from "../core/engineTypes";
-import { NEXT_CRAFT_RECIPES, normalizeCraftState, type NextCraftInventory, type NextCraftRecipe } from "../content/craft";
+import { NEXT_CRAFT_RECIPES, normalizeCraftInventory, normalizeCraftState, type NextCraftInventory, type NextCraftRecipe } from "../content/craft";
 
 const CRAFT_INVENTORY_KEY = "evofish_next_craft_inventory_v1";
 const CRAFT_REQUEST_KEY = "evofish_next_craft_requests_v1";
@@ -48,7 +48,7 @@ function writeRequests(requests: CraftRequest[]) {
 }
 
 export function readCraftInventorySnapshot(): NextCraftInventory {
-  return normalizeCraftState({ inventory: readStoredInventory() }).inventory;
+  return normalizeCraftInventory(readStoredInventory());
 }
 
 export function queueCraftAction(type: CraftActionType, recipeId: string, amount = 1) {
@@ -74,12 +74,13 @@ function recipeById(recipeId: string) {
 }
 
 function normalizeCraft(state: NextEngineState) {
+  const inventory = normalizeCraftInventory({
+    ...readStoredInventory(),
+    ...(state.craft?.inventory || {})
+  });
   state.craft = normalizeCraftState({
     ...state.craft,
-    inventory: {
-      ...readStoredInventory(),
-      ...(state.craft?.inventory || {})
-    }
+    inventory
   });
   return state.craft;
 }

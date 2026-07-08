@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "../../router";
+import { navigate } from "../../router";
 import { renameNextAccount } from "../content/account";
 import { getMutationTotalLevel } from "../content/mutations";
 import { EVOFISH_SKIN_BY_ID, EVOFISH_SKINS } from "../content/skins";
@@ -50,6 +50,12 @@ export function BetaHome() {
   const heroForm = save.progress.form || "fish";
   const mode = MODE_COPY[selectedMode];
 
+  const launchMode = (modeId: ModeId) => {
+    setSelectedMode(modeId);
+    navigate(MODE_COPY[modeId].href);
+  };
+  const go = (to: string) => navigate(to);
+
   const refresh = (report?: EvoFishSaveDoctorReport) => {
     const nextSave = loadEvoFishNextSave();
     setSave(nextSave);
@@ -78,7 +84,7 @@ export function BetaHome() {
               <span>Игрок</span>
               <div className="efHubNameRow">
                 <h2>{save.account.name}</h2>
-                <Link className="efHubProfileLink" to="/game/account">Профиль</Link>
+                <button className="efHubProfileLink" type="button" onClick={() => go("/game/account")}>Профиль</button>
               </div>
               <p>LV {save.account.level} · XP {format(save.account.xp)} / {format(save.account.xpToNext)}</p>
               <i><em style={{ width: `${Math.max(0, Math.min(100, (save.account.xp / Math.max(1, save.account.xpToNext)) * 100))}%` }} /></i>
@@ -86,8 +92,8 @@ export function BetaHome() {
           </section>
 
           <section className="efHubWallet" aria-label="Настройки игрока">
-            <Link className="efHubWalletLink" to="/game/progress">Прогресс</Link>
-            <Link className="efHubSettings" to="/game/account" aria-label="Настройки профиля">⚙</Link>
+            <button className="efHubWalletLink" type="button" onClick={() => go("/game/progress")}>Прогресс</button>
+            <button className="efHubSettings" type="button" onClick={() => go("/game/account")} aria-label="Настройки профиля">⚙</button>
           </section>
         </header>
 
@@ -99,11 +105,11 @@ export function BetaHome() {
             </summary>
             <div className="efHubSectionMenuPanel" aria-label="Разделы EvoFish">
               {SIDE_ACTIONS.map((item) => (
-                <Link key={item.label} to={item.to} className="efHubSideButton">
+                <button key={item.label} type="button" onClick={() => go(item.to)} className="efHubSideButton">
                   <span>{item.icon}</span>
                   <b>{item.label}</b>
                   {"notify" in item && item.notify ? <i aria-hidden="true" /> : null}
-                </Link>
+                </button>
               ))}
             </div>
           </details>
@@ -121,35 +127,37 @@ export function BetaHome() {
               <span className="efHubBubble three" />
             </div>
             <p className="efHubModeText">{mode.subtitle} · {heroSkin.name}</p>
-            <a className="efHubPlay" href={mode.href}>PLAY</a>
+            <button className="efHubPlay" type="button" onClick={() => launchMode(selectedMode)}>PLAY</button>
 
             <div className="efModeGrid" aria-label="Выбор режима">
               {(Object.keys(MODE_COPY) as ModeId[]).map((id) => (
-                <article key={id} className={`efModeCard ${id === selectedMode ? "active" : ""} ${id === "next" ? "primary" : ""}`} onClick={() => setSelectedMode(id)}>
-                  <div>
-                    <b>{MODE_COPY[id].title}</b>
-                    {id === "next" ? <small>РЕКОМЕНД.</small> : null}
-                  </div>
-                  <span>{MODE_COPY[id].subtitle}</span>
-                  <a href={MODE_COPY[id].href} onClick={(event) => event.stopPropagation()}>{MODE_COPY[id].cta}</a>
+                <article key={id} className={`efModeCard ${id === selectedMode ? "active" : ""} ${id === "next" ? "primary" : ""}`}>
+                  <button className="efModeSelect" type="button" onClick={() => setSelectedMode(id)} aria-pressed={id === selectedMode}>
+                    <div>
+                      <b>{MODE_COPY[id].title}</b>
+                      {id === "next" ? <small>РЕКОМЕНД.</small> : null}
+                    </div>
+                    <span>{MODE_COPY[id].subtitle}</span>
+                  </button>
+                  <button className="efModeLaunch" type="button" onClick={() => launchMode(id)}>{MODE_COPY[id].cta}</button>
                 </article>
               ))}
             </div>
           </section>
 
           <aside className="efHubInfoCards" aria-label="Информация">
-            <Link to="/game/season" className="efHubInfoCard"><span>Сезон</span><b>Neon Abyss</b><em>Цели и награды</em></Link>
-            <Link to="/game/leaderboard" className="efHubInfoCard"><span>Лидерборд</span><b>TOP 100</b><em>Живое обновление</em></Link>
-            <Link to="/game/progress" className="efHubInfoCard"><span>Достижения</span><b>{achievements}</b><em>Открыто сейчас</em></Link>
-            <Link to="/game/skins" className="efHubInfoCard"><span>Скины</span><b>{ownedSkins}/{EVOFISH_SKINS.length}</b><em>Коллекция</em></Link>
+            <button type="button" onClick={() => go("/game/season")} className="efHubInfoCard"><span>Сезон</span><b>Neon Abyss</b><em>Цели и награды</em></button>
+            <button type="button" onClick={() => go("/game/leaderboard")} className="efHubInfoCard"><span>Лидерборд</span><b>TOP 100</b><em>Живое обновление</em></button>
+            <button type="button" onClick={() => go("/game/progress")} className="efHubInfoCard"><span>Достижения</span><b>{achievements}</b><em>Открыто сейчас</em></button>
+            <button type="button" onClick={() => go("/game/skins")} className="efHubInfoCard"><span>Скины</span><b>{ownedSkins}/{EVOFISH_SKINS.length}</b><em>Коллекция</em></button>
           </aside>
         </div>
 
         <section className="efHubQuickGrid" aria-label="Быстрые действия">
-          <Link to="/game/skins"><b>Скины</b><span>{ownedSkins} / {EVOFISH_SKINS.length}</span></Link>
-          <Link to="/game/progress"><b>Задания</b><span>{completedQuests} выполнено</span></Link>
-          <Link to="/game/season"><b>События</b><span>Сезон активен</span></Link>
-          <Link to="/game/progress"><b>Инвентарь</b><span>{mutations} мутаций</span></Link>
+          <button type="button" onClick={() => go("/game/skins")}><b>Скины</b><span>{ownedSkins} / {EVOFISH_SKINS.length}</span></button>
+          <button type="button" onClick={() => go("/game/progress")}><b>Задания</b><span>{completedQuests} выполнено</span></button>
+          <button type="button" onClick={() => go("/game/season")}><b>События</b><span>Сезон активен</span></button>
+          <button type="button" onClick={() => go("/game/progress")}><b>Инвентарь</b><span>{mutations} мутаций</span></button>
         </section>
 
         <section className="efHubRename">
@@ -164,9 +172,9 @@ export function BetaHome() {
         {needsRepair ? <section className={`efPlayerSupport ${statusTone(doctor)}`}><div><span>Состояние сохранения</span><h2>{statusLabel(doctor)}</h2><p>{doctor.issues[0] || "Можно попробовать восстановить сохранение."}</p></div><div className="efPlayerSupportActions"><button onClick={() => refresh(repairEvoFishNextSave())}>Восстановить</button><button onClick={() => refresh(resetEvoFishNextRun())}>Новый забег</button></div></section> : null}
 
         <nav className="efHubBottomNav" aria-label="Основная навигация">
-          <Link className="active" to="/game"><span>⌂</span><b>Лобби</b></Link>
-          <Link to="/game/progress"><span>◇</span><b>Достижения</b></Link>
-          <Link to="/game/account"><span>◉</span><b>Профиль</b></Link>
+          <button className="active" type="button" onClick={() => go("/game")}><span>⌂</span><b>Лобби</b></button>
+          <button type="button" onClick={() => go("/game/progress")}><span>◇</span><b>Достижения</b></button>
+          <button type="button" onClick={() => go("/game/account")}><span>◉</span><b>Профиль</b></button>
         </nav>
       </section>
       <style>{`
@@ -200,6 +208,23 @@ export function BetaHome() {
         @media(min-width:1024px){.efHubBottomNav{display:none!important}.efBetaHomeShell{padding-bottom:max(20px,env(safe-area-inset-bottom))!important}}
         @media(max-width:1023px){.efBetaHome{background-position:center top}.efBetaHomeShell{width:min(100%,calc(100vw - 20px))!important;padding-bottom:calc(132px + env(safe-area-inset-bottom))!important}.efHubScene{grid-template-columns:1fr!important}.efHubInfoCards{display:none!important}.efHubSectionMenu{width:min(100%,390px)!important}.efHubCenter{padding-top:10px!important}.efHubSphere{width:clamp(320px,86vw,430px)!important}.efHubPlay{width:min(100%,520px)!important}.efModeGrid{display:grid!important;grid-template-columns:1fr 1fr!important;margin-bottom:18px!important}}
         @media(max-width:640px){.efBetaHomeShell{padding-bottom:calc(118px + env(safe-area-inset-bottom))!important}.efHubTop{grid-template-columns:minmax(0,1fr) auto!important}.efHubProfile{grid-template-columns:50px minmax(0,1fr)!important}.efHubWalletLink{display:none!important}.efHubCenter h1{font-size:40px!important}.efHubSphere{order:4;width:min(76vw,300px)!important}.efHubModeText{order:5}.efHubPlay{order:6;height:66px!important}.efModeGrid{order:3;grid-template-columns:1fr 1fr!important;margin:10px 0 8px!important}.efModeCard{min-height:54px!important;padding:9px!important;border-radius:999px!important;align-content:center!important;text-align:center!important}.efModeCard:not(.active){display:grid!important}.efModeCard div{justify-content:center!important}.efModeCard b{font-size:12px!important}.efModeCard span,.efModeCard small,.efModeCard a{display:none!important}}
+      `}</style>
+      <style>{`
+        .efHubPlay{appearance:none;font-family:inherit;cursor:pointer}
+        .efHubPlay,.efModeSelect,.efModeLaunch,.efHubProfileLink,.efHubWalletLink,.efHubSettings,.efHubSectionMenu summary,.efHubSideButton,.efHubInfoCard,.efHubQuickGrid button,.efHubBottomNav button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+        .efHubProfileLink,.efHubWalletLink,.efHubSettings,.efHubSideButton,.efHubInfoCard,.efHubQuickGrid button,.efHubBottomNav button{appearance:none;font-family:inherit;cursor:pointer}
+        .efHubSideButton,.efHubInfoCard,.efHubQuickGrid button{text-align:left}
+        .efHubBottomNav button{min-height:54px;border:0;border-radius:999px;background:transparent;display:grid;place-items:center;align-content:center;gap:2px;text-decoration:none;color:rgba(234,247,255,.62);font-size:11px;font-weight:950}
+        .efHubBottomNav button.active{background:rgba(53,216,255,.14);color:#eaf7ff;box-shadow:inset 0 0 20px rgba(53,216,255,.10)}
+        .efHubBottomNav button span{font-size:16px}
+        .efHubBottomNav button b{font-size:11px}
+        .efHubQuickGrid button{min-height:78px;border-radius:20px;padding:13px;color:#eaf7ff;display:grid;gap:4px}
+        .efModeCard{min-height:104px!important;cursor:default!important}
+        .efModeSelect{appearance:none;border:0;background:transparent;color:#eaf7ff;text-align:left;font:inherit;padding:0;display:grid;gap:7px;cursor:pointer}
+        .efModeLaunch{appearance:none;min-height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;border:1px solid rgba(88,210,255,.22);background:rgba(53,216,255,.11);color:#eaf7ff;text-decoration:none;font:inherit;font-weight:1000;font-size:12px;cursor:pointer}
+        .efModeLaunch:hover{border-color:rgba(53,216,255,.44);box-shadow:0 0 24px rgba(53,216,255,.13)}
+        @media(min-width:1024px){.efHubSphere{width:clamp(250px,25vw,360px)!important}.efModeCard{min-height:84px!important}.efModeGrid{margin-top:10px!important}.efModeLaunch{min-height:30px}}
+        @media(max-width:640px){.efModeCard{min-height:76px!important;border-radius:18px!important}.efModeSelect{text-align:center}.efModeLaunch{min-height:28px;font-size:10px;padding:0 8px}.efModeCard span,.efModeCard small{display:none!important}}
       `}</style>
     </main>
   );
