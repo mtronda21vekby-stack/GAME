@@ -40,7 +40,11 @@ export function stepNextEngine(state: NextEngineState, input: NextInputState, vi
   const camera = getNextCamera(state, viewport);
 
   updateMutationDraftSystem(state);
-  if (state.mutationDraft || isEvoFishRuntimePaused()) return finishPausedFrame(state, input, dt);
+
+  if (state.mutationDraft || isEvoFishRuntimePaused()) {
+    updateCraftSystem(state, 0);
+    return finishPausedFrame(state, input, dt);
+  }
 
   updateCraftSystem(state, dt);
   updateSurvivalSystem(state, dt);
