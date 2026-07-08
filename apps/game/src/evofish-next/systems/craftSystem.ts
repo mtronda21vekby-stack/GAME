@@ -9,9 +9,9 @@ type CraftActionType = "buy" | "use";
 type CraftRequest = { type: CraftActionType; recipeId: string; amount: number; id: number };
 type CraftWalletSnapshot = { pearls: number; corals: number };
 
-function addFloat(state: NextEngineState, text: string) {
+function addFloat(state: NextEngineState, text: string, kind: "kill" | "danger" = "kill") {
   const player = state.player;
-  state.floats.push({ id: state.nextFloatId++, x: player.x, y: player.y - player.radius * 2.9, text, ttl: 1.05, kind: "kill" });
+  state.floats.push({ id: state.nextFloatId++, x: player.x, y: player.y - player.radius * 2.9, text, ttl: 1.05, kind });
 }
 
 function readStoredInventory(): Partial<NextCraftInventory> {
@@ -90,7 +90,7 @@ function consumeRequests(state: NextEngineState) {
   const requests = readRequests();
   if (!requests.length) return;
   writeRequests([]);
-  for (const request of requests.slice(0, 12)) {
+  for (const request of requests.slice(0, 18)) {
     if (request.type === "buy") buyCraftItem(state, request.recipeId, request.amount);
     else useCraftItem(state, request.recipeId);
   }
@@ -102,8 +102,8 @@ function recipeById(recipeId: string) {
 
 function normalizeCraft(state: NextEngineState) {
   const inventory = normalizeCraftInventory({
-    ...readStoredInventory(),
-    ...(state.craft?.inventory || {})
+    ...(state.craft?.inventory || {}),
+    ...readStoredInventory()
   });
   state.craft = normalizeCraftState({
     ...state.craft,
@@ -213,6 +213,7 @@ export function buyCraftItem(state: NextEngineState, recipeId: string, amount = 
 
   if (bought <= 0) {
     writeWalletSnapshot(state);
+    addFloat(state, "НЕ ХВАТАЕТ РЕСУРСОВ", "danger");
     return false;
   }
   state.stats.lastEvent = `${recipe.name}: куплено x${bought}`;
@@ -226,13 +227,15 @@ export function canUseCraftItem(state: NextEngineState, recipeId: string) {
   const recipe = recipeById(recipeId);
   if (!recipe) return false;
   if (stock(state, recipeId) <= 0) return false;
-  if (recipe.effect === "heal" && state.player.hp >= state.player.hpMax) return false;
   return true;
 }
 
 export function useCraftItem(state: NextEngineState, recipeId: string) {
   const recipe = recipeById(recipeId);
-  if (!recipe || !canUseCraftItem(state, recipeId)) return false;
+  if (!recipe || !canUseCraftItem(state, recipeId)) {
+    addFloat(state, "НЕТ ПРЕДМЕТА", "danger");
+    return false;
+  }
   const craft = normalizeCraft(state);
   craft.inventory[recipeId] = Math.max(0, (craft.inventory[recipeId] || 0) - 1);
   state.stats.craftUses = (state.stats.craftUses || 0) + 1;
