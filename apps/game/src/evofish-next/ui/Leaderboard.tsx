@@ -171,6 +171,7 @@ export function Leaderboard() {
         <header className="efLbHero">
           <div>
             <Link to="/game" className="efLbBack">← Назад</Link>
+            <Link to="/game/settings" className="efLbBack">⚙ Настройки</Link>
             <span>РЕЙТИНГ СЕЗОНА · TOP 100</span>
             <h1>Лидеры</h1>
             <p>Текущий результат отправляется в живой слот и TOP 100 перечитывается автоматически. Никнейм берётся из аккаунта.</p>

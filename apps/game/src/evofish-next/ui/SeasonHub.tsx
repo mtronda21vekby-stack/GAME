@@ -77,6 +77,7 @@ export function SeasonHub() {
           <Link to="/game/play">Играть</Link>
           <Link to="/game/leaderboard">Лидеры</Link>
           <Link to="/game/skins">Скины</Link>
+          <Link to="/game/settings">Настройки</Link>
         </nav>
 
         <header className="efSeasonHero">

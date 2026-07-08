@@ -31,7 +31,7 @@ const SIDE_ACTIONS = [
 ] as const;
 
 const MODE_COPY: Record<ModeId, { title: string; subtitle: string; cta: string; href: string }> = {
-  next: { title: "EvoFish Next", subtitle: "Новая версия", cta: "Играть в Next", href: "/game/?mode=next" },
+  next: { title: "EvoFish Next", subtitle: "Новая версия", cta: "Играть в Next", href: "/game/play" },
   classic: { title: "EvoFish Classic", subtitle: "Классический режим", cta: "Играть в Classic", href: "/game/?mode=classic" }
 };
 
@@ -93,7 +93,7 @@ export function BetaHome() {
 
           <section className="efHubWallet" aria-label="Настройки игрока">
             <button className="efHubWalletLink" type="button" onClick={() => go("/game/progress")}>Прогресс</button>
-            <button className="efHubSettings" type="button" onClick={() => go("/game/account")} aria-label="Настройки профиля">⚙</button>
+            <button className="efHubSettings" type="button" onClick={() => go("/game/settings")} aria-label="Настройки игры">⚙</button>
           </section>
         </header>
 

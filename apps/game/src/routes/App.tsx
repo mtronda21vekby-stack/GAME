@@ -9,6 +9,7 @@ import { BetaHome } from "../evofish-next/ui/BetaHome";
 import { BetaProgress } from "../evofish-next/ui/BetaProgress";
 import { BetaQA } from "../evofish-next/ui/BetaQA";
 import { BetaReport } from "../evofish-next/ui/BetaReport";
+import { GameSettingsHub } from "../evofish-next/ui/GameSettingsHub";
 import { Leaderboard } from "../evofish-next/ui/Leaderboard";
 import { ProfileHub } from "../evofish-next/ui/ProfileHub";
 import { SeasonHub } from "../evofish-next/ui/SeasonHub";
@@ -47,6 +48,7 @@ export function App() {
         { path: "/game/lobby", element: withBoundary(<BetaHome />) },
         { path: "/game/account", element: withBoundary(<ProfileHub />) },
         { path: "/game/profiles", element: withBoundary(<ProfileHub />) },
+        { path: "/game/settings", element: withBoundary(<GameSettingsHub />) },
         { path: "/game/play", element: withBoundary(<NextPlaySession />) },
         { path: "/game/debug", element: withBoundary(<AIDebugLab />) },
         { path: "/game/progress", element: withBoundary(<BetaProgress />) },
@@ -63,6 +65,7 @@ export function App() {
         { path: "/game/next/lobby", element: withBoundary(<BetaHome />) },
         { path: "/game/next/account", element: withBoundary(<ProfileHub />) },
         { path: "/game/next/profiles", element: withBoundary(<ProfileHub />) },
+        { path: "/game/next/settings", element: withBoundary(<GameSettingsHub />) },
         { path: "/game/next/debug", element: withBoundary(<AIDebugLab />) },
         { path: "/game/next/progress", element: withBoundary(<BetaProgress />) },
         { path: "/game/next/leaderboard", element: withBoundary(<Leaderboard />) },
@@ -78,6 +81,7 @@ export function App() {
         { path: "/next/lobby", element: withBoundary(<BetaHome />) },
         { path: "/next/account", element: withBoundary(<ProfileHub />) },
         { path: "/next/profiles", element: withBoundary(<ProfileHub />) },
+        { path: "/next/settings", element: withBoundary(<GameSettingsHub />) },
         { path: "/next/debug", element: withBoundary(<AIDebugLab />) },
         { path: "/next/progress", element: withBoundary(<BetaProgress />) },
         { path: "/next/leaderboard", element: withBoundary(<Leaderboard />) },

@@ -149,6 +149,7 @@ export function BetaProgress() {
             <Link to="/game">Лобби</Link>
             <Link to="/game/account">Профиль</Link>
             <Link to="/game/skins">Скины</Link>
+            <Link to="/game/settings">Настройки</Link>
           </nav>
         </header>
 

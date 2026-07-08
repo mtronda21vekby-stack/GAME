@@ -26,41 +26,24 @@ import {
   saveEvoFishNextProgress,
   saveEvoFishNextSave
 } from "../state/nextSaveStore";
+import {
+  loadViewSettings,
+  saveViewSettings,
+  setTutorialDone,
+  tutorialDone,
+  type ControlMode,
+  type LanguageMode,
+  type ViewSettings
+} from "../state/viewSettingsStore";
 
 type NextPanel = "menu" | "map" | "craft" | "mutations" | "quests" | "shop" | "settings" | null;
-type ControlMode = "pointer" | "joystick" | "gamepad";
-type StickMode = "fixed" | "floating";
-type LanguageMode = "ru" | "en";
-
-type ViewSettings = {
-  zoom: number;
-  autoZoom: boolean;
-  controlMode: ControlMode;
-  quality: NextRenderQuality;
-  stickMode: StickMode;
-  stickSize: number;
-  stickSensitivity: number;
-  language: LanguageMode;
-};
 
 type CanvasViewportState = { width: number; height: number; dpr: number };
 type StickState = { active: boolean; x: number; y: number; baseX: number; baseY: number };
 
 const FORM_ORDER: EvoFishFormId[] = ["fish", "shark", "megalodon"];
-const VIEW_SETTINGS_KEY = "evofish_next_view_settings_v5";
-const TUTORIAL_KEY = "evofish_next_tutorial_done_v1";
 const DEFAULT_VIEWPORT: CanvasViewportState = { width: 1, height: 1, dpr: 1 };
 const EMPTY_STICK: StickState = { active: false, x: 0, y: 0, baseX: 0, baseY: 0 };
-const DEFAULT_VIEW_SETTINGS: ViewSettings = {
-  zoom: 0.82,
-  autoZoom: true,
-  controlMode: "pointer",
-  quality: "balanced",
-  stickMode: "fixed",
-  stickSize: 92,
-  stickSensitivity: 1,
-  language: "ru"
-};
 
 const UI_TEXT = {
   ru: {
@@ -126,67 +109,6 @@ function viewportSize() {
   const width = Math.max(1, Math.round(visual?.width || window.innerWidth || document.documentElement.clientWidth || 1));
   const height = Math.max(1, Math.round(visual?.height || window.innerHeight || document.documentElement.clientHeight || 1));
   return { width, height };
-}
-
-function normalizeControlMode(value: unknown): ControlMode {
-  return value === "joystick" || value === "gamepad" || value === "pointer" ? value : "pointer";
-}
-
-function normalizeQuality(value: unknown): NextRenderQuality {
-  return value === "low" || value === "high" || value === "balanced" ? value : "balanced";
-}
-
-function normalizeStickMode(value: unknown): StickMode {
-  return value === "floating" || value === "fixed" ? value : "fixed";
-}
-
-function normalizeLanguage(value: unknown): LanguageMode {
-  return value === "en" || value === "ru" ? value : "ru";
-}
-
-function loadViewSettings(): ViewSettings {
-  try {
-    const raw = localStorage.getItem(VIEW_SETTINGS_KEY);
-    if (!raw) return DEFAULT_VIEW_SETTINGS;
-    const parsed = JSON.parse(raw) as Partial<ViewSettings>;
-    return {
-      zoom: clamp(Number(parsed.zoom || DEFAULT_VIEW_SETTINGS.zoom), 0.56, 1.18),
-      autoZoom: parsed.autoZoom !== false,
-      controlMode: normalizeControlMode(parsed.controlMode),
-      quality: normalizeQuality(parsed.quality),
-      stickMode: normalizeStickMode(parsed.stickMode),
-      stickSize: clamp(Number(parsed.stickSize || DEFAULT_VIEW_SETTINGS.stickSize), 76, 132),
-      stickSensitivity: clamp(Number(parsed.stickSensitivity || DEFAULT_VIEW_SETTINGS.stickSensitivity), 0.65, 1.55),
-      language: normalizeLanguage(parsed.language)
-    };
-  } catch {
-    return DEFAULT_VIEW_SETTINGS;
-  }
-}
-
-function saveViewSettings(settings: ViewSettings) {
-  try {
-    localStorage.setItem(VIEW_SETTINGS_KEY, JSON.stringify(settings));
-  } catch {
-    // view settings are optional
-  }
-}
-
-function tutorialDone() {
-  try {
-    return localStorage.getItem(TUTORIAL_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function setTutorialDone(done: boolean) {
-  try {
-    if (done) localStorage.setItem(TUTORIAL_KEY, "1");
-    else localStorage.removeItem(TUTORIAL_KEY);
-  } catch {
-    // tutorial state is optional
-  }
 }
 
 function autoZoomForMass(mass: number) {

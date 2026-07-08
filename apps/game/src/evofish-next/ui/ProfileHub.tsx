@@ -106,7 +106,7 @@ export function ProfileHub() {
             <span>Центр игрока</span>
             <h1>Профили</h1>
           </div>
-          <Link className="efProfilesGear" to="/game/account" aria-label="Профиль">⚙</Link>
+          <Link className="efProfilesGear" to="/game/settings" aria-label="Настройки игры">⚙</Link>
         </header>
 
         <section className="efProfilesHero" aria-label="Активный профиль">

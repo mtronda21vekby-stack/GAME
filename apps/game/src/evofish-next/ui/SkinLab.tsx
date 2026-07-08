@@ -87,6 +87,7 @@ export function SkinLab() {
           <span>{save.economy.pearls} жемчуг</span>
           <span>{save.economy.corals} кораллы</span>
           <Link to="/game/next" className="efBack">Лобби</Link>
+          <Link to="/game/settings" className="efBack">Настройки</Link>
           <Link to="/game" className="efBack">Главная</Link>
         </div>
       </header>
