@@ -1,10 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "../../router";
 import { NEXT_ACHIEVEMENTS, type NextAchievementDefinition } from "../content/achievements";
-import { NEXT_BETA_BALANCE_TARGETS, NEXT_BETA_ECONOMY_TARGETS } from "../content/balance";
 import { getMutationTotalLevel, NEXT_MUTATIONS } from "../content/mutations";
 import { buildQuestBoard, type NextQuestDefinition } from "../content/quests";
-import { NEXT_RESOURCE_DEFS } from "../content/resources";
 import {
   exportEvoFishNextDebugSave,
   inspectEvoFishNextSave,
@@ -71,15 +69,26 @@ function statusLabel(report: EvoFishSaveDoctorReport) {
   return "Ошибка сохранения";
 }
 
+function isRepairRoute() {
+  return window.location.pathname.includes("/repair");
+}
+
 export function BetaProgress() {
   const [save, setSave] = useState(() => loadEvoFishNextSave());
   const [doctor, setDoctor] = useState(() => inspectEvoFishNextSave());
   const [copied, setCopied] = useState(false);
+  const [activePanel, setActivePanel] = useState<"quests" | "achievements">("achievements");
   const board = useMemo(() => buildQuestBoard(), []);
+  const repairMode = isRepairRoute();
   const mutationsTotal = getMutationTotalLevel(save.mutations);
   const ownedSkins = Object.keys(save.loadout.ownedSkins || {}).length;
   const achievementsUnlocked = Object.keys(save.achievements.unlocked || {}).length;
   const achievementPct = Math.round((achievementsUnlocked / Math.max(1, NEXT_ACHIEVEMENTS.length)) * 100);
+  const questCards = (["daily", "weekly", "story"] as const).map((scope) => ({
+    scope,
+    title: questGroupTitle(scope),
+    quests: scope === "daily" ? board.daily : scope === "weekly" ? board.weekly : board.story,
+  }));
 
   const refresh = (report?: EvoFishSaveDoctorReport) => {
     setSave(loadEvoFishNextSave());
@@ -156,8 +165,8 @@ export function BetaProgress() {
         <header className="efBetaHero">
           <div>
             <span>EVOFISH NEXT</span>
-            <h1>Достижения</h1>
-            <p>Квесты, коллекция достижений и развитие активного профиля.</p>
+            <h1>{repairMode ? "Ремонт" : "Достижения"}</h1>
+            <p>{repairMode ? "Проверка и восстановление локального сохранения." : "Квесты, награды и коллекция достижений активного профиля."}</p>
           </div>
           <div className="efAchievementsHeroScore">
             <strong>{achievementPct}%</strong>
@@ -179,90 +188,54 @@ export function BetaProgress() {
           <article><span>Ресурсы</span><b>{format(counter(save, "resources"))}</b><small>{counter(save, "perks")} перков · {counter(save, "artifacts")} артефактов</small></article>
         </section>
 
-        <section className="efBetaPanel">
-          <div className="efBetaPanelHead"><h2>Баланс наград</h2><span>цели / 10 мин</span></div>
-          <div className="efBalanceStats">
-            <article><span>Жемчуг / 10 мин</span><b>{NEXT_BETA_ECONOMY_TARGETS.pearlsPerTenMinutes}</b></article>
-            <article><span>Кристаллы / 10 мин</span><b>{NEXT_BETA_ECONOMY_TARGETS.coralsPerTenMinutes}</b></article>
-            <article><span>Артефакты / 10 мин</span><b>{NEXT_BETA_ECONOMY_TARGETS.artifactPerTenMinutes}</b></article>
-            <article><span>Перки / 10 мин</span><b>{NEXT_BETA_ECONOMY_TARGETS.perkPerTenMinutes}</b></article>
-          </div>
-          <div className="efPickupGrid">
-            {NEXT_BETA_BALANCE_TARGETS.map((target) => (
-              <article key={target.id} className="efPickupCard">
-                <b>{target.label}</b>
-                <span>{target.target}</span>
-                <small>{target.tuning}</small>
-              </article>
-            ))}
-          </div>
-        </section>
+        {repairMode ? (
+          <section className="efBetaDoctor">
+            <div className="efBetaPanelHead">
+              <div>
+                <span>Сохранение</span>
+                <h2>{statusLabel(doctor)}</h2>
+              </div>
+              <small>{new Date(doctor.timestamp).toLocaleString("ru-RU")}</small>
+            </div>
+            <div className="efDoctorGrid">
+              <button onClick={() => refresh(inspectEvoFishNextSave())}>Проверить</button>
+              <button onClick={() => refresh(repairEvoFishNextSave())}>Восстановить</button>
+              <button onClick={() => refresh(resetEvoFishNextRun())}>Новый забег</button>
+              <button onClick={() => refresh(resetEvoFishNextProgressKeepSkins())}>Сбросить прогресс</button>
+              <button onClick={copyDebug}>{copied ? "Скопировано" : "Скопировать сохранение"}</button>
+            </div>
+            <div className="efDoctorIssues">
+              {(doctor.issues.length ? doctor.issues : ["Проблем не найдено."]).map((issue) => <span key={issue}>{issue}</span>)}
+            </div>
+          </section>
+        ) : null}
 
-        <section className="efBetaDoctor">
+        <section className="efBetaPanel efProgressFocus">
           <div className="efBetaPanelHead">
             <div>
-              <span>Сохранение</span>
-              <h2>{statusLabel(doctor)}</h2>
+              <span>Прогресс</span>
+              <h2>{activePanel === "achievements" ? "Достижения" : "Задания"}</h2>
             </div>
-            <small>{new Date(doctor.timestamp).toLocaleString("ru-RU")}</small>
-          </div>
-          <div className="efDoctorGrid">
-            <button onClick={() => refresh(inspectEvoFishNextSave())}>Проверить</button>
-            <button onClick={() => refresh(repairEvoFishNextSave())}>Восстановить</button>
-            <button onClick={() => refresh(resetEvoFishNextRun())}>Новый забег</button>
-            <button onClick={() => refresh(resetEvoFishNextProgressKeepSkins())}>Сбросить прогресс</button>
-            <button onClick={copyDebug}>{copied ? "Скопировано" : "Скопировать сохранение"}</button>
-          </div>
-          <div className="efDoctorIssues">
-            {(doctor.issues.length ? doctor.issues : ["Проблем не найдено."]).map((issue) => <span key={issue}>{issue}</span>)}
-          </div>
-        </section>
-
-        <section className="efBetaGrid two">
-          <div className="efBetaPanel">
-            <div className="efBetaPanelHead"><h2>Задания</h2><span>{board.dailyKey} · {board.weeklyKey}</span></div>
-            {(["daily", "weekly", "story"] as const).map((scope) => (
-              <div key={scope} className="efQuestGroup">
-                <h3>{questGroupTitle(scope)}</h3>
-                {(scope === "daily" ? board.daily : scope === "weekly" ? board.weekly : board.story).map(renderQuestCard)}
-              </div>
-            ))}
+            <div className="efProgressTabs" role="tablist" aria-label="Раздел прогресса">
+              <button className={activePanel === "achievements" ? "active" : ""} type="button" onClick={() => setActivePanel("achievements")}>Достижения</button>
+              <button className={activePanel === "quests" ? "active" : ""} type="button" onClick={() => setActivePanel("quests")}>Задания</button>
+            </div>
           </div>
 
-          <div className="efBetaPanel">
-            <div className="efBetaPanelHead"><h2>Достижения</h2><span>{achievementsUnlocked}/{NEXT_ACHIEVEMENTS.length}</span></div>
-            <div className="efAchievementList">
+          {activePanel === "achievements" ? (
+            <div className="efAchievementList efProgressList">
               {NEXT_ACHIEVEMENTS.map(renderAchievementCard)}
             </div>
-          </div>
-        </section>
-
-        <section className="efBetaGrid two compact">
-          <div className="efBetaPanel">
-            <div className="efBetaPanelHead"><h2>Ресурсы</h2><span>ресурсы / перки / артефакты</span></div>
-            <div className="efPickupGrid">
-              {NEXT_RESOURCE_DEFS.map((item) => (
-                <article key={item.kind} className="efPickupCard">
-                  <b>{item.name}</b>
-                  <span>{item.kind}</span>
-                  <small>Награда {item.valueMin}-{item.valueMax} · шанс {item.weight} · появление {item.respawnMin}-{item.respawnMax}с</small>
-                </article>
+          ) : (
+            <div className="efQuestColumns">
+              {questCards.map((group) => (
+                <div key={group.scope} className="efQuestGroup">
+                  <h3>{group.title}</h3>
+                  {group.quests.map(renderQuestCard)}
+                </div>
               ))}
             </div>
-          </div>
-
-          <div className="efBetaPanel">
-            <div className="efBetaPanelHead"><h2>Мутации</h2><span>{mutationsTotal} уровней</span></div>
-            <div className="efPickupGrid">
-              {NEXT_MUTATIONS.map((mutation) => (
-                <article key={mutation.id} className="efPickupCard">
-                  <b>{mutation.name}</b>
-                  <span>LV {save.mutations.levels[mutation.id] || 0}/{mutation.maxLevel} · {mutation.stat.toUpperCase()}</span>
-                  <small>{mutation.description}</small>
-                </article>
-              ))}
-            </div>
-          </div>
+          )}
         </section>
 
         <nav className="efAchievementsBottomNav" aria-label="Основная навигация">
@@ -276,7 +249,7 @@ export function BetaProgress() {
         .efBetaProgress{min-height:100vh;background:#020b15;color:#e7f2ff;font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif}.efBetaShell{width:min(1180px,calc(100vw - 28px));margin:0 auto;padding:max(22px,env(safe-area-inset-top)) 0 max(24px,env(safe-area-inset-bottom));display:grid;gap:14px}.efBetaHero,.efBetaStats article,.efBetaPanel,.efBetaDoctor{border:1px solid rgba(150,230,255,.15);background:linear-gradient(180deg,rgba(255,255,255,.085),rgba(255,255,255,.035));box-shadow:0 24px 80px rgba(0,0,0,.30);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}.efBetaHero{border-radius:30px;padding:18px;display:flex;justify-content:space-between;gap:16px;align-items:flex-start;background:radial-gradient(circle at 12% 0,rgba(120,240,255,.18),transparent 38%),linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.035))}.efBetaHero span,.efBetaPanelHead span,.efBetaStats span{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:rgba(231,242,255,.56);font-weight:1000}.efBetaHero h1{margin:4px 0;font-size:32px;line-height:1}.efBetaHero p{margin:0;color:rgba(231,242,255,.68)}.efBetaHero nav{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.efBetaHero a,.efDoctorGrid button{min-height:38px;border-radius:999px;border:1px solid rgba(120,240,255,.22);background:rgba(120,240,255,.10);color:#e7f2ff;padding:0 13px;text-decoration:none;font-weight:1000;display:inline-flex;align-items:center;justify-content:center}.efBetaStats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}.efBetaStats article{border-radius:20px;padding:12px;display:grid;gap:4px;min-width:0}.efBetaStats b{font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.efBetaStats small,.efBetaCard small,.efPickupCard small,.efDoctorIssues span{color:rgba(231,242,255,.62);font-size:11px}.efBetaDoctor,.efBetaPanel{border-radius:26px;padding:14px;display:grid;gap:12px}.efBetaPanelHead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.efBetaPanelHead h2{margin:0;font-size:20px}.efDoctorGrid{display:flex;gap:8px;flex-wrap:wrap}.efDoctorGrid button{cursor:pointer}.efDoctorIssues{display:grid;gap:6px}.efDoctorIssues span{padding:8px 10px;border-radius:13px;background:rgba(2,16,27,.36);border:1px solid rgba(255,255,255,.07)}.efBetaGrid.two{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}.efQuestGroup{display:grid;gap:8px;margin-top:4px}.efQuestGroup h3{margin:8px 0 0;color:#fff3a0;font-size:12px;letter-spacing:.10em;text-transform:uppercase}.efBetaCard,.efPickupCard{border-radius:17px;border:1px solid rgba(255,255,255,.09);background:rgba(2,16,27,.34);padding:10px;display:grid;gap:6px}.efBetaCard.done{border-color:rgba(110,255,180,.22);background:rgba(110,255,180,.06)}.efBetaRow{display:flex;justify-content:space-between;gap:12px}.efBetaRow b{font-size:13px}.efBetaRow span{font-size:12px;color:#fff3a0;font-weight:1000}.efBetaCard p{margin:0;color:rgba(231,242,255,.72);font-size:12px;line-height:1.35}.efBetaCard i{height:6px;border-radius:999px;background:rgba(255,255,255,.10);overflow:hidden}.efBetaCard i em{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#78f0ff,#fff3a0)}.efAchievementList{display:grid;gap:8px;max-height:720px;overflow:auto;padding-right:3px}.efPickupGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.efPickupCard b{font-size:13px}.efPickupCard span{font-size:10px;color:#fff3a0;text-transform:uppercase;font-weight:1000}.efBalanceStats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.efBalanceStats article{border-radius:17px;border:1px solid rgba(255,255,255,.09);background:rgba(120,240,255,.07);padding:10px;display:grid;gap:5px}.efBalanceStats span{font-size:10px;color:rgba(231,242,255,.60);font-weight:1000;text-transform:uppercase;letter-spacing:.08em}.efBalanceStats b{font-size:15px;color:#fff3a0}@media(max-width:920px){.efBetaStats,.efBalanceStats{grid-template-columns:repeat(2,minmax(0,1fr))}.efBetaGrid.two,.efPickupGrid{grid-template-columns:1fr}.efBetaHero{display:grid}.efBetaHero nav{justify-content:flex-start}.efBetaHero h1{font-size:26px}}
       `}</style>
       <style>{`
-        .efAchievementsPage{position:relative;isolation:isolate;overflow-x:hidden;background:#020915;background-image:linear-gradient(180deg,rgba(2,9,21,.12),rgba(2,9,21,.70)),url("/game/assets/lobby/lobby-bg-station-16x9.png");background-size:cover;background-position:center;background-attachment:fixed}.efAchievementsPage:before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse at 50% 18%,rgba(53,216,255,.20),transparent 36%),linear-gradient(90deg,rgba(2,9,21,.42),transparent 32%,transparent 68%,rgba(2,9,21,.42))}.efAchievementsAtmosphere{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}.efAchievementsAtmosphere i{position:absolute;width:7px;height:7px;border-radius:999px;background:rgba(223,248,255,.42);box-shadow:0 0 18px rgba(53,216,255,.35);animation:efAchievementBubble 13s linear infinite}.efAchievementsAtmosphere i:nth-child(1){left:11%;bottom:-8%;animation-delay:-3s}.efAchievementsAtmosphere i:nth-child(2){left:78%;bottom:-9%;width:10px;height:10px;animation-delay:-7s}.efAchievementsAtmosphere i:nth-child(3){left:56%;bottom:-12%;width:5px;height:5px;animation-delay:-1s}.efAchievementsAtmosphere i:nth-child(4){left:92%;bottom:-10%;animation-delay:-9s}.efBetaShell{position:relative;z-index:1;padding-bottom:calc(96px + env(safe-area-inset-bottom))!important}.efAchievementsTop{display:grid;grid-template-columns:minmax(260px,430px) auto;gap:12px;align-items:center}.efAchievementsProfile,.efAchievementsTopNav,.efAchievementsBottomNav,.efAchievementsHeroScore{border:1px solid rgba(88,210,255,.25);background:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.025)),rgba(5,18,32,.62);box-shadow:0 18px 60px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.08);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}.efAchievementsProfile{border-radius:8px;padding:10px;display:grid;grid-template-columns:54px minmax(0,1fr);gap:12px;align-items:center}.efAchievementsProfile span{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:rgba(150,232,255,.78);font-weight:1000}.efAchievementsProfile h2{margin:1px 0 3px;font-size:22px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.efAchievementsProfile p{margin:0;color:rgba(234,247,255,.66);font-size:13px}.efAchievementsProfile i{display:block;height:7px;margin-top:5px;border-radius:999px;background:rgba(255,255,255,.10);overflow:hidden}.efAchievementsProfile em{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#35d8ff,#f5b84b)}.efAchievementsAvatar{width:54px;height:54px;border-radius:999px;display:grid;place-items:center;background:radial-gradient(circle at 35% 25%,rgba(255,255,255,.80),rgba(53,216,255,.30) 42%,rgba(7,27,45,.88));border:1px solid rgba(88,210,255,.38);font-weight:1000;font-size:22px}.efAchievementsTopNav{justify-self:end;border-radius:999px;padding:7px;display:flex;gap:6px}.efAchievementsTopNav a{min-height:40px;border-radius:999px;padding:0 14px;display:inline-flex;align-items:center;color:#eaf7ff;text-decoration:none;font-weight:1000;background:rgba(5,18,32,.42);border:1px solid rgba(88,210,255,.16)}.efBetaHero{border-radius:8px!important;background:linear-gradient(120deg,rgba(53,216,255,.16),rgba(5,18,32,.70)),rgba(5,18,32,.58)!important;align-items:center!important}.efBetaHero h1{font-size:clamp(40px,6vw,76px)!important}.efBetaHero p{max-width:560px}.efAchievementsHeroScore{border-radius:999px;width:132px;height:132px;display:grid;place-items:center;align-content:center;gap:2px}.efAchievementsHeroScore strong{font-size:36px;line-height:1}.efAchievementsHeroScore span{font-size:12px;color:rgba(234,247,255,.66);font-weight:1000}.efBetaStats article,.efBetaPanel,.efBetaDoctor{border-radius:8px!important;background:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.025)),rgba(5,18,32,.62)!important;border-color:rgba(88,210,255,.22)!important}.efBetaCard,.efPickupCard,.efBalanceStats article{border-radius:8px!important;background:rgba(5,18,32,.46)!important;border-color:rgba(88,210,255,.14)!important}.efBetaCard.done{background:linear-gradient(180deg,rgba(110,255,180,.12),rgba(5,18,32,.44))!important;border-color:rgba(110,255,180,.28)!important}.efAchievementList{max-height:none!important}.efAchievementsBottomNav{position:fixed;left:50%;bottom:max(12px,env(safe-area-inset-bottom));z-index:10;transform:translateX(-50%);width:min(520px,calc(100vw - 24px));border-radius:999px;padding:8px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.efAchievementsBottomNav a{min-height:54px;border-radius:999px;display:grid;place-items:center;align-content:center;gap:2px;text-decoration:none;color:rgba(234,247,255,.62);font-size:11px;font-weight:950}.efAchievementsBottomNav a.active{background:rgba(53,216,255,.14);color:#eaf7ff;box-shadow:inset 0 0 20px rgba(53,216,255,.10)}.efAchievementsBottomNav span{font-size:16px}.efAchievementsBottomNav b{font-size:11px}@media(max-width:920px){.efAchievementsTop{grid-template-columns:1fr}.efAchievementsTopNav{justify-self:stretch;justify-content:center}.efBetaHero{grid-template-columns:1fr!important}.efAchievementsHeroScore{width:104px;height:104px}.efAchievementsHeroScore strong{font-size:28px}}@media(max-width:560px){.efBetaShell{width:min(100%,calc(100vw - 20px))!important;padding-top:max(10px,env(safe-area-inset-top))!important}.efAchievementsTopNav a{padding:0 10px;font-size:13px}.efBetaHero h1{font-size:42px!important}.efAchievementsHeroScore{display:none}.efBetaStats{grid-template-columns:repeat(2,minmax(0,1fr))!important}.efBetaStats article{min-height:82px}.efAchievementsBottomNav{width:calc(100vw - 18px)}}@keyframes efAchievementBubble{0%{transform:translateY(0);opacity:0}12%{opacity:.68}100%{transform:translateY(-110vh);opacity:0}}
+        .efAchievementsPage{position:relative;isolation:isolate;overflow-x:hidden;background:#020915;background-image:linear-gradient(180deg,rgba(2,9,21,.12),rgba(2,9,21,.70)),url("/game/assets/lobby/lobby-bg-station-16x9.png");background-size:cover;background-position:center;background-attachment:fixed}.efAchievementsPage:before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse at 50% 18%,rgba(53,216,255,.20),transparent 36%),linear-gradient(90deg,rgba(2,9,21,.42),transparent 32%,transparent 68%,rgba(2,9,21,.42))}.efAchievementsAtmosphere{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}.efAchievementsAtmosphere i{position:absolute;width:7px;height:7px;border-radius:999px;background:rgba(223,248,255,.42);box-shadow:0 0 18px rgba(53,216,255,.35);animation:efAchievementBubble 13s linear infinite}.efAchievementsAtmosphere i:nth-child(1){left:11%;bottom:-8%;animation-delay:-3s}.efAchievementsAtmosphere i:nth-child(2){left:78%;bottom:-9%;width:10px;height:10px;animation-delay:-7s}.efAchievementsAtmosphere i:nth-child(3){left:56%;bottom:-12%;width:5px;height:5px;animation-delay:-1s}.efAchievementsAtmosphere i:nth-child(4){left:92%;bottom:-10%;animation-delay:-9s}.efBetaShell{position:relative;z-index:1;padding-bottom:calc(96px + env(safe-area-inset-bottom))!important}.efAchievementsTop{display:grid;grid-template-columns:minmax(260px,430px) auto;gap:12px;align-items:center}.efAchievementsProfile,.efAchievementsTopNav,.efAchievementsBottomNav,.efAchievementsHeroScore{border:1px solid rgba(88,210,255,.25);background:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.025)),rgba(5,18,32,.62);box-shadow:0 18px 60px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.08);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}.efAchievementsProfile{border-radius:8px;padding:10px;display:grid;grid-template-columns:54px minmax(0,1fr);gap:12px;align-items:center}.efAchievementsProfile span{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:rgba(150,232,255,.78);font-weight:1000}.efAchievementsProfile h2{margin:1px 0 3px;font-size:22px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.efAchievementsProfile p{margin:0;color:rgba(234,247,255,.66);font-size:13px}.efAchievementsProfile i{display:block;height:7px;margin-top:5px;border-radius:999px;background:rgba(255,255,255,.10);overflow:hidden}.efAchievementsProfile em{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#35d8ff,#f5b84b)}.efAchievementsAvatar{width:54px;height:54px;border-radius:999px;display:grid;place-items:center;background:radial-gradient(circle at 35% 25%,rgba(255,255,255,.80),rgba(53,216,255,.30) 42%,rgba(7,27,45,.88));border:1px solid rgba(88,210,255,.38);font-weight:1000;font-size:22px}.efAchievementsTopNav{justify-self:end;border-radius:999px;padding:7px;display:flex;gap:6px}.efAchievementsTopNav a{min-height:40px;border-radius:999px;padding:0 14px;display:inline-flex;align-items:center;color:#eaf7ff;text-decoration:none;font-weight:1000;background:rgba(5,18,32,.42);border:1px solid rgba(88,210,255,.16)}.efBetaHero{border-radius:8px!important;background:linear-gradient(120deg,rgba(53,216,255,.16),rgba(5,18,32,.70)),rgba(5,18,32,.58)!important;align-items:center!important}.efBetaHero h1{font-size:clamp(40px,6vw,76px)!important}.efBetaHero p{max-width:560px}.efAchievementsHeroScore{border-radius:999px;width:132px;height:132px;display:grid;place-items:center;align-content:center;gap:2px}.efAchievementsHeroScore strong{font-size:36px;line-height:1}.efAchievementsHeroScore span{font-size:12px;color:rgba(234,247,255,.66);font-weight:1000}.efBetaStats article,.efBetaPanel,.efBetaDoctor{border-radius:8px!important;background:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.025)),rgba(5,18,32,.62)!important;border-color:rgba(88,210,255,.22)!important}.efBetaCard,.efPickupCard,.efBalanceStats article{border-radius:8px!important;background:rgba(5,18,32,.46)!important;border-color:rgba(88,210,255,.14)!important}.efBetaCard.done{background:linear-gradient(180deg,rgba(110,255,180,.12),rgba(5,18,32,.44))!important;border-color:rgba(110,255,180,.28)!important}.efProgressFocus{gap:14px!important}.efProgressTabs{display:flex;gap:6px;padding:5px;border:1px solid rgba(88,210,255,.18);border-radius:999px;background:rgba(5,18,32,.42)}.efProgressTabs button{min-height:36px;border:0;border-radius:999px;background:transparent;color:rgba(234,247,255,.62);padding:0 13px;font:inherit;font-size:12px;font-weight:1000;cursor:pointer}.efProgressTabs button.active{color:#eaf7ff;background:rgba(53,216,255,.14);box-shadow:inset 0 0 18px rgba(53,216,255,.10)}.efProgressList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-height:none!important}.efQuestColumns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:start}.efQuestColumns .efQuestGroup{min-width:0;margin-top:0}.efQuestColumns .efQuestGroup h3{margin:0 0 8px}.efAchievementsBottomNav{position:fixed;left:50%;bottom:max(12px,env(safe-area-inset-bottom));z-index:10;transform:translateX(-50%);width:min(520px,calc(100vw - 24px));border-radius:999px;padding:8px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.efAchievementsBottomNav a{min-height:54px;border-radius:999px;display:grid;place-items:center;align-content:center;gap:2px;text-decoration:none;color:rgba(234,247,255,.62);font-size:11px;font-weight:950}.efAchievementsBottomNav a.active{background:rgba(53,216,255,.14);color:#eaf7ff;box-shadow:inset 0 0 20px rgba(53,216,255,.10)}.efAchievementsBottomNav span{font-size:16px}.efAchievementsBottomNav b{font-size:11px}@media(max-width:920px){.efAchievementsTop{grid-template-columns:1fr}.efAchievementsTopNav{justify-self:stretch;justify-content:center}.efBetaHero{grid-template-columns:1fr!important}.efAchievementsHeroScore{width:104px;height:104px}.efAchievementsHeroScore strong{font-size:28px}.efProgressList,.efQuestColumns{grid-template-columns:1fr}}@media(max-width:560px){.efBetaShell{width:min(100%,calc(100vw - 20px))!important;padding-top:max(10px,env(safe-area-inset-top))!important}.efAchievementsTopNav{display:none}.efBetaPanelHead{display:grid!important}.efProgressTabs{width:100%;display:grid;grid-template-columns:1fr 1fr}.efProgressTabs button{padding:0 8px}.efBetaHero h1{font-size:42px!important}.efAchievementsHeroScore{display:none}.efBetaStats{grid-template-columns:repeat(2,minmax(0,1fr))!important}.efBetaStats article{min-height:82px}.efAchievementsBottomNav{width:calc(100vw - 18px)}}@keyframes efAchievementBubble{0%{transform:translateY(0);opacity:0}12%{opacity:.68}100%{transform:translateY(-110vh);opacity:0}}
       `}</style>
     </main>
   );
