@@ -3,9 +3,11 @@ import { NEXT_CRAFT_RECIPES, normalizeCraftInventory, normalizeCraftState, type 
 
 const CRAFT_INVENTORY_KEY = "evofish_next_craft_inventory_v1";
 const CRAFT_REQUEST_KEY = "evofish_next_craft_requests_v1";
+const CRAFT_WALLET_KEY = "evofish_next_craft_wallet_v1";
 
 type CraftActionType = "buy" | "use";
 type CraftRequest = { type: CraftActionType; recipeId: string; amount: number; id: number };
+type CraftWalletSnapshot = { pearls: number; corals: number };
 
 function addFloat(state: NextEngineState, text: string) {
   const player = state.player;
@@ -26,6 +28,31 @@ function writeStoredInventory(inventory: NextCraftInventory) {
     localStorage.setItem(CRAFT_INVENTORY_KEY, JSON.stringify(inventory));
   } catch {
     // local craft inventory is optional in private modes
+  }
+}
+
+function writeWalletSnapshot(state: NextEngineState) {
+  try {
+    localStorage.setItem(CRAFT_WALLET_KEY, JSON.stringify({
+      pearls: Math.max(0, Math.floor(state.economy.pearls || 0)),
+      corals: Math.max(0, Math.floor(state.economy.corals || 0))
+    }));
+  } catch {
+    // optional
+  }
+}
+
+export function readCraftWalletSnapshot(): CraftWalletSnapshot | null {
+  try {
+    const raw = localStorage.getItem(CRAFT_WALLET_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<CraftWalletSnapshot>;
+    return {
+      pearls: Math.max(0, Math.floor(parsed.pearls || 0)),
+      corals: Math.max(0, Math.floor(parsed.corals || 0))
+    };
+  } catch {
+    return null;
   }
 }
 
@@ -87,6 +114,7 @@ function normalizeCraft(state: NextEngineState) {
 
 function persistCraft(state: NextEngineState) {
   writeStoredInventory(normalizeCraft(state).inventory);
+  writeWalletSnapshot(state);
 }
 
 function stock(state: NextEngineState, recipeId: string) {
@@ -183,7 +211,10 @@ export function buyCraftItem(state: NextEngineState, recipeId: string, amount = 
     bought += 1;
   }
 
-  if (bought <= 0) return false;
+  if (bought <= 0) {
+    writeWalletSnapshot(state);
+    return false;
+  }
   state.stats.lastEvent = `${recipe.name}: куплено x${bought}`;
   addFloat(state, `+${recipe.shortName} x${bought}`);
   persistCraft(state);
@@ -242,5 +273,6 @@ export function updateCraftSystem(state: NextEngineState, dt: number) {
     state.player.invulnT = Math.max(state.player.invulnT, 0.12);
   }
 
+  writeWalletSnapshot(state);
   syncCraftStats(state);
 }
