@@ -21,13 +21,9 @@ function statusTone(report: EvoFishSaveDoctorReport) { if (report.status === "he
 type ModeId = "next" | "classic";
 
 const SIDE_ACTIONS = [
-  { label: "Магазин", icon: "◈", to: "/game/skins", notify: true },
-  { label: "Инвентарь", icon: "▣", to: "/game/progress" },
   { label: "Скины", icon: "✦", to: "/game/skins" },
-  { label: "Мутации", icon: "✺", to: "/game/progress" },
-  { label: "Квесты", icon: "◇", to: "/game/progress", notify: true },
-  { label: "События", icon: "✧", to: "/game/season" },
-  { label: "Крафт", icon: "⬡", to: "/game/play" }
+  { label: "События", icon: "✧", to: "/game/season", notify: true },
+  { label: "Лидеры", icon: "◇", to: "/game/leaderboard" }
 ] as const;
 
 const MODE_COPY: Record<ModeId, { title: string; subtitle: string; cta: string; href: string }> = {
