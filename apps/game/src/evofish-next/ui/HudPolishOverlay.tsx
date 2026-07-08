@@ -10,7 +10,7 @@ export function HudPolishOverlay() {
       if (panel) {
         panel.style.overflowY = "auto";
         panel.style.touchAction = "pan-y";
-        panel.style.webkitOverflowScrolling = "touch";
+        panel.style.setProperty("-webkit-overflow-scrolling", "touch");
       }
     };
 
