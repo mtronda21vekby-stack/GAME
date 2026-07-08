@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-craft-activation-fix-6.9.3";
+export const EVOFISH_NEXT_VERSION = "next-craft-activation-ui-6.9.4";
