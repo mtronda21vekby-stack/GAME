@@ -14,7 +14,7 @@ export type EvoFishWorldMapDefinition = {
 export const EVOFISH_WORLD_CONFIG: NextWorldConfig = {
   width: 5200,
   height: 3400,
-  enemyTarget: 60,
+  enemyTarget: 46,
   resourceTarget: 66
 };
 
