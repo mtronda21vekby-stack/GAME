@@ -15,6 +15,7 @@ import { updateQuestDirectorSystem } from "./questDirectorSystem";
 import { updateQuestSystem } from "./questSystem";
 import { updatePlayerSystem } from "./playerSystem";
 import { updateResourceSystem } from "./resourceSystem";
+import { isEvoFishRuntimePaused } from "./runtimePause";
 import { updateSurvivalSystem } from "./survivalSystem";
 import { updateZoneSystem } from "./zoneSystem";
 
@@ -39,7 +40,7 @@ export function stepNextEngine(state: NextEngineState, input: NextInputState, vi
   const camera = getNextCamera(state, viewport);
 
   updateMutationDraftSystem(state);
-  if (state.mutationDraft) return finishPausedFrame(state, input, dt);
+  if (state.mutationDraft || isEvoFishRuntimePaused()) return finishPausedFrame(state, input, dt);
 
   updateCraftSystem(state, dt);
   updateSurvivalSystem(state, dt);
