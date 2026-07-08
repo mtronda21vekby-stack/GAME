@@ -12,26 +12,26 @@ export type EvoFishWorldMapDefinition = {
 };
 
 export const EVOFISH_WORLD_CONFIG: NextWorldConfig = {
-  width: 3640,
-  height: 2340,
-  enemyTarget: 46,
-  resourceTarget: 42
+  width: 5200,
+  height: 3400,
+  enemyTarget: 60,
+  resourceTarget: 66
 };
 
 export const EVOFISH_WORLD_MAPS: Record<EvoFishWorldId, EvoFishWorldMapDefinition> = {
   main_reef: {
     id: "main_reef",
-    name: "Основной океан",
-    shortName: "Океан",
-    description: "Открытая зона роста, ресурсов и первых хищников.",
+    name: "Большой океан",
+    shortName: "Океан+",
+    description: "Расширенная карта: рифы, течения, жемчужные банки, глубокие зоны и охотничьи воды.",
     config: EVOFISH_WORLD_CONFIG,
     neon: false
   },
   dark_cave: {
     id: "dark_cave",
     name: "Тёмная неоновая пещера",
-    shortName: "Пещера",
-    description: "Отдельный мир того же размера: тёмная вода, неон, древние артефакты и новая сюжетная ветка.",
+    shortName: "Пещера+",
+    description: "Расширенный тёмный мир: неоновые леса, кристальные каньоны, эхо-ядро и древние руины.",
     config: EVOFISH_WORLD_CONFIG,
     neon: true
   }
