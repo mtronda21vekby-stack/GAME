@@ -20,6 +20,11 @@ function writePauseState(state: PauseState) {
   }
 }
 
+function uiPanelOpen() {
+  if (typeof document === "undefined") return false;
+  return Boolean(document.querySelector(".efGamePanel") || document.querySelector(".efCraftQuick.open"));
+}
+
 export function setEvoFishPauseSource(source: string, paused: boolean) {
   if (typeof localStorage === "undefined") return;
   const key = String(source || "unknown");
@@ -30,6 +35,7 @@ export function setEvoFishPauseSource(source: string, paused: boolean) {
 }
 
 export function isEvoFishRuntimePaused() {
+  if (uiPanelOpen()) return true;
   if (typeof localStorage === "undefined") return false;
   return Object.values(readPauseState()).some(Boolean);
 }
