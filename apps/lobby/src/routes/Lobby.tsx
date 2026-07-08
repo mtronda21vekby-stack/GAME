@@ -3,6 +3,8 @@ import React from "react";
 import { userStorage } from "@blackcrown/core";
 
 type HubMode = "next" | "classic";
+type FishRarity = "common" | "rare" | "epic" | "legendary" | "mythic";
+type FishDirection = "next" | "previous";
 
 type HubProfile = {
   nickname: string;
@@ -20,13 +22,41 @@ type NavItem = {
   notify?: boolean;
 };
 
-type QuickAction = {
-  label: string;
-  subtitle: string;
-  icon: string;
-  path?: string;
-  accent?: "cyan" | "gold" | "coral" | "pearl";
+type FishSkin = {
+  id: string;
+  name: string;
+  asset: string;
+  owned: boolean;
+  rarity?: FishRarity;
+  mode?: HubMode | "both";
 };
+
+type SelectedStartFishState = {
+  ownedFishSkins: FishSkin[];
+  selectedFish: FishSkin;
+  selectedFishIndex: number;
+  selectedStartFishId: string;
+  transitionDirection: FishDirection;
+  selectFish: (id: string) => void;
+  nextFish: () => void;
+  previousFish: () => void;
+  canCycleFish: boolean;
+};
+
+const SELECTED_START_FISH_KEY = "evofish.selectedStartFish.v1";
+const DEFAULT_FISH_ID = "default";
+
+const LOBBY_FISH_SKIN_CATALOG: readonly Omit<FishSkin, "owned">[] = [
+  { id: "default", name: "Стандарт", asset: "/lobby/assets/fish/fish_standard.png", rarity: "common", mode: "both" },
+  { id: "neon_koi", name: "Неон-Кои", asset: "/lobby/assets/fish/neon_koi.png", rarity: "rare", mode: "both" },
+  { id: "reef_royal", name: "Рифовый Роял", asset: "/lobby/assets/fish/reef_royal.png", rarity: "rare", mode: "both" },
+  { id: "clown_pop", name: "Клоун Поп", asset: "/lobby/assets/fish/clown_pop.png", rarity: "rare", mode: "both" },
+  { id: "angler_glow", name: "Удильщик", asset: "/lobby/assets/fish/angler_glow.png", rarity: "rare", mode: "both" },
+  { id: "deep_sapphire", name: "Сапфир", asset: "/lobby/assets/fish/deep_sapphire.png", rarity: "rare", mode: "both" },
+  { id: "gold_scale", name: "Золотая чешуя", asset: "/lobby/assets/fish/gold_scale.png", rarity: "epic", mode: "both" },
+  { id: "cyber_fish", name: "Кибер", asset: "/lobby/assets/fish/cyber_fish.png", rarity: "epic", mode: "both" },
+  { id: "pirate_fish", name: "Пират", asset: "/lobby/assets/fish/pirate_fish.png", rarity: "epic", mode: "both" },
+];
 
 const SIDE_NAV_ITEMS: NavItem[] = [
   { label: "Магазин", path: "/game/skins?tab=shop", icon: "◇" },
@@ -42,14 +72,6 @@ const BOTTOM_NAV_ITEMS: NavItem[] = [
   { label: "Лобби", path: "/lobby", icon: "◎" },
   { label: "Достижения", path: "/game/progress", icon: "✦" },
   { label: "Профиль", path: "/game/account", icon: "◉" },
-];
-
-const QUICK_ACTIONS: QuickAction[] = [
-  { label: "Сезон", subtitle: "Глубина I", icon: "◎", path: "/game/season", accent: "cyan" },
-  { label: "Лидерборд", subtitle: "Топ 100", icon: "◇", path: "/game/leaderboard", accent: "gold" },
-  { label: "Награда", subtitle: "Доступна", icon: "✦", path: "/game/season", accent: "pearl" },
-  { label: "Скины", subtitle: "0 / 25", icon: "◈", path: "/game/skins", accent: "cyan" },
-  { label: "Задания", subtitle: "0 / 10", icon: "✣", path: "/game/progress?panel=quests", accent: "coral" },
 ];
 
 function nav(path: string) {
@@ -73,6 +95,93 @@ function readRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
 }
 
+function readActiveEvoFishSave(): Record<string, unknown> {
+  try {
+    const activeProfileId = (localStorage.getItem("evofish_next_active_profile_v1") || "main").trim() || "main";
+    const activeSaveKey = activeProfileId === "main" ? "evofish_next_save_v1" : `evofish_next_save_v1__profile_${activeProfileId}`;
+    const saveKeys = activeSaveKey === "evofish_next_save_v1" ? [activeSaveKey] : [activeSaveKey, "evofish_next_save_v1"];
+
+    for (const key of saveKeys) {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      return readRecord(JSON.parse(raw));
+    }
+  } catch {
+    return {};
+  }
+
+  return {};
+}
+
+function isTruthyOwned(value: unknown) {
+  return value === true || value === 1 || value === "true";
+}
+
+function getCatalogFishById(id: string) {
+  return LOBBY_FISH_SKIN_CATALOG.find((skin) => skin.id === id) ?? null;
+}
+
+function readLobbyLoadout() {
+  const save = readActiveEvoFishSave();
+  const loadout = readRecord(save.loadout);
+  const ownedSource = readRecord(loadout.ownedSkins ?? save.ownedSkins);
+  const ownedIds = new Set<string>([DEFAULT_FISH_ID]);
+
+  for (const [skinId, owned] of Object.entries(ownedSource)) {
+    if (isTruthyOwned(owned) && getCatalogFishById(skinId)) ownedIds.add(skinId);
+  }
+
+  const equippedSkinId = readText(loadout.equippedSkinId ?? loadout.equippedSkin ?? save.equippedSkin, DEFAULT_FISH_ID);
+
+  return {
+    ownedIds,
+    equippedSkinId: ownedIds.has(equippedSkinId) ? equippedSkinId : DEFAULT_FISH_ID,
+  };
+}
+
+function skinSupportsMode(skin: Omit<FishSkin, "owned">, mode: HubMode) {
+  return !skin.mode || skin.mode === "both" || skin.mode === mode;
+}
+
+function getOwnedLobbyFishSkins(selectedMode: HubMode): FishSkin[] {
+  const { ownedIds } = readLobbyLoadout();
+  const ownedSkins = LOBBY_FISH_SKIN_CATALOG.filter((skin) => skinSupportsMode(skin, selectedMode) && ownedIds.has(skin.id)).map(
+    (skin) => ({ ...skin, owned: true }),
+  );
+
+  if (ownedSkins.length > 0) return ownedSkins;
+
+  const defaultSkin = getCatalogFishById(DEFAULT_FISH_ID) ?? LOBBY_FISH_SKIN_CATALOG[0];
+  return [{ ...defaultSkin, owned: true }];
+}
+
+function readSelectedStartFishId() {
+  try {
+    return readText(localStorage.getItem(SELECTED_START_FISH_KEY), "");
+  } catch {
+    return "";
+  }
+}
+
+function writeSelectedStartFishId(skinId: string) {
+  try {
+    localStorage.setItem(SELECTED_START_FISH_KEY, skinId);
+  } catch {
+    // Saving the lobby preference is best-effort; the UI still keeps the current in-memory selection.
+  }
+}
+
+function resolveSelectedStartFishId(ownedFishSkins: FishSkin[]) {
+  const ownedIds = new Set(ownedFishSkins.map((skin) => skin.id));
+  const savedSkinId = readSelectedStartFishId();
+  if (savedSkinId && ownedIds.has(savedSkinId)) return savedSkinId;
+
+  const { equippedSkinId } = readLobbyLoadout();
+  if (ownedIds.has(equippedSkinId)) return equippedSkinId;
+
+  return ownedFishSkins[0]?.id ?? DEFAULT_FISH_ID;
+}
+
 function readHubProfile(fallbackNick: string): HubProfile {
   const base: HubProfile = {
     nickname: fallbackNick,
@@ -84,12 +193,8 @@ function readHubProfile(fallbackNick: string): HubProfile {
   };
 
   try {
-    const activeProfileId = (localStorage.getItem("evofish_next_active_profile_v1") || "main").trim() || "main";
-    const activeSaveKey = activeProfileId === "main" ? "evofish_next_save_v1" : `evofish_next_save_v1__profile_${activeProfileId}`;
-    const raw = localStorage.getItem(activeSaveKey) || localStorage.getItem("evofish_next_save_v1");
-    if (!raw) return base;
-
-    const save = readRecord(JSON.parse(raw));
+    const save = readActiveEvoFishSave();
+    if (!Object.keys(save).length) return base;
     const account = readRecord(save.account ?? save.profile);
     const progress = readRecord(save.progress);
     const economy = readRecord(save.economy);
@@ -112,21 +217,113 @@ function progressPercent(value: number, max: number) {
   return Math.max(0, Math.min(100, Math.round((value / max) * 100)));
 }
 
-function launchPath(mode: HubMode) {
-  return `/game/?mode=${mode}`;
+function launchPath(mode: HubMode, skinId: string) {
+  return `/game/?mode=${encodeURIComponent(mode)}&skin=${encodeURIComponent(skinId)}`;
 }
 
 function modeTitle(mode: HubMode) {
   return mode === "next" ? "EvoFish Next" : "EvoFish Classic";
 }
 
+function modeLabel(mode: HubMode) {
+  return mode === "next" ? "Новая версия" : "Классический режим";
+}
+
 function formatCount(value: number) {
   return new Intl.NumberFormat("ru-RU").format(value);
+}
+
+function useSelectedStartFish(selectedMode: HubMode): SelectedStartFishState {
+  const [refreshSeed, setRefreshSeed] = React.useState(0);
+  const [selectedStartFishId, setSelectedStartFishId] = React.useState(() => resolveSelectedStartFishId(getOwnedLobbyFishSkins(selectedMode)));
+  const [transitionDirection, setTransitionDirection] = React.useState<FishDirection>("next");
+
+  React.useEffect(() => {
+    const refreshSkins = () => setRefreshSeed((value) => value + 1);
+    const onVisible = () => {
+      if (!document.hidden) refreshSkins();
+    };
+
+    window.addEventListener("focus", refreshSkins);
+    window.addEventListener("storage", refreshSkins);
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      window.removeEventListener("focus", refreshSkins);
+      window.removeEventListener("storage", refreshSkins);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, []);
+
+  const ownedFishSkins = React.useMemo(() => getOwnedLobbyFishSkins(selectedMode), [selectedMode, refreshSeed]);
+
+  React.useEffect(() => {
+    const ownedIds = new Set(ownedFishSkins.map((skin) => skin.id));
+    if (ownedIds.has(selectedStartFishId)) return;
+
+    const fallbackFishId = resolveSelectedStartFishId(ownedFishSkins);
+    setSelectedStartFishId(fallbackFishId);
+    writeSelectedStartFishId(fallbackFishId);
+  }, [ownedFishSkins, selectedStartFishId]);
+
+  const selectedFishIndex = Math.max(0, ownedFishSkins.findIndex((skin) => skin.id === selectedStartFishId));
+  const selectedFish = ownedFishSkins[selectedFishIndex] ?? ownedFishSkins[0] ?? {
+    ...LOBBY_FISH_SKIN_CATALOG[0],
+    owned: true,
+  };
+
+  const selectFish = React.useCallback(
+    (skinId: string) => {
+      const targetIndex = ownedFishSkins.findIndex((skin) => skin.id === skinId);
+      if (targetIndex < 0) return;
+
+      const currentIndex = ownedFishSkins.findIndex((skin) => skin.id === selectedStartFishId);
+      setTransitionDirection(targetIndex < currentIndex ? "previous" : "next");
+      setSelectedStartFishId(skinId);
+      writeSelectedStartFishId(skinId);
+    },
+    [ownedFishSkins, selectedStartFishId],
+  );
+
+  const canCycleFish = ownedFishSkins.length > 1;
+
+  const nextFish = React.useCallback(() => {
+    if (!canCycleFish) return;
+    const nextIndex = (selectedFishIndex + 1) % ownedFishSkins.length;
+    setTransitionDirection("next");
+    const nextSkinId = ownedFishSkins[nextIndex]?.id;
+    if (!nextSkinId) return;
+    setSelectedStartFishId(nextSkinId);
+    writeSelectedStartFishId(nextSkinId);
+  }, [canCycleFish, ownedFishSkins, selectedFishIndex]);
+
+  const previousFish = React.useCallback(() => {
+    if (!canCycleFish) return;
+    const previousIndex = (selectedFishIndex - 1 + ownedFishSkins.length) % ownedFishSkins.length;
+    setTransitionDirection("previous");
+    const previousSkinId = ownedFishSkins[previousIndex]?.id;
+    if (!previousSkinId) return;
+    setSelectedStartFishId(previousSkinId);
+    writeSelectedStartFishId(previousSkinId);
+  }, [canCycleFish, ownedFishSkins, selectedFishIndex]);
+
+  return {
+    ownedFishSkins,
+    selectedFish,
+    selectedFishIndex,
+    selectedStartFishId: selectedFish.id,
+    transitionDirection,
+    selectFish,
+    nextFish,
+    previousFish,
+    canCycleFish,
+  };
 }
 
 export function Lobby() {
   const [selectedMode, setSelectedMode] = React.useState<HubMode>("next");
   const [profile, setProfile] = React.useState<HubProfile>(() => readHubProfile(getNick()));
+  const fishSelection = useSelectedStartFish(selectedMode);
 
   React.useEffect(() => {
     const refreshProfile = () => setProfile(readHubProfile(getNick()));
@@ -145,9 +342,12 @@ export function Lobby() {
     };
   }, []);
 
-  const playMode = React.useCallback((mode: HubMode) => {
-    nav(launchPath(mode));
-  }, []);
+  const playMode = React.useCallback(
+    (mode: HubMode) => {
+      nav(launchPath(mode, fishSelection.selectedStartFishId));
+    },
+    [fishSelection.selectedStartFishId],
+  );
 
   return (
     <main className="bcSiteRoot">
@@ -161,7 +361,7 @@ export function Lobby() {
             <PlayerPanel profile={profile} />
             <div className="hubTopActions">
               <CurrencyBar profile={profile} />
-              <button className="hubSettingsButton" type="button" aria-label="Настройки">
+              <button className="hubSettingsButton" type="button" aria-label="Настройки" onClick={() => nav("/game/settings")}>
                 ⚙
               </button>
             </div>
@@ -177,15 +377,14 @@ export function Lobby() {
                   <h1>EvoFish Next</h1>
                 </div>
 
-                <FishSphere selectedMode={selectedMode} />
+                <FishSphere selectedMode={selectedMode} fishSelection={fishSelection} />
 
                 <PrimaryPlayButton onClick={() => playMode(selectedMode)} />
               </div>
             </section>
 
-            <aside className="hubRightRail" aria-label="Режимы и действия">
+            <aside className="hubRightRail" aria-label="Режимы EvoFish">
               <ModeSelector selectedMode={selectedMode} onSelect={setSelectedMode} onPlay={playMode} />
-              <QuickActions items={QUICK_ACTIONS} />
             </aside>
           </div>
 
@@ -259,24 +458,120 @@ function CurrencyPill({ kind, label, value }: { kind: "pearl" | "coral"; label: 
   );
 }
 
-function FishSphere({ selectedMode }: { selectedMode: HubMode }) {
+function FishSphere({ selectedMode, fishSelection }: { selectedMode: HubMode; fishSelection: SelectedStartFishState }) {
+  const {
+    ownedFishSkins,
+    selectedFish,
+    selectedFishIndex,
+    transitionDirection,
+    selectFish,
+    nextFish,
+    previousFish,
+    canCycleFish,
+  } = fishSelection;
+  const touchStartX = React.useRef<number | null>(null);
+  const previousFishRef = React.useRef<FishSkin>(selectedFish);
+  const [leavingFish, setLeavingFish] = React.useState<FishSkin | null>(null);
+  const [visualDirection, setVisualDirection] = React.useState<FishDirection>(transitionDirection);
+
+  React.useEffect(() => {
+    const previousFish = previousFishRef.current;
+    if (previousFish.id !== selectedFish.id) {
+      setLeavingFish(previousFish);
+      setVisualDirection(transitionDirection);
+      const timeout = window.setTimeout(() => setLeavingFish(null), 460);
+      previousFishRef.current = selectedFish;
+      return () => window.clearTimeout(timeout);
+    }
+
+    previousFishRef.current = selectedFish;
+    return undefined;
+  }, [selectedFish, selectedFish.id, transitionDirection]);
+
+  const handleTouchStart = React.useCallback(
+    (event: React.TouchEvent<HTMLDivElement>) => {
+      if (!canCycleFish) return;
+      touchStartX.current = event.changedTouches[0]?.clientX ?? null;
+    },
+    [canCycleFish],
+  );
+
+  const handleTouchEnd = React.useCallback(
+    (event: React.TouchEvent<HTMLDivElement>) => {
+      if (!canCycleFish || touchStartX.current === null) return;
+      const endX = event.changedTouches[0]?.clientX ?? touchStartX.current;
+      const distance = endX - touchStartX.current;
+      touchStartX.current = null;
+
+      if (Math.abs(distance) < 38) return;
+      if (distance < 0) nextFish();
+      else previousFish();
+    },
+    [canCycleFish, nextFish, previousFish],
+  );
+
   return (
     <div className="hubSphereStage">
-      <div className="hubSphere" aria-hidden="true">
+      <div
+        className="hubSphere"
+        role="group"
+        aria-label={`Выбранная стартовая рыба: ${selectedFish.name}`}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         <div className="hubSphereCaustics" />
+        {canCycleFish ? (
+          <button className="hubFishArrow isPrevious" type="button" aria-label="Предыдущая рыба" onClick={previousFish}>
+            ‹
+          </button>
+        ) : null}
         <div className="hubFish">
-          <img
-            src="/lobby/assets/fish/fish_standard.png"
-            alt=""
-            onError={(event) => {
-              event.currentTarget.style.display = "none";
-              event.currentTarget.parentElement?.classList.add("hasFallback");
-            }}
-          />
+          {leavingFish ? <FishVisualLayer fish={leavingFish} motion="exiting" direction={visualDirection} /> : null}
+          <FishVisualLayer key={selectedFish.id} fish={selectedFish} motion="entering" direction={visualDirection} />
           <span className="hubFishFallback" />
         </div>
+        {canCycleFish ? (
+          <button className="hubFishArrow isNext" type="button" aria-label="Следующая рыба" onClick={nextFish}>
+            ›
+          </button>
+        ) : null}
       </div>
-      <div className="hubSphereCaption">{modeTitle(selectedMode)} · выбранный режим</div>
+      <div className="hubSphereCaption">
+        {modeLabel(selectedMode)} · {selectedFish.name}
+      </div>
+      {canCycleFish ? (
+        <div className="hubFishPicker" aria-label="Выбор стартовой рыбы">
+          {ownedFishSkins.map((skin, index) => (
+            <button
+              key={skin.id}
+              className={`hubFishThumb ${index === selectedFishIndex ? "isSelected" : ""}`}
+              type="button"
+              aria-pressed={index === selectedFishIndex}
+              aria-label={`Выбрать ${skin.name}`}
+              onClick={() => selectFish(skin.id)}
+            >
+              <img src={skin.asset} alt="" loading="lazy" />
+              <span>{skin.name}</span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function FishVisualLayer({ fish, motion, direction }: { fish: FishSkin; motion: "entering" | "exiting"; direction: FishDirection }) {
+  return (
+    <div className={`hubFishLayer is-${motion} is-${direction}`}>
+      <img
+        src={fish.asset}
+        alt=""
+        draggable={false}
+        onError={(event) => {
+          event.currentTarget.style.display = "none";
+          event.currentTarget.closest(".hubFish")?.classList.add("hasFallback");
+        }}
+      />
     </div>
   );
 }
@@ -402,39 +697,6 @@ function SideNav({ items }: { items: NavItem[] }) {
         </div>
       ) : null}
     </div>
-  );
-}
-
-function QuickActions({ items }: { items: QuickAction[] }) {
-  return (
-    <section className="hubQuickGrid" aria-label="Быстрые действия">
-      {items.map((item) => (
-        <QuickActionCard key={item.label} item={item} />
-      ))}
-    </section>
-  );
-}
-
-function QuickActionCard({ item }: { item: QuickAction }) {
-  const canNavigate = Boolean(item.path);
-
-  return (
-    <button
-      className={`hubQuickCard is-${item.accent ?? "cyan"}`}
-      type="button"
-      onClick={() => {
-        if (item.path) nav(item.path);
-      }}
-      aria-disabled={!canNavigate}
-    >
-      <span className="hubQuickIcon" aria-hidden="true">
-        {item.icon}
-      </span>
-      <span className="hubQuickCopy">
-        <strong>{item.label}</strong>
-        <em>{item.subtitle}</em>
-      </span>
-    </button>
   );
 }
 
@@ -625,7 +887,6 @@ function LobbyStyles() {
       .hubSectionMenuPanel,
       .hubHero,
       .hubModeCard,
-      .hubQuickCard,
       .hubBottomNav {
         border: 1px solid var(--panel-border);
         border-radius: 8px;
@@ -784,8 +1045,7 @@ function LobbyStyles() {
         transform: rotate(-12deg);
       }
 
-      .hubCurrency span,
-      .hubQuickCopy {
+      .hubCurrency span {
         min-width: 0;
         display: grid;
         gap: 2px;
@@ -946,7 +1206,6 @@ function LobbyStyles() {
       }
 
       .hubModeButton,
-      .hubQuickCard,
       .hubBottomNavButton,
       .hubPrimaryPlayButton {
         font: inherit;
@@ -1065,6 +1324,7 @@ function LobbyStyles() {
         backdrop-filter: blur(12px) saturate(1.18);
         -webkit-backdrop-filter: blur(12px) saturate(1.18);
         animation: hubSphereBreath 4.8s ease-in-out infinite;
+        touch-action: pan-y;
       }
 
       .hubSphere:before,
@@ -1110,28 +1370,59 @@ function LobbyStyles() {
       .hubFish {
         position: relative;
         z-index: 2;
-        width: 76%;
+        width: 60%;
+        aspect-ratio: 1.78 / 1;
         max-width: 400px;
         display: grid;
         place-items: center;
+        pointer-events: none;
         filter:
           drop-shadow(0 20px 28px rgba(0,0,0,.40))
           drop-shadow(0 0 20px rgba(53,216,255,.22));
-        animation: hubFishFloat 3.8s ease-in-out infinite;
+        animation: hubFishIdle 4.2s ease-in-out infinite;
       }
 
-      .hubFish img {
+      .hubFishLayer {
+        grid-area: 1 / 1;
+        width: 100%;
+        display: grid;
+        place-items: center;
+        transform-origin: 50% 56%;
+        opacity: 1;
+      }
+
+      .hubFishLayer img {
         display: block;
         width: 100%;
         height: auto;
+        max-height: 100%;
         object-fit: contain;
         background: transparent;
         border: 0;
         box-shadow: none;
+        user-select: none;
+        -webkit-user-drag: none;
+      }
+
+      .hubFishLayer.is-entering.is-next {
+        animation: hubFishEnterNext .42s cubic-bezier(.2,.82,.2,1) both;
+      }
+
+      .hubFishLayer.is-entering.is-previous {
+        animation: hubFishEnterPrevious .42s cubic-bezier(.2,.82,.2,1) both;
+      }
+
+      .hubFishLayer.is-exiting.is-next {
+        animation: hubFishExitNext .42s cubic-bezier(.4,0,.2,1) both;
+      }
+
+      .hubFishLayer.is-exiting.is-previous {
+        animation: hubFishExitPrevious .42s cubic-bezier(.4,0,.2,1) both;
       }
 
       .hubFishFallback {
         display: none;
+        grid-area: 1 / 1;
         position: relative;
         width: min(100%, 300px);
         aspect-ratio: 2.25 / 1;
@@ -1169,12 +1460,135 @@ function LobbyStyles() {
         box-shadow: inset 5px 5px 10px rgba(255,255,255,.18);
       }
 
+      .hubFishArrow {
+        position: absolute;
+        top: 50%;
+        z-index: 4;
+        width: 42px;
+        height: 42px;
+        display: grid;
+        place-items: center;
+        border: 1px solid rgba(159,237,255,.42);
+        border-radius: 999px;
+        color: var(--text);
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.024)),
+          rgba(5,18,32,.58);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,.12),
+          0 0 24px rgba(53,216,255,.20);
+        font: inherit;
+        font-size: 30px;
+        line-height: 1;
+        cursor: pointer;
+        transform: translateY(-50%);
+        appearance: none;
+        -webkit-tap-highlight-color: transparent;
+        transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
+      }
+
+      .hubFishArrow.isPrevious {
+        left: 8%;
+      }
+
+      .hubFishArrow.isNext {
+        right: 8%;
+      }
+
+      .hubFishArrow:hover {
+        border-color: rgba(215,255,255,.72);
+        background:
+          linear-gradient(180deg, rgba(53,216,255,.18), rgba(255,255,255,.03)),
+          rgba(5,18,32,.72);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,.16),
+          0 0 32px rgba(53,216,255,.32);
+      }
+
+      .hubFishArrow.isPrevious:hover {
+        transform: translateY(-50%) translateX(-2px) scale(1.04);
+      }
+
+      .hubFishArrow.isNext:hover {
+        transform: translateY(-50%) translateX(2px) scale(1.04);
+      }
+
+      .hubFishArrow:active {
+        transform: translateY(-50%) scale(.94);
+      }
+
       .hubSphereCaption {
         margin-top: 12px;
         color: var(--muted);
         font-size: 12px;
         font-weight: 900;
         text-align: center;
+      }
+
+      .hubFishPicker {
+        width: min(100%, 460px);
+        margin-top: 10px;
+        display: flex;
+        gap: 8px;
+        padding: 4px 2px;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        scrollbar-width: none;
+      }
+
+      .hubFishPicker::-webkit-scrollbar {
+        display: none;
+      }
+
+      .hubFishThumb {
+        flex: 0 0 auto;
+        width: 76px;
+        min-height: 58px;
+        display: grid;
+        grid-template-rows: 30px auto;
+        place-items: center;
+        gap: 4px;
+        border: 1px solid rgba(88,210,255,.18);
+        border-radius: 8px;
+        color: var(--muted);
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.065), rgba(255,255,255,.018)),
+          rgba(5,18,32,.54);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.07);
+        font: inherit;
+        cursor: pointer;
+        appearance: none;
+        -webkit-tap-highlight-color: transparent;
+        transition: transform .18s ease, color .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
+      }
+
+      .hubFishThumb img {
+        width: 58px;
+        max-width: 86%;
+        height: 30px;
+        object-fit: contain;
+        filter: drop-shadow(0 5px 9px rgba(0,0,0,.36));
+      }
+
+      .hubFishThumb span {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        padding: 0 5px 2px;
+        font-size: 9px;
+        font-weight: 950;
+      }
+
+      .hubFishThumb:hover,
+      .hubFishThumb.isSelected {
+        color: var(--text);
+        border-color: rgba(101,232,255,.64);
+        background:
+          linear-gradient(180deg, rgba(53,216,255,.16), rgba(255,255,255,.025)),
+          rgba(5,18,32,.70);
+        box-shadow: inset 0 0 20px rgba(53,216,255,.12), 0 0 22px rgba(53,216,255,.18);
+        transform: translateY(-1px);
       }
 
       .hubPrimaryPlayButton {
@@ -1335,91 +1749,6 @@ function LobbyStyles() {
         transform: scale(.98);
       }
 
-      .hubQuickGrid {
-        width: 100%;
-        align-self: center;
-        display: grid;
-        grid-template-columns: minmax(0, 1fr);
-        gap: 10px;
-      }
-
-      .hubQuickCard {
-        min-width: 0;
-        min-height: 64px;
-        display: grid;
-        grid-template-columns: 34px minmax(0, 1fr);
-        align-items: center;
-        gap: 10px;
-        padding: 12px;
-        color: var(--text);
-        text-align: left;
-        cursor: pointer;
-        transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
-      }
-
-      .hubQuickCard:hover {
-        border-color: rgba(101,232,255,.62);
-        background:
-          linear-gradient(180deg, rgba(53,216,255,.10), rgba(255,255,255,.02)),
-          var(--panel);
-        box-shadow: 0 0 28px rgba(53,216,255,.16), 0 18px 60px rgba(0,0,0,.32);
-        transform: translateY(-2px);
-      }
-
-      .hubQuickCard.is-gold .hubQuickIcon {
-        color: var(--gold);
-        background: rgba(245,184,75,.12);
-        border-color: rgba(245,184,75,.22);
-        text-shadow: 0 0 14px rgba(245,184,75,.42);
-      }
-
-      .hubQuickCard.is-coral .hubQuickIcon {
-        color: var(--coral);
-        background: rgba(255,107,143,.12);
-        border-color: rgba(255,107,143,.22);
-        text-shadow: 0 0 14px rgba(255,107,143,.42);
-      }
-
-      .hubQuickCard.is-pearl .hubQuickIcon {
-        color: var(--pearl);
-        background: rgba(223,248,255,.11);
-        border-color: rgba(223,248,255,.20);
-        text-shadow: 0 0 14px rgba(223,248,255,.34);
-      }
-
-      .hubQuickCard:active {
-        transform: scale(.98);
-      }
-
-      .hubQuickIcon {
-        width: 32px;
-        height: 32px;
-        display: grid;
-        place-items: center;
-        border-radius: 8px;
-        color: var(--cyan);
-        background: rgba(53,216,255,.10);
-        border: 1px solid rgba(88,210,255,.18);
-        font-size: 15px;
-        text-shadow: 0 0 14px rgba(53,216,255,.45);
-      }
-
-      .hubQuickCopy strong {
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        font-size: 14px;
-        font-weight: 950;
-      }
-
-      .hubQuickCopy em {
-        color: var(--muted);
-        font-size: 12px;
-        font-style: normal;
-        font-weight: 850;
-      }
-
       .hubBottomNav {
         position: fixed;
         left: max(12px, env(safe-area-inset-left, 0px));
@@ -1516,9 +1845,29 @@ function LobbyStyles() {
         50% { transform: scale(1.018); box-shadow: inset 0 0 58px rgba(176,247,255,.36), inset 0 -42px 96px rgba(28,184,255,.24), 0 0 72px rgba(53,216,255,.38), 0 34px 86px rgba(0,0,0,.40); }
       }
 
-      @keyframes hubFishFloat {
-        0%, 100% { transform: translate3d(0, 0, 0) rotate(-1deg); }
-        50% { transform: translate3d(0, -12px, 0) rotate(1deg); }
+      @keyframes hubFishIdle {
+        0%, 100% { transform: translate3d(-3px, 0, 0) rotate(-.8deg); }
+        50% { transform: translate3d(4px, -10px, 0) rotate(.8deg); }
+      }
+
+      @keyframes hubFishEnterNext {
+        from { opacity: 0; transform: translate3d(42px, 4px, 0) scale(.92); filter: blur(1px); }
+        to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); filter: blur(0); }
+      }
+
+      @keyframes hubFishEnterPrevious {
+        from { opacity: 0; transform: translate3d(-42px, 4px, 0) scale(.92); filter: blur(1px); }
+        to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); filter: blur(0); }
+      }
+
+      @keyframes hubFishExitNext {
+        from { opacity: 1; transform: translate3d(0, 0, 0) scale(1); filter: blur(0); }
+        to { opacity: 0; transform: translate3d(-46px, -3px, 0) scale(.94); filter: blur(1px); }
+      }
+
+      @keyframes hubFishExitPrevious {
+        from { opacity: 1; transform: translate3d(0, 0, 0) scale(1); filter: blur(0); }
+        to { opacity: 0; transform: translate3d(46px, -3px, 0) scale(.94); filter: blur(1px); }
       }
 
       @keyframes hubCaustics {
@@ -1570,16 +1919,6 @@ function LobbyStyles() {
         .hubModes {
           grid-template-columns: minmax(0, 1.18fr) minmax(220px, .82fr);
           gap: 12px;
-        }
-
-        .hubQuickGrid {
-          width: min(100%, 720px);
-          margin: 0 auto;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        .hubQuickCard {
-          min-height: 76px;
         }
       }
 
@@ -1676,6 +2015,32 @@ function LobbyStyles() {
           width: clamp(260px, 76vw, 360px);
         }
 
+        .hubFish {
+          width: 66%;
+        }
+
+        .hubFishArrow {
+          width: 38px;
+          height: 38px;
+          font-size: 28px;
+        }
+
+        .hubFishArrow.isPrevious {
+          left: 6%;
+        }
+
+        .hubFishArrow.isNext {
+          right: 6%;
+        }
+
+        .hubFishPicker {
+          width: min(100%, 340px);
+        }
+
+        .hubFishThumb {
+          width: 68px;
+        }
+
         .hubPrimaryPlayButton {
           width: min(92%, 390px);
           min-height: 60px;
@@ -1683,16 +2048,6 @@ function LobbyStyles() {
 
         .hubModes {
           grid-template-columns: minmax(0, 1fr);
-        }
-
-        .hubQuickGrid {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 8px;
-        }
-
-        .hubQuickCard {
-          min-height: 74px;
-          padding: 10px;
         }
 
         .hubBottomNav {
@@ -1724,15 +2079,6 @@ function LobbyStyles() {
           font-size: 8px;
         }
 
-        .hubQuickCard {
-          grid-template-columns: 30px minmax(0, 1fr);
-          gap: 8px;
-        }
-
-        .hubQuickIcon {
-          width: 30px;
-          height: 30px;
-        }
       }
 
       @media (prefers-reduced-motion: reduce) {
