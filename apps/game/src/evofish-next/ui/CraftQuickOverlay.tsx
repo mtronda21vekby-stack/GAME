@@ -41,7 +41,7 @@ export function CraftQuickOverlay() {
     const observer = new MutationObserver(hideLegacyCraft);
     hideLegacyCraft();
     observer.observe(document.body, { childList: true, subtree: true });
-    const tick = window.setInterval(() => { refresh(); hideLegacyCraft(); }, 350);
+    const tick = window.setInterval(() => { refresh(); hideLegacyCraft(); }, 250);
     window.addEventListener("storage", refresh);
     window.addEventListener("evofish_next_save_changed", refresh as EventListener);
     return () => {
@@ -59,10 +59,10 @@ export function CraftQuickOverlay() {
   }, [open]);
 
   const refreshSoon = () => {
-    window.setTimeout(refresh, 40);
-    window.setTimeout(refresh, 100);
-    window.setTimeout(refresh, 220);
-    window.setTimeout(refresh, 420);
+    window.setTimeout(refresh, 30);
+    window.setTimeout(refresh, 90);
+    window.setTimeout(refresh, 180);
+    window.setTimeout(refresh, 360);
   };
 
   const buy = (recipeId: string, amount = 1) => {
@@ -83,22 +83,19 @@ export function CraftQuickOverlay() {
       </button>
       {open ? (
         <div className="efCraftDrawer">
-          <header><b>Крафт-инвентарь</b><small>🦪 {fmt(wallet.pearls)} · 💎 {fmt(wallet.corals)}</small></header>
-          <p>Покупай усиления заранее. Они лежат в инвентаре и активируются вручную во время забега. Пока окно открыто — игра на паузе.</p>
+          <header><b>Крафт</b><small>🦪 {fmt(wallet.pearls)} · 💎 {fmt(wallet.corals)}</small></header>
           <div className="efCraftGrid">
             {NEXT_CRAFT_RECIPES.map((recipe) => {
               const stock = stockLabel(inventory, recipe.id);
               const canBuy = wallet.pearls >= (recipe.cost.pearls || 0) && wallet.corals >= (recipe.cost.corals || 0);
               return (
                 <article key={recipe.id}>
-                  <div><b>{recipe.shortName}</b><span>x{stock}</span></div>
-                  <strong>{recipe.name}</strong>
-                  <small>{recipe.description}</small>
-                  <em>{getCraftCostLabel(recipe.cost)} · {recipe.duration ? `${recipe.duration}с` : "мгновенно"}</em>
+                  <div className="line"><b>{recipe.shortName}</b><span>x{stock}</span><em>{recipe.duration ? `${recipe.duration}с` : "instant"}</em></div>
+                  <small>{getCraftCostLabel(recipe.cost)}</small>
                   <div className="actions">
                     <button disabled={!canBuy} onClick={() => buy(recipe.id, 1)}>+1</button>
                     <button disabled={!canBuy} onClick={() => buy(recipe.id, 5)}>+5</button>
-                    <button className="use" disabled={stock <= 0} onClick={() => use(recipe.id)}>Актив.</button>
+                    <button className="use" disabled={stock <= 0} onClick={() => use(recipe.id)}>АКТ</button>
                   </div>
                 </article>
               );
@@ -107,7 +104,7 @@ export function CraftQuickOverlay() {
         </div>
       ) : null}
       <style>{`
-        .efMenuGrid button:first-child{display:none!important}.efMenuGrid button[aria-label*="craft" i],.efMenuGrid button[aria-label*="крафт" i]{display:none!important}.efNextHud{width:min(328px,calc(var(--ef-vw,100vw) - 24px))!important;padding:10px 11px!important;border-radius:18px!important;background:linear-gradient(180deg,rgba(5,31,50,.78),rgba(2,16,27,.58))!important;border:1px solid rgba(150,230,255,.18)!important}.efHudTitle b{font-size:13px!important}.efHudTitle em{font-size:9px!important;color:#fff3a0!important}.efHudChips{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:5px!important}.efHudChips span{min-height:28px!important;border-radius:12px!important;font-size:11px!important;background:rgba(255,255,255,.07)!important}.efHudChips span:nth-child(3),.efHudChips span:nth-child(4){background:linear-gradient(135deg,rgba(255,220,120,.16),rgba(120,240,255,.10))!important;border-color:rgba(255,220,120,.18)!important}.efHudLine{font-size:10px!important;line-height:1.25!important}.efNextHud>i{height:5px!important}.efNextHud .questText{color:rgba(255,243,160,.82)!important}.efCraftQuick{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 148px);z-index:10002;font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;color:#e7f2ff;pointer-events:auto}.efCraftBubble{width:54px;height:54px;border-radius:18px;border:1px solid rgba(255,220,120,.34);background:linear-gradient(135deg,rgba(255,220,120,.22),rgba(120,240,255,.14));color:#e7f2ff;box-shadow:0 18px 48px rgba(0,0,0,.34);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:grid;place-items:center;position:relative}.efCraftBubble b{font-size:22px;line-height:1}.efCraftBubble span{position:absolute;right:-6px;top:-6px;min-width:22px;height:22px;border-radius:999px;background:rgba(255,90,90,.92);border:1px solid rgba(255,255,255,.38);font-size:11px;font-weight:1000;display:grid;place-items:center}.efCraftDrawer{position:absolute;right:0;bottom:64px;width:min(360px,calc(100vw - 24px));max-height:58vh;overflow:auto;border-radius:24px;border:1px solid rgba(150,230,255,.18);background:rgba(2,16,27,.92);box-shadow:0 22px 70px rgba(0,0,0,.42);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);padding:12px;box-sizing:border-box}.efCraftDrawer header{display:flex;align-items:center;justify-content:space-between;gap:10px}.efCraftDrawer header b{font-size:17px}.efCraftDrawer header small,.efCraftDrawer p,.efCraftGrid small,.efCraftGrid em{color:rgba(231,242,255,.70)}.efCraftDrawer p{font-size:12px;line-height:1.35;margin:7px 0 10px}.efCraftGrid{display:grid;gap:8px}.efCraftGrid article{border:1px solid rgba(150,230,255,.14);background:rgba(255,255,255,.055);border-radius:18px;padding:10px;display:grid;gap:6px}.efCraftGrid article>div:first-child{display:flex;justify-content:space-between;gap:8px}.efCraftGrid article>div:first-child b{color:#fff3a0}.efCraftGrid article>div:first-child span{font-weight:1000;color:#78f0ff}.efCraftGrid strong{font-size:14px}.efCraftGrid small{font-size:11px;line-height:1.35}.efCraftGrid em{font-style:normal;font-size:11px}.efCraftGrid .actions{display:grid;grid-template-columns:1fr 1fr 1.35fr;gap:6px}.efCraftGrid button{min-height:34px;border-radius:12px;border:1px solid rgba(150,230,255,.16);background:rgba(255,255,255,.07);color:#e7f2ff;font-weight:1000}.efCraftGrid button.use{background:linear-gradient(135deg,rgba(120,240,255,.20),rgba(255,220,120,.12));border-color:rgba(120,240,255,.34)}.efCraftGrid button:disabled{opacity:.42}@media(max-height:650px){.efCraftQuick{bottom:calc(max(10px,env(safe-area-inset-bottom)) + 116px)}.efCraftDrawer{max-height:50vh}}`}</style>
+        .efMenuGrid button:first-child{display:none!important}.efMenuGrid button[aria-label*="craft" i],.efMenuGrid button[aria-label*="крафт" i]{display:none!important}.efCraftQuick{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 148px);z-index:10002;font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;color:#e7f2ff;pointer-events:auto}.efCraftBubble{width:52px;height:52px;border-radius:18px;border:1px solid rgba(255,220,120,.34);background:linear-gradient(135deg,rgba(255,220,120,.22),rgba(120,240,255,.14));color:#e7f2ff;box-shadow:0 18px 48px rgba(0,0,0,.34);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:grid;place-items:center;position:relative}.efCraftBubble b{font-size:21px;line-height:1}.efCraftBubble span{position:absolute;right:-6px;top:-6px;min-width:22px;height:22px;border-radius:999px;background:rgba(255,90,90,.92);border:1px solid rgba(255,255,255,.38);font-size:11px;font-weight:1000;display:grid;place-items:center}.efCraftDrawer{position:absolute;right:0;bottom:60px;width:min(302px,calc(100vw - 24px));max-height:42vh;overflow:auto;border-radius:20px;border:1px solid rgba(150,230,255,.18);background:rgba(2,16,27,.88);box-shadow:0 18px 52px rgba(0,0,0,.38);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);padding:10px;box-sizing:border-box}.efCraftDrawer header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px}.efCraftDrawer header b{font-size:16px}.efCraftDrawer header small,.efCraftGrid small,.efCraftGrid .line em{color:rgba(231,242,255,.68)}.efCraftGrid{display:grid;gap:6px}.efCraftGrid article{border:1px solid rgba(150,230,255,.12);background:rgba(255,255,255,.05);border-radius:14px;padding:7px;display:grid;gap:5px}.efCraftGrid .line{display:grid;grid-template-columns:auto auto 1fr;align-items:center;gap:7px}.efCraftGrid .line b{color:#fff3a0;font-size:14px}.efCraftGrid .line span{font-weight:1000;color:#78f0ff;font-size:14px}.efCraftGrid .line em{text-align:right;font-style:normal;font-size:11px}.efCraftGrid small{font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.efCraftGrid .actions{display:grid;grid-template-columns:1fr 1fr 1.1fr;gap:5px}.efCraftGrid button{min-height:30px;border-radius:11px;border:1px solid rgba(150,230,255,.16);background:rgba(255,255,255,.07);color:#e7f2ff;font-weight:1000;font-size:12px}.efCraftGrid button.use{background:linear-gradient(135deg,rgba(120,240,255,.22),rgba(255,220,120,.12));border-color:rgba(120,240,255,.34)}.efCraftGrid button:disabled{opacity:.36}@media(max-height:650px){.efCraftQuick{bottom:calc(max(10px,env(safe-area-inset-bottom)) + 116px)}.efCraftDrawer{max-height:38vh}}`}</style>
     </section>
   );
 }
