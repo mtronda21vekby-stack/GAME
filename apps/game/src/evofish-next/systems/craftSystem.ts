@@ -5,6 +5,8 @@ const CRAFT_INVENTORY_KEY = "evofish_next_craft_inventory_v1";
 const CRAFT_REQUEST_KEY = "evofish_next_craft_requests_v1";
 const CRAFT_WALLET_KEY = "evofish_next_craft_wallet_v1";
 
+const HYDRATED_STATES = new WeakSet<NextEngineState>();
+
 type CraftActionType = "buy" | "use";
 type CraftRequest = { type: CraftActionType; recipeId: string; amount: number; id: number };
 type CraftWalletSnapshot = { pearls: number; corals: number };
@@ -26,6 +28,7 @@ function readStoredInventory(): Partial<NextCraftInventory> {
 function writeStoredInventory(inventory: NextCraftInventory) {
   try {
     localStorage.setItem(CRAFT_INVENTORY_KEY, JSON.stringify(inventory));
+    window.dispatchEvent(new Event("evofish_craft_inventory_changed"));
   } catch {
     // local craft inventory is optional in private modes
   }
@@ -37,6 +40,7 @@ function writeWalletSnapshot(state: NextEngineState) {
       pearls: Math.max(0, Math.floor(state.economy.pearls || 0)),
       corals: Math.max(0, Math.floor(state.economy.corals || 0))
     }));
+    window.dispatchEvent(new Event("evofish_craft_inventory_changed"));
   } catch {
     // optional
   }
@@ -101,19 +105,23 @@ function recipeById(recipeId: string) {
 }
 
 function normalizeCraft(state: NextEngineState) {
-  const inventory = normalizeCraftInventory({
-    ...(state.craft?.inventory || {}),
-    ...readStoredInventory()
-  });
+  const shouldHydrateFromStorage = !HYDRATED_STATES.has(state);
+  const inventory = normalizeCraftInventory(shouldHydrateFromStorage
+    ? { ...(state.craft?.inventory || {}), ...readStoredInventory() }
+    : (state.craft?.inventory || {})
+  );
   state.craft = normalizeCraftState({
     ...state.craft,
     inventory
   });
+  HYDRATED_STATES.add(state);
   return state.craft;
 }
 
 function persistCraft(state: NextEngineState) {
-  writeStoredInventory(normalizeCraft(state).inventory);
+  const current = normalizeCraftInventory(state.craft?.inventory || {});
+  if (state.craft) state.craft.inventory = current;
+  writeStoredInventory(current);
   writeWalletSnapshot(state);
 }
 
