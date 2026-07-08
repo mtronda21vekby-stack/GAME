@@ -6,7 +6,7 @@ import { xpToNextLevel, xpToNextTier } from "../content/progression";
 import { damageFromForm, enemyThreatLevel, hpFromForm, makeEnemy, massFromForm, radiusFromForm, safePlayerSpawn, speedFromForm } from "./createWorld";
 
 const REVIVE_DELAY = 2.4;
-const REVIVE_INVULN = 4.5;
+const REVIVE_INVULN = 5.2;
 const RESET_FORM: EvoFishFormId = "fish";
 
 function addFloat(state: NextEngineState, x: number, y: number, text: string) {
@@ -110,15 +110,31 @@ function startDowned(state: NextEngineState) {
   addFloat(state, player.x, player.y - player.radius * 2.8, `ACCOUNT +${runXp} XP`);
 }
 
-function clearSpawnDanger(state: NextEngineState) {
+function rebuildEnemyFieldForFreshRun(state: NextEngineState) {
   const player = state.player;
   const threat = enemyThreatLevel(player.level, player.tier, player.mass);
+  const safeRadius = player.level <= 3 ? 1120 : player.level <= 25 ? 980 : 780;
+  const count = Math.max(1, Math.floor(state.config.enemyTarget || 46));
 
-  for (let index = 0; index < state.enemies.length; index += 1) {
-    const enemy = state.enemies[index];
-    const distance = Math.hypot(enemy.x - player.x, enemy.y - player.y);
-    if (distance < 820 || enemy.aiType === "apex" || enemy.aiType === "leviathan") {
-      state.enemies[index] = makeEnemy(8000 + state.frame + index, state.config, threat, player.mass, player.x, player.y, 920);
+  state.enemies = Array.from({ length: count }, (_, index) => makeEnemy(
+    9000 + state.frame + index,
+    state.config,
+    threat,
+    player.mass,
+    player.x,
+    player.y,
+    safeRadius,
+    player.level
+  ));
+
+  for (const enemy of state.enemies) {
+    if ((enemy.npcLevel || 1) > player.level + 4 && enemy.aiType !== "apex" && enemy.aiType !== "leviathan") {
+      enemy.npcLevel = player.level + 4;
+    }
+    if (enemy.aiType === "apex" || enemy.aiType === "leviathan") {
+      enemy.npcLevel = Math.min(enemy.npcLevel || player.level + 8, player.level + 8);
+      enemy.x = Math.max(180, Math.min(state.config.width - 180, enemy.x));
+      enemy.y = Math.max(180, Math.min(state.config.height - 180, enemy.y));
     }
   }
 }
@@ -139,14 +155,14 @@ function revive(state: NextEngineState) {
   player.vy = 0;
   resetFishRun(state);
   player.invulnT = REVIVE_INVULN;
-  clearSpawnDanger(state);
+  rebuildEnemyFieldForFreshRun(state);
 
   state.stats.downed = false;
   state.stats.dead = false;
   state.stats.reviveTime = 0;
   state.stats.respawnTime = 0;
-  state.stats.lastEvent = `Safe respawn · Account LV ${state.account.level}`;
-  addFloat(state, player.x, player.y - player.radius * 2.8, "SAFE SPAWN");
+  state.stats.lastEvent = `Fresh safe respawn · Account LV ${state.account.level}`;
+  addFloat(state, player.x, player.y - player.radius * 2.8, "FRESH SPAWN");
 }
 
 export function updateSurvivalSystem(state: NextEngineState, dt: number) {
