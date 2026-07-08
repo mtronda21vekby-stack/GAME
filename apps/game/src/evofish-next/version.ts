@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-map-density-fix-6.9.1";
+export const EVOFISH_NEXT_VERSION = "next-respawn-hud-fix-6.9.2";
