@@ -29,28 +29,28 @@ function decorateFishMaterial(ctx: CanvasRenderingContext2D, box: { dx: number; 
   ctx.globalCompositeOperation = "screen";
 
   const bodyGlow = ctx.createLinearGradient(x - absW * 0.45, y - absH * 0.2, x + absW * 0.55, y + absH * 0.28);
-  bodyGlow.addColorStop(0, `rgba(80,220,255,${0.05 + phase * 0.035})`);
-  bodyGlow.addColorStop(0.45, `rgba(255,255,255,${0.10 + phase * 0.06})`);
-  bodyGlow.addColorStop(0.72, `rgba(255,190,255,${0.05 + pulse * 0.045})`);
+  bodyGlow.addColorStop(0, `rgba(80,220,255,${0.045 + phase * 0.03})`);
+  bodyGlow.addColorStop(0.45, `rgba(255,255,255,${0.085 + phase * 0.052})`);
+  bodyGlow.addColorStop(0.72, `rgba(255,190,255,${0.045 + pulse * 0.04})`);
   bodyGlow.addColorStop(1, "rgba(70,160,255,0)");
   ctx.fillStyle = bodyGlow;
   ctx.beginPath();
   ctx.ellipse(x + w * (0.1 + phase * 0.18), y + h * 0.36, absW * 0.34, absH * 0.18, -0.18, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.globalAlpha = 0.16 + pulse * 0.10;
-  ctx.strokeStyle = "rgba(170,245,255,.95)";
-  ctx.lineWidth = Math.max(1.15, absH * 0.035);
+  ctx.globalAlpha = 0.13 + pulse * 0.09;
+  ctx.strokeStyle = "rgba(170,245,255,.92)";
+  ctx.lineWidth = Math.max(1.05, absH * 0.032);
   ctx.beginPath();
   ctx.moveTo(x + w * 0.18, y + h * 0.18);
   ctx.quadraticCurveTo(x + w * 0.44, y - h * 0.06, x + w * 0.74, y + h * 0.18);
   ctx.stroke();
 
-  ctx.globalAlpha = 0.11 + phase * 0.09;
-  ctx.strokeStyle = "rgba(255,255,255,.86)";
-  ctx.lineWidth = Math.max(0.8, absH * 0.025);
-  for (let i = 0; i < 3; i += 1) {
-    const k = 0.32 + i * 0.16 + phase * 0.04;
+  ctx.globalAlpha = 0.09 + phase * 0.075;
+  ctx.strokeStyle = "rgba(255,255,255,.82)";
+  ctx.lineWidth = Math.max(0.75, absH * 0.022);
+  for (let i = 0; i < 2; i += 1) {
+    const k = 0.36 + i * 0.22 + phase * 0.035;
     ctx.beginPath();
     ctx.moveTo(x + w * k, y + h * 0.26);
     ctx.lineTo(x + w * (k + 0.08), y + h * 0.68);
@@ -58,11 +58,10 @@ function decorateFishMaterial(ctx: CanvasRenderingContext2D, box: { dx: number; 
   }
 
   ctx.globalCompositeOperation = "lighter";
-  ctx.globalAlpha = 0.08 + pulse * 0.08;
-  const tailX = x + w * 0.08;
-  ctx.fillStyle = "rgba(120,240,255,.72)";
+  ctx.globalAlpha = 0.065 + pulse * 0.065;
+  ctx.fillStyle = "rgba(120,240,255,.70)";
   ctx.beginPath();
-  ctx.ellipse(tailX, y + h * 0.5, absW * 0.11, absH * (0.24 + pulse * 0.035), 0, 0, Math.PI * 2);
+  ctx.ellipse(x + w * 0.08, y + h * 0.5, absW * 0.095, absH * (0.22 + pulse * 0.03), 0, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.restore();
@@ -73,12 +72,12 @@ export function installFishMaterialPatch() {
   const proto = CanvasRenderingContext2D.prototype as CanvasRenderingContext2D & Record<string, unknown>;
   if (proto[PATCH_KEY]) return;
 
-  const drawImage = proto.drawImage;
-  proto.drawImage = function patchedDrawImage(this: CanvasRenderingContext2D, ...args: Parameters<CanvasRenderingContext2D["drawImage"]>) {
+  const drawImage = proto.drawImage as unknown as (this: CanvasRenderingContext2D, ...args: unknown[]) => void;
+  proto.drawImage = function patchedDrawImage(this: CanvasRenderingContext2D, ...args: unknown[]) {
     drawImage.apply(this, args);
     const box = shouldDecorateDrawImage(arguments);
     if (box) decorateFishMaterial(this, box);
-  } as CanvasRenderingContext2D["drawImage"];
+  } as unknown as CanvasRenderingContext2D["drawImage"];
 
   proto[PATCH_KEY] = true;
 }
