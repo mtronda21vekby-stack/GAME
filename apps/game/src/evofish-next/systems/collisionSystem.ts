@@ -96,9 +96,9 @@ export function updateCollisionSystem(state: NextEngineState) {
 
   for (let index = state.enemies.length - 1; index >= 0; index -= 1) {
     const enemy = state.enemies[index];
-    const contactDistance = contactDistanceForFish(player, enemy);
     const dx = enemy.x - player.x;
     const dy = enemy.y - player.y;
+    const contactDistance = contactDistanceForFish(player, enemy, dx, dy);
 
     if (dx * dx + dy * dy < contactDistance * contactDistance) {
       if (canPlayerDevour(player, enemy)) devourEnemy(state, enemy, index);
