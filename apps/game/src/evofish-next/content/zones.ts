@@ -146,15 +146,15 @@ export const NEXT_MAP_ZONES: NextZoneDefinition[] = [
   },
   {
     id: "deep_trench",
-    name: "Deep Trench",
-    description: "Глубокая впадина. Давит медленно, но даёт лучшие награды.",
+    name: "ВПАДИНА",
+    description: "Новая карта глубин. Видна на стартовой карте и открывается через аккаунт 25, персонажа 45 и 3 ключа ВПАДИНЫ.",
     x: 4740,
     y: 1760,
     radius: 670,
     risk: 4,
     rewardMultiplier: 1.22,
     pressureDamagePerSecond: 3.2,
-    color: "rgba(180,140,255,.14)"
+    color: "rgba(53,216,255,.16)"
   },
   {
     id: "apex_waters",
