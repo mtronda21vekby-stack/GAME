@@ -66,7 +66,7 @@ function findBiteTarget(state: NextEngineState, camera: NextCameraState, input: 
     const enemy = state.enemies[i];
     const dx = enemy.x - player.x;
     const dy = enemy.y - player.y;
-    const range = biteDistanceForFish(player, enemy) * (player.dashT > 0 ? 1.12 : 1);
+    const range = biteDistanceForFish(player, enemy, dx, dy) * (player.dashT > 0 ? 1.12 : 1);
     const distanceSq = dx * dx + dy * dy;
     if (distanceSq > range * range) continue;
     const distance = Math.sqrt(distanceSq) || 1;
