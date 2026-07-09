@@ -1,5 +1,6 @@
 import React from "react";
 import { installFishOrientationPatch } from "../render/fishOrientationPatch";
+import { BalanceQAOverlay } from "./BalanceQAOverlay";
 import { CraftQuickOverlay } from "./CraftQuickOverlay";
 import { HudPolishOverlay } from "./HudPolishOverlay";
 import { MapShaderOverlay } from "./MapShaderOverlay";
@@ -15,6 +16,7 @@ export function NextPlaySession() {
       <MapShaderOverlay />
       <HudPolishOverlay />
       <CraftQuickOverlay />
+      <BalanceQAOverlay />
       <RunCompleteOverlay />
     </>
   );
