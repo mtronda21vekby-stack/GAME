@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-balance-bands-6.9.7";
+export const EVOFISH_NEXT_VERSION = "next-fish-orientation-6.9.8";
