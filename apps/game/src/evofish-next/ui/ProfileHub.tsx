@@ -41,6 +41,7 @@ export function ProfileHub() {
   const [newProfileName, setNewProfileName] = React.useState("");
   const [notice, setNotice] = React.useState("");
   const [activePanel, setActivePanel] = React.useState<"overview" | "saves">("overview");
+
   const activeId = activeProfile?.id || profiles[0]?.id || "main";
   const activeSkin = EVOFISH_SKIN_BY_ID[save.loadout.equippedSkinId] || EVOFISH_SKIN_BY_ID.default;
   const ownedSkins = Object.keys(save.loadout.ownedSkins || {}).length;
@@ -98,87 +99,88 @@ export function ProfileHub() {
   };
 
   return (
-    <main className="efProfilesPage">
-      <div className="efProfilesAtmosphere" aria-hidden="true"><i /><i /><i /><i /></div>
-      <section className="efProfilesShell">
-        <header className="efProfilesTop">
-          <Link className="efProfilesBack" to="/game">‹ Лобби</Link>
-          <div className="efProfilesTitle">
+    <main className="efProfileV2Page">
+      <div className="efProfileV2Fx" aria-hidden="true"><i /><i /><i /></div>
+      <section className="efProfileV2Shell">
+        <header className="efProfileV2Top">
+          <Link className="efProfileV2Back" to="/game" aria-label="Назад в лобби">‹</Link>
+          <div className="efProfileV2Title">
             <span>Центр игрока</span>
             <h1>Профиль</h1>
           </div>
-          <Link className="efProfilesGear" to="/game/settings" aria-label="Настройки игры">⚙</Link>
+          <Link className="efProfileV2Gear" to="/game/settings" aria-label="Настройки игры">⚙</Link>
         </header>
 
-        <section className="efProfilesHero" aria-label="Активный профиль">
-          <div className="efProfilesAvatar">{initial(save.account.name)}</div>
-          <div className="efProfilesIdentity">
+        <section className="efProfileV2Hero" aria-label="Активный профиль">
+          <div className="efProfileV2Avatar">{initial(save.account.name)}</div>
+          <div className="efProfileV2Identity">
             <span>Активный профиль</span>
             <h2>{save.account.name}</h2>
             <p>LV {save.account.level} · XP {format(save.account.xp)} / {format(save.account.xpToNext)}</p>
-            <i><em style={{ width: percent(save.account.xp, save.account.xpToNext) }} /></i>
-            <div className="efProfilesHeroLinks">
-              <Link to="/game/skins">Скины</Link>
-              <Link to="/game/progress">Достижения</Link>
-            </div>
+            <div className="efProfileV2Xp"><i style={{ width: percent(save.account.xp, save.account.xpToNext) }} /></div>
           </div>
-          <div className="efProfilesFishSphere" aria-label={`Скин ${activeSkin.name}`}>
-            <div className="efProfilesFishGlass" />
-            <SkinPreview skin={activeSkin} form={save.progress.form || "fish"} size="md" variant="sprite" />
+          <div className="efProfileV2Fish" aria-label={`Скин ${activeSkin.name}`}>
+            <SkinPreview skin={activeSkin} form={save.progress.form || "fish"} size="sm" variant="sprite" />
           </div>
         </section>
 
-        <section className="efProfilesStats" aria-label="Данные игрока">
-          <article><span>Жемчуг</span><b>{format(save.economy.pearls)}</b></article>
-          <article><span>Коралл</span><b>{format(save.economy.corals)}</b></article>
-          <article><span>Скины</span><b>{ownedSkins}</b></article>
-          <article><span>Мутации</span><b>{mutationLevels}</b></article>
-          <article><span>Квесты</span><b>{completedQuests}</b></article>
-          <article><span>Достижения</span><b>{achievements}</b></article>
+        <section className="efProfileV2Stats" aria-label="Данные игрока">
+          <StatCard label="Жемчуг" value={format(save.economy.pearls)} />
+          <StatCard label="Коралл" value={format(save.economy.corals)} />
+          <StatCard label="Скины" value={format(ownedSkins)} />
+          <StatCard label="Мутации" value={format(mutationLevels)} />
+          <StatCard label="Квесты" value={format(completedQuests)} />
+          <StatCard label="Достижения" value={format(achievements)} />
         </section>
 
-        <section className="efProfilesTabs" aria-label="Раздел профиля">
+        <section className="efProfileV2Tabs" aria-label="Раздел профиля">
           <button className={activePanel === "overview" ? "active" : ""} type="button" onClick={() => setActivePanel("overview")}>Обзор</button>
           <button className={activePanel === "saves" ? "active" : ""} type="button" onClick={() => setActivePanel("saves")}>Сохранения</button>
         </section>
 
         {activePanel === "overview" ? (
-          <section className="efProfilesPanel" aria-label="Обзор профиля">
-            <section className="efProfilesEditor" aria-label="Настройки активного профиля">
+          <section className="efProfileV2Panel" aria-label="Обзор профиля">
+            <section className="efProfileV2Editor" aria-label="Настройки активного профиля">
               <div>
                 <span>Никнейм</span>
-                <b>{activeProfile?.name || save.account.name}</b>
+                <strong>{activeProfile?.name || save.account.name}</strong>
               </div>
               <input value={draftName} maxLength={18} placeholder="Имя игрока" onChange={(event) => setDraftName(event.currentTarget.value)} />
-              <button onClick={saveName}>Сохранить</button>
+              <button type="button" onClick={saveName}>Сохранить</button>
+            </section>
+
+            <section className="efProfileV2Actions" aria-label="Быстрые действия">
+              <Link to="/game/skins"><span>Скины</span><b>{activeSkin.name}</b></Link>
+              <Link to="/game/leaderboard"><span>Топ игроков</span><b>Рейтинг</b></Link>
+              <Link to="/game/progress"><span>Прогресс</span><b>Достижения</b></Link>
             </section>
           </section>
         ) : (
-          <section className="efProfilesPanel" aria-label="Сохранения профиля">
-            <form className="efProfilesCreate" onSubmit={createProfile}>
+          <section className="efProfileV2Panel" aria-label="Сохранения профиля">
+            <form className="efProfileV2Create" onSubmit={createProfile}>
               <div>
                 <span>Новый профиль</span>
-                <b>Отдельное сохранение</b>
+                <strong>Отдельное сохранение</strong>
               </div>
               <input value={newProfileName} maxLength={18} placeholder="Имя нового профиля" onChange={(event) => setNewProfileName(event.currentTarget.value)} />
               <button type="submit">Создать</button>
             </form>
 
-            <section className="efProfilesGrid" aria-label="Все профили">
+            <section className="efProfileV2Grid" aria-label="Все профили">
               {profiles.map((profile) => {
                 const isActive = profile.id === activeId;
                 return (
-                  <article key={profile.id} className={`efProfileCard ${isActive ? "active" : ""}`}>
-                    <div className="efProfileCardAvatar">{initial(profile.name)}</div>
-                    <div className="efProfileCardBody">
+                  <article key={profile.id} className={`efProfileV2Save ${isActive ? "active" : ""}`}>
+                    <div className="efProfileV2SaveAvatar">{initial(profile.name)}</div>
+                    <div>
                       <span>{isActive ? "Сейчас активен" : "Сохранение"}</span>
                       <h3>{profile.name}</h3>
                       <p>LV {profile.accountLevel} · {skinName(profile)}</p>
                       <small>{format(profile.pearls)} жемчуг · {format(profile.corals)} коралл</small>
                     </div>
-                    <div className="efProfileCardActions">
-                      <button disabled={isActive} onClick={() => selectProfile(profile.id)}>{isActive ? "Активен" : "Выбрать"}</button>
-                      <button disabled={profile.isDefault} onClick={() => removeProfile(profile.id)}>Удалить</button>
+                    <div className="efProfileV2SaveActions">
+                      <button disabled={isActive} type="button" onClick={() => selectProfile(profile.id)}>{isActive ? "Активен" : "Выбрать"}</button>
+                      <button disabled={profile.isDefault} type="button" onClick={() => removeProfile(profile.id)}>Удалить</button>
                     </div>
                   </article>
                 );
@@ -187,47 +189,29 @@ export function ProfileHub() {
           </section>
         )}
 
-        {notice ? <div className="efProfilesNotice" role="status">{notice}</div> : null}
+        {notice ? <div className="efProfileV2Notice" role="status">{notice}</div> : null}
 
-        <nav className="efProfilesBottomNav" aria-label="Основная навигация">
+        <nav className="efProfileV2BottomNav" aria-label="Основная навигация">
           <Link to="/game"><span>⌂</span><b>Лобби</b></Link>
           <Link to="/game/progress"><span>◇</span><b>Достижения</b></Link>
           <Link className="active" to="/game/account"><span>◉</span><b>Профиль</b></Link>
         </nav>
       </section>
-      <style>{`
-        .efProfilesPage{min-height:100vh;min-height:100dvh;color:#eaf7ff;font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;overflow-x:hidden;background:#020915;background-image:linear-gradient(180deg,rgba(2,9,21,.10),rgba(2,9,21,.62)),url("/game/assets/lobby/lobby-bg-station-16x9.png");background-size:cover;background-position:center;background-attachment:fixed}.efProfilesAtmosphere{position:fixed;inset:0;pointer-events:none;overflow:hidden}.efProfilesAtmosphere:before{content:"";position:absolute;left:38%;top:-8%;width:24%;height:62%;background:linear-gradient(180deg,rgba(53,216,255,.28),transparent);filter:blur(20px);opacity:.78}.efProfilesAtmosphere:after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 56%,rgba(53,216,255,.16),transparent 30%),radial-gradient(circle at 12% 92%,rgba(245,184,75,.08),transparent 18%),linear-gradient(180deg,rgba(2,9,21,.18),rgba(2,9,21,.62));mix-blend-mode:screen}.efProfilesAtmosphere i{position:absolute;width:7px;height:7px;border-radius:999px;background:rgba(223,248,255,.44);box-shadow:0 0 18px rgba(53,216,255,.36);animation:efProfileBubble 12s linear infinite}.efProfilesAtmosphere i:nth-child(1){left:10%;bottom:-8%;animation-delay:-2s}.efProfilesAtmosphere i:nth-child(2){left:74%;bottom:-10%;width:10px;height:10px;animation-delay:-6s}.efProfilesAtmosphere i:nth-child(3){left:90%;bottom:-8%;width:5px;height:5px;animation-delay:-4s}.efProfilesAtmosphere i:nth-child(4){left:34%;bottom:-9%;width:8px;height:8px;animation-delay:-8s}.efProfilesShell{position:relative;z-index:1;width:min(1180px,calc(100vw - 28px));margin:0 auto;padding:max(16px,env(safe-area-inset-top)) 0 calc(96px + env(safe-area-inset-bottom));display:grid;gap:14px}.efProfilesTop{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center}.efProfilesBack,.efProfilesGear,.efProfilesHero,.efProfilesStats article,.efProfilesEditor,.efProfilesCreate,.efProfileCard,.efProfilesBottomNav{border:1px solid rgba(88,210,255,.25);background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.035)),rgba(5,18,32,.68);box-shadow:0 24px 80px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.10);backdrop-filter:blur(18px) saturate(1.14);-webkit-backdrop-filter:blur(18px) saturate(1.14)}.efProfilesBack{min-height:46px;border-radius:999px;padding:0 16px;display:inline-flex;align-items:center;color:#eaf7ff;text-decoration:none;font-weight:1000}.efProfilesTitle{text-align:center}.efProfilesTitle span,.efProfilesIdentity span,.efProfilesEditor span,.efProfilesCreate span,.efProfilesStats span,.efProfileCardBody span{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:rgba(150,232,255,.78);font-weight:1000}.efProfilesTitle h1{margin:2px 0 0;font-size:clamp(30px,4vw,54px);line-height:1}.efProfilesGear{width:46px;height:46px;border-radius:9999px;display:grid;place-items:center;color:#eaf7ff;text-decoration:none;font-size:18px}.efProfilesHero{position:relative;overflow:hidden;min-height:270px;border-radius:34px;padding:22px;display:grid;grid-template-columns:auto minmax(0,1fr) minmax(220px,340px);gap:22px;align-items:center}.efProfilesHero:before{content:"";position:absolute;inset:-20%;background:radial-gradient(circle at 74% 42%,rgba(53,216,255,.20),transparent 32%),radial-gradient(circle at 16% 12%,rgba(255,255,255,.10),transparent 28%);mix-blend-mode:screen;pointer-events:none}.efProfilesAvatar{position:relative;width:88px;height:88px;border-radius:999px;display:grid;place-items:center;background:radial-gradient(circle at 35% 25%,rgba(255,255,255,.78),rgba(53,216,255,.30) 44%,rgba(7,27,45,.88));border:1px solid rgba(88,210,255,.38);box-shadow:0 0 36px rgba(53,216,255,.22);font-size:34px;font-weight:1000}.efProfilesIdentity{position:relative;min-width:0;display:grid;gap:7px}.efProfilesIdentity h2{margin:0;font-size:clamp(34px,5vw,64px);line-height:.98;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.efProfilesIdentity p{margin:0;color:rgba(234,247,255,.68);font-weight:800}.efProfilesIdentity i{width:min(460px,100%);height:8px;border-radius:999px;background:rgba(255,255,255,.10);overflow:hidden}.efProfilesIdentity em{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#35d8ff,#f5b84b)}.efProfilesFishSphere{position:relative;aspect-ratio:1;border-radius:999px;display:grid;place-items:center}.efProfilesFishGlass{position:absolute;inset:0;border-radius:inherit;background:radial-gradient(circle at 34% 22%,rgba(255,255,255,.30),transparent 18%),radial-gradient(circle at 50% 58%,rgba(53,216,255,.18),transparent 44%),radial-gradient(circle at 50% 50%,rgba(3,18,32,.08),rgba(3,18,32,.28) 62%,rgba(53,216,255,.22));border:1px solid rgba(150,232,255,.48);box-shadow:inset 0 0 62px rgba(53,216,255,.18),0 0 55px rgba(53,216,255,.28),0 30px 90px rgba(0,0,0,.38);backdrop-filter:blur(10px) saturate(1.12)}.efProfilesFishSphere .efSkinPreview{position:relative;z-index:1;width:76%;background:transparent!important;border:0!important;box-shadow:none!important}.efProfilesStats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}.efProfilesStats article{min-height:92px;border-radius:22px;padding:14px;display:grid;align-content:center;gap:5px}.efProfilesStats b{font-size:clamp(19px,2vw,28px)}.efProfilesEditor,.efProfilesCreate{border-radius:24px;padding:12px;display:grid;grid-template-columns:minmax(180px,1fr) minmax(190px,340px) auto;gap:10px;align-items:center}.efProfilesEditor div,.efProfilesCreate div{display:grid;gap:2px}.efProfilesEditor b,.efProfilesCreate b{font-size:16px}.efProfilesEditor input,.efProfilesCreate input{min-height:46px;border-radius:16px;border:1px solid rgba(88,210,255,.24);background:rgba(2,9,21,.58);color:#eaf7ff;padding:0 13px;font-size:15px;font-weight:900;outline:none}.efProfilesEditor button,.efProfilesCreate button,.efProfileCardActions button{min-height:46px;border-radius:16px;border:1px solid rgba(88,210,255,.26);background:rgba(53,216,255,.13);color:#eaf7ff;padding:0 15px;font-weight:1000;cursor:pointer}.efProfilesEditor button:hover,.efProfilesCreate button:hover,.efProfileCardActions button:hover:not(:disabled){border-color:rgba(53,216,255,.50);box-shadow:0 0 24px rgba(53,216,255,.14)}.efProfileCardActions button:disabled{opacity:.55;cursor:default}.efProfilesGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.efProfileCard{border-radius:26px;padding:14px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center}.efProfileCard.active{border-color:rgba(53,216,255,.56);box-shadow:0 0 0 3px rgba(53,216,255,.08),0 24px 80px rgba(0,0,0,.34),0 0 36px rgba(53,216,255,.13)}.efProfileCardAvatar{width:54px;height:54px;border-radius:999px;display:grid;place-items:center;background:rgba(53,216,255,.12);border:1px solid rgba(88,210,255,.28);font-size:22px;font-weight:1000}.efProfileCardBody{min-width:0;display:grid;gap:3px}.efProfileCardBody h3{margin:0;font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.efProfileCardBody p,.efProfileCardBody small{margin:0;color:rgba(234,247,255,.64)}.efProfileCardActions{display:flex;gap:8px}.efProfilesNotice{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom));z-index:12;transform:translateX(-50%);border:1px solid rgba(88,210,255,.30);border-radius:999px;background:rgba(5,18,32,.86);box-shadow:0 20px 70px rgba(0,0,0,.38),0 0 32px rgba(53,216,255,.18);padding:12px 18px;font-weight:1000;backdrop-filter:blur(18px)}.efProfilesBottomNav{position:fixed;left:50%;bottom:max(12px,env(safe-area-inset-bottom));z-index:10;transform:translateX(-50%);width:min(520px,calc(100vw - 24px));border-radius:999px;padding:8px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.efProfilesBottomNav a{min-height:54px;border-radius:999px;display:grid;place-items:center;align-content:center;gap:2px;text-decoration:none;color:rgba(234,247,255,.62);font-size:11px;font-weight:950}.efProfilesBottomNav a.active{background:rgba(53,216,255,.14);color:#eaf7ff;box-shadow:inset 0 0 20px rgba(53,216,255,.10)}.efProfilesBottomNav span{font-size:16px}.efProfilesBottomNav b{font-size:11px}@media(max-width:900px){.efProfilesHero{grid-template-columns:auto minmax(0,1fr);align-items:center}.efProfilesFishSphere{grid-column:1/-1;width:min(360px,78vw);justify-self:center}.efProfilesStats{grid-template-columns:repeat(3,minmax(0,1fr))}.efProfilesEditor,.efProfilesCreate{grid-template-columns:1fr}.efProfilesGrid{grid-template-columns:1fr}.efProfileCard{grid-template-columns:auto minmax(0,1fr)}.efProfileCardActions{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}}@media(max-width:560px){.efProfilesPage{background-position:center top}.efProfilesShell{width:min(100%,calc(100vw - 20px));gap:10px;padding-top:max(10px,env(safe-area-inset-top))}.efProfilesTop{grid-template-columns:auto 1fr auto}.efProfilesBack{min-height:42px;padding:0 12px;font-size:13px}.efProfilesGear{width:42px;height:42px}.efProfilesTitle h1{font-size:30px}.efProfilesHero{border-radius:28px;padding:14px;gap:12px}.efProfilesAvatar{width:64px;height:64px;font-size:26px}.efProfilesIdentity h2{font-size:34px}.efProfilesStats{grid-template-columns:repeat(2,minmax(0,1fr))}.efProfilesStats article{min-height:78px}.efProfilesEditor,.efProfilesCreate,.efProfileCard{border-radius:22px;padding:12px}.efProfileCardAvatar{width:48px;height:48px}.efProfilesBottomNav{width:calc(100vw - 18px)}}@keyframes efProfileBubble{0%{transform:translateY(0);opacity:0}12%{opacity:.7}100%{transform:translateY(-110vh);opacity:0}}@media(prefers-reduced-motion:reduce){.efProfilesAtmosphere i{animation:none!important}}
-      `}</style>
-      <style>{`
-        .efProfilesPage{background-image:linear-gradient(180deg,rgba(2,9,21,.14),rgba(2,9,21,.66)),url("/game/assets/lobby/lobby-bg-station-16x9.png")!important;background-size:cover!important;background-position:center!important;background-attachment:fixed!important}
-        .efProfilesHero,.efProfilesStats article,.efProfilesEditor,.efProfilesCreate,.efProfileCard{border-radius:8px!important;background:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.025)),rgba(5,18,32,.62)!important}
-        .efProfilesHero{min-height:300px!important}
-        .efProfilesFishSphere{max-width:320px;justify-self:end}
-        .efProfilesBottomNav{border-radius:999px!important}
-        @media(max-width:900px){.efProfilesFishSphere{justify-self:center;max-width:none}.efProfilesHero{min-height:unset!important}}
-      `}</style>
-      <style>{`
-        .efProfilesPage:before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse at 50% 18%,rgba(53,216,255,.18),transparent 36%),linear-gradient(90deg,rgba(2,9,21,.44),transparent 34%,transparent 66%,rgba(2,9,21,.44))}
-        .efProfilesShell{isolation:isolate}
-        .efProfilesTop,.efProfilesHero,.efProfilesStats,.efProfilesTabs,.efProfilesPanel,.efProfilesBottomNav{position:relative;z-index:1}
-        .efProfilesHeroLinks{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-        .efProfilesHeroLinks a{min-height:36px;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(88,210,255,.20);border-radius:999px;background:rgba(53,216,255,.10);color:#eaf7ff;text-decoration:none;padding:0 12px;font-size:12px;font-weight:1000}
-        .efProfilesTabs{justify-self:center;width:min(100%,360px);display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:6px;border:1px solid rgba(88,210,255,.25);border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.025)),rgba(5,18,32,.68);box-shadow:0 18px 60px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.08);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
-        .efProfilesTabs button{min-height:42px;border:0;border-radius:999px;background:transparent;color:rgba(234,247,255,.62);font:inherit;font-size:13px;font-weight:1000;cursor:pointer}
-        .efProfilesTabs button.active{color:#eaf7ff;background:rgba(53,216,255,.14);box-shadow:inset 0 0 20px rgba(53,216,255,.10),0 0 22px rgba(53,216,255,.12)}
-        .efProfilesPanel{display:grid;gap:12px}
-        .efProfilesEditor,.efProfilesCreate{min-width:0}
-        .efProfilesEditor input,.efProfilesCreate input{min-width:0}
-        .efProfileCardActions button{appearance:none;font:inherit}
-        .efProfilesEditor button,.efProfilesCreate button,.efProfileCardActions button,.efProfilesTabs button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-        .efProfilesStats article{overflow:hidden}
-        .efProfilesStats b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .efProfilesFishSphere .efSkinPreview,.efProfilesFishSphere .efSkinPreview.sprite,.efProfilesFishSphere .efSkinSpriteImg,.efProfilesFishSphere .efSkinSpriteSvg{background:transparent!important;border:0!important;box-shadow:none!important}
-        .efProfilesFishSphere .efSkinPreview{width:82%!important;filter:drop-shadow(0 18px 26px rgba(0,0,0,.38)) drop-shadow(0 0 18px rgba(53,216,255,.22))}
-        @media(min-width:901px){.efProfilesGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.efProfilesEditor{grid-template-columns:minmax(180px,1fr) minmax(220px,360px) auto}}
-        @media(max-width:900px){.efProfilesTabs{width:min(100%,340px)}.efProfilesHeroLinks{justify-content:flex-start}.efProfilesPanel{gap:10px}}
-        @media(max-width:560px){.efProfilesTop{grid-template-columns:44px minmax(0,1fr) 44px!important}.efProfilesBack{width:44px;min-width:44px;padding:0!important;overflow:hidden;color:transparent!important;position:relative}.efProfilesBack:before{content:"‹";position:absolute;inset:0;display:grid;place-items:center;color:#eaf7ff;font-size:24px}.efProfilesHero{grid-template-columns:58px minmax(0,1fr)!important}.efProfilesFishSphere{width:min(68vw,270px)!important}.efProfilesIdentity h2{font-size:30px!important}.efProfilesHeroLinks a{flex:1 1 120px}.efProfilesTabs{width:100%}.efProfilesEditor,.efProfilesCreate{grid-template-columns:1fr!important}.efProfileCard{grid-template-columns:46px minmax(0,1fr)!important}.efProfileCardActions{grid-template-columns:1fr 1fr!important}}
-      `}</style>
+      <ProfileV2Styles />
     </main>
   );
 }
+
+function StatCard({ label, value }: { label: string; value: string }) {
+  return <article><span>{label}</span><b>{value}</b></article>;
+}
+
+function ProfileV2Styles() {
+  return (
+    <style>{`
+      .efProfileV2Page{min-height:100vh;min-height:100dvh;overflow-x:hidden;color:#eaf7ff;font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;background:radial-gradient(ellipse at 50% 0%,rgba(53,216,255,.22),transparent 42%),linear-gradient(180deg,rgba(2,9,21,.18),rgba(2,9,21,.84)),url('/game/assets/lobby/lobby-bg-station-16x9.png') center/cover fixed,#020915}.efProfileV2Page,.efProfileV2Page *{box-sizing:border-box}.efProfileV2Fx{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}.efProfileV2Fx:before{content:"";position:absolute;left:38%;top:-10%;width:28%;height:70%;background:linear-gradient(180deg,rgba(53,216,255,.25),transparent);filter:blur(24px);opacity:.72}.efProfileV2Fx:after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 56%,rgba(53,216,255,.14),transparent 34%),linear-gradient(90deg,rgba(2,9,21,.5),transparent 38%,transparent 62%,rgba(2,9,21,.5))}.efProfileV2Fx i{position:absolute;width:7px;height:7px;border-radius:999px;background:rgba(223,248,255,.42);box-shadow:0 0 18px rgba(53,216,255,.36);animation:efProfileV2Bubble 12s linear infinite}.efProfileV2Fx i:nth-child(1){left:12%;bottom:-8%;animation-delay:-2s}.efProfileV2Fx i:nth-child(2){left:75%;bottom:-10%;width:10px;height:10px;animation-delay:-6s}.efProfileV2Fx i:nth-child(3){left:90%;bottom:-8%;width:5px;height:5px;animation-delay:-4s}@keyframes efProfileV2Bubble{to{transform:translateY(-112vh);opacity:.08}}.efProfileV2Shell{position:relative;z-index:1;width:min(980px,calc(100vw - 18px));margin:0 auto;padding:max(12px,env(safe-area-inset-top)) 0 calc(128px + env(safe-area-inset-bottom));display:grid;gap:10px}.efProfileV2Top{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:8px}.efProfileV2Back,.efProfileV2Gear,.efProfileV2Hero,.efProfileV2Stats article,.efProfileV2Tabs,.efProfileV2Editor,.efProfileV2Create,.efProfileV2Actions a,.efProfileV2Save,.efProfileV2BottomNav{border:1px solid rgba(88,210,255,.25);background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.035)),rgba(5,18,32,.68);box-shadow:0 24px 80px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.10);backdrop-filter:blur(18px) saturate(1.12);-webkit-backdrop-filter:blur(18px) saturate(1.12)}.efProfileV2Back,.efProfileV2Gear{width:44px;height:44px;border-radius:999px;display:grid;place-items:center;color:#eaf7ff;text-decoration:none;font-size:24px;font-weight:1000}.efProfileV2Gear{font-size:18px}.efProfileV2Title{text-align:center;min-width:0}.efProfileV2Title span,.efProfileV2Identity span,.efProfileV2Stats span,.efProfileV2Editor span,.efProfileV2Create span,.efProfileV2Actions span,.efProfileV2Save span{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:rgba(150,232,255,.78);font-weight:1000}.efProfileV2Title h1{margin:0;font-size:clamp(26px,7vw,42px);line-height:1}.efProfileV2Hero{min-height:150px;max-height:190px;border-radius:24px;padding:14px;display:grid;grid-template-columns:64px minmax(0,1fr) 118px;gap:12px;align-items:center;overflow:hidden;background:radial-gradient(circle at 84% 48%,rgba(53,216,255,.16),transparent 35%),linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.025)),rgba(5,18,32,.66)}.efProfileV2Avatar{width:64px;height:64px;border-radius:999px;display:grid;place-items:center;background:radial-gradient(circle at 35% 26%,#fff 0 8%,#aaf3ff 25%,#35d8ff 62%,#0a668a 100%);color:#031524;font-size:26px;font-weight:1000;box-shadow:0 0 30px rgba(53,216,255,.32)}.efProfileV2Identity{min-width:0;display:grid;gap:5px}.efProfileV2Identity h2{margin:0;font-size:clamp(28px,7vw,44px);line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.efProfileV2Identity p{margin:0;color:rgba(234,247,255,.72);font-size:13px;font-weight:850}.efProfileV2Xp{height:7px;border-radius:999px;background:rgba(234,247,255,.12);overflow:hidden}.efProfileV2Xp i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#35d8ff,#78ffd8,#f5b84b)}.efProfileV2Fish{width:112px;aspect-ratio:1;border-radius:999px;display:grid;place-items:center;justify-self:end;overflow:hidden;background:radial-gradient(circle at 34% 24%,rgba(255,255,255,.18),transparent 22%),radial-gradient(circle at 50% 64%,rgba(53,216,255,.24),rgba(53,216,255,.08) 58%,transparent 78%);border:1px solid rgba(88,210,255,.22);opacity:.82;pointer-events:none}.efProfileV2Fish .efSkinPreview{width:96px!important;max-width:96px!important;background:transparent!important;border:0!important;box-shadow:none!important}.efProfileV2Fish img,.efProfileV2Fish svg,.efProfileV2Fish .efSkinSpriteImg,.efProfileV2Fish .efSkinSpriteSvg{max-width:96px!important;pointer-events:none!important;user-select:none!important;-webkit-user-drag:none!important;-webkit-touch-callout:none!important}.efProfileV2Stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.efProfileV2Stats article{min-height:74px;border-radius:18px;padding:11px 12px;display:grid;align-content:center;gap:6px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.022)),rgba(5,18,32,.58)}.efProfileV2Stats b{font-size:clamp(22px,6vw,34px);line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.efProfileV2Tabs{justify-self:center;width:min(100%,330px);display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:5px;border-radius:999px}.efProfileV2Tabs button{min-height:38px;border:0;border-radius:999px;background:transparent;color:rgba(234,247,255,.62);font:inherit;font-size:12px;font-weight:1000;cursor:pointer}.efProfileV2Tabs button.active{color:#eaf7ff;background:rgba(53,216,255,.14);box-shadow:inset 0 0 20px rgba(53,216,255,.10),0 0 22px rgba(53,216,255,.12)}.efProfileV2Panel{display:grid;gap:8px}.efProfileV2Editor,.efProfileV2Create{border-radius:20px;padding:12px;display:grid;grid-template-columns:1fr;gap:10px;min-width:0}.efProfileV2Editor strong,.efProfileV2Create strong{display:block;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.efProfileV2Editor input,.efProfileV2Create input{width:100%;min-height:48px;border-radius:16px;padding:0 14px;border:1px solid rgba(88,210,255,.18);background:rgba(2,9,21,.50);color:#eaf7ff;font:inherit;font-size:16px;font-weight:900}.efProfileV2Editor button,.efProfileV2Create button,.efProfileV2SaveActions button{min-height:48px;width:100%;border-radius:999px;border:1px solid rgba(88,210,255,.28);background:linear-gradient(90deg,rgba(53,216,255,.24),rgba(120,255,216,.14));color:#eaf7ff;font:inherit;font-weight:1000;cursor:pointer}.efProfileV2Actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.efProfileV2Actions a{min-height:70px;border-radius:18px;padding:12px;color:#eaf7ff;text-decoration:none;display:grid;align-content:center;gap:4px}.efProfileV2Actions b{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.efProfileV2Grid{display:grid;gap:8px}.efProfileV2Save{border-radius:20px;padding:12px;display:grid;grid-template-columns:48px minmax(0,1fr);gap:10px}.efProfileV2Save.active{border-color:rgba(101,232,255,.62);box-shadow:0 0 32px rgba(53,216,255,.14),0 24px 80px rgba(0,0,0,.34)}.efProfileV2SaveAvatar{width:48px;height:48px;border-radius:999px;display:grid;place-items:center;background:rgba(53,216,255,.16);font-weight:1000}.efProfileV2Save h3{margin:0;font-size:20px}.efProfileV2Save p,.efProfileV2Save small{margin:2px 0 0;color:rgba(234,247,255,.62);font-weight:850}.efProfileV2SaveActions{grid-column:1 / -1;display:grid;grid-template-columns:1fr 1fr;gap:8px}.efProfileV2SaveActions button:disabled{opacity:.55}.efProfileV2BottomNav{position:fixed;left:50%;bottom:max(10px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(560px,calc(100vw - 20px));z-index:80;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:6px;border-radius:999px}.efProfileV2BottomNav a{min-width:0;min-height:48px;border-radius:999px;display:grid;place-items:center;color:rgba(234,247,255,.62);text-decoration:none;font-weight:1000}.efProfileV2BottomNav a.active{color:#eaf7ff;background:rgba(53,216,255,.14);box-shadow:inset 0 0 22px rgba(53,216,255,.12),0 0 24px rgba(53,216,255,.14)}.efProfileV2BottomNav span{font-size:16px}.efProfileV2BottomNav b{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.efProfileV2Notice{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom));z-index:90;transform:translateX(-50%);border-radius:999px;padding:11px 15px;background:rgba(5,18,32,.90);border:1px solid rgba(101,232,255,.42);box-shadow:0 16px 46px rgba(0,0,0,.34);font-weight:1000}@media(min-width:820px){.efProfileV2Shell{width:min(1040px,calc(100vw - 24px))}.efProfileV2Stats{grid-template-columns:repeat(3,minmax(0,1fr))}.efProfileV2Editor{grid-template-columns:minmax(150px,.7fr) minmax(250px,1fr) 150px}.efProfileV2Grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.efProfileV2Shell{width:min(100%,calc(100vw - 14px))}.efProfileV2Hero{grid-template-columns:58px minmax(0,1fr);min-height:142px}.efProfileV2Fish{display:none}.efProfileV2Identity h2{font-size:34px}.efProfileV2Stats article{min-height:70px;padding:10px}.efProfileV2Actions{grid-template-columns:1fr}.efProfileV2BottomNav a{min-height:44px}}
+    `}</style>
+  );
+}
+
+export default ProfileHub;
