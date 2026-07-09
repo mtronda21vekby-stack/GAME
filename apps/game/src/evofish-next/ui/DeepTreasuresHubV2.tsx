@@ -25,11 +25,11 @@ const GAP = 12;
 const TARGET = WIN_INDEX * (CARD_W + GAP) + CARD_W / 2;
 
 const REWARDS: Reward[] = [
-  { kind: "xp", label: "Опыт", chance: 35, amount: 650, unit: "опыта", icon: "✦", tone: "common" },
-  { kind: "pearls", label: "Жемчуг", chance: 25, amount: 1800, unit: "жемчуга", icon: "🐚", tone: "uncommon" },
-  { kind: "diamonds", label: "Алмазы", chance: 15, amount: 35, unit: "алмазов", icon: "💎", tone: "rare" },
+  { kind: "xp", label: "Опыт", chance: 37, amount: 650, unit: "опыта", icon: "✦", tone: "common" },
+  { kind: "pearls", label: "Жемчуг", chance: 27, amount: 1800, unit: "жемчуга", icon: "🐚", tone: "uncommon" },
+  { kind: "diamonds", label: "Алмазы", chance: 16, amount: 35, unit: "алмазов", icon: "💎", tone: "rare" },
   { kind: "ancientCrystal", label: "Ancient Crystal", chance: 12, amount: 45, unit: "кристаллов", icon: "🔮", tone: "epic" },
-  { kind: "trenchKey", label: "Ключ ВПАДИНЫ", chance: 8, amount: 1, unit: "ключ", icon: "🔑", tone: "legendary" },
+  { kind: "trenchKey", label: "Ключ ВПАДИНЫ", chance: 3, amount: 1, unit: "ключ", icon: "🔑", tone: "legendary" },
   { kind: "ancientChest", label: "Древний сундук", chance: 3, amount: 1, unit: "сундук", icon: "📦", tone: "epic" },
   { kind: "veryRareSkin", label: "Очень редкий скин", chance: 1.8, amount: 1, unit: "скин", icon: "✦", tone: "legendary" },
   { kind: "mythicSkin", label: "Мифический скин", chance: 0.2, amount: 1, unit: "скин", icon: "👑", tone: "mythic" }
@@ -63,7 +63,7 @@ function addXp(save: ReturnType<typeof loadEvoFishNextSave>, xpAmount: number) {
   return { ...save, account: { ...save.account, level, xp, xpToNext: need, totalXp: (save.account.totalXp || 0) + xpAmount } };
 }
 function chances(state: TrenchState) {
-  return REWARDS.map((r) => ({ ...r, chance: r.chance + (r.kind === "trenchKey" && state.dryKey > 40 ? Math.min(6, (state.dryKey - 40) * 0.12) : 0) + ((r.kind === "veryRareSkin" || r.kind === "mythicSkin") && state.drySkin > 70 ? Math.min(2, (state.drySkin - 70) * 0.03) : 0) }));
+  return REWARDS.map((r) => ({ ...r, chance: r.chance + (r.kind === "trenchKey" && state.dryKey > 80 ? Math.min(2.5, (state.dryKey - 80) * 0.05) : 0) + ((r.kind === "veryRareSkin" || r.kind === "mythicSkin") && state.drySkin > 70 ? Math.min(2, (state.drySkin - 70) * 0.03) : 0) }));
 }
 function roll(state: TrenchState): Reward {
   const pool = chances(state);
