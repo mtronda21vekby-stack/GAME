@@ -40,6 +40,7 @@ export function ProfileHub() {
   const [draftName, setDraftName] = React.useState(() => loadEvoFishNextSave().account.name);
   const [newProfileName, setNewProfileName] = React.useState("");
   const [notice, setNotice] = React.useState("");
+  const [activePanel, setActivePanel] = React.useState<"overview" | "saves">("overview");
   const activeId = activeProfile?.id || profiles[0]?.id || "main";
   const activeSkin = EVOFISH_SKIN_BY_ID[save.loadout.equippedSkinId] || EVOFISH_SKIN_BY_ID.default;
   const ownedSkins = Object.keys(save.loadout.ownedSkins || {}).length;
@@ -104,7 +105,7 @@ export function ProfileHub() {
           <Link className="efProfilesBack" to="/game">‹ Лобби</Link>
           <div className="efProfilesTitle">
             <span>Центр игрока</span>
-            <h1>Профили</h1>
+            <h1>Профиль</h1>
           </div>
           <Link className="efProfilesGear" to="/game/settings" aria-label="Настройки игры">⚙</Link>
         </header>
@@ -116,6 +117,10 @@ export function ProfileHub() {
             <h2>{save.account.name}</h2>
             <p>LV {save.account.level} · XP {format(save.account.xp)} / {format(save.account.xpToNext)}</p>
             <i><em style={{ width: percent(save.account.xp, save.account.xpToNext) }} /></i>
+            <div className="efProfilesHeroLinks">
+              <Link to="/game/skins">Скины</Link>
+              <Link to="/game/progress">Достижения</Link>
+            </div>
           </div>
           <div className="efProfilesFishSphere" aria-label={`Скин ${activeSkin.name}`}>
             <div className="efProfilesFishGlass" />
@@ -132,44 +137,55 @@ export function ProfileHub() {
           <article><span>Достижения</span><b>{achievements}</b></article>
         </section>
 
-        <section className="efProfilesEditor" aria-label="Настройки активного профиля">
-          <div>
-            <span>Никнейм</span>
-            <b>{activeProfile?.name || save.account.name}</b>
-          </div>
-          <input value={draftName} maxLength={18} placeholder="Имя игрока" onChange={(event) => setDraftName(event.currentTarget.value)} />
-          <button onClick={saveName}>Сохранить</button>
+        <section className="efProfilesTabs" aria-label="Раздел профиля">
+          <button className={activePanel === "overview" ? "active" : ""} type="button" onClick={() => setActivePanel("overview")}>Обзор</button>
+          <button className={activePanel === "saves" ? "active" : ""} type="button" onClick={() => setActivePanel("saves")}>Сохранения</button>
         </section>
 
-        <form className="efProfilesCreate" onSubmit={createProfile}>
-          <div>
-            <span>Новый профиль</span>
-            <b>Отдельное сохранение</b>
-          </div>
-          <input value={newProfileName} maxLength={18} placeholder="Имя нового профиля" onChange={(event) => setNewProfileName(event.currentTarget.value)} />
-          <button type="submit">Создать</button>
-        </form>
+        {activePanel === "overview" ? (
+          <section className="efProfilesPanel" aria-label="Обзор профиля">
+            <section className="efProfilesEditor" aria-label="Настройки активного профиля">
+              <div>
+                <span>Никнейм</span>
+                <b>{activeProfile?.name || save.account.name}</b>
+              </div>
+              <input value={draftName} maxLength={18} placeholder="Имя игрока" onChange={(event) => setDraftName(event.currentTarget.value)} />
+              <button onClick={saveName}>Сохранить</button>
+            </section>
+          </section>
+        ) : (
+          <section className="efProfilesPanel" aria-label="Сохранения профиля">
+            <form className="efProfilesCreate" onSubmit={createProfile}>
+              <div>
+                <span>Новый профиль</span>
+                <b>Отдельное сохранение</b>
+              </div>
+              <input value={newProfileName} maxLength={18} placeholder="Имя нового профиля" onChange={(event) => setNewProfileName(event.currentTarget.value)} />
+              <button type="submit">Создать</button>
+            </form>
 
-        <section className="efProfilesGrid" aria-label="Все профили">
-          {profiles.map((profile) => {
-            const isActive = profile.id === activeId;
-            return (
-              <article key={profile.id} className={`efProfileCard ${isActive ? "active" : ""}`}>
-                <div className="efProfileCardAvatar">{initial(profile.name)}</div>
-                <div className="efProfileCardBody">
-                  <span>{isActive ? "Сейчас активен" : "Сохранение"}</span>
-                  <h3>{profile.name}</h3>
-                  <p>LV {profile.accountLevel} · {skinName(profile)}</p>
-                  <small>{format(profile.pearls)} жемчуг · {format(profile.corals)} коралл</small>
-                </div>
-                <div className="efProfileCardActions">
-                  <button disabled={isActive} onClick={() => selectProfile(profile.id)}>{isActive ? "Активен" : "Выбрать"}</button>
-                  <button disabled={profile.isDefault} onClick={() => removeProfile(profile.id)}>Удалить</button>
-                </div>
-              </article>
-            );
-          })}
-        </section>
+            <section className="efProfilesGrid" aria-label="Все профили">
+              {profiles.map((profile) => {
+                const isActive = profile.id === activeId;
+                return (
+                  <article key={profile.id} className={`efProfileCard ${isActive ? "active" : ""}`}>
+                    <div className="efProfileCardAvatar">{initial(profile.name)}</div>
+                    <div className="efProfileCardBody">
+                      <span>{isActive ? "Сейчас активен" : "Сохранение"}</span>
+                      <h3>{profile.name}</h3>
+                      <p>LV {profile.accountLevel} · {skinName(profile)}</p>
+                      <small>{format(profile.pearls)} жемчуг · {format(profile.corals)} коралл</small>
+                    </div>
+                    <div className="efProfileCardActions">
+                      <button disabled={isActive} onClick={() => selectProfile(profile.id)}>{isActive ? "Активен" : "Выбрать"}</button>
+                      <button disabled={profile.isDefault} onClick={() => removeProfile(profile.id)}>Удалить</button>
+                    </div>
+                  </article>
+                );
+              })}
+            </section>
+          </section>
+        )}
 
         {notice ? <div className="efProfilesNotice" role="status">{notice}</div> : null}
 
@@ -189,6 +205,28 @@ export function ProfileHub() {
         .efProfilesFishSphere{max-width:320px;justify-self:end}
         .efProfilesBottomNav{border-radius:999px!important}
         @media(max-width:900px){.efProfilesFishSphere{justify-self:center;max-width:none}.efProfilesHero{min-height:unset!important}}
+      `}</style>
+      <style>{`
+        .efProfilesPage:before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse at 50% 18%,rgba(53,216,255,.18),transparent 36%),linear-gradient(90deg,rgba(2,9,21,.44),transparent 34%,transparent 66%,rgba(2,9,21,.44))}
+        .efProfilesShell{isolation:isolate}
+        .efProfilesTop,.efProfilesHero,.efProfilesStats,.efProfilesTabs,.efProfilesPanel,.efProfilesBottomNav{position:relative;z-index:1}
+        .efProfilesHeroLinks{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+        .efProfilesHeroLinks a{min-height:36px;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(88,210,255,.20);border-radius:999px;background:rgba(53,216,255,.10);color:#eaf7ff;text-decoration:none;padding:0 12px;font-size:12px;font-weight:1000}
+        .efProfilesTabs{justify-self:center;width:min(100%,360px);display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:6px;border:1px solid rgba(88,210,255,.25);border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.025)),rgba(5,18,32,.68);box-shadow:0 18px 60px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.08);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+        .efProfilesTabs button{min-height:42px;border:0;border-radius:999px;background:transparent;color:rgba(234,247,255,.62);font:inherit;font-size:13px;font-weight:1000;cursor:pointer}
+        .efProfilesTabs button.active{color:#eaf7ff;background:rgba(53,216,255,.14);box-shadow:inset 0 0 20px rgba(53,216,255,.10),0 0 22px rgba(53,216,255,.12)}
+        .efProfilesPanel{display:grid;gap:12px}
+        .efProfilesEditor,.efProfilesCreate{min-width:0}
+        .efProfilesEditor input,.efProfilesCreate input{min-width:0}
+        .efProfileCardActions button{appearance:none;font:inherit}
+        .efProfilesEditor button,.efProfilesCreate button,.efProfileCardActions button,.efProfilesTabs button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+        .efProfilesStats article{overflow:hidden}
+        .efProfilesStats b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .efProfilesFishSphere .efSkinPreview,.efProfilesFishSphere .efSkinPreview.sprite,.efProfilesFishSphere .efSkinSpriteImg,.efProfilesFishSphere .efSkinSpriteSvg{background:transparent!important;border:0!important;box-shadow:none!important}
+        .efProfilesFishSphere .efSkinPreview{width:82%!important;filter:drop-shadow(0 18px 26px rgba(0,0,0,.38)) drop-shadow(0 0 18px rgba(53,216,255,.22))}
+        @media(min-width:901px){.efProfilesGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.efProfilesEditor{grid-template-columns:minmax(180px,1fr) minmax(220px,360px) auto}}
+        @media(max-width:900px){.efProfilesTabs{width:min(100%,340px)}.efProfilesHeroLinks{justify-content:flex-start}.efProfilesPanel{gap:10px}}
+        @media(max-width:560px){.efProfilesTop{grid-template-columns:44px minmax(0,1fr) 44px!important}.efProfilesBack{width:44px;min-width:44px;padding:0!important;overflow:hidden;color:transparent!important;position:relative}.efProfilesBack:before{content:"‹";position:absolute;inset:0;display:grid;place-items:center;color:#eaf7ff;font-size:24px}.efProfilesHero{grid-template-columns:58px minmax(0,1fr)!important}.efProfilesFishSphere{width:min(68vw,270px)!important}.efProfilesIdentity h2{font-size:30px!important}.efProfilesHeroLinks a{flex:1 1 120px}.efProfilesTabs{width:100%}.efProfilesEditor,.efProfilesCreate{grid-template-columns:1fr!important}.efProfileCard{grid-template-columns:46px minmax(0,1fr)!important}.efProfileCardActions{grid-template-columns:1fr 1fr!important}}
       `}</style>
     </main>
   );
