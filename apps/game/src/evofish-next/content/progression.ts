@@ -1,8 +1,8 @@
 import type { EvoFishFormId } from "../core/types";
 
 export const NEXT_MAX_TIER = 12;
-export const NEXT_SHARK_UNLOCK_LEVEL = 24;
-export const NEXT_MEGALODON_UNLOCK_LEVEL = 55;
+export const NEXT_SHARK_UNLOCK_LEVEL = 50;
+export const NEXT_MEGALODON_UNLOCK_LEVEL = 100;
 
 export function xpToNextTier(tier: number) {
   return Math.round(150 * Math.pow(1.38, Math.max(0, tier - 1)));
