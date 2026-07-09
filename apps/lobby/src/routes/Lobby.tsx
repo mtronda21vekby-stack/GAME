@@ -1074,20 +1074,22 @@ function LobbyStyles() {
       }
 
       .hubSettingsButton {
-        width: 48px;
-        height: 48px;
-        min-width: 48px;
-        min-height: 48px;
-        max-width: 48px;
-        max-height: 48px;
+        width: 58px;
+        height: 58px;
+        min-width: 58px;
+        min-height: 58px;
+        max-width: 58px;
+        max-height: 58px;
+        aspect-ratio: 1 / 1;
         display: grid;
         place-items: center;
         flex: 0 0 auto;
+        padding: 0;
         border-radius: 9999px;
         color: var(--text);
         background: rgba(5,18,32,.70);
         font: inherit;
-        font-size: 20px;
+        font-size: 22px;
         cursor: pointer;
         appearance: none;
         transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
@@ -1118,14 +1120,14 @@ function LobbyStyles() {
         display: block;
         grid-column: 1 / -1;
         justify-self: center;
-        width: min(100%, 240px);
+        width: min(100%, 210px);
         margin: 0 auto;
-        z-index: 8;
+        z-index: 30;
       }
 
       .hubSectionMenuButton {
         width: 100%;
-        min-height: 48px;
+        min-height: 44px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -1144,8 +1146,8 @@ function LobbyStyles() {
       }
 
       .hubSectionMenuButton span {
-        width: 26px;
-        height: 26px;
+        width: 24px;
+        height: 24px;
         display: grid;
         place-items: center;
         border-radius: 50%;
@@ -1168,12 +1170,14 @@ function LobbyStyles() {
       .hubSectionMenuPanel {
         position: absolute;
         top: calc(100% + 8px);
-        left: 0;
-        right: 0;
+        left: 50%;
+        right: auto;
+        width: min(320px, calc(100vw - 24px));
+        transform: translateX(-50%);
         display: grid;
         gap: 6px;
         padding: 8px;
-        z-index: 30;
+        z-index: 40;
         border-radius: 8px;
         background:
           linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.025)),
@@ -1181,7 +1185,7 @@ function LobbyStyles() {
       }
 
       .hubSectionMenuItem {
-        min-height: 42px;
+        min-height: 38px;
         display: grid;
         grid-template-columns: 30px minmax(0, 1fr) 10px;
         align-items: center;
@@ -1321,6 +1325,7 @@ function LobbyStyles() {
         place-items: center;
         overflow: hidden;
         border-radius: 50%;
+        isolation: isolate;
         border: 1px solid rgba(159,237,255,.56);
         background:
           radial-gradient(circle at 36% 24%, rgba(255,255,255,.28), transparent 12%),
@@ -1342,6 +1347,7 @@ function LobbyStyles() {
       .hubSphereCaustics {
         content: "";
         position: absolute;
+        z-index: 1;
         border-radius: 50%;
         pointer-events: none;
       }
@@ -1379,10 +1385,10 @@ function LobbyStyles() {
 
       .hubFish {
         position: relative;
-        z-index: 2;
-        width: 60%;
-        aspect-ratio: 1.78 / 1;
-        max-width: 400px;
+        z-index: 4;
+        width: min(90%, 520px);
+        max-width: calc(100% - 42px);
+        min-height: 38%;
         display: grid;
         place-items: center;
         pointer-events: none;
@@ -1395,6 +1401,7 @@ function LobbyStyles() {
       .hubFishLayer {
         grid-area: 1 / 1;
         width: 100%;
+        height: 100%;
         display: grid;
         place-items: center;
         transform-origin: 50% 56%;
@@ -1403,8 +1410,9 @@ function LobbyStyles() {
 
       .hubFishLayer img {
         display: block;
-        width: 100%;
+        width: clamp(280px, 30vw, 520px);
         height: auto;
+        max-width: 100%;
         max-height: 100%;
         object-fit: contain;
         background: transparent;
@@ -1473,24 +1481,29 @@ function LobbyStyles() {
       .hubFishArrow {
         position: absolute;
         top: 50%;
-        z-index: 4;
-        width: 42px;
-        height: 42px;
+        z-index: 20;
+        width: 50px;
+        height: 50px;
         display: grid;
         place-items: center;
-        border: 1px solid rgba(159,237,255,.42);
+        border: 1px solid rgba(178,246,255,.64);
         border-radius: 999px;
         color: var(--text);
         background:
-          linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.024)),
-          rgba(5,18,32,.58);
+          radial-gradient(circle at 34% 24%, rgba(255,255,255,.26), transparent 32%),
+          linear-gradient(180deg, rgba(53,216,255,.20), rgba(255,255,255,.030)),
+          rgba(5,18,32,.76);
         box-shadow:
-          inset 0 1px 0 rgba(255,255,255,.12),
-          0 0 24px rgba(53,216,255,.20);
+          inset 0 1px 0 rgba(255,255,255,.18),
+          inset 0 0 18px rgba(53,216,255,.12),
+          0 0 0 1px rgba(53,216,255,.14),
+          0 0 30px rgba(53,216,255,.34),
+          0 12px 28px rgba(0,0,0,.34);
         font: inherit;
-        font-size: 30px;
+        font-size: 34px;
         line-height: 1;
         cursor: pointer;
+        pointer-events: auto;
         transform: translateY(-50%);
         appearance: none;
         -webkit-tap-highlight-color: transparent;
@@ -1498,11 +1511,11 @@ function LobbyStyles() {
       }
 
       .hubFishArrow.isPrevious {
-        left: 8%;
+        left: clamp(10px, 4.5%, 24px);
       }
 
       .hubFishArrow.isNext {
-        right: 8%;
+        right: clamp(10px, 4.5%, 24px);
       }
 
       .hubFishArrow:hover {
@@ -1930,6 +1943,16 @@ function LobbyStyles() {
           grid-template-columns: minmax(0, 1.18fr) minmax(220px, .82fr);
           gap: 12px;
         }
+
+        .hubFish {
+          width: min(90%, 480px);
+          max-width: calc(100% - 38px);
+        }
+
+        .hubFishLayer img {
+          width: clamp(220px, 54vw, 420px);
+          max-width: 100%;
+        }
       }
 
       @media (max-width: 767px) {
@@ -1990,22 +2013,25 @@ function LobbyStyles() {
         }
 
         .hubSettingsButton {
-          width: 44px;
-          height: 44px;
-          min-width: 44px;
-          min-height: 44px;
-          max-width: 44px;
-          max-height: 44px;
+          width: 58px;
+          height: 58px;
+          min-width: 58px;
+          min-height: 58px;
+          max-width: 58px;
+          max-height: 58px;
+          aspect-ratio: 1 / 1;
+          padding: 0;
         }
 
         .hubSectionMenuPanel {
           position: fixed;
-          left: 10px;
-          right: 10px;
+          left: 50%;
+          right: auto;
           top: auto;
           bottom: calc(72px + env(safe-area-inset-bottom, 0px));
-          width: auto;
+          width: min(360px, calc(100vw - 20px));
           max-height: min(430px, calc(100dvh - 120px));
+          transform: translateX(-50%);
           overflow: auto;
           overscroll-behavior: contain;
         }
@@ -2026,21 +2052,27 @@ function LobbyStyles() {
         }
 
         .hubFish {
-          width: 66%;
+          width: min(90%, 420px);
+          max-width: calc(100% - 34px);
+        }
+
+        .hubFishLayer img {
+          width: clamp(220px, 54vw, 420px);
+          max-width: 100%;
         }
 
         .hubFishArrow {
-          width: 38px;
-          height: 38px;
-          font-size: 28px;
+          width: 46px;
+          height: 46px;
+          font-size: 32px;
         }
 
         .hubFishArrow.isPrevious {
-          left: 6%;
+          left: 8px;
         }
 
         .hubFishArrow.isNext {
-          right: 6%;
+          right: 8px;
         }
 
         .hubFishPicker {
