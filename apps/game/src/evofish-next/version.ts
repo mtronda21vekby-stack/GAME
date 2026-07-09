@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-high-pearl-skin-prices-6.11.1";
+export const EVOFISH_NEXT_VERSION = "next-stable-fish-map-hitbox-6.11.2";
