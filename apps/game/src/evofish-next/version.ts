@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-360-belly-safe-mirror-6.12.4";
+export const EVOFISH_NEXT_VERSION = "next-fish-orientation-lock-6.12.5";
