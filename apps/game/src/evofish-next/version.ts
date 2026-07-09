@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-fish-orientation-6.9.8";
+export const EVOFISH_NEXT_VERSION = "next-hitbox-qa-6.9.9";
