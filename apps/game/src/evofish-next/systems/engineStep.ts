@@ -1,5 +1,6 @@
 import type { NextEngineState, NextInputState, NextViewport } from "../core/engineTypes";
 import { updateAchievementSystem } from "./achievementSystem";
+import { updateBalanceDebugSnapshot } from "./balanceDebugSystem";
 import { getNextCamera } from "./cameraSystem";
 import { updateCollisionSystem } from "./collisionSystem";
 import { updateCombatSystem } from "./combatSystem";
@@ -32,6 +33,7 @@ function finishPausedFrame(state: NextEngineState, input: NextInputState, dt: nu
   updateFeedbackSystem(state, dt);
   syncProgressionStats(state);
   updateQuestSystem(state);
+  updateBalanceDebugSnapshot(state);
   state.frame += 1;
   return state;
 }
@@ -78,6 +80,7 @@ export function stepNextEngine(state: NextEngineState, input: NextInputState, vi
   updateQuestSystem(state);
   updateAchievementSystem(state);
   updateEventSystem(state, dt);
+  updateBalanceDebugSnapshot(state);
 
   state.frame += 1;
   return state;
