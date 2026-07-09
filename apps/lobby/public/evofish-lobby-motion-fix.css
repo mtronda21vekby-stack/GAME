@@ -1,0 +1,133 @@
+/* EvoFish Next lobby motion override.
+   Purpose: make the selected lobby fish visibly swim without changing skins automatically. */
+
+@keyframes evofishLobbySelectedFishSwim {
+  0% {
+    transform: translate3d(-24px, 0, 0) rotate(-2.6deg) scale(0.985);
+    filter: brightness(1.02) saturate(1.08) drop-shadow(0 18px 24px rgba(0, 0, 0, 0.36));
+  }
+  18% {
+    transform: translate3d(-10px, -11px, 0) rotate(-1.2deg) scale(1.005);
+    filter: brightness(1.06) saturate(1.12) drop-shadow(0 20px 28px rgba(0, 0, 0, 0.38));
+  }
+  38% {
+    transform: translate3d(18px, -6px, 0) rotate(2.2deg) scale(1.025);
+    filter: brightness(1.08) saturate(1.16) drop-shadow(0 22px 30px rgba(0, 0, 0, 0.40));
+  }
+  58% {
+    transform: translate3d(28px, 6px, 0) rotate(1.4deg) scale(1.015);
+    filter: brightness(1.05) saturate(1.13) drop-shadow(0 20px 28px rgba(0, 0, 0, 0.38));
+  }
+  78% {
+    transform: translate3d(4px, 14px, 0) rotate(-1deg) scale(0.995);
+    filter: brightness(1.03) saturate(1.10) drop-shadow(0 18px 24px rgba(0, 0, 0, 0.36));
+  }
+  100% {
+    transform: translate3d(-24px, 0, 0) rotate(-2.6deg) scale(0.985);
+    filter: brightness(1.02) saturate(1.08) drop-shadow(0 18px 24px rgba(0, 0, 0, 0.36));
+  }
+}
+
+@keyframes evofishLobbySphereWaterPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.92;
+  }
+  50% {
+    transform: scale(1.018);
+    opacity: 1;
+  }
+}
+
+@keyframes evofishLobbyArrowPulse {
+  0%, 100% {
+    transform: translateY(-50%) scale(1);
+    opacity: 0.82;
+  }
+  50% {
+    transform: translateY(-50%) scale(1.08);
+    opacity: 1;
+  }
+}
+
+/* The actual visible selected fish image. This override is intentionally stronger
+   than the inline LobbyStyles rule so the fish cannot remain visually frozen. */
+.bcSiteRoot .hubFish .hubFishLayer.is-entering img {
+  animation: evofishLobbySelectedFishSwim 4.8s ease-in-out infinite !important;
+  transform-origin: 50% 58% !important;
+  will-change: transform, filter !important;
+  backface-visibility: hidden !important;
+}
+
+/* Keep the old fish swap clean: leaving fish exits once and does not keep idling. */
+.bcSiteRoot .hubFish .hubFishLayer.is-exiting img {
+  animation: none !important;
+}
+
+/* Make sure the selected fish is large enough to read as a living character. */
+.bcSiteRoot .hubFish {
+  width: min(94%, 560px) !important;
+  min-height: 44% !important;
+}
+
+.bcSiteRoot .hubFish .hubFishLayer img {
+  width: clamp(300px, 34vw, 560px) !important;
+  max-width: 100% !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Mobile sizing: strong, readable fish inside the sphere, not a tiny sticker. */
+@media (max-width: 767px) {
+  .bcSiteRoot .hubFish {
+    width: min(96%, 440px) !important;
+    max-width: calc(100% - 20px) !important;
+  }
+
+  .bcSiteRoot .hubFish .hubFishLayer img {
+    width: clamp(250px, 68vw, 430px) !important;
+  }
+}
+
+/* Remove any accidental rectangular/frosted artifact behind the fish. */
+.bcSiteRoot .hubFish,
+.bcSiteRoot .hubFishLayer,
+.bcSiteRoot .hubFishLayer img {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Make sphere feel alive even before full shader pass. */
+.bcSiteRoot .hubSphere {
+  animation: hubSphereBreath 4.8s ease-in-out infinite, evofishLobbySphereWaterPulse 7.2s ease-in-out infinite !important;
+}
+
+/* Make manual fish-switch controls impossible to miss when multiple owned fish exist. */
+.bcSiteRoot .hubFishArrow {
+  z-index: 80 !important;
+  opacity: 0.96 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  animation: evofishLobbyArrowPulse 2.8s ease-in-out infinite !important;
+}
+
+.bcSiteRoot .hubFishArrow.isPrevious:hover {
+  transform: translateY(-50%) translateX(-2px) scale(1.08) !important;
+}
+
+.bcSiteRoot .hubFishArrow.isNext:hover {
+  transform: translateY(-50%) translateX(2px) scale(1.08) !important;
+}
+
+/* Keep the selected skin thumbnails readable if multiple purchased fish exist. */
+.bcSiteRoot .hubFishPicker {
+  z-index: 12 !important;
+  position: relative !important;
+}
+
+.bcSiteRoot .hubFishThumb.isSelected {
+  border-color: rgba(101, 232, 255, 0.82) !important;
+  box-shadow: inset 0 0 24px rgba(53, 216, 255, 0.16), 0 0 26px rgba(53, 216, 255, 0.24) !important;
+}
