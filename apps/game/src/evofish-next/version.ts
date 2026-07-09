@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-no-map-rotation-fix-6.11.6";
+export const EVOFISH_NEXT_VERSION = "next-left-mirror-rotation-6.11.7";
