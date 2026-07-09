@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-lobby-owned-skin-carousel-6.14.0";
+export const EVOFISH_NEXT_VERSION = "next-settings-scroll-fix-6.14.1";
