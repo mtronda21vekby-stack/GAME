@@ -31,12 +31,12 @@ function entitySpeed(entity: NextFishEntity) {
 function fishPose(entity: NextFishEntity, time: number): Pose {
   const angle = normalizedAngle(entity.angle || 0);
   const facingLeft = Math.cos(angle) < 0;
-  const mirroredAngle = facingLeft ? normalizedAngle(angle + Math.PI) : angle;
+  const localRaw = facingLeft ? -normalizedAngle(angle + Math.PI) : angle;
 
   return {
     facingLeft,
-    // Right-facing sprite: positive canvas angle points nose downward, negative points upward.
-    localAngle: clamp(mirroredAngle, -1.12, 1.12),
+    // Conditional mirror math: right side uses normal canvas angle, left side mirrors X and inverts local tilt.
+    localAngle: clamp(localRaw, -1.12, 1.12),
     speed: entitySpeed(entity),
     shimmer: Math.sin(time * 0.0032 + entity.id * 0.71) * 0.5 + 0.5
   };
