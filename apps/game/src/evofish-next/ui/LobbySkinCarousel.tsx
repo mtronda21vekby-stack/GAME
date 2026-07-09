@@ -18,10 +18,6 @@ function normalizedPath() {
   return window.location.pathname.replace(/\/+$/, "") || "/";
 }
 
-function isLobbyPath() {
-  return LOBBY_PATHS.has(normalizedPath());
-}
-
 function formatOwnedLabel(count: number) {
   if (count === 1) return "1 куплен";
   return `${count} куплено`;
