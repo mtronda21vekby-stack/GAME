@@ -7,24 +7,24 @@ const REQUIRED_ACCOUNT_LEVEL = 25;
 const REQUIRED_CHARACTER_LEVEL = 45;
 const CHEST_COST = 100;
 
-type TrenchState = { diamonds?: number; coins?: number; ancientCrystals?: number; trenchKeys?: number; deepTrenchUnlocked?: boolean; darkCaveKeys?: number; darkCaveUnlocked?: boolean; };
+type TrenchState = { diamonds?: number; ancientCrystals?: number; trenchKeys?: number; deepTrenchUnlocked?: boolean; darkCaveKeys?: number; darkCaveUnlocked?: boolean; };
 type ChestReward = { label: string; description: string; tone: "rare" | "epic" | "legendary"; apply: (state: TrenchState) => TrenchState; applySave?: () => void };
 
 function format(value: number) { return Math.max(0, Math.floor(value || 0)).toLocaleString("ru-RU"); }
-function normalizeState(state: TrenchState): TrenchState { return { ...state, diamonds: Math.max(0, Math.floor(state.diamonds || 0)), coins: Math.max(0, Math.floor(state.coins || 0)), ancientCrystals: Math.max(0, Math.floor(state.ancientCrystals || 0)), trenchKeys: Math.max(0, Math.floor(state.trenchKeys ?? state.darkCaveKeys ?? 0)), deepTrenchUnlocked: Boolean(state.deepTrenchUnlocked || state.darkCaveUnlocked) }; }
+function normalizeState(state: TrenchState): TrenchState { return { ...state, diamonds: Math.max(0, Math.floor(state.diamonds || 0)), ancientCrystals: Math.max(0, Math.floor(state.ancientCrystals || 0)), trenchKeys: Math.max(0, Math.floor(state.trenchKeys ?? state.darkCaveKeys ?? 0)), deepTrenchUnlocked: Boolean(state.deepTrenchUnlocked || state.darkCaveUnlocked) }; }
 function readState(): TrenchState { if (typeof window === "undefined") return {}; try { const raw = window.localStorage.getItem(STORAGE_KEY); return normalizeState(raw ? JSON.parse(raw) as TrenchState : {}); } catch { return {}; } }
 function writeState(state: TrenchState) { if (typeof window === "undefined") return; window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizeState(state))); }
 function addPearls(amount: number) { const save = loadEvoFishNextSave(); saveEvoFishNextSave({ ...save, economy: { ...save.economy, pearls: save.economy.pearls + amount } }); }
 function rollChestReward(): ChestReward {
   const roll = Math.random() * 100;
   if (roll < 45) return { label: "Алмазы", description: "+120 алмазов", tone: "rare", apply: (state) => ({ ...state, diamonds: Math.max(0, Math.floor(state.diamonds || 0)) + 120 }) };
-  if (roll < 75) return { label: "Монеты", description: "+18 000 монет", tone: "rare", apply: (state) => ({ ...state, coins: Math.max(0, Math.floor(state.coins || 0)) + 18000 }) };
-  if (roll < 92) return { label: "Жемчуг", description: "+15 000 жемчуга", tone: "epic", apply: (state) => state, applySave: () => addPearls(15000) };
+  if (roll < 75) return { label: "Жемчуг", description: "+15 000 жемчуга", tone: "epic", apply: (state) => state, applySave: () => addPearls(15000) };
+  if (roll < 92) return { label: "Ancient Crystal", description: "+180 Ancient Crystal", tone: "epic", apply: (state) => ({ ...state, ancientCrystals: Math.max(0, Math.floor(state.ancientCrystals || 0)) + 180 }) };
   return { label: "Ключ ВПАДИНЫ", description: "+1 ключ ВПАДИНЫ", tone: "legendary", apply: (state) => ({ ...state, trenchKeys: Math.max(0, Math.floor(state.trenchKeys ?? state.darkCaveKeys ?? 0)) + 1 }) };
 }
 
 const NODES = [
-  { title: "Край разлома", status: "Открыто", reward: "Жемчуг, опыт, монеты", danger: "Высокая" },
+  { title: "Край разлома", status: "Открыто", reward: "Жемчуг, опыт, Ancient Crystal", danger: "Высокая" },
   { title: "Кристальные ребра", status: "Открыто", reward: "Ancient Crystal", danger: "Очень высокая" },
   { title: "Гнездо бездны", status: "Открыто", reward: "Древний сундук", danger: "Элитная" },
   { title: "Сердце ВПАДИНЫ", status: "Скоро", reward: "Мифический скин", danger: "Босс" }
@@ -82,7 +82,7 @@ export function TrenchLocation() {
         ) : (
           <section className="efTrenchContent">
             <article className="efTrenchHero"><span>🌊</span><h2>Новая карта открыта</h2><p>ВПАДИНА доступна навсегда. Здесь уже работает Древний сундук за Ancient Crystal. Дальше можно подключать мобов, босса и отдельный боевой биом.</p><div><button type="button" onClick={() => navigate("/game/play")}>Начать забег</button><button type="button" onClick={() => navigate("/game/deep-treasures")}>Древняя рулетка</button></div></article>
-            <section className="efTrenchNodes">{NODES.map((node) => <article key={node.title} className={node.status === "Открыто" ? "open" : "locked"}><span>{node.status}</span><h3>{node.title}</h3><p>Награда: {node.reward}</p><p>Опасность: {node.danger}</p></article>)}<article className={`efAncientChest ${lastRewardTone}`}><span>Работает</span><h3>Древний сундук</h3><p>{chestMessage}</p><p>Баланс: {format(ancientCrystals)} Ancient Crystal</p><button type="button" onClick={openAncientChest}>Открыть за {CHEST_COST}</button></article></section>
+            <section className="efTrenchNodes">{NODES.map((node) => <article key={node.title} className={node.status === "Открыто" ? "open" : "locked"}><span>{node.status}</span><h3>{node.title}</h3><p>Награда: {node.reward}</p><p>Опасность: {node.danger}</p></article>)}<article className={`efAncientChest ${lastRewardTone}`}><span>Работает</span><h3>Древний сундук</h3><p>{chestMessage}</p><p>Пул: алмазы, жемчуг, Ancient Crystal, ключ ВПАДИНЫ</p><p>Баланс: {format(ancientCrystals)} Ancient Crystal</p><button type="button" onClick={openAncientChest}>Открыть за {CHEST_COST}</button></article></section>
           </section>
         )}
       </section>
