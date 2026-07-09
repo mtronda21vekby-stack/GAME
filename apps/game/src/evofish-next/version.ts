@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-launch-rescue-6.12.8";
+export const EVOFISH_NEXT_VERSION = "next-menu-crash-rescue-6.12.9";
