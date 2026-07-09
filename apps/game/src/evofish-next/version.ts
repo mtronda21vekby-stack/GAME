@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-hud-bars-clean-6.9.6";
+export const EVOFISH_NEXT_VERSION = "next-balance-bands-6.9.7";
