@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { navigate } from "../../router";
-import { loadEvoFishNextSave, saveEvoFishNextSave } from "../state/nextSaveStore";
 import { xpToNextAccountLevel } from "../content/account";
+import { loadEvoFishNextSave, saveEvoFishNextSave } from "../state/nextSaveStore";
 
 type RewardKind = "xp" | "pearls" | "diamonds" | "coins" | "darkCaveKey" | "rareChest" | "veryRareSkin" | "mythicSkin";
-type RewardStatus = "pending" | "claimed" | "lost";
+type RewardStatus = "claimed" | "lost";
 type DeepTab = "roulette" | "gate" | "keys" | "history" | "skins";
+type RewardTone = "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythic";
 
 type RewardDefinition = {
   kind: RewardKind;
@@ -13,17 +14,12 @@ type RewardDefinition = {
   chance: number;
   baseAmount: number;
   amountLabel: string;
-  tone: "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythic";
+  tone: RewardTone;
 };
 
-type PendingReward = {
+type PendingReward = RewardDefinition & {
   id: string;
-  kind: RewardKind;
-  label: string;
-  baseAmount: number;
   multiplier: number;
-  amountLabel: string;
-  tone: RewardDefinition["tone"];
 };
 
 type RewardHistoryItem = {
@@ -34,7 +30,7 @@ type RewardHistoryItem = {
   multiplier: number;
   status: RewardStatus;
   createdAt: string;
-  tone: RewardDefinition["tone"];
+  tone: RewardTone;
 };
 
 type DeepTreasuresState = {
@@ -72,6 +68,11 @@ const RARE_SKINS = [
 
 function format(value: number) {
   return Math.max(0, Math.floor(value || 0)).toLocaleString("ru-RU");
+}
+
+function makeId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  return `deep-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 }
 
 function makeDefaultState(): DeepTreasuresState {
@@ -137,14 +138,16 @@ function addAccountXp(save: ReturnType<typeof loadEvoFishNextSave>, amount: numb
   };
 }
 
-function adjustedRewards(state: DeepTreasuresState) {
+function adjustedRewards(state: DeepTreasuresState): RewardDefinition[] {
   return REWARDS.map((reward) => {
     let chance = reward.chance;
     if (reward.kind === "darkCaveKey" && state.spinsWithoutKey >= 40) {
       chance += Math.min(6, Math.floor((state.spinsWithoutKey - 39) / 5) * 0.75);
     }
     if ((reward.kind === "veryRareSkin" || reward.kind === "mythicSkin") && state.spinsWithoutVeryRareSkin >= 70) {
-      chance += reward.kind === "veryRareSkin" ? Math.min(2.2, Math.floor((state.spinsWithoutVeryRareSkin - 69) / 10) * 0.25) : Math.min(0.35, Math.floor((state.spinsWithoutVeryRareSkin - 69) / 15) * 0.04);
+      chance += reward.kind === "veryRareSkin"
+        ? Math.min(2.2, Math.floor((state.spinsWithoutVeryRareSkin - 69) / 10) * 0.25)
+        : Math.min(0.35, Math.floor((state.spinsWithoutVeryRareSkin - 69) / 15) * 0.04);
     }
     return { ...reward, chance };
   });
@@ -156,55 +159,51 @@ function rollReward(state: DeepTreasuresState): PendingReward {
   let cursor = Math.random() * total;
   for (const reward of rewards) {
     cursor -= reward.chance;
-    if (cursor <= 0) {
-      return { ...reward, id: crypto.randomUUID(), multiplier: 1 };
-    }
+    if (cursor <= 0) return { ...reward, id: makeId(), multiplier: 1 };
   }
-  const fallback = rewards[0];
-  return { ...fallback, id: crypto.randomUUID(), multiplier: 1 };
+  return { ...rewards[0], id: makeId(), multiplier: 1 };
 }
 
-function rewardText(reward: PendingReward | RewardHistoryItem) {
-  const amount = Math.max(1, Math.floor(reward.baseAmount ? reward.baseAmount * reward.multiplier : reward.amount));
+function pendingAmount(reward: PendingReward) {
+  return Math.max(1, Math.floor(reward.baseAmount * reward.multiplier));
+}
+
+function pendingRewardText(reward: PendingReward) {
+  const amount = pendingAmount(reward);
   if (reward.kind === "darkCaveKey" || reward.kind === "rareChest" || reward.kind === "veryRareSkin" || reward.kind === "mythicSkin") return `${reward.label} ×${amount}`;
-  return `${format(amount)} ${"amountLabel" in reward ? reward.amountLabel : ""}`.trim();
+  return `${format(amount)} ${reward.amountLabel}`;
 }
 
 function addHistory(state: DeepTreasuresState, reward: PendingReward, status: RewardStatus): DeepTreasuresState {
-  const amount = Math.max(1, Math.floor(reward.baseAmount * reward.multiplier));
   return {
     ...state,
     rewardHistory: [
-      { id: reward.id, label: reward.label, kind: reward.kind, amount, multiplier: reward.multiplier, status, createdAt: new Date().toISOString(), tone: reward.tone },
+      { id: reward.id, label: reward.label, kind: reward.kind, amount: pendingAmount(reward), multiplier: reward.multiplier, status, createdAt: new Date().toISOString(), tone: reward.tone },
       ...state.rewardHistory
     ].slice(0, MAX_HISTORY)
   };
 }
 
 function applyRewardToState(state: DeepTreasuresState, reward: PendingReward) {
-  const amount = Math.max(1, Math.floor(reward.baseAmount * reward.multiplier));
+  const amount = pendingAmount(reward);
   const next = { ...state, unlockedRareSkins: { ...state.unlockedRareSkins } };
-
   if (reward.kind === "diamonds") next.diamonds += amount;
   if (reward.kind === "coins") next.coins += amount;
   if (reward.kind === "darkCaveKey") next.darkCaveKeys += amount;
   if (reward.kind === "veryRareSkin") next.unlockedRareSkins["abyss-phantom"] = true;
   if (reward.kind === "mythicSkin") next.unlockedRareSkins["dark-cave-crown"] = true;
-
   return next;
 }
 
 function applyRewardToSave(reward: PendingReward) {
-  const amount = Math.max(1, Math.floor(reward.baseAmount * reward.multiplier));
+  const amount = pendingAmount(reward);
   const save = loadEvoFishNextSave();
   if (reward.kind === "pearls") saveEvoFishNextSave({ ...save, economy: { ...save.economy, pearls: save.economy.pearls + amount } });
   if (reward.kind === "xp") saveEvoFishNextSave(addAccountXp(save, amount));
 }
 
 function statusText(status: RewardStatus) {
-  if (status === "claimed") return "Забрано";
-  if (status === "lost") return "Потеряно";
-  return "Ожидает";
+  return status === "claimed" ? "Забрано" : "Потеряно";
 }
 
 export function DeepTreasuresHub() {
@@ -218,14 +217,14 @@ export function DeepTreasuresHub() {
 
   const chances = useMemo(() => adjustedRewards(state), [state]);
 
+  useEffect(() => {
+    writeState(state);
+  }, [state]);
+
   const refresh = () => {
     setSave(loadEvoFishNextSave());
     setState(readState());
   };
-
-  useEffect(() => {
-    writeState(state);
-  }, [state]);
 
   const commitState = (next: DeepTreasuresState) => {
     setState(next);
@@ -249,12 +248,11 @@ export function DeepTreasuresHub() {
     setSave(paidSave);
 
     const reward = rollReward(freshState);
-    const counters = {
+    commitState({
       ...freshState,
       spinsWithoutKey: reward.kind === "darkCaveKey" ? 0 : freshState.spinsWithoutKey + 1,
       spinsWithoutVeryRareSkin: reward.kind === "veryRareSkin" || reward.kind === "mythicSkin" ? 0 : freshState.spinsWithoutVeryRareSkin + 1
-    };
-    commitState(counters);
+    });
     setPending(reward);
     setChestFailIndex(null);
     setChestOpen(null);
@@ -264,13 +262,12 @@ export function DeepTreasuresHub() {
   const claimReward = () => {
     if (!pending) return;
     applyRewardToSave(pending);
-    const awarded = applyRewardToState(readState(), pending);
-    const withHistory = addHistory(awarded, pending, "claimed");
+    const withHistory = addHistory(applyRewardToState(readState(), pending), pending, "claimed");
     commitState(withHistory);
     setPending(null);
     setChestFailIndex(null);
     setChestOpen(null);
-    setMessage(`Награда получена: ${rewardText(pending)}`);
+    setMessage(`Награда получена: ${pendingRewardText(pending)}`);
     refresh();
   };
 
@@ -289,13 +286,11 @@ export function DeepTreasuresHub() {
     if (!pending || chestFailIndex === null || chestOpen !== null) return;
     setChestOpen(index);
     if (index === chestFailIndex) {
-      const withHistory = addHistory(readState(), pending, "lost");
-      commitState(withHistory);
+      commitState(addHistory(readState(), pending, "lost"));
       setPending(null);
       setMessage("Награда потеряна");
       return;
     }
-
     const nextReward = { ...pending, multiplier: Math.min(16, pending.multiplier * 2) };
     setPending(nextReward);
     setChestFailIndex(null);
@@ -316,8 +311,7 @@ export function DeepTreasuresHub() {
       setMessage("Нужно 3 ключа DARK CAVE");
       return;
     }
-    const next = { ...fresh, darkCaveKeys: fresh.darkCaveKeys - REQUIRED_KEYS, darkCaveUnlocked: true };
-    commitState(next);
+    commitState({ ...fresh, darkCaveKeys: fresh.darkCaveKeys - REQUIRED_KEYS, darkCaveUnlocked: true });
     setMessage("Ворота DARK CAVE открыты навсегда");
   };
 
@@ -348,11 +342,11 @@ export function DeepTreasuresHub() {
         </header>
 
         <nav className="efDeepTabs" aria-label="Разделы Сокровищ глубин">
-          <button className={tab === "roulette" ? "active" : ""} onClick={() => setTab("roulette")}>Рулетка</button>
-          <button className={tab === "gate" ? "active" : ""} onClick={() => setTab("gate")}>Ворота DARK CAVE</button>
-          <button className={tab === "keys" ? "active" : ""} onClick={() => setTab("keys")}>Ключи</button>
-          <button className={tab === "history" ? "active" : ""} onClick={() => setTab("history")}>История наград</button>
-          <button className={tab === "skins" ? "active" : ""} onClick={() => setTab("skins")}>Редкие скины</button>
+          <button type="button" className={tab === "roulette" ? "active" : ""} onClick={() => setTab("roulette")}>Рулетка</button>
+          <button type="button" className={tab === "gate" ? "active" : ""} onClick={() => setTab("gate")}>Ворота DARK CAVE</button>
+          <button type="button" className={tab === "keys" ? "active" : ""} onClick={() => setTab("keys")}>Ключи</button>
+          <button type="button" className={tab === "history" ? "active" : ""} onClick={() => setTab("history")}>История наград</button>
+          <button type="button" className={tab === "skins" ? "active" : ""} onClick={() => setTab("skins")}>Редкие скины</button>
         </nav>
 
         <section className="efDeepMessage">{message}</section>
@@ -368,28 +362,21 @@ export function DeepTreasuresHub() {
                 <div className={`efPendingReward ${pending.tone}`}>
                   <span>Текущая награда</span>
                   <h2>{pending.label}</h2>
-                  <p>{rewardText(pending)} · множитель x{pending.multiplier}</p>
+                  <p>{pendingRewardText(pending)} · множитель x{pending.multiplier}</p>
                   <div className="efDeepActions">
                     <button type="button" onClick={claimReward}>Забрать</button>
                     <button type="button" disabled={pending.multiplier >= 16} onClick={startRisk}>Удвоить</button>
                   </div>
                 </div>
               ) : (
-                <div className="efDeepActions">
-                  <button type="button" onClick={startSpin}>Прокрутить за {format(SPIN_COST)} жемчуга</button>
-                </div>
+                <div className="efDeepActions"><button type="button" onClick={startSpin}>Прокрутить за {format(SPIN_COST)} жемчуга</button></div>
               )}
             </article>
 
             <article className="efDeepPanel">
               <h2>Шансы выпадения</h2>
               <div className="efChanceList">
-                {chances.map((reward) => (
-                  <div key={reward.kind} className={reward.tone}>
-                    <span>{reward.label}</span>
-                    <b>{reward.chance.toFixed(reward.chance % 1 ? 1 : 0)}%</b>
-                  </div>
-                ))}
+                {chances.map((reward) => <div key={reward.kind} className={reward.tone}><span>{reward.label}</span><b>{reward.chance.toFixed(reward.chance % 1 ? 1 : 0)}%</b></div>)}
               </div>
             </article>
 
@@ -399,8 +386,7 @@ export function DeepTreasuresHub() {
               <div className="efChestGrid">
                 {[0, 1, 2].map((index) => (
                   <button key={index} type="button" disabled={!pending || chestFailIndex === null || chestOpen !== null} onClick={() => chooseChest(index)} className={chestOpen === index ? (index === chestFailIndex ? "fail" : "win") : ""}>
-                    {chestOpen === index ? (index === chestFailIndex ? "✕" : "✓") : "?"}
-                    <span>Сундук {index + 1}</span>
+                    {chestOpen === index ? (index === chestFailIndex ? "✕" : "✓") : "?"}<span>Сундук {index + 1}</span>
                   </button>
                 ))}
               </div>
@@ -420,44 +406,26 @@ export function DeepTreasuresHub() {
           </section>
         ) : null}
 
-        {tab === "keys" ? (
-          <section className="efDeepPanel">
-            <h2>Ключи</h2>
-            <div className="efKeyProgress"><b>Ключи DARK CAVE: {state.darkCaveKeys} / {REQUIRED_KEYS}</b><span>{state.darkCaveUnlocked ? "Ворота открыты" : "Ворота закрыты"}</span></div>
-          </section>
-        ) : null}
+        {tab === "keys" ? <section className="efDeepPanel"><h2>Ключи</h2><div className="efKeyProgress"><b>Ключи DARK CAVE: {state.darkCaveKeys} / {REQUIRED_KEYS}</b><span>{state.darkCaveUnlocked ? "Ворота открыты" : "Ворота закрыты"}</span></div></section> : null}
 
         {tab === "history" ? (
           <section className="efDeepPanel">
             <h2>История наград</h2>
             <div className="efHistoryList">
-              {state.rewardHistory.length ? state.rewardHistory.map((item) => (
-                <div key={item.id} className={item.tone}>
-                  <span>{item.label}</span>
-                  <b>{format(item.amount)} · x{item.multiplier}</b>
-                  <em>{statusText(item.status)}</em>
-                </div>
-              )) : <p>История пока пустая.</p>}
+              {state.rewardHistory.length ? state.rewardHistory.map((item) => <div key={item.id} className={item.tone}><span>{item.label}</span><b>{format(item.amount)} · x{item.multiplier}</b><em>{statusText(item.status)}</em></div>) : <p>История пока пустая.</p>}
             </div>
           </section>
         ) : null}
 
         {tab === "skins" ? (
           <section className="efSkinPreviewGrid">
-            {RARE_SKINS.map((skin) => (
-              <article key={skin.id} className={`efSkinPreviewCard ${state.unlockedRareSkins[skin.id] ? "unlocked" : "locked"}`}>
-                <div>{skin.glow}</div>
-                <span>{skin.rarity}</span>
-                <h2>{skin.title}</h2>
-                <p>{state.unlockedRareSkins[skin.id] ? "Открыт" : "Не открыт"}</p>
-              </article>
-            ))}
+            {RARE_SKINS.map((skin) => <article key={skin.id} className={`efSkinPreviewCard ${state.unlockedRareSkins[skin.id] ? "unlocked" : "locked"}`}><div>{skin.glow}</div><span>{skin.rarity}</span><h2>{skin.title}</h2><p>{state.unlockedRareSkins[skin.id] ? "Открыт" : "Не открыт"}</p></article>)}
           </section>
         ) : null}
       </section>
 
       <style>{`
-        .efDeepTreasures{min-height:100vh;min-height:100dvh;background:radial-gradient(circle at 50% -10%,rgba(31,213,255,.20),transparent 34%),radial-gradient(circle at 50% 115%,rgba(2,3,12,.88),#020814 50%),linear-gradient(180deg,#031827,#020713);color:#ecfbff;font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;overflow-x:hidden}.efDeepGlow{position:fixed;inset:0;pointer-events:none;overflow:hidden}.efDeepGlow:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(255,255,255,.025),transparent,rgba(82,218,255,.035))}.efDeepGlow i{position:absolute;border-radius:999px;background:rgba(116,230,255,.45);box-shadow:0 0 28px rgba(53,216,255,.35);animation:efDeepRise 10s linear infinite}.efDeepGlow i:nth-child(1){left:12%;bottom:-40px;width:8px;height:8px}.efDeepGlow i:nth-child(2){left:67%;bottom:-60px;width:11px;height:11px;animation-delay:-4s}.efDeepGlow i:nth-child(3){left:86%;bottom:-50px;width:6px;height:6px;animation-delay:-7s}@keyframes efDeepRise{to{transform:translateY(-110vh);opacity:.15}}.efDeepShell{position:relative;z-index:1;width:min(1320px,calc(100vw - 28px));margin:0 auto;padding:max(18px,env(safe-area-inset-top)) 0 calc(38px + env(safe-area-inset-bottom));display:grid;gap:16px}.efDeepHeader{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:center}.efDeepHeader>div span{display:block;color:#8beaff;font-size:12px;font-weight:1000;letter-spacing:.18em}.efDeepHeader h1{font-size:clamp(38px,7vw,86px);line-height:.9;margin:8px 0;text-transform:uppercase}.efDeepHeader p{margin:0;color:rgba(236,251,255,.72);max-width:760px}.efDeepBack,.efDeepTabs button,.efDeepActions button,.efDeepPanel button,.efChestGrid button{appearance:none;font-family:inherit;cursor:pointer;touch-action:manipulation}.efDeepBack{border:1px solid rgba(100,220,255,.25);background:rgba(2,17,32,.64);color:#ecfbff;border-radius:999px;padding:12px 16px;font-weight:1000}.efDeepWallet{display:grid;gap:7px;min-width:190px}.efDeepWallet b,.efDeepMessage,.efDeepPanel,.efDeepRouletteCard,.efPendingReward,.efSkinPreviewCard{border:1px solid rgba(95,220,255,.23);background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.026)),rgba(3,20,36,.68);box-shadow:0 24px 80px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.10);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}.efDeepWallet b{border-radius:14px;padding:10px 12px;text-align:right}.efDeepTabs{display:flex;gap:9px;overflow-x:auto;padding-bottom:2px}.efDeepTabs button{white-space:nowrap;border:1px solid rgba(95,220,255,.18);background:rgba(2,17,32,.58);color:#ecfbff;border-radius:999px;padding:12px 15px;font-weight:1000}.efDeepTabs button.active{background:linear-gradient(90deg,rgba(53,216,255,.24),rgba(255,214,102,.16));border-color:rgba(255,214,102,.42);box-shadow:0 0 24px rgba(53,216,255,.13)}.efDeepMessage{border-radius:18px;padding:13px 16px;color:#d8f8ff;font-weight:900}.efDeepGrid{display:grid;grid-template-columns:minmax(280px,1.05fr) minmax(260px,.75fr) minmax(260px,.72fr);gap:16px;align-items:start}.efDeepRouletteCard,.efDeepPanel{border-radius:28px;padding:18px}.efRouletteWheel{position:relative;width:min(100%,430px);aspect-ratio:1;margin:0 auto 18px;border-radius:999px;border:1px solid rgba(255,214,102,.35);background:conic-gradient(from 0deg,rgba(255,255,255,.10),rgba(53,216,255,.18),rgba(255,214,102,.17),rgba(186,92,255,.18),rgba(255,255,255,.10));box-shadow:inset 0 0 80px rgba(0,0,0,.42),0 0 70px rgba(53,216,255,.16);display:grid;place-items:center;overflow:hidden}.efRouletteWheel[data-spin="true"]{animation:efWheelPulse 1.2s ease-in-out infinite alternate}@keyframes efWheelPulse{to{filter:brightness(1.25)}}.efRouletteWheel span{position:absolute;inset:22px;text-align:center;font-size:11px;font-weight:1000;color:rgba(236,251,255,.72);transform-origin:center}.efRouletteWheel strong{width:38%;aspect-ratio:1;border-radius:999px;display:grid;place-items:center;text-align:center;padding:12px;background:rgba(2,10,22,.84);border:1px solid rgba(255,214,102,.45);font-size:clamp(18px,3vw,28px);box-shadow:0 0 38px rgba(255,214,102,.13)}.efDeepActions{display:flex;flex-wrap:wrap;gap:10px}.efDeepActions button,.efDeepPanel button{border:0;border-radius:999px;min-height:48px;padding:0 18px;background:linear-gradient(90deg,#35d8ff,#ffd666);color:#03111d;font-weight:1000}.efDeepActions button:disabled{opacity:.45;cursor:not-allowed}.efPendingReward{border-radius:22px;padding:16px}.efPendingReward h2,.efDeepPanel h2{margin:4px 0 8px}.efPendingReward span,.efDeepPanel p{color:rgba(236,251,255,.72)}.efChanceList,.efHistoryList{display:grid;gap:9px}.efChanceList div,.efHistoryList div{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;border-radius:14px;padding:10px 12px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.075)}.legendary,.efChanceList .legendary,.efHistoryList .legendary{border-color:rgba(255,214,102,.40)!important;box-shadow:0 0 26px rgba(255,214,102,.10)}.mythic,.efChanceList .mythic,.efHistoryList .mythic{border-color:rgba(207,112,255,.48)!important;box-shadow:0 0 34px rgba(207,112,255,.18)}.rare{border-color:rgba(59,139,255,.32)!important}.epic{border-color:rgba(142,100,255,.34)!important}.efChestPanel p{line-height:1.45}.efChestGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.efChestGrid button{min-height:116px;border-radius:22px;border:1px solid rgba(255,214,102,.24);background:rgba(255,255,255,.06);color:#ecfbff;font-size:30px;font-weight:1000;display:grid;place-items:center}.efChestGrid button span{font-size:12px;color:rgba(236,251,255,.72)}.efChestGrid button.win{background:rgba(50,255,174,.16);border-color:rgba(50,255,174,.42)}.efChestGrid button.fail{background:rgba(255,62,96,.16);border-color:rgba(255,62,96,.42)}.efDeepGate{display:grid;grid-template-columns:minmax(280px,.9fr) minmax(280px,1fr);gap:16px;align-items:stretch}.efGateVisual{min-height:420px;border-radius:32px;border:1px solid rgba(255,214,102,.24);background:radial-gradient(circle at 50% 30%,rgba(53,216,255,.17),transparent 34%),linear-gradient(180deg,rgba(2,8,18,.22),rgba(0,0,0,.44));display:grid;place-items:center;text-align:center;position:relative;overflow:hidden}.efGateVisual span{font-size:82px;filter:drop-shadow(0 0 24px rgba(255,214,102,.35))}.efGateVisual b{position:absolute;bottom:28px;font-size:clamp(30px,5vw,62px);letter-spacing:.12em}.efGateVisual i{position:absolute;inset:auto 18% 110px;height:2px;background:linear-gradient(90deg,transparent,#35d8ff,transparent);box-shadow:0 0 28px #35d8ff}.efKeyProgress{display:grid;gap:8px;padding:20px;border-radius:20px;background:rgba(255,255,255,.055);border:1px solid rgba(255,214,102,.22)}.efKeyProgress b{font-size:28px}.efKeyProgress span{color:#ffd666;font-weight:1000}.efSkinPreviewGrid{display:grid;grid-template-columns:repeat(2,minmax(260px,1fr));gap:16px}.efSkinPreviewCard{border-radius:28px;padding:24px;min-height:260px;display:grid;align-content:end;position:relative;overflow:hidden}.efSkinPreviewCard div{position:absolute;right:22px;top:18px;font-size:60px;filter:drop-shadow(0 0 26px rgba(255,214,102,.3))}.efSkinPreviewCard h2{font-size:34px;margin:6px 0}.efSkinPreviewCard.locked{filter:saturate(.62);opacity:.76}.efSkinPreviewCard.unlocked{border-color:rgba(255,214,102,.45);box-shadow:0 0 70px rgba(255,214,102,.12)}@media(max-width:980px){.efDeepHeader{grid-template-columns:1fr}.efDeepWallet{grid-template-columns:repeat(3,1fr)}.efDeepWallet b{text-align:left}.efDeepGrid,.efDeepGate,.efSkinPreviewGrid{grid-template-columns:1fr}}@media(max-width:620px){.efDeepShell{width:min(100%,calc(100vw - 18px))}.efDeepWallet{grid-template-columns:1fr}.efDeepTabs button{padding:10px 12px;font-size:12px}.efDeepRouletteCard,.efDeepPanel{border-radius:20px;padding:14px}.efChestGrid button{min-height:92px}.efGateVisual{min-height:300px}}
+        .efDeepTreasures{min-height:100vh;min-height:100dvh;background:radial-gradient(circle at 50% -10%,rgba(31,213,255,.20),transparent 34%),radial-gradient(circle at 50% 115%,rgba(2,3,12,.88),#020814 50%),linear-gradient(180deg,#031827,#020713);color:#ecfbff;font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;overflow-x:hidden}.efDeepGlow{position:fixed;inset:0;pointer-events:none;overflow:hidden}.efDeepGlow i{position:absolute;border-radius:999px;background:rgba(116,230,255,.45);box-shadow:0 0 28px rgba(53,216,255,.35);animation:efDeepRise 10s linear infinite}.efDeepGlow i:nth-child(1){left:12%;bottom:-40px;width:8px;height:8px}.efDeepGlow i:nth-child(2){left:67%;bottom:-60px;width:11px;height:11px;animation-delay:-4s}.efDeepGlow i:nth-child(3){left:86%;bottom:-50px;width:6px;height:6px;animation-delay:-7s}@keyframes efDeepRise{to{transform:translateY(-110vh);opacity:.15}}.efDeepShell{position:relative;z-index:1;width:min(1320px,calc(100vw - 28px));margin:0 auto;padding:max(18px,env(safe-area-inset-top)) 0 calc(38px + env(safe-area-inset-bottom));display:grid;gap:16px}.efDeepHeader{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:center}.efDeepHeader>div span{display:block;color:#8beaff;font-size:12px;font-weight:1000;letter-spacing:.18em}.efDeepHeader h1{font-size:clamp(38px,7vw,86px);line-height:.9;margin:8px 0;text-transform:uppercase}.efDeepHeader p{margin:0;color:rgba(236,251,255,.72);max-width:760px}.efDeepBack,.efDeepTabs button,.efDeepActions button,.efDeepPanel button,.efChestGrid button{appearance:none;font-family:inherit;cursor:pointer;touch-action:manipulation}.efDeepBack{border:1px solid rgba(100,220,255,.25);background:rgba(2,17,32,.64);color:#ecfbff;border-radius:999px;padding:12px 16px;font-weight:1000}.efDeepWallet{display:grid;gap:7px;min-width:190px}.efDeepWallet b,.efDeepMessage,.efDeepPanel,.efDeepRouletteCard,.efPendingReward,.efSkinPreviewCard{border:1px solid rgba(95,220,255,.23);background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.026)),rgba(3,20,36,.68);box-shadow:0 24px 80px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.10);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}.efDeepWallet b{border-radius:14px;padding:10px 12px;text-align:right}.efDeepTabs{display:flex;gap:9px;overflow-x:auto;padding-bottom:2px}.efDeepTabs button{white-space:nowrap;border:1px solid rgba(95,220,255,.18);background:rgba(2,17,32,.58);color:#ecfbff;border-radius:999px;padding:12px 15px;font-weight:1000}.efDeepTabs button.active{background:linear-gradient(90deg,rgba(53,216,255,.24),rgba(255,214,102,.16));border-color:rgba(255,214,102,.42);box-shadow:0 0 24px rgba(53,216,255,.13)}.efDeepMessage{border-radius:18px;padding:13px 16px;color:#d8f8ff;font-weight:900}.efDeepGrid{display:grid;grid-template-columns:minmax(280px,1.05fr) minmax(260px,.75fr) minmax(260px,.72fr);gap:16px;align-items:start}.efDeepRouletteCard,.efDeepPanel{border-radius:28px;padding:18px}.efRouletteWheel{position:relative;width:min(100%,430px);aspect-ratio:1;margin:0 auto 18px;border-radius:999px;border:1px solid rgba(255,214,102,.35);background:conic-gradient(from 0deg,rgba(255,255,255,.10),rgba(53,216,255,.18),rgba(255,214,102,.17),rgba(186,92,255,.18),rgba(255,255,255,.10));box-shadow:inset 0 0 80px rgba(0,0,0,.42),0 0 70px rgba(53,216,255,.16);display:grid;place-items:center;overflow:hidden}.efRouletteWheel[data-spin="true"]{animation:efWheelPulse 1.2s ease-in-out infinite alternate}@keyframes efWheelPulse{to{filter:brightness(1.25)}}.efRouletteWheel span{position:absolute;inset:22px;text-align:center;font-size:11px;font-weight:1000;color:rgba(236,251,255,.72);transform-origin:center}.efRouletteWheel strong{width:38%;aspect-ratio:1;border-radius:999px;display:grid;place-items:center;text-align:center;padding:12px;background:rgba(2,10,22,.84);border:1px solid rgba(255,214,102,.45);font-size:clamp(18px,3vw,28px);box-shadow:0 0 38px rgba(255,214,102,.13)}.efDeepActions{display:flex;flex-wrap:wrap;gap:10px}.efDeepActions button,.efDeepPanel button{border:0;border-radius:999px;min-height:48px;padding:0 18px;background:linear-gradient(90deg,#35d8ff,#ffd666);color:#03111d;font-weight:1000}.efDeepActions button:disabled{opacity:.45;cursor:not-allowed}.efPendingReward{border-radius:22px;padding:16px}.efPendingReward h2,.efDeepPanel h2{margin:4px 0 8px}.efPendingReward span,.efDeepPanel p{color:rgba(236,251,255,.72)}.efChanceList,.efHistoryList{display:grid;gap:9px}.efChanceList div,.efHistoryList div{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;border-radius:14px;padding:10px 12px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.075)}.legendary,.efChanceList .legendary,.efHistoryList .legendary{border-color:rgba(255,214,102,.40)!important;box-shadow:0 0 26px rgba(255,214,102,.10)}.mythic,.efChanceList .mythic,.efHistoryList .mythic{border-color:rgba(207,112,255,.48)!important;box-shadow:0 0 34px rgba(207,112,255,.18)}.rare{border-color:rgba(59,139,255,.32)!important}.epic{border-color:rgba(142,100,255,.34)!important}.efChestPanel p{line-height:1.45}.efChestGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.efChestGrid button{min-height:116px;border-radius:22px;border:1px solid rgba(255,214,102,.24);background:rgba(255,255,255,.06);color:#ecfbff;font-size:30px;font-weight:1000;display:grid;place-items:center}.efChestGrid button span{font-size:12px;color:rgba(236,251,255,.72)}.efChestGrid button.win{background:rgba(50,255,174,.16);border-color:rgba(50,255,174,.42)}.efChestGrid button.fail{background:rgba(255,62,96,.16);border-color:rgba(255,62,96,.42)}.efDeepGate{display:grid;grid-template-columns:minmax(280px,.9fr) minmax(280px,1fr);gap:16px;align-items:stretch}.efGateVisual{min-height:420px;border-radius:32px;border:1px solid rgba(255,214,102,.24);background:radial-gradient(circle at 50% 30%,rgba(53,216,255,.17),transparent 34%),linear-gradient(180deg,rgba(2,8,18,.22),rgba(0,0,0,.44));display:grid;place-items:center;text-align:center;position:relative;overflow:hidden}.efGateVisual span{font-size:82px;filter:drop-shadow(0 0 24px rgba(255,214,102,.35))}.efGateVisual b{position:absolute;bottom:28px;font-size:clamp(30px,5vw,62px);letter-spacing:.12em}.efGateVisual i{position:absolute;inset:auto 18% 110px;height:2px;background:linear-gradient(90deg,transparent,#35d8ff,transparent);box-shadow:0 0 28px #35d8ff}.efKeyProgress{display:grid;gap:8px;padding:20px;border-radius:20px;background:rgba(255,255,255,.055);border:1px solid rgba(255,214,102,.22)}.efKeyProgress b{font-size:28px}.efKeyProgress span{color:#ffd666;font-weight:1000}.efSkinPreviewGrid{display:grid;grid-template-columns:repeat(2,minmax(260px,1fr));gap:16px}.efSkinPreviewCard{border-radius:28px;padding:24px;min-height:260px;display:grid;align-content:end;position:relative;overflow:hidden}.efSkinPreviewCard div{position:absolute;right:22px;top:18px;font-size:60px;filter:drop-shadow(0 0 26px rgba(255,214,102,.3))}.efSkinPreviewCard h2{font-size:34px;margin:6px 0}.efSkinPreviewCard.locked{filter:saturate(.62);opacity:.76}.efSkinPreviewCard.unlocked{border-color:rgba(255,214,102,.45);box-shadow:0 0 70px rgba(255,214,102,.12)}@media(max-width:980px){.efDeepHeader{grid-template-columns:1fr}.efDeepWallet{grid-template-columns:repeat(3,1fr)}.efDeepWallet b{text-align:left}.efDeepGrid,.efDeepGate,.efSkinPreviewGrid{grid-template-columns:1fr}}@media(max-width:620px){.efDeepShell{width:min(100%,calc(100vw - 18px))}.efDeepWallet{grid-template-columns:1fr}.efDeepTabs button{padding:10px 12px;font-size:12px}.efDeepRouletteCard,.efDeepPanel{border-radius:20px;padding:14px}.efChestGrid button{min-height:92px}.efGateVisual{min-height:300px}}
       `}</style>
     </main>
   );
