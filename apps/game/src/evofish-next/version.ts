@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-left-mirror-rotation-6.11.7";
+export const EVOFISH_NEXT_VERSION = "next-legacy-fish-renderer-6.11.8";
