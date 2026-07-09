@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-shark-silhouette-lock-6.11.0";
+export const EVOFISH_NEXT_VERSION = "next-high-pearl-skin-prices-6.11.1";
