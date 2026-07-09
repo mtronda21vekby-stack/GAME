@@ -1,7 +1,7 @@
 import type { EvoFishCurrency, EvoFishSkinDefinition } from "../core/types";
 
 export const EVOFISH_SKIN_ASSET_BASE = "/game/skins/custom";
-export const EVOFISH_SKIN_ASSET_VERSION = "fish-skins-9";
+export const EVOFISH_SKIN_ASSET_VERSION = "shark-silhouette-lock-10";
 
 const DEFAULT_BLUE_FISH_ASSET = new URL("../assets/skins/default-blue-fish.png", import.meta.url).href;
 const NEON_KOI_ASSET = new URL("../assets/skins/neon-koi.png", import.meta.url).href;
@@ -170,32 +170,32 @@ export const EVOFISH_SKINS: EvoFishSkinDefinition[] = [
     accent: "#ffffff"
   }, "pirate", ["character"]),
 
-  pearlSkin("shark_classic", "Акула Классик", "shark", 4000, "premium", "Классический серый скин для акулы.", {
+  pearlSkin("shark_classic", "Акула Классик", "shark", 4000, "premium", "Классический скин на зафиксированном силуэте акулы.", {
     primary: "#bfc7d0",
     secondary: "#546070",
     accent: "#ffffff"
-  }),
-  pearlSkin("shark_tiger", "Тигровая акула", "shark", 8000, "rare", "Полосатая, агрессивная.", {
+  }, "none", ["shark-base", "locked-silhouette"]),
+  pearlSkin("shark_tiger", "Тигровая акула", "shark", 8000, "rare", "Полосатая акула на базовом зафиксированном силуэте.", {
     primary: "#d4c4a6",
     secondary: "#6b5a44",
     accent: "#ffffff"
-  }, "tiger", ["predator"]),
-  coralSkin("shark_shadow", "Акула Тень", "shark", 26, "rare", "Тёмная, агрессивная.", {
+  }, "tiger", ["predator", "shark-base", "locked-silhouette"]),
+  coralSkin("shark_shadow", "Акула Тень", "shark", 26, "rare", "Тёмная вариация того же силуэта акулы.", {
     primary: "#6d747c",
     secondary: "#14171b",
     accent: "#ff5a5a",
     shadow: "#05070a"
-  }, "none", ["dark"]),
-  pearlSkin("shark_azure", "Акула Азур", "shark", 12000, "rare", "Синий холодный тон.", {
+  }, "none", ["dark", "shark-base", "locked-silhouette"]),
+  pearlSkin("shark_azure", "Акула Азур", "shark", 12000, "rare", "Синяя вариация того же силуэта акулы.", {
     primary: "#78c8ff",
     secondary: "#142850",
     accent: "#ffffff"
-  }),
-  coralSkin("shark_white", "Белая акула", "shark", 40, "epic", "Контрастная белая.", {
+  }, "none", ["shark-base", "locked-silhouette"]),
+  coralSkin("shark_white", "Белая акула", "shark", 40, "epic", "Белая вариация того же силуэта акулы.", {
     primary: "#eef6ff",
     secondary: "#586274",
     accent: "#0b0f14"
-  }, "none", ["contrast"]),
+  }, "none", ["contrast", "shark-base", "locked-silhouette"]),
 
   pearlSkin("mega_deep", "Мегалодон Глубин", "megalodon", 18000, "rare", "Тёмный, тяжёлый силуэт.", {
     primary: "#1f2a3b",
