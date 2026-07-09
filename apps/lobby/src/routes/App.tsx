@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { Router } from "../router";
 import { Lobby } from "./Lobby";
+import { Leaderboard } from "./Leaderboard";
 import { attachConsoleAnalytics, track } from "@blackcrown/core";
 
 export function App() {
@@ -11,7 +12,10 @@ export function App() {
     <Router
       routes={[
         { path: "/", element: <Lobby /> },
-        { path: "/lobby", element: <Lobby /> }
+        { path: "/lobby", element: <Lobby /> },
+        { path: "/leaderboard", element: <Leaderboard /> },
+        { path: "/top", element: <Leaderboard /> },
+        { path: "/game/progress", element: <Leaderboard /> }
       ]}
     />
   );
