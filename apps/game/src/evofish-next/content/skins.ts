@@ -170,57 +170,57 @@ export const EVOFISH_SKINS: EvoFishSkinDefinition[] = [
     accent: "#ffffff"
   }, "pirate", ["character"]),
 
-  pearlSkin("shark_classic", "Акула Классик", "shark", 4000, "premium", "Классический скин на зафиксированном силуэте акулы.", {
+  pearlSkin("shark_classic", "Акула Классик", "shark", 100000, "premium", "Классический скин на зафиксированном силуэте акулы.", {
     primary: "#bfc7d0",
     secondary: "#546070",
     accent: "#ffffff"
   }, "none", ["shark-base", "locked-silhouette"]),
-  pearlSkin("shark_tiger", "Тигровая акула", "shark", 8000, "rare", "Полосатая акула на базовом зафиксированном силуэте.", {
+  pearlSkin("shark_tiger", "Тигровая акула", "shark", 200000, "rare", "Полосатая акула на базовом зафиксированном силуэте.", {
     primary: "#d4c4a6",
     secondary: "#6b5a44",
     accent: "#ffffff"
   }, "tiger", ["predator", "shark-base", "locked-silhouette"]),
-  coralSkin("shark_shadow", "Акула Тень", "shark", 26, "rare", "Тёмная вариация того же силуэта акулы.", {
+  pearlSkin("shark_shadow", "Акула Тень", "shark", 300000, "rare", "Тёмная вариация того же силуэта акулы.", {
     primary: "#6d747c",
     secondary: "#14171b",
     accent: "#ff5a5a",
     shadow: "#05070a"
   }, "none", ["dark", "shark-base", "locked-silhouette"]),
-  pearlSkin("shark_azure", "Акула Азур", "shark", 12000, "rare", "Синяя вариация того же силуэта акулы.", {
+  pearlSkin("shark_azure", "Акула Азур", "shark", 400000, "rare", "Синяя вариация того же силуэта акулы.", {
     primary: "#78c8ff",
     secondary: "#142850",
     accent: "#ffffff"
   }, "none", ["shark-base", "locked-silhouette"]),
-  coralSkin("shark_white", "Белая акула", "shark", 40, "epic", "Белая вариация того же силуэта акулы.", {
+  pearlSkin("shark_white", "Белая акула", "shark", 500000, "epic", "Белая вариация того же силуэта акулы.", {
     primary: "#eef6ff",
     secondary: "#586274",
     accent: "#0b0f14"
   }, "none", ["contrast", "shark-base", "locked-silhouette"]),
 
-  pearlSkin("mega_deep", "Мегалодон Глубин", "megalodon", 18000, "rare", "Тёмный, тяжёлый силуэт.", {
+  pearlSkin("mega_deep", "Мегалодон Глубин", "megalodon", 400000, "rare", "Тёмный, тяжёлый силуэт.", {
     primary: "#1f2a3b",
     secondary: "#0a0f18",
     accent: "#7cffc8",
     glow: "#7cffc8"
   }, "glow", ["apex"]),
-  coralSkin("mega_bone", "Костяной Мегалодон", "megalodon", 48, "epic", "Костяные пластины и шрамы.", {
+  pearlSkin("mega_bone", "Костяной Мегалодон", "megalodon", 800000, "epic", "Костяные пластины и шрамы.", {
     primary: "#d2d2c8",
     secondary: "#464650",
     accent: "#ffffff"
   }, "bone", ["armor"]),
-  pearlSkin("mega_lava", "Мега Лава", "megalodon", 32000, "epic", "Трещины лавы и жар.", {
+  pearlSkin("mega_lava", "Мега Лава", "megalodon", 1500000, "epic", "Трещины лавы и жар.", {
     primary: "#ff6e46",
     secondary: "#280a0a",
     accent: "#ffd778",
     glow: "#ff8c46"
   }, "cracks", ["fire"]),
-  coralSkin("mega_ice", "Мега Лёд", "megalodon", 64, "epic", "Ледяные пластины.", {
+  pearlSkin("mega_ice", "Мега Лёд", "megalodon", 2500000, "epic", "Ледяные пластины.", {
     primary: "#aaf0ff",
     secondary: "#143c50",
     accent: "#ffffff",
     glow: "#d8fbff"
   }, "plates", ["ice"]),
-  pearlSkin("mega_nebula", "Мега Туманность", "megalodon", 65000, "legendary", "Космический перелив.", {
+  pearlSkin("mega_nebula", "Мега Туманность", "megalodon", 4000000, "legendary", "Космический перелив.", {
     primary: "#c88cff",
     secondary: "#50a0ff",
     accent: "#ffffff",
