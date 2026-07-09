@@ -12,6 +12,7 @@ import { BetaReport } from "../evofish-next/ui/BetaReport";
 import { DeepTreasuresHub } from "../evofish-next/ui/DeepTreasuresHub";
 import { GameSettingsHub } from "../evofish-next/ui/GameSettingsHub";
 import { Leaderboard } from "../evofish-next/ui/Leaderboard";
+import { LobbySkinCarousel } from "../evofish-next/ui/LobbySkinCarousel";
 import { ProfileHub } from "../evofish-next/ui/ProfileHub";
 import { SeasonHub } from "../evofish-next/ui/SeasonHub";
 import { SkinLab } from "../evofish-next/ui/SkinLab";
@@ -147,6 +148,7 @@ export function App() {
         ]}
         notFound={withBoundary(<BetaHome />)}
       />
+      <LobbySkinCarousel />
       <DeepTreasuresMenuTab />
     </>
   );
