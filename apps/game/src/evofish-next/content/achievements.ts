@@ -137,14 +137,6 @@ export const NEXT_ACHIEVEMENTS: NextAchievementDefinition[] = [
     reward: { xp: 500, pearls: 420, corals: 1 }
   },
   {
-    id: "lvl_30",
-    title: "Акула!",
-    description: "Достигни LV 30 и открой акулу.",
-    metric: "level",
-    target: 30,
-    reward: { xp: 1600, pearls: 1450, corals: 4 }
-  },
-  {
     id: "lvl_45",
     title: "Вход в тёмную зону",
     description: "Достигни LV 45 — порог поздней игры и DARK CAVE.",
@@ -153,12 +145,12 @@ export const NEXT_ACHIEVEMENTS: NextAchievementDefinition[] = [
     reward: { xp: 2800, pearls: 4200, corals: 8 }
   },
   {
-    id: "lvl_60",
-    title: "Мегалодон!",
-    description: "Достигни LV 60 и открой мегалодона.",
+    id: "lvl_50_shark",
+    title: "Акула!",
+    description: "Достигни LV 50 и открой форму акулы.",
     metric: "level",
-    target: 60,
-    reward: { xp: 4200, pearls: 5200, corals: 10 }
+    target: 50,
+    reward: { xp: 3600, pearls: 5200, corals: 10 }
   },
   {
     id: "lvl_80",
@@ -169,12 +161,20 @@ export const NEXT_ACHIEVEMENTS: NextAchievementDefinition[] = [
     reward: { xp: 7600, pearls: 14500, corals: 24 }
   },
   {
-    id: "lvl_100",
-    title: "Король океана",
-    description: "Достигни LV 100. Это верхний рубеж текущей прогрессии.",
+    id: "lvl_100_megalodon",
+    title: "Мегалодон!",
+    description: "Достигни LV 100 и открой форму мегалодона.",
     metric: "level",
     target: 100,
     reward: { xp: 14000, pearls: 32000, corals: 48 }
+  },
+  {
+    id: "lvl_120_ocean_king",
+    title: "Король океана",
+    description: "Достигни LV 120. Это верхний рубеж текущей endgame-прогрессии.",
+    metric: "level",
+    target: 120,
+    reward: { xp: 22000, pearls: 56000, corals: 72 }
   },
   {
     id: "craft_1",
