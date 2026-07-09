@@ -2,6 +2,7 @@
    Purpose:
    - make the selected lobby fish feel alive;
    - remove image-thumbnail selection from the lobby hero;
+   - prevent iOS/Safari from treating the fish as a selectable photo;
    - keep shop/skin vitrines untouched by scoping to the lobby hero/stage. */
 
 @keyframes evofishLobbySelectedFishSwim {
@@ -39,6 +40,31 @@
 @keyframes evofishLobbyArrowPulse {
   0%, 100% { transform: translateY(-50%) scale(1); opacity: 0.84; }
   50% { transform: translateY(-50%) scale(1.08); opacity: 1; }
+}
+
+/* Kill native image behavior on iOS/Safari/Chrome mobile inside the lobby hero.
+   The fish is a game character, not a photo to save/copy. */
+.bcSiteRoot .hubHero,
+.bcSiteRoot .hubHero *,
+.bcSiteRoot .hubSphere,
+.bcSiteRoot .hubSphere *,
+.bcSiteRoot .hubFish,
+.bcSiteRoot .hubFish * {
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+
+.bcSiteRoot .hubHero img,
+.bcSiteRoot .hubSphere img,
+.bcSiteRoot .hubFish img,
+.bcSiteRoot img[src*="/lobby/assets/fish/"] {
+  -webkit-touch-callout: none !important;
+  -webkit-user-drag: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  pointer-events: none !important;
+  touch-action: none !important;
 }
 
 /* Scope to the main lobby hero only. This must not affect shop/skin collection cards. */
