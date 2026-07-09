@@ -19,14 +19,16 @@ export function visualRadiusForFish(form: EvoFishFormId, mass: number, aiType?: 
 
 export function gameplayRadiusForFish(form: EvoFishFormId, mass: number, aiType?: NextEnemyArchetypeId) {
   const visual = visualRadiusForFish(form, mass, aiType);
-  const factor = form === "megalodon" ? 0.53 : form === "shark" ? 0.56 : 0.58;
-  const min = form === "megalodon" ? 34 : form === "shark" ? 26 : 18;
-  const max = form === "megalodon" ? 58 : form === "shark" ? 45 : 36;
+  const factor = form === "megalodon" ? 0.34 : form === "shark" ? 0.36 : 0.38;
+  const min = form === "megalodon" ? 26 : form === "shark" ? 20 : 15;
+  const max = form === "megalodon" ? 44 : form === "shark" ? 34 : 26;
   return clamp(visual * factor, min, max);
 }
 
 export function biteRadiusForFish(form: EvoFishFormId, mass: number, aiType?: NextEnemyArchetypeId) {
-  return gameplayRadiusForFish(form, mass, aiType) * 1.34;
+  const gameplay = gameplayRadiusForFish(form, mass, aiType);
+  const factor = form === "megalodon" ? 1.82 : form === "shark" ? 1.92 : 2.08;
+  return gameplay * factor;
 }
 
 export function entityGameplayRadius(entity: Pick<NextFishEntity, "form" | "mass" | "aiType">) {
@@ -42,5 +44,5 @@ export function contactDistanceForFish(a: Pick<NextFishEntity, "form" | "mass" |
 }
 
 export function biteDistanceForFish(attacker: Pick<NextFishEntity, "form" | "mass" | "aiType">, target: Pick<NextFishEntity, "form" | "mass" | "aiType">) {
-  return entityBiteRadius(attacker) + entityGameplayRadius(target);
+  return entityBiteRadius(attacker) + entityGameplayRadius(target) * 0.86;
 }
