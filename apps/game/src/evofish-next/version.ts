@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-stable-fish-map-hitbox-6.11.2";
+export const EVOFISH_NEXT_VERSION = "next-safe-map-orientation-hitbox-6.11.3";
