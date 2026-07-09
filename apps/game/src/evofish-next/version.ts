@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-endgame-achievements-6.12.0";
+export const EVOFISH_NEXT_VERSION = "next-biome-form-unlocks-6.12.1";
