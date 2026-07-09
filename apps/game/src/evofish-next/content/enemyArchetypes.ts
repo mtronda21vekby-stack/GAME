@@ -100,8 +100,8 @@ function postLevel21Archetype(id: number): NextEnemyArchetype {
 }
 
 export function chooseEnemyArchetype(id: number, threatLevel = 1): NextEnemyArchetype {
-  if (threatLevel >= 48 && id % 17 === 0) return NEXT_ENEMY_ARCHETYPES.leviathan;
-  if (threatLevel >= 40 && id % 19 === 0) return NEXT_ENEMY_ARCHETYPES.apex;
+  // Baseline population deliberately excludes apex/leviathan.
+  // The balance-band system injects only 2-3 big fish per map, far from the player.
   if (threatLevel >= 34 && id % 13 === 0) return NEXT_ENEMY_ARCHETYPES.stalker;
   if (threatLevel >= 28 && id % 11 === 0) return NEXT_ENEMY_ARCHETYPES.brute;
   if (threatLevel >= 22 && threatLevel <= 37) return postLevel21Archetype(id);
