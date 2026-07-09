@@ -22,13 +22,18 @@ function imageAspect(image: HTMLImageElement | null, entity: NextFishEntity) {
   return entity.form === "fish" ? 0.42 : 0.38;
 }
 
+function facingLeft(entity: NextFishEntity) {
+  return Math.cos(entity.angle || 0) < 0;
+}
+
 export function drawFishRenderer2(ctx: CanvasRenderingContext2D, entity: NextFishEntity, options: FishRenderer2Options) {
   const width = options.radius * formScale(entity);
   const height = width * imageAspect(options.image, entity);
 
   ctx.save();
   ctx.translate(entity.x, entity.y);
-  ctx.rotate(entity.angle || 0);
+  // Stability lock: fish sprites stay horizontal so the eye never rotates downward/upside-down.
+  if (facingLeft(entity)) ctx.scale(-1, 1);
   ctx.globalAlpha = options.alpha;
 
   if (options.image?.complete && options.image.naturalWidth > 0) {
