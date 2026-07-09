@@ -6,6 +6,7 @@ import { MapShaderOverlay } from "./MapShaderOverlay";
 import { NextPlaytest } from "./NextPlaytest";
 import { RunCompleteOverlay } from "./RunCompleteOverlay";
 import { TrenchMapEntryOverlay } from "./TrenchMapEntryOverlay";
+import { TrenchRewardSafetyOverlay } from "./TrenchRewardSafetyOverlay";
 
 export function NextPlaySession() {
   return (
@@ -14,6 +15,7 @@ export function NextPlaySession() {
       <MapShaderOverlay />
       <HudPolishOverlay />
       <TrenchMapEntryOverlay />
+      <TrenchRewardSafetyOverlay />
       <CraftQuickOverlay />
       <FpsCounterOverlay />
       <RunCompleteOverlay />
