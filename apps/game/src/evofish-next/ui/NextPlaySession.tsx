@@ -4,6 +4,7 @@ import { FpsCounterOverlay } from "./FpsCounterOverlay";
 import { MapShaderOverlay } from "./MapShaderOverlay";
 import { NextPlaytest } from "./NextPlaytest";
 import { NoMapQuickBarOverlay } from "./NoMapQuickBarOverlay";
+import { PanelHardLayoutOverlay } from "./PanelHardLayoutOverlay";
 import { RunCompleteOverlay } from "./RunCompleteOverlay";
 import { SettingsPanelCompactOverlay } from "./SettingsPanelCompactOverlay";
 import { TrenchMapEntryOverlay } from "./TrenchMapEntryOverlay";
@@ -16,6 +17,7 @@ export function NextPlaySession() {
       <MapShaderOverlay />
       <NoMapQuickBarOverlay />
       <SettingsPanelCompactOverlay />
+      <PanelHardLayoutOverlay />
       <TrenchMapEntryOverlay />
       <TrenchRewardSafetyOverlay />
       <CraftQuickOverlay />
