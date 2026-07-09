@@ -1,4 +1,5 @@
 import React from "react";
+import { installFishMaterialPatch } from "../render/fishMaterialPatch";
 import { installFishOrientationPatch } from "../render/fishOrientationPatch";
 import { CraftQuickOverlay } from "./CraftQuickOverlay";
 import { FpsCounterOverlay } from "./FpsCounterOverlay";
@@ -8,6 +9,7 @@ import { NextPlaytest } from "./NextPlaytest";
 import { RunCompleteOverlay } from "./RunCompleteOverlay";
 
 installFishOrientationPatch();
+installFishMaterialPatch();
 
 export function NextPlaySession() {
   return (
