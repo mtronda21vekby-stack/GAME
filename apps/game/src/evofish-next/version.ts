@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-remove-map-fix-fish-6.11.5";
+export const EVOFISH_NEXT_VERSION = "next-no-map-rotation-fix-6.11.6";
