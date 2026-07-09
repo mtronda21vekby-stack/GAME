@@ -1,4 +1,6 @@
 import type { NextEngineState, NextFishEntity, NextPlayerState } from "../core/engineTypes";
+import { contactDistanceForFish } from "../content/fishHitbox";
+import { respawnSafetyRules } from "../content/balanceBands";
 import { enemyThreatLevel, makeEnemy, radiusFromForm } from "./createWorld";
 import { awardKillReward } from "./progressionSystem";
 
@@ -39,10 +41,18 @@ function addFloat(state: NextEngineState, x: number, y: number, text: string, ki
   state.floats.push({ id: state.nextFloatId++, x, y, text, ttl: 0.75, kind });
 }
 
-function respawnEnemy(state: NextEngineState) {
+function enemyBand(enemy: NextFishEntity): "normal" | "strong" | "big" {
+  if (enemy.balanceBand === "normal" || enemy.balanceBand === "strong" || enemy.balanceBand === "big") return enemy.balanceBand;
+  if (enemy.aiType === "apex" || enemy.aiType === "leviathan" || enemy.aiType === "stalker") return "big";
+  if (enemy.aiType === "brute" || enemy.aiType === "hunter") return "strong";
+  return "normal";
+}
+
+function respawnEnemy(state: NextEngineState, defeated?: NextFishEntity) {
   const player = state.player;
   const threat = enemyThreatLevel(player.level, player.tier, player.mass);
-  return makeEnemy(1000 + state.stats.kills + state.frame, state.config, threat, player.mass, player.x, player.y, 720, player.level);
+  const rules = respawnSafetyRules(player.level);
+  return makeEnemy(1000 + state.stats.kills + state.frame, state.config, threat, player.mass, player.x, player.y, rules.safeRadius, player.level, defeated ? enemyBand(defeated) : "normal");
 }
 
 function devourEnemy(state: NextEngineState, enemy: NextFishEntity, index: number) {
@@ -57,7 +67,7 @@ function devourEnemy(state: NextEngineState, enemy: NextFishEntity, index: numbe
   state.stats.lastEvent = `Поглощение +${reward.xp} XP +${reward.pearls} жемчуг${reward.corals ? ` +${reward.corals} коралл` : ""} +${massGain.toFixed(2)} Mass`;
   addFloat(state, enemy.x, enemy.y, `EAT +${reward.xp}XP +${reward.pearls}P`, "kill");
   if (reward.corals) addFloat(state, enemy.x, enemy.y - enemy.radius * 2.5, `+${reward.corals} CORAL`, "kill");
-  state.enemies.splice(index, 1, respawnEnemy(state));
+  state.enemies.splice(index, 1, respawnEnemy(state, enemy));
 }
 
 function contactDamage(state: NextEngineState, enemy: NextFishEntity) {
@@ -70,8 +80,13 @@ function contactDamage(state: NextEngineState, enemy: NextFishEntity) {
   player.hp = Math.max(0, player.hp - damage);
   player.hitT = 0.22;
   player.invulnT = 0.55;
-  player.vx -= Math.cos(player.angle) * 80;
-  player.vy -= Math.sin(player.angle) * 80;
+
+  const dx = player.x - enemy.x;
+  const dy = player.y - enemy.y;
+  const length = Math.hypot(dx, dy) || 1;
+  player.vx += (dx / length) * 96;
+  player.vy += (dy / length) * 96;
+
   state.stats.lastEvent = gap > DEVOUR_MAX_LEVEL_GAP ? `Слишком высокий LV ${npcCombatLevel(enemy)} · Урон -${damage}` : `Урон -${damage}`;
   addFloat(state, player.x, player.y - player.radius * 2, gap > DEVOUR_MAX_LEVEL_GAP ? `LV ${npcCombatLevel(enemy)}` : `-${damage} HP`, "danger");
 }
@@ -81,9 +96,11 @@ export function updateCollisionSystem(state: NextEngineState) {
 
   for (let index = state.enemies.length - 1; index >= 0; index -= 1) {
     const enemy = state.enemies[index];
-    const distance = Math.hypot(enemy.x - player.x, enemy.y - player.y);
+    const contactDistance = contactDistanceForFish(player, enemy);
+    const dx = enemy.x - player.x;
+    const dy = enemy.y - player.y;
 
-    if (distance < player.radius + enemy.radius) {
+    if (dx * dx + dy * dy < contactDistance * contactDistance) {
       if (canPlayerDevour(player, enemy)) devourEnemy(state, enemy, index);
       else contactDamage(state, enemy);
     }
