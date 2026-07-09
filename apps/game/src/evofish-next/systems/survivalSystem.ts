@@ -1,6 +1,7 @@
 import type { EvoFishFormId } from "../core/types";
 import type { NextEngineState } from "../core/engineTypes";
 import { awardNextAccountRun, calculateRunAccountXp } from "../content/account";
+import { enemyBandForIndex, maxNearbyEnemyLevel, respawnSafetyRules } from "../content/balanceBands";
 import { getMutationBonus } from "../content/mutations";
 import { xpToNextLevel, xpToNextTier } from "../content/progression";
 import { damageFromForm, enemyThreatLevel, hpFromForm, makeEnemy, massFromForm, radiusFromForm, safePlayerSpawn, speedFromForm } from "./createWorld";
@@ -113,7 +114,7 @@ function startDowned(state: NextEngineState) {
 function rebuildEnemyFieldForFreshRun(state: NextEngineState) {
   const player = state.player;
   const threat = enemyThreatLevel(player.level, player.tier, player.mass);
-  const safeRadius = player.level <= 3 ? 1120 : player.level <= 25 ? 980 : 780;
+  const rules = respawnSafetyRules(player.level);
   const count = Math.max(1, Math.floor(state.config.enemyTarget || 46));
 
   state.enemies = Array.from({ length: count }, (_, index) => makeEnemy(
@@ -123,19 +124,15 @@ function rebuildEnemyFieldForFreshRun(state: NextEngineState) {
     player.mass,
     player.x,
     player.y,
-    safeRadius,
-    player.level
+    rules.safeRadius,
+    player.level,
+    enemyBandForIndex(index, count)
   ));
 
+  const nearbyMax = maxNearbyEnemyLevel(player.level);
   for (const enemy of state.enemies) {
-    if ((enemy.npcLevel || 1) > player.level + 4 && enemy.aiType !== "apex" && enemy.aiType !== "leviathan") {
-      enemy.npcLevel = player.level + 4;
-    }
-    if (enemy.aiType === "apex" || enemy.aiType === "leviathan") {
-      enemy.npcLevel = Math.min(enemy.npcLevel || player.level + 8, player.level + 8);
-      enemy.x = Math.max(180, Math.min(state.config.width - 180, enemy.x));
-      enemy.y = Math.max(180, Math.min(state.config.height - 180, enemy.y));
-    }
+    const distance = Math.hypot(enemy.x - player.x, enemy.y - player.y);
+    if (distance < rules.safeRadius && (enemy.npcLevel || 1) > nearbyMax) enemy.npcLevel = nearbyMax;
   }
 }
 
