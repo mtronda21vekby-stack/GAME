@@ -2,10 +2,11 @@ import type { EvoFishEconomyState, EvoFishFormId, EvoFishSkinDefinition } from "
 import type { NextEngineState, NextFishEntity, NextQuestState, NextWorldConfig } from "../core/engineTypes";
 import { defaultNextAccount, normalizeNextAccount, type NextAccountState } from "../content/account";
 import { defaultAchievementState, type NextAchievementState } from "../content/achievements";
-import { chooseEnemyArchetype, type NextEnemyArchetypeId } from "../content/enemyArchetypes";
-import { pickEnemyFamily } from "../content/enemyFamilies";
+import { clampEnemyLevelToBand, enemyBandForIndex, enemyBandRules, respawnSafetyRules, shouldForceBigFish, type EnemyLevelBandKind } from "../content/balanceBands";
 import { defaultCraftState } from "../content/craft";
 import { DARK_CAVE_STORY_TITLE, darkCaveStoryStep } from "../content/darkCaveStory";
+import { chooseEnemyArchetype, NEXT_ENEMY_ARCHETYPES, type NextEnemyArchetypeId } from "../content/enemyArchetypes";
+import { pickEnemyFamily } from "../content/enemyFamilies";
 import { EVOFISH_SHARED_FISH_HITBOX_RADIUS } from "../content/fishHitbox";
 import { EVOFISH_FORMS } from "../content/forms";
 import { defaultMutationState, getMutationBonus, getMutationTotalLevel, type NextMutationState } from "../content/mutations";
@@ -106,7 +107,7 @@ function enemyMaxLevelGap(archetype: NextEnemyArchetypeId, playerLevel: number) 
   return levelAnchor < 30 ? 1 : Math.min(4, 1 + Math.floor(post30 * 0.15));
 }
 
-function enemyNpcLevel(archetype: NextEnemyArchetypeId, threatLevel: number, mass: number, playerMass: number, playerLevel = 1) {
+function enemyNpcLevel(archetype: NextEnemyArchetypeId, threatLevel: number, mass: number, playerMass: number, playerLevel = 1, band: EnemyLevelBandKind = "normal") {
   const base = Math.max(1, Math.floor(threatLevel || 1));
   const levelAnchor = Math.max(1, Math.floor(playerLevel || 1));
   const massPressure = clamp(Math.round((mass - playerMass) * 0.42), -5, 10);
@@ -116,7 +117,8 @@ function enemyNpcLevel(archetype: NextEnemyArchetypeId, threatLevel: number, mas
   const softCap = levelAnchor + enemyMaxLevelGap(archetype, levelAnchor);
   const cappedMinimum = Math.min(minimum, softCap);
   const raw = base + enemyLevelBias(archetype) + bodyScale + massPressure + variance;
-  return Math.round(clamp(Math.max(raw, cappedMinimum), 1, softCap));
+  const legacy = Math.round(clamp(Math.max(raw, cappedMinimum), 1, softCap));
+  return clampEnemyLevelToBand(legacy, levelAnchor, band);
 }
 
 function randomWorldPoint(config: NextWorldConfig, pad = 190): Point {
@@ -241,11 +243,16 @@ export function makeEnemy(
   avoidX?: number,
   avoidY?: number,
   safeRadius = 0,
-  playerLevel = threatLevel
+  playerLevel = threatLevel,
+  band: EnemyLevelBandKind = "normal"
 ): NextFishEntity {
-  const archetype = chooseEnemyArchetype(id, threatLevel);
+  const chosenArchetype = chooseEnemyArchetype(id, threatLevel);
+  const archetype = shouldForceBigFish(chosenArchetype.id, band)
+    ? (id % 3 === 0 ? NEXT_ENEMY_ARCHETYPES.apex : id % 2 === 0 ? NEXT_ENEMY_ARCHETYPES.stalker : NEXT_ENEMY_ARCHETYPES.brute)
+    : chosenArchetype;
   const family = pickEnemyFamily(id, archetype.id);
   const scale = threatScale(threatLevel);
+  const bandRules = enemyBandRules(playerLevel, band);
   const apex = archetype.id === "apex";
   const leviathan = archetype.id === "leviathan";
   const stalker = archetype.id === "stalker";
@@ -277,9 +284,9 @@ export function makeEnemy(
       : stalker
         ? Math.round(190 + mass * 42)
         : Math.round((big ? 150 : archetype.id === "hunter" ? 92 : 42 + Math.random() * 38) * Math.max(0.8, mass));
-  const hp = Math.round(baseHp * family.hpMultiplier * (1 + Math.min(1.15, threatLevel * 0.014)) * lateHpMultiplier);
+  const hp = Math.round(baseHp * family.hpMultiplier * (1 + Math.min(1.15, threatLevel * 0.014)) * lateHpMultiplier * bandRules.hpMultiplier);
   const eliteSpawnExtraRadius = apex || leviathan ? 420 : stalker ? 180 : 0;
-  const spawn = pointAwayFrom(config, avoidX, avoidY, safeRadius + eliteSpawnExtraRadius);
+  const spawn = pointAwayFrom(config, avoidX, avoidY, Math.max(safeRadius, bandRules.minDistance) + eliteSpawnExtraRadius);
   const target = wanderPoint(config);
   const fallbackSkin = apex
     ? (EVOFISH_SKIN_BY_ID.mega_lava || EVOFISH_SKIN_BY_ID.mega_deep)
@@ -302,19 +309,20 @@ export function makeEnemy(
     mass,
     hp,
     hpMax: hp,
-    damage: damageBase * archetype.damageMultiplier * (1 + Math.min(1.0, threatLevel * 0.017)) * lateDamageMultiplier,
-    speed: archetype.baseSpeed * family.speedMultiplier * (1 + Math.min(0.34, threatLevel * 0.0048)),
+    damage: damageBase * archetype.damageMultiplier * (1 + Math.min(1.0, threatLevel * 0.017)) * lateDamageMultiplier * bandRules.damageMultiplier,
+    speed: archetype.baseSpeed * family.speedMultiplier * (1 + Math.min(0.34, threatLevel * 0.0048)) * bandRules.speedMultiplier,
     form,
     skin: apex || leviathan ? fallbackSkin : familySkin(family.skinId, fallbackSkin),
     angle: 0,
     hitT: 0,
-    npcLevel: enemyNpcLevel(archetype.id, threatLevel, mass, playerMass, playerLevel),
+    npcLevel: enemyNpcLevel(archetype.id, threatLevel, mass, playerMass, playerLevel, band),
+    balanceBand: band,
     aiType: archetype.id,
     aiState: "wander",
     familyName: family.name,
     familyRewardMultiplier: family.rewardMultiplier,
-    aggroRadius: archetype.aggroRadius,
-    attackRange: archetype.attackRange,
+    aggroRadius: archetype.aggroRadius * bandRules.aggroMultiplier,
+    attackRange: archetype.attackRange * (band === "big" ? 0.92 : band === "strong" ? 0.96 : 1),
     attackCd: apex || leviathan ? 1.05 : stalker ? 0.72 : 0.4 + Math.random() * 0.8,
     thinkT: Math.random() * 0.4,
     wanderX: target.x,
@@ -357,8 +365,9 @@ export function createNextWorld(
   const completedQuests = Object.keys(quests.completed).length;
   const spawnThreat = enemyThreatLevel(level, tier, mass);
   const playerSpawn = safePlayerSpawn(config);
-  const enemySafeRadius = level <= 3 ? 920 : level <= 25 ? 980 : level <= 35 ? 780 : 680;
-  const enemies = Array.from({ length: config.enemyTarget }, (_, index) => makeEnemy(index + 1, config, spawnThreat, mass, playerSpawn.x, playerSpawn.y, enemySafeRadius, level));
+  const safeRules = respawnSafetyRules(level);
+  const enemySafeRadius = Math.max(level <= 3 ? 920 : level <= 25 ? 980 : level <= 35 ? 780 : 680, safeRules.safeRadius);
+  const enemies = Array.from({ length: config.enemyTarget }, (_, index) => makeEnemy(index + 1, config, spawnThreat, mass, playerSpawn.x, playerSpawn.y, enemySafeRadius, level, enemyBandForIndex(index, config.enemyTarget)));
   const resources = createResourceField(config.resourceTarget, config.width, config.height);
   const apexEnemy = enemies.find((enemy) => enemy.aiType === "apex");
   const playerDamage = Math.round((damageFromForm(form) + tier * 3) * (1 + damageBonus));
@@ -418,6 +427,8 @@ export function createNextWorld(
       skin: playerSkin,
       angle: 0,
       hitT: 0,
+      npcLevel: level,
+      balanceBand: "normal",
       aiType: "neutral",
       aiState: "wander",
       familyName: "Player",
