@@ -9,6 +9,7 @@ import { BetaHome } from "../evofish-next/ui/BetaHome";
 import { BetaProgress } from "../evofish-next/ui/BetaProgress";
 import { BetaQA } from "../evofish-next/ui/BetaQA";
 import { BetaReport } from "../evofish-next/ui/BetaReport";
+import { DarkCaveLocation } from "../evofish-next/ui/DarkCaveLocation";
 import { DeepTreasuresHub } from "../evofish-next/ui/DeepTreasuresHub";
 import { GameSettingsHub } from "../evofish-next/ui/GameSettingsHub";
 import { Leaderboard } from "../evofish-next/ui/Leaderboard";
@@ -87,6 +88,7 @@ export function App() {
           { path: "/game/cache", element: withBoundary(<BetaCacheDoctor />) },
           { path: "/game/skins", element: withBoundary(<SkinLab />) },
           { path: "/game/deep-treasures", element: withBoundary(<DeepTreasuresHub />) },
+          { path: "/game/dark-cave", element: withBoundary(<DarkCaveLocation />) },
           { path: "/game/classic", element: withBoundary(<Game />) },
           { path: "/game/next", element: withBoundary(<BetaHome />) },
           { path: "/game/next/lobby", element: withBoundary(<BetaHome />) },
@@ -103,6 +105,7 @@ export function App() {
           { path: "/game/next/cache", element: withBoundary(<BetaCacheDoctor />) },
           { path: "/game/next/skins", element: withBoundary(<SkinLab />) },
           { path: "/game/next/deep-treasures", element: withBoundary(<DeepTreasuresHub />) },
+          { path: "/game/next/dark-cave", element: withBoundary(<DarkCaveLocation />) },
           { path: "/game/next/play", element: withBoundary(<NextPlaySession />) },
           { path: "/classic", element: withBoundary(<Game />) },
           { path: "/next", element: withBoundary(<BetaHome />) },
@@ -120,6 +123,7 @@ export function App() {
           { path: "/next/cache", element: withBoundary(<BetaCacheDoctor />) },
           { path: "/next/skins", element: withBoundary(<SkinLab />) },
           { path: "/next/deep-treasures", element: withBoundary(<DeepTreasuresHub />) },
+          { path: "/next/dark-cave", element: withBoundary(<DarkCaveLocation />) },
           { path: "/next/play", element: withBoundary(<NextPlaySession />) },
         ]}
         notFound={withBoundary(<BetaHome />)}
