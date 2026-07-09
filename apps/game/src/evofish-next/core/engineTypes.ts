@@ -99,6 +99,7 @@ export type NextFishEntity = {
   hitT: number;
   npcLevel?: number;
   threatScore?: number;
+  balanceBand?: "normal" | "strong" | "big";
   aiType: NextEnemyArchetypeId;
   aiState: NextAIState;
   aiMood?: "calm" | "pressing" | "danger" | "retreat";
