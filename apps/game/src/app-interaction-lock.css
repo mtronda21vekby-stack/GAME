@@ -1,0 +1,50 @@
+/* Game interaction lock: keep EvoFish UI feeling like an app/game, not a selectable web page. */
+html,
+body,
+#root,
+#root *{
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-touch-callout:none;
+}
+
+#root img,
+#root svg,
+#root canvas,
+#root video,
+#root picture{
+  -webkit-user-drag:none;
+  user-drag:none;
+}
+
+#root img,
+#root svg,
+#root canvas,
+#root video,
+#root picture,
+#root .efSkinPreview,
+#root .efSkinShowcase,
+#root .efSphereFish,
+#root .efSkinSpriteImg,
+#root .efSkinSpriteSvg,
+#root .efFishStage,
+#root .efHeroPreview,
+#root .efHomeHeroPreview{
+  -webkit-touch-callout:none;
+}
+
+#root input,
+#root textarea,
+#root [contenteditable="true"]{
+  -webkit-user-select:text;
+  user-select:text;
+  -webkit-touch-callout:default;
+}
+
+#root button,
+#root a,
+#root [role="button"]{
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-touch-callout:none;
+}
