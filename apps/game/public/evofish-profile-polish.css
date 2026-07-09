@@ -1,0 +1,383 @@
+/* EvoFish Next profile polish
+   Scope: profile screen only. Keeps bottom nav clear, compresses profile hero,
+   and turns the page from a long settings form into a clean player card. */
+
+.efProfilesPage {
+  min-height: 100dvh !important;
+  color: #eaf7ff !important;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(53, 216, 255, .22), transparent 42%),
+    linear-gradient(180deg, rgba(2, 9, 21, .18), rgba(2, 9, 21, .82)),
+    url('/game/assets/lobby/lobby-bg-station-16x9.png') center / cover fixed,
+    #020915 !important;
+}
+
+.efProfilesPage,
+.efProfilesPage * {
+  box-sizing: border-box !important;
+}
+
+.efProfilesShell {
+  width: min(980px, calc(100vw - 20px)) !important;
+  gap: 10px !important;
+  padding-top: max(12px, env(safe-area-inset-top)) !important;
+  padding-bottom: calc(128px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+/* Header: compact, not a large app page title. */
+.efProfilesTop {
+  grid-template-columns: 44px minmax(0, 1fr) 44px !important;
+  gap: 8px !important;
+}
+
+.efProfilesBack,
+.efProfilesGear {
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  padding: 0 !important;
+  border-radius: 999px !important;
+  display: grid !important;
+  place-items: center !important;
+  overflow: hidden !important;
+  color: transparent !important;
+}
+
+.efProfilesBack::before {
+  content: '‹' !important;
+  color: #eaf7ff !important;
+  font-size: 25px !important;
+  line-height: 1 !important;
+}
+
+.efProfilesGear {
+  color: #eaf7ff !important;
+  font-size: 18px !important;
+}
+
+.efProfilesTitle span {
+  font-size: 9px !important;
+  letter-spacing: .20em !important;
+  opacity: .8 !important;
+}
+
+.efProfilesTitle h1 {
+  font-size: clamp(24px, 6vw, 38px) !important;
+  margin: 0 !important;
+}
+
+/* Hero: profile identity first, fish as a small premium ornament, not a giant cropped showcase. */
+.efProfilesHero {
+  min-height: 148px !important;
+  border-radius: 24px !important;
+  padding: 14px !important;
+  grid-template-columns: 64px minmax(0, 1fr) 124px !important;
+  gap: 12px !important;
+  align-items: center !important;
+  overflow: hidden !important;
+  background:
+    radial-gradient(circle at 80% 45%, rgba(53, 216, 255, .14), transparent 34%),
+    linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.025)),
+    rgba(5,18,32,.68) !important;
+  backdrop-filter: blur(16px) saturate(1.12) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.12) !important;
+}
+
+.efProfilesAvatar {
+  width: 64px !important;
+  height: 64px !important;
+  font-size: 26px !important;
+  box-shadow: 0 0 28px rgba(53,216,255,.32) !important;
+}
+
+.efProfilesIdentity {
+  min-width: 0 !important;
+  gap: 5px !important;
+}
+
+.efProfilesIdentity span {
+  font-size: 9px !important;
+  letter-spacing: .18em !important;
+}
+
+.efProfilesIdentity h2 {
+  font-size: clamp(26px, 7vw, 42px) !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.efProfilesIdentity p {
+  margin: 0 !important;
+  color: rgba(234,247,255,.72) !important;
+  font-size: 13px !important;
+  font-weight: 850 !important;
+}
+
+.efProfilesIdentity i {
+  height: 7px !important;
+  border-radius: 999px !important;
+  background: rgba(234,247,255,.12) !important;
+}
+
+.efProfilesIdentity i em {
+  border-radius: inherit !important;
+  background: linear-gradient(90deg, #35d8ff, #78ffd8, #f5b84b) !important;
+}
+
+.efProfilesHeroLinks {
+  margin-top: 4px !important;
+  gap: 6px !important;
+}
+
+.efProfilesHeroLinks a {
+  min-height: 32px !important;
+  padding: 0 10px !important;
+  font-size: 11px !important;
+}
+
+.efProfilesFishSphere {
+  width: 124px !important;
+  max-width: 124px !important;
+  aspect-ratio: 1 / 1 !important;
+  justify-self: end !important;
+  align-self: center !important;
+  opacity: .92 !important;
+  pointer-events: none !important;
+  transform: none !important;
+}
+
+.efProfilesFishSphere .efSkinPreview {
+  width: 112px !important;
+  max-width: 112px !important;
+  transform: none !important;
+}
+
+.efProfilesFishSphere .efSkinSpriteImg,
+.efProfilesFishSphere .efSkinSpriteSvg,
+.efProfilesFishSphere img {
+  max-width: 112px !important;
+  pointer-events: none !important;
+  -webkit-user-drag: none !important;
+  -webkit-touch-callout: none !important;
+  user-select: none !important;
+}
+
+/* Stats: compact cards with strong numbers, no huge blocks. */
+.efProfilesStats {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+.efProfilesStats article {
+  min-height: 76px !important;
+  border-radius: 18px !important;
+  padding: 12px !important;
+  display: grid !important;
+  align-content: center !important;
+  gap: 6px !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.070), rgba(255,255,255,.022)),
+    rgba(5,18,32,.58) !important;
+}
+
+.efProfilesStats span {
+  font-size: 10px !important;
+  letter-spacing: .16em !important;
+  line-height: 1 !important;
+}
+
+.efProfilesStats b {
+  font-size: clamp(22px, 5.4vw, 34px) !important;
+  line-height: 1 !important;
+}
+
+/* Tabs are fine, just tighten them. */
+.efProfilesTabs {
+  width: min(100%, 330px) !important;
+  padding: 5px !important;
+  gap: 5px !important;
+}
+
+.efProfilesTabs button {
+  min-height: 38px !important;
+  font-size: 12px !important;
+}
+
+/* Profile edit block: compact and usable. */
+.efProfilesPanel {
+  gap: 8px !important;
+}
+
+.efProfilesEditor,
+.efProfilesCreate {
+  border-radius: 20px !important;
+  padding: 12px !important;
+  gap: 10px !important;
+  align-items: center !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.070), rgba(255,255,255,.022)),
+    rgba(5,18,32,.62) !important;
+}
+
+.efProfilesEditor > div,
+.efProfilesCreate > div {
+  min-width: 0 !important;
+}
+
+.efProfilesEditor > div b,
+.efProfilesCreate > div b {
+  display: block !important;
+  max-width: 100% !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  font-size: 18px !important;
+}
+
+.efProfilesEditor input,
+.efProfilesCreate input {
+  min-height: 48px !important;
+  border-radius: 16px !important;
+  padding: 0 14px !important;
+  border: 1px solid rgba(88,210,255,.18) !important;
+  background: rgba(2,9,21,.48) !important;
+  color: #eaf7ff !important;
+  font-size: 16px !important;
+  font-weight: 900 !important;
+}
+
+.efProfilesEditor button,
+.efProfilesCreate button,
+.efProfileCardActions button {
+  min-height: 48px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(88,210,255,.24) !important;
+  background: linear-gradient(90deg, rgba(53,216,255,.20), rgba(120,255,216,.13)) !important;
+  color: #eaf7ff !important;
+  font-weight: 1000 !important;
+}
+
+.efProfilesGrid {
+  gap: 8px !important;
+}
+
+.efProfileCard {
+  border-radius: 20px !important;
+  padding: 12px !important;
+}
+
+/* Bottom nav: visible, but no longer covering Save/profile editor. */
+.efProfilesBottomNav {
+  position: fixed !important;
+  left: max(10px, env(safe-area-inset-left, 0px)) !important;
+  right: max(10px, env(safe-area-inset-right, 0px)) !important;
+  bottom: max(10px, env(safe-area-inset-bottom, 0px)) !important;
+  width: min(560px, calc(100vw - 20px)) !important;
+  margin: 0 auto !important;
+  z-index: 70 !important;
+  border-radius: 999px !important;
+  padding: 6px !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.025)),
+    rgba(5,18,32,.82) !important;
+}
+
+.efProfilesBottomNav a {
+  min-height: 48px !important;
+  border-radius: 999px !important;
+}
+
+.efProfilesBottomNav a span {
+  font-size: 16px !important;
+}
+
+.efProfilesBottomNav a b {
+  font-size: 11px !important;
+}
+
+@media (min-width: 901px) {
+  .efProfilesShell {
+    width: min(1040px, calc(100vw - 32px)) !important;
+  }
+
+  .efProfilesEditor {
+    grid-template-columns: minmax(170px, .7fr) minmax(260px, 1fr) 150px !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .efProfilesShell {
+    width: min(100%, calc(100vw - 16px)) !important;
+    gap: 9px !important;
+  }
+
+  .efProfilesHero {
+    grid-template-columns: 58px minmax(0, 1fr) 86px !important;
+    min-height: 132px !important;
+    padding: 12px !important;
+    border-radius: 22px !important;
+  }
+
+  .efProfilesAvatar {
+    width: 58px !important;
+    height: 58px !important;
+    font-size: 23px !important;
+  }
+
+  .efProfilesFishSphere {
+    width: 86px !important;
+    max-width: 86px !important;
+    opacity: .62 !important;
+  }
+
+  .efProfilesFishSphere .efSkinPreview {
+    width: 82px !important;
+    max-width: 82px !important;
+  }
+
+  .efProfilesHeroLinks {
+    display: none !important;
+  }
+
+  .efProfilesStats {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .efProfilesStats article {
+    min-height: 72px !important;
+  }
+
+  .efProfilesEditor,
+  .efProfilesCreate {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .efProfilesHero {
+    grid-template-columns: 54px minmax(0, 1fr) !important;
+  }
+
+  .efProfilesFishSphere {
+    display: none !important;
+  }
+
+  .efProfilesStats article {
+    min-height: 68px !important;
+    padding: 10px !important;
+  }
+
+  .efProfilesStats b {
+    font-size: 22px !important;
+  }
+
+  .efProfilesBottomNav a {
+    min-height: 44px !important;
+  }
+}
