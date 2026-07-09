@@ -56,6 +56,16 @@ const LOBBY_FISH_SKIN_CATALOG: readonly Omit<FishSkin, "owned">[] = [
   { id: "gold_scale", name: "Золотая чешуя", asset: "/lobby/assets/fish/gold_scale.png", rarity: "epic", mode: "both" },
   { id: "cyber_fish", name: "Кибер", asset: "/lobby/assets/fish/cyber_fish.png", rarity: "epic", mode: "both" },
   { id: "pirate_fish", name: "Пират", asset: "/lobby/assets/fish/pirate_fish.png", rarity: "epic", mode: "both" },
+  { id: "shark_classic", name: "Акула Классик", asset: "/lobby/assets/fish/shark_classic.svg", rarity: "rare", mode: "both" },
+  { id: "shark_tiger", name: "Тигровая акула", asset: "/lobby/assets/fish/shark_tiger.svg", rarity: "rare", mode: "both" },
+  { id: "shark_shadow", name: "Акула Тень", asset: "/lobby/assets/fish/shark_shadow.svg", rarity: "rare", mode: "both" },
+  { id: "shark_azure", name: "Акула Азур", asset: "/lobby/assets/fish/shark_azure.svg", rarity: "rare", mode: "both" },
+  { id: "shark_white", name: "Белая акула", asset: "/lobby/assets/fish/shark_white.svg", rarity: "epic", mode: "both" },
+  { id: "mega_deep", name: "Мегалодон Глубин", asset: "/lobby/assets/fish/mega_deep.svg", rarity: "rare", mode: "both" },
+  { id: "mega_bone", name: "Костяной Мегалодон", asset: "/lobby/assets/fish/mega_bone.svg", rarity: "epic", mode: "both" },
+  { id: "mega_lava", name: "Мега Лава", asset: "/lobby/assets/fish/mega_lava.svg", rarity: "epic", mode: "both" },
+  { id: "mega_ice", name: "Мега Лёд", asset: "/lobby/assets/fish/mega_ice.svg", rarity: "epic", mode: "both" },
+  { id: "mega_nebula", name: "Мега Туманность", asset: "/lobby/assets/fish/mega_nebula.svg", rarity: "legendary", mode: "both" },
 ];
 
 const SIDE_NAV_ITEMS: NavItem[] = [
