@@ -1,6 +1,7 @@
 import type { NextCameraState, NextEngineState, NextFishEntity, NextInputState } from "../core/engineTypes";
 import type { EnemyLevelBandKind } from "../content/balanceBands";
 import { respawnSafetyRules } from "../content/balanceBands";
+import { biteDistanceForFish } from "../content/fishHitbox";
 import { enemyThreatLevel, makeEnemy, radiusFromForm } from "./createWorld";
 import { canPlayerDevour, npcCombatLevel, npcLevelGap, playerDamageMultiplierAgainstEnemy } from "./collisionSystem";
 import { awardKillReward } from "./progressionSystem";
@@ -65,10 +66,11 @@ function findBiteTarget(state: NextEngineState, camera: NextCameraState, input: 
     const enemy = state.enemies[i];
     const dx = enemy.x - player.x;
     const dy = enemy.y - player.y;
-    const distance = Math.hypot(dx, dy);
-    const range = player.radius * 2.55 + enemy.radius;
-    if (distance > range) continue;
-    const dot = (dx / (distance || 1)) * nx + (dy / (distance || 1)) * ny;
+    const range = biteDistanceForFish(player, enemy) * (player.dashT > 0 ? 1.12 : 1);
+    const distanceSq = dx * dx + dy * dy;
+    if (distanceSq > range * range) continue;
+    const distance = Math.sqrt(distanceSq) || 1;
+    const dot = (dx / distance) * nx + (dy / distance) * ny;
     if (dot < 0.2) continue;
     const score = biteTargetScore(state, enemy, distance, dot, range);
     if (score > bestScore) {
