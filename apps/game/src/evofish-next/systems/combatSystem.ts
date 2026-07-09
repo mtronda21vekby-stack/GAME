@@ -1,4 +1,6 @@
-import type { NextEngineState, NextFishEntity, NextInputState, NextCameraState } from "../core/engineTypes";
+import type { NextCameraState, NextEngineState, NextFishEntity, NextInputState } from "../core/engineTypes";
+import type { EnemyLevelBandKind } from "../content/balanceBands";
+import { respawnSafetyRules } from "../content/balanceBands";
 import { enemyThreatLevel, makeEnemy, radiusFromForm } from "./createWorld";
 import { canPlayerDevour, npcCombatLevel, npcLevelGap, playerDamageMultiplierAgainstEnemy } from "./collisionSystem";
 import { awardKillReward } from "./progressionSystem";
@@ -12,11 +14,18 @@ function rewardText(reward: { xp: number; pearls: number; corals: number }) {
   return `+${reward.xp} XP +${reward.pearls} жемчуг${reward.corals ? ` +${reward.corals} коралл` : ""}`;
 }
 
-function respawnEnemy(state: NextEngineState) {
+function respawnEnemy(state: NextEngineState, band: EnemyLevelBandKind = "normal") {
   const player = state.player;
   const threat = enemyThreatLevel(player.level, player.tier, player.mass);
-  const safeRadius = player.level <= 25 ? 980 : player.level <= 35 ? 780 : 720;
-  return makeEnemy(1000 + state.stats.kills + state.frame, state.config, threat, player.mass, player.x, player.y, safeRadius, player.level);
+  const rules = respawnSafetyRules(player.level);
+  return makeEnemy(1000 + state.stats.kills + state.frame, state.config, threat, player.mass, player.x, player.y, rules.safeRadius, player.level, band);
+}
+
+function enemyBand(enemy: NextFishEntity): EnemyLevelBandKind {
+  if (enemy.balanceBand === "big" || enemy.balanceBand === "strong" || enemy.balanceBand === "normal") return enemy.balanceBand;
+  if (enemy.aiType === "apex" || enemy.aiType === "leviathan" || enemy.aiType === "stalker") return "big";
+  if (enemy.aiType === "brute" || enemy.aiType === "hunter") return "strong";
+  return "normal";
 }
 
 function defeatEnemy(state: NextEngineState, enemy: NextFishEntity, index: number, source: "bite" | "devour") {
@@ -32,7 +41,7 @@ function defeatEnemy(state: NextEngineState, enemy: NextFishEntity, index: numbe
   state.stats.lastEvent = `Победа LV ${npcCombatLevel(enemy)} ${rewardText(reward)} +${massGain.toFixed(2)} Mass`;
   addFloat(state, enemy.x, enemy.y, `LV${npcCombatLevel(enemy)} +${reward.xp}XP`, "kill");
   if (reward.corals) addFloat(state, enemy.x, enemy.y - enemy.radius * 2.5, `+${reward.corals} CORAL`, "kill");
-  state.enemies.splice(index, 1, respawnEnemy(state));
+  state.enemies.splice(index, 1, respawnEnemy(state, enemyBand(enemy)));
 }
 
 function biteTargetScore(state: NextEngineState, enemy: NextFishEntity, distance: number, dot: number, range: number) {
