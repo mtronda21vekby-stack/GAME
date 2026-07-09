@@ -31,14 +31,12 @@ function entitySpeed(entity: NextFishEntity) {
 function fishPose(entity: NextFishEntity, time: number): Pose {
   const angle = normalizedAngle(entity.angle || 0);
   const facingLeft = Math.cos(angle) < 0;
-  const mirroredAngle = facingLeft
-    ? normalizedAngle(angle + Math.PI)
-    : angle;
+  const mirroredAngle = facingLeft ? normalizedAngle(angle + Math.PI) : angle;
 
   return {
     facingLeft,
-    // Full enough rotation to feel responsive, but clamped before it can look upside-down.
-    localAngle: clamp(mirroredAngle, -1.15, 1.15),
+    // Canvas sprite assets are visually Y-inverted relative to movement; negate vertical tilt.
+    localAngle: clamp(-mirroredAngle, -1.12, 1.12),
     speed: entitySpeed(entity),
     shimmer: Math.sin(time * 0.0032 + entity.id * 0.71) * 0.5 + 0.5
   };
