@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-fish-orientation-lock-6.12.5";
+export const EVOFISH_NEXT_VERSION = "next-menu-settings-ui-polish-6.12.6";
