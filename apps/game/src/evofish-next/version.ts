@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-biome-form-unlocks-6.12.1";
+export const EVOFISH_NEXT_VERSION = "next-upright-fish-lock-6.12.2";
