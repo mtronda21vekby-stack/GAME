@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-thermal-crashfix-6.10.2";
+export const EVOFISH_NEXT_VERSION = "next-render2-mapfix-6.10.3";
