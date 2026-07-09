@@ -5,6 +5,7 @@ import { HudPolishOverlay } from "./HudPolishOverlay";
 import { MapShaderOverlay } from "./MapShaderOverlay";
 import { NextPlaytest } from "./NextPlaytest";
 import { RunCompleteOverlay } from "./RunCompleteOverlay";
+import { TrenchMapEntryOverlay } from "./TrenchMapEntryOverlay";
 
 export function NextPlaySession() {
   return (
@@ -12,6 +13,7 @@ export function NextPlaySession() {
       <NextPlaytest />
       <MapShaderOverlay />
       <HudPolishOverlay />
+      <TrenchMapEntryOverlay />
       <CraftQuickOverlay />
       <FpsCounterOverlay />
       <RunCompleteOverlay />
