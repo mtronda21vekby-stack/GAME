@@ -111,8 +111,6 @@ function readState(): DeepTreasuresState {
     };
     const trenchKeys = parsed.trenchKeys ?? parsed.darkCaveKeys ?? 0;
     return {
-      ...makeDefaultState(),
-      ...parsed,
       diamonds: Math.max(0, Math.floor(parsed.diamonds || 0)),
       ancientCrystals: Math.max(0, Math.floor(parsed.ancientCrystals || 0)),
       trenchKeys: Math.max(0, Math.floor(trenchKeys)),
