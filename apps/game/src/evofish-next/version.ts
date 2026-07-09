@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-no-map-quickbar-6.13.1";
+export const EVOFISH_NEXT_VERSION = "next-lobby-owned-skin-carousel-6.14.0";
