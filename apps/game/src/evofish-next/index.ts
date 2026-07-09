@@ -58,6 +58,7 @@ export * from "./ui/BetaProgress";
 export * from "./ui/BetaQA";
 export * from "./ui/BetaReport";
 export * from "./ui/Leaderboard";
+export * from "./ui/LobbySkinCarousel";
 export * from "./ui/SeasonHub";
 export * from "./ui/SkinLab";
 export * from "./ui/NextLobby";
