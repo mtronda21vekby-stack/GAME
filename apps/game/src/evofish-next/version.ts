@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-upright-fish-lock-6.12.2";
+export const EVOFISH_NEXT_VERSION = "next-full-360-fish-rotation-6.12.3";
