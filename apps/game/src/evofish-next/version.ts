@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-render2-mapfix-6.10.3";
+export const EVOFISH_NEXT_VERSION = "next-fish-renderer2-6.10.4";
