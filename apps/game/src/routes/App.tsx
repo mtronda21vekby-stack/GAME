@@ -29,6 +29,28 @@ function withBoundary(element: React.ReactNode) {
   return <BetaErrorBoundary>{element}</BetaErrorBoundary>;
 }
 
+function isEditableTarget(target: EventTarget | null) {
+  if (!(target instanceof Element)) return false;
+  return Boolean(target.closest("input, textarea, select, [contenteditable='true'], [data-allow-select='true']"));
+}
+
+function lockGameShellInteractions() {
+  const preventPageSelection = (event: Event) => {
+    if (isEditableTarget(event.target)) return;
+    event.preventDefault();
+  };
+
+  document.addEventListener("selectstart", preventPageSelection);
+  document.addEventListener("dragstart", preventPageSelection);
+  document.addEventListener("contextmenu", preventPageSelection);
+
+  return () => {
+    document.removeEventListener("selectstart", preventPageSelection);
+    document.removeEventListener("dragstart", preventPageSelection);
+    document.removeEventListener("contextmenu", preventPageSelection);
+  };
+}
+
 function GameModeEntry() {
   const mode = new URLSearchParams(window.location.search).get("mode");
   if (mode === "classic") return <Game />;
@@ -64,6 +86,7 @@ export function App() {
   useEffect(() => attachConsoleAnalytics(), []);
   useEffect(() => track({ type: "page_view", path: window.location.pathname }), []);
   useEffect(() => disableGameServiceWorker(), []);
+  useEffect(() => lockGameShellInteractions(), []);
 
   return (
     <>
