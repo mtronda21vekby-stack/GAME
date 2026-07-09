@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-ui-tabs-polish-6.11.9";
+export const EVOFISH_NEXT_VERSION = "next-endgame-achievements-6.12.0";
