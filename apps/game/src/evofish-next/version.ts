@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-legacy-fish-renderer-6.11.8";
+export const EVOFISH_NEXT_VERSION = "next-ui-tabs-polish-6.11.9";
