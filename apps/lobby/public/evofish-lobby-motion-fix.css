@@ -1,5 +1,8 @@
-/* EvoFish Next lobby motion override.
-   Purpose: make the selected lobby fish visibly swim without changing skins automatically. */
+/* EvoFish Next lobby-only visual override.
+   Purpose:
+   - make the selected lobby fish feel alive;
+   - remove image-thumbnail selection from the lobby hero;
+   - keep shop/skin vitrines untouched by scoping to the lobby hero/stage. */
 
 @keyframes evofishLobbySelectedFishSwim {
   0% {
@@ -29,83 +32,60 @@
 }
 
 @keyframes evofishLobbySphereWaterPulse {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 0.92;
-  }
-  50% {
-    transform: scale(1.018);
-    opacity: 1;
-  }
+  0%, 100% { transform: scale(1); opacity: 0.92; }
+  50% { transform: scale(1.018); opacity: 1; }
 }
 
 @keyframes evofishLobbyArrowPulse {
-  0%, 100% {
-    transform: translateY(-50%) scale(1);
-    opacity: 0.82;
-  }
-  50% {
-    transform: translateY(-50%) scale(1.08);
-    opacity: 1;
-  }
+  0%, 100% { transform: translateY(-50%) scale(1); opacity: 0.84; }
+  50% { transform: translateY(-50%) scale(1.08); opacity: 1; }
 }
 
-/* The actual visible selected fish image. This override is intentionally stronger
-   than the inline LobbyStyles rule so the fish cannot remain visually frozen. */
-.bcSiteRoot .hubFish .hubFishLayer.is-entering img {
+/* Scope to the main lobby hero only. This must not affect shop/skin collection cards. */
+.bcSiteRoot .hubHero .hubSphereStage .hubFish .hubFishLayer.is-entering img {
   animation: evofishLobbySelectedFishSwim 4.8s ease-in-out infinite !important;
   transform-origin: 50% 58% !important;
   will-change: transform, filter !important;
   backface-visibility: hidden !important;
 }
 
-/* Keep the old fish swap clean: leaving fish exits once and does not keep idling. */
-.bcSiteRoot .hubFish .hubFishLayer.is-exiting img {
+.bcSiteRoot .hubHero .hubSphereStage .hubFish .hubFishLayer.is-exiting img {
   animation: none !important;
 }
 
-/* Make sure the selected fish is large enough to read as a living character. */
-.bcSiteRoot .hubFish {
+/* Bigger, living hero fish. */
+.bcSiteRoot .hubHero .hubSphereStage .hubFish {
   width: min(94%, 560px) !important;
   min-height: 44% !important;
-}
-
-.bcSiteRoot .hubFish .hubFishLayer img {
-  width: clamp(300px, 34vw, 560px) !important;
-  max-width: 100% !important;
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-}
-
-/* Mobile sizing: strong, readable fish inside the sphere, not a tiny sticker. */
-@media (max-width: 767px) {
-  .bcSiteRoot .hubFish {
-    width: min(96%, 440px) !important;
-    max-width: calc(100% - 20px) !important;
-  }
-
-  .bcSiteRoot .hubFish .hubFishLayer img {
-    width: clamp(250px, 68vw, 430px) !important;
-  }
-}
-
-/* Remove any accidental rectangular/frosted artifact behind the fish. */
-.bcSiteRoot .hubFish,
-.bcSiteRoot .hubFishLayer,
-.bcSiteRoot .hubFishLayer img {
   background: transparent !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
 
-/* Make sphere feel alive even before full shader pass. */
-.bcSiteRoot .hubSphere {
-  animation: hubSphereBreath 4.8s ease-in-out infinite, evofishLobbySphereWaterPulse 7.2s ease-in-out infinite !important;
+.bcSiteRoot .hubHero .hubSphereStage .hubFish .hubFishLayer,
+.bcSiteRoot .hubHero .hubSphereStage .hubFish .hubFishLayer img {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
-/* Make manual fish-switch controls impossible to miss when multiple owned fish exist. */
-.bcSiteRoot .hubFishArrow {
+.bcSiteRoot .hubHero .hubSphereStage .hubFish .hubFishLayer img {
+  width: clamp(300px, 34vw, 560px) !important;
+  max-width: 100% !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Remove the ugly "pick fish as pictures" strip from the lobby hero.
+   Fish selection in the lobby should feel like a living start-fish selector:
+   arrows/swipe in the sphere, not a row of static image cards. */
+.bcSiteRoot .hubHero .hubSphereStage .hubFishPicker,
+.bcSiteRoot .hubHero .hubSphereStage .hubFishThumb {
+  display: none !important;
+}
+
+/* Manual cycling controls stay visible when multiple purchased fish exist. */
+.bcSiteRoot .hubHero .hubSphereStage .hubFishArrow {
   z-index: 80 !important;
   opacity: 0.96 !important;
   visibility: visible !important;
@@ -113,21 +93,76 @@
   animation: evofishLobbyArrowPulse 2.8s ease-in-out infinite !important;
 }
 
-.bcSiteRoot .hubFishArrow.isPrevious:hover {
+.bcSiteRoot .hubHero .hubSphereStage .hubFishArrow.isPrevious:hover {
   transform: translateY(-50%) translateX(-2px) scale(1.08) !important;
 }
 
-.bcSiteRoot .hubFishArrow.isNext:hover {
+.bcSiteRoot .hubHero .hubSphereStage .hubFishArrow.isNext:hover {
   transform: translateY(-50%) translateX(2px) scale(1.08) !important;
 }
 
-/* Keep the selected skin thumbnails readable if multiple purchased fish exist. */
-.bcSiteRoot .hubFishPicker {
-  z-index: 12 !important;
-  position: relative !important;
+/* Clean circular glass sphere; do not create a rectangular/frosted card behind the fish. */
+.bcSiteRoot .hubHero .hubSphereStage .hubSphere {
+  animation: hubSphereBreath 4.8s ease-in-out infinite, evofishLobbySphereWaterPulse 7.2s ease-in-out infinite !important;
+  border-radius: 50% !important;
+  background:
+    radial-gradient(circle at 36% 24%, rgba(255,255,255,.24), transparent 12%),
+    radial-gradient(circle at 54% 62%, rgba(53,216,255,.18), transparent 42%),
+    radial-gradient(circle at 50% 50%, rgba(12,71,105,.36), rgba(3,24,42,.22) 58%, rgba(53,216,255,.16) 100%) !important;
 }
 
-.bcSiteRoot .hubFishThumb.isSelected {
-  border-color: rgba(101, 232, 255, 0.82) !important;
-  box-shadow: inset 0 0 24px rgba(53, 216, 255, 0.16), 0 0 26px rgba(53, 216, 255, 0.24) !important;
+/* Make mode selection compact. It should not look like two giant static product cards above the fish. */
+.bcSiteRoot .hubModes {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 8px !important;
+  width: min(100%, 430px) !important;
+  margin: 0 auto !important;
+}
+
+.bcSiteRoot .hubModeCard {
+  flex: 1 1 0 !important;
+  min-height: 44px !important;
+  padding: 8px 10px !important;
+  border-radius: 999px !important;
+  display: grid !important;
+  place-items: center !important;
+}
+
+.bcSiteRoot .hubModeHeader {
+  display: block !important;
+  text-align: center !important;
+}
+
+.bcSiteRoot .hubModeHeader h2 {
+  font-size: 13px !important;
+  line-height: 1.1 !important;
+  white-space: nowrap !important;
+}
+
+.bcSiteRoot .hubModeHeader p,
+.bcSiteRoot .hubModeBadge,
+.bcSiteRoot .hubModeButton {
+  display: none !important;
+}
+
+/* Mobile sizing. */
+@media (max-width: 767px) {
+  .bcSiteRoot .hubHero .hubSphereStage .hubFish {
+    width: min(96%, 440px) !important;
+    max-width: calc(100% - 20px) !important;
+  }
+
+  .bcSiteRoot .hubHero .hubSphereStage .hubFish .hubFishLayer img {
+    width: clamp(250px, 68vw, 430px) !important;
+  }
+
+  .bcSiteRoot .hubModes {
+    width: min(100%, 360px) !important;
+  }
+
+  .bcSiteRoot .hubModeHeader h2 {
+    font-size: 12px !important;
+  }
 }
