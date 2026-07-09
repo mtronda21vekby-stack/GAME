@@ -86,6 +86,27 @@ function npcLevelRewardBonus(state: NextEngineState, enemy: NextFishEntity) {
   return clamp(diffBonus * post21, 0.78, 2.65);
 }
 
+function lateGamePearlCap(state: NextEngineState, enemy: NextFishEntity) {
+  const playerLevel = Math.max(1, Math.floor(state.player.level || 1));
+  if (playerLevel < 50) return Number.POSITIVE_INFINITY;
+
+  if (enemy.aiType === "apex" || enemy.aiType === "leviathan" || enemy.balanceBand === "big" || enemy.form === "megalodon") {
+    return 50000;
+  }
+
+  if (enemy.aiType === "stalker" || enemy.aiType === "brute" || enemy.aiType === "hunter" || enemy.balanceBand === "strong" || enemy.form === "shark") {
+    return 25000;
+  }
+
+  return 10000;
+}
+
+function clampLateGamePearls(state: NextEngineState, enemy: NextFishEntity, rawPearls: number) {
+  const cap = lateGamePearlCap(state, enemy);
+  if (!Number.isFinite(cap)) return rawPearls;
+  return Math.max(1, Math.min(cap, rawPearls));
+}
+
 function syncApexStats(state: NextEngineState) {
   const apex = state.enemies.find((enemy) => enemy.aiType === "apex");
   state.stats.apexAlive = Boolean(apex);
@@ -226,7 +247,8 @@ function awardKillEconomy(state: NextEngineState, enemy: NextFishEntity, source:
   const familyBonus = enemy.familyRewardMultiplier || 1;
   const archetypeBonus = archetypeCurrencyBonus(enemy);
   const levelBonus = 1 + (npcLevelRewardBonus(state, enemy) - 1) * 0.55;
-  const pearls = Math.max(1, Math.round((1 + enemy.mass * 1.35) * sourceBonus * archetypeBonus * mutationBonus * zoneBonus * familyBonus * levelBonus));
+  const rawPearls = Math.max(1, Math.round((1 + enemy.mass * 1.35) * sourceBonus * archetypeBonus * mutationBonus * zoneBonus * familyBonus * levelBonus));
+  const pearls = clampLateGamePearls(state, enemy, rawPearls);
   const bossCorals = enemy.aiType === "apex" ? 3 : enemy.aiType === "leviathan" ? 2 : 0;
   const coralChance = Math.min(0.13, (0.004 + enemy.mass * 0.003 + (enemy.aiType === "brute" ? 0.018 : 0) + (enemy.aiType === "stalker" ? 0.012 : 0)) * Math.max(0.75, Math.min(1.35, zoneBonus)) * levelBonus);
   const corals = bossCorals || (Math.random() < coralChance ? 1 : 0);
