@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-menu-crash-rescue-6.12.9";
+export const EVOFISH_NEXT_VERSION = "next-game-interaction-lock-6.13.0";
