@@ -1,5 +1,8 @@
 import type { NextFishEntity, NextRenderQuality } from "../core/engineTypes";
 import { drawEvoFishSkin } from "./canvasSkinRenderer";
+import { assertFishOrientationLock, lockedFishOrientationForAngle } from "./fishOrientationLock";
+
+assertFishOrientationLock();
 
 type FishRenderer2Options = {
   image: HTMLImageElement | null;
@@ -22,26 +25,15 @@ function imageAspect(image: HTMLImageElement | null, entity: NextFishEntity) {
   return entity.form === "fish" ? 0.42 : 0.38;
 }
 
-function normalizedAngle(angle: number) {
-  return Math.atan2(Math.sin(angle), Math.cos(angle));
-}
-
-function shouldMirrorBelly(angle: number) {
-  // Left half-plane: keep the nose direction, but mirror local Y so the belly never turns upward.
-  return Math.cos(angle) < 0;
-}
-
 export function drawFishRenderer2(ctx: CanvasRenderingContext2D, entity: NextFishEntity, options: FishRenderer2Options) {
   const width = options.radius * formScale(entity);
   const height = width * imageAspect(options.image, entity);
-  const angle = normalizedAngle(entity.angle || 0);
+  const orientation = lockedFishOrientationForAngle(entity.angle || 0);
 
   ctx.save();
   ctx.translate(entity.x, entity.y);
-  // Full 360 steering + belly-safe mirroring.
-  // Nose follows the exact angle, but when the fish turns left the sprite is mirrored on local Y.
-  ctx.rotate(angle);
-  if (shouldMirrorBelly(angle)) ctx.scale(1, -1);
+  ctx.rotate(orientation.rotation);
+  ctx.scale(orientation.scaleX, orientation.scaleY);
   ctx.globalAlpha = options.alpha;
 
   if (options.image?.complete && options.image.naturalWidth > 0) {
