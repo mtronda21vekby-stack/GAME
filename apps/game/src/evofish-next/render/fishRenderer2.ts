@@ -35,8 +35,8 @@ function fishPose(entity: NextFishEntity, time: number): Pose {
 
   return {
     facingLeft,
-    // Canvas sprite assets are visually Y-inverted relative to movement; negate vertical tilt.
-    localAngle: clamp(-mirroredAngle, -1.12, 1.12),
+    // Right-facing sprite: positive canvas angle points nose downward, negative points upward.
+    localAngle: clamp(mirroredAngle, -1.12, 1.12),
     speed: entitySpeed(entity),
     shimmer: Math.sin(time * 0.0032 + entity.id * 0.71) * 0.5 + 0.5
   };
@@ -124,7 +124,6 @@ function drawSkinShimmer(ctx: CanvasRenderingContext2D, entity: NextFishEntity, 
   if (quality === "low") return;
   const colors = materialColors(entity);
   ctx.save();
-  // Clip to the fish body area. This prevents the shimmer from becoming a random field around the sprite.
   ctx.beginPath();
   ctx.ellipse(width * 0.06, -height * 0.03, width * 0.41, height * 0.36, 0, 0, Math.PI * 2);
   ctx.clip();
