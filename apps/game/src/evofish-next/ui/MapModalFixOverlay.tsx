@@ -5,17 +5,27 @@ function numberAttr(node: Element | null, name: string) {
   return Number.isFinite(value) ? value : 0;
 }
 
+function baseWorldSize(svg: SVGSVGElement) {
+  if (!svg.dataset.worldWidth || !svg.dataset.worldHeight) {
+    const vb = (svg.getAttribute("viewBox") || "0 0 5200 3400").split(/\s+/).map(Number);
+    svg.dataset.worldWidth = String(Math.max(1, vb[2] || 5200));
+    svg.dataset.worldHeight = String(Math.max(1, vb[3] || 3400));
+  }
+  return {
+    worldW: Math.max(1, Number(svg.dataset.worldWidth || 5200)),
+    worldH: Math.max(1, Number(svg.dataset.worldHeight || 3400))
+  };
+}
+
 function applyFocusedMapView(svg: SVGSVGElement, panel: HTMLElement) {
   const player = Array.from(svg.querySelectorAll<SVGCircleElement>("circle"))
     .find((circle) => (circle.getAttribute("fill") || "").includes("110,255,180"));
   if (!player) return;
 
-  const vb = (svg.getAttribute("viewBox") || "0 0 5200 3400").split(/\s+/).map(Number);
-  const worldW = Math.max(1, vb[2] || 5200);
-  const worldH = Math.max(1, vb[3] || 3400);
+  const { worldW, worldH } = baseWorldSize(svg);
   const rect = panel.getBoundingClientRect();
   const aspect = Math.max(0.52, Math.min(1.9, rect.width / Math.max(1, rect.height)));
-  const viewH = Math.min(worldH, Math.max(1280, worldH * 0.48));
+  const viewH = Math.min(worldH, Math.max(1380, worldH * 0.52));
   const viewW = Math.min(worldW, viewH * aspect);
   const cx = numberAttr(player, "cx");
   const cy = numberAttr(player, "cy");
