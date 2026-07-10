@@ -49,6 +49,78 @@ function combatLevel(enemy: NextFishEntity) {
   return Math.max(1, Math.floor(enemy.npcLevel || Math.round(enemy.mass * 4)));
 }
 
+function playerHpRatio(state: NextEngineState) {
+  return state.player.hp / Math.max(1, state.player.hpMax);
+}
+
+function smartLeadSeconds(state: NextEngineState, enemy: NextFishEntity) {
+  const lateGame = isLateGameLevel(state.player.level);
+  const base = enemy.aiType === "leviathan"
+    ? 0.46
+    : enemy.aiType === "apex"
+      ? 0.42
+      : enemy.aiType === "stalker"
+        ? 0.36
+        : enemy.aiType === "brute"
+          ? 0.26
+          : enemy.aiType === "hunter"
+            ? 0.24
+            : 0.12;
+  return base * (lateGame ? 1.08 : 1);
+}
+
+function playerLeadPoint(state: NextEngineState, enemy: NextFishEntity, seconds: number) {
+  const player = state.player;
+  const playerSpeed = Math.hypot(player.vx || 0, player.vy || 0);
+  const lead = playerSpeed > 24 ? clamp(seconds, 0, 0.52) : 0;
+  const edgePad = enemy.aiType === "leviathan" || enemy.aiType === "apex" ? 170 : 120;
+  return {
+    x: clamp(player.x + (player.vx || 0) * lead, edgePad, state.config.width - edgePad),
+    y: clamp(player.y + (player.vy || 0) * lead, edgePad, state.config.height - edgePad)
+  };
+}
+
+function worldEdgeAvoidance(state: NextEngineState, enemy: NextFishEntity) {
+  const margin = isElite(enemy) ? 240 : 180;
+  let ax = 0;
+  let ay = 0;
+  let force = 0;
+
+  if (enemy.x < margin) {
+    const f = (margin - enemy.x) / margin;
+    ax += f;
+    force += f;
+  } else if (enemy.x > state.config.width - margin) {
+    const f = (enemy.x - (state.config.width - margin)) / margin;
+    ax -= f;
+    force += f;
+  }
+
+  if (enemy.y < margin) {
+    const f = (margin - enemy.y) / margin;
+    ay += f;
+    force += f;
+  } else if (enemy.y > state.config.height - margin) {
+    const f = (enemy.y - (state.config.height - margin)) / margin;
+    ay -= f;
+    force += f;
+  }
+
+  const n = normalize(ax, ay);
+  return { x: force > 0 ? n.x : 0, y: force > 0 ? n.y : 0, force: Math.min(1, force) };
+}
+
+function fleeTarget(state: NextEngineState, enemy: NextFishEntity, dx: number, dy: number, distance: number) {
+  const edge = worldEdgeAvoidance(state, enemy);
+  const awayX = -dx / distance;
+  const awayY = -dy / distance;
+  const sideSign = enemy.id % 2 === 0 ? 1 : -1;
+  const sideX = -awayY * sideSign;
+  const sideY = awayX * sideSign;
+  const n = normalize(awayX + sideX * 0.22 + edge.x * 0.88, awayY + sideY * 0.22 + edge.y * 0.88);
+  return { x: n.x, y: n.y, distance, playerDistance: distance };
+}
+
 function setWanderTarget(state: NextEngineState, enemy: NextFishEntity) {
   const lane = enemy.id % 12;
   const ring = 0.22 + (lane % 4) * 0.18;
@@ -72,8 +144,9 @@ function wanderTarget(state: NextEngineState, enemy: NextFishEntity) {
   return { x: wx / wDistance, y: wy / wDistance, distance: wDistance, playerDistance: Infinity };
 }
 
-function attackSlotTarget(state: NextEngineState, enemy: NextFishEntity, playerDistance: number, ringBonus = 0) {
+function attackSlotTarget(state: NextEngineState, enemy: NextFishEntity, playerDistance: number, ringBonus = 0, leadSeconds = 0) {
   const player = state.player;
+  const lead = playerLeadPoint(state, enemy, leadSeconds);
   const midGame = isMidGameLevel(player.level);
   const lateGame = isLateGameLevel(player.level);
   const slots = enemy.aiType === "leviathan" ? 4 : enemy.aiType === "apex" ? 5 : enemy.aiType === "stalker" ? 7 : 9;
@@ -81,8 +154,8 @@ function attackSlotTarget(state: NextEngineState, enemy: NextFishEntity, playerD
   const drift = (state.frame % 360) * (midGame ? 0.0014 : lateGame ? 0.0018 : 0.0025) * (enemy.id % 2 === 0 ? 1 : -1);
   const angle = (slot / slots) * Math.PI * 2 + drift;
   const ring = player.radius + enemy.radius + ringBonus + (enemy.aiType === "leviathan" ? 190 : enemy.aiType === "apex" ? 160 : enemy.aiType === "stalker" ? 125 : midGame ? 92 : lateGame ? 86 : 64);
-  const targetX = clamp(player.x + Math.cos(angle) * ring, 120, state.config.width - 120);
-  const targetY = clamp(player.y + Math.sin(angle) * ring, 120, state.config.height - 120);
+  const targetX = clamp(lead.x + Math.cos(angle) * ring, 120, state.config.width - 120);
+  const targetY = clamp(lead.y + Math.sin(angle) * ring, 120, state.config.height - 120);
   const dx = targetX - enemy.x;
   const dy = targetY - enemy.y;
   const n = normalize(dx, dy);
@@ -165,25 +238,36 @@ function aiTarget(state: NextEngineState, enemy: NextFishEntity) {
   const midGame = isMidGameLevel(player.level);
   const aggroScale = midGame && isPredator(enemy) ? 0.78 : lateGame && isPredator(enemy) ? 0.82 : 1;
   const hpRatio = enemy.hp / Math.max(1, enemy.hpMax);
+  const playerWeak = playerHpRatio(state) < (lateGame ? 0.34 : 0.28);
+  const smartPressureLimit = playerWeak && isPredator(enemy) ? pressureLimit + 1 : pressureLimit;
 
   enemy.thinkT -= 1 / 60;
   if (enemy.thinkT <= 0) {
-    enemy.thinkT = isElite(enemy) ? 0.2 + Math.random() * 0.26 : midGame ? 0.34 + Math.random() * 0.42 : lateGame ? 0.28 + Math.random() * 0.38 : 0.2 + Math.random() * 0.34;
+    enemy.thinkT = isElite(enemy)
+      ? 0.16 + Math.random() * 0.22
+      : midGame
+        ? 0.3 + Math.random() * 0.38
+        : lateGame
+          ? 0.24 + Math.random() * 0.34
+          : 0.19 + Math.random() * 0.3;
+
     if (hpRatio < 0.22 && !isElite(enemy)) enemy.aiState = "flee";
     else if (playerCanEat && !isElite(enemy) && distance < enemy.aggroRadius * 1.22) enemy.aiState = "flee";
     else if (player.invulnT > 0.45 && isPredator(enemy)) enemy.aiState = "guard";
-    else if (predatorPressure > pressureLimit && isPredator(enemy)) enemy.aiState = "regroup";
-    else if (enemyCanThreaten && distance < enemy.attackRange + player.radius && predatorPressure <= pressureLimit) enemy.aiState = "attack";
-    else if (enemyCanThreaten && isElite(enemy) && distance < enemy.aggroRadius * aggroScale && predatorPressure <= pressureLimit) enemy.aiState = "ambush";
-    else if (enemyCanThreaten && distance < enemy.aggroRadius * aggroScale && predatorPressure <= pressureLimit + 1) enemy.aiState = "hunt";
+    else if (predatorPressure > smartPressureLimit && isPredator(enemy)) enemy.aiState = "regroup";
+    else if (playerWeak && enemyCanThreaten && isPredator(enemy) && distance < enemy.aggroRadius * 0.76 && predatorPressure <= smartPressureLimit) enemy.aiState = "attack";
+    else if (enemyCanThreaten && distance < enemy.attackRange + player.radius && predatorPressure <= smartPressureLimit) enemy.aiState = "attack";
+    else if (enemyCanThreaten && isElite(enemy) && distance < enemy.aggroRadius * aggroScale && predatorPressure <= smartPressureLimit) enemy.aiState = "ambush";
+    else if (enemyCanThreaten && distance < enemy.aggroRadius * aggroScale && predatorPressure <= smartPressureLimit + 1) enemy.aiState = "hunt";
     else enemy.aiState = enemy.aiType === "prey" || enemy.aiType === "neutral" ? "patrol" : "wander";
   }
 
-  if (enemy.aiState === "flee") return { x: -dx / distance, y: -dy / distance, distance, playerDistance: distance };
-  if (enemy.aiState === "regroup") return attackSlotTarget(state, enemy, distance, lateGame ? 430 : 360);
-  if (enemy.aiState === "guard") return attackSlotTarget(state, enemy, distance, lateGame ? 260 : 210);
-  if (enemy.aiState === "ambush") return attackSlotTarget(state, enemy, distance, lateGame ? 135 : 95);
-  if (enemy.aiState === "hunt" || enemy.aiState === "attack") return attackSlotTarget(state, enemy, distance);
+  if (enemy.aiState === "flee") return fleeTarget(state, enemy, dx, dy, distance);
+  if (enemy.aiState === "regroup") return attackSlotTarget(state, enemy, distance, lateGame ? 430 : 360, smartLeadSeconds(state, enemy) * 0.22);
+  if (enemy.aiState === "guard") return attackSlotTarget(state, enemy, distance, lateGame ? 260 : 210, smartLeadSeconds(state, enemy) * 0.3);
+  if (enemy.aiState === "ambush") return attackSlotTarget(state, enemy, distance, lateGame ? 135 : 95, smartLeadSeconds(state, enemy) * 0.72);
+  if (enemy.aiState === "hunt") return attackSlotTarget(state, enemy, distance, 0, smartLeadSeconds(state, enemy));
+  if (enemy.aiState === "attack") return attackSlotTarget(state, enemy, distance, 0, smartLeadSeconds(state, enemy) * 1.08);
 
   return wanderTarget(state, enemy);
 }
@@ -230,13 +314,15 @@ export function updateEnemySystem(state: NextEngineState, dt: number) {
 
     const target = aiTarget(state, enemy);
     const separation = localSeparation(state, enemy);
+    const edge = worldEdgeAvoidance(state, enemy);
     const crowdPenalty = separation.crowd >= 5 ? 0.78 : separation.crowd >= 3 ? 0.9 : 1;
     const huntBoost = midGame && isPredator(enemy) ? 1.02 : enemy.aiType === "leviathan" ? 1.08 : enemy.aiType === "apex" ? 1.1 : enemy.aiType === "stalker" ? 1.15 : lateGame && isPredator(enemy) ? 1.0 : 1.06;
     const impulse = midGame && isPredator(enemy) ? 1.7 : lateGame && isPredator(enemy) ? 1.55 : enemy.aiType === "leviathan" ? 1.82 : enemy.aiType === "apex" ? 1.95 : enemy.aiType === "stalker" ? 2.15 : 2.0;
     const stateSpeed = enemy.aiState === "flee" ? enemy.speed * 1.14 : enemy.aiState === "regroup" ? enemy.speed * 0.98 : enemy.aiState === "guard" ? enemy.speed * 0.82 : enemy.aiState === "ambush" ? enemy.speed * (lateGame ? 1.02 : 1.12) : enemy.aiState === "hunt" ? enemy.speed * huntBoost : enemy.aiState === "attack" ? enemy.speed * (midGame ? 0.84 : lateGame ? 0.82 : 0.94) : enemy.speed * 0.72;
     const separationWeight = isElite(enemy) ? 1.25 : enemy.aiState === "attack" ? (midGame ? 1.82 : lateGame ? 1.65 : 1.55) : enemy.aiState === "hunt" || enemy.aiState === "ambush" ? (midGame ? 1.55 : lateGame ? 1.42 : 1.35) : 1.05;
-    const moveX = target.x + separation.x * separationWeight;
-    const moveY = target.y + separation.y * separationWeight;
+    const edgeWeight = edge.force > 0 ? (isElite(enemy) ? 0.72 : enemy.aiState === "flee" ? 1.05 : 0.82) : 0;
+    const moveX = target.x + separation.x * separationWeight + edge.x * edgeWeight;
+    const moveY = target.y + separation.y * separationWeight + edge.y * edgeWeight;
     const move = normalize(moveX, moveY);
 
     enemy.vx += move.x * stateSpeed * dt * impulse * crowdPenalty;
@@ -247,6 +333,8 @@ export function updateEnemySystem(state: NextEngineState, dt: number) {
       enemy.vy += separation.y * enemy.speed * dt * (midGame ? 3.1 : lateGame ? 2.55 : 2.4);
       enemy.wanderT = Math.min(enemy.wanderT, 0.35);
     }
+
+    if (edge.force > 0.42 && enemy.aiState !== "attack") enemy.wanderT = Math.min(enemy.wanderT, 0.24);
 
     const maxSpeed = enemy.aiState === "flee" ? enemy.speed * 1.34 : isElite(enemy) ? enemy.speed * (midGame ? 1.08 : lateGame ? 1.02 : 1.18) : enemy.speed * (midGame && isPredator(enemy) ? 1.0 : lateGame && isPredator(enemy) ? 0.96 : 1.08);
     const speed = Math.hypot(enemy.vx, enemy.vy) || 1;
