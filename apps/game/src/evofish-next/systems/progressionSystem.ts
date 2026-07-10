@@ -90,15 +90,19 @@ function lateGamePearlCap(state: NextEngineState, enemy: NextFishEntity) {
   const playerLevel = Math.max(1, Math.floor(state.player.level || 1));
   if (playerLevel < 50) return Number.POSITIVE_INFINITY;
 
-  if (enemy.aiType === "apex" || enemy.aiType === "leviathan" || enemy.balanceBand === "big" || enemy.form === "megalodon") {
+  if (enemy.aiType === "apex" || enemy.aiType === "leviathan") {
     return 50000;
   }
 
-  if (enemy.aiType === "stalker" || enemy.aiType === "brute" || enemy.aiType === "hunter" || enemy.balanceBand === "strong" || enemy.form === "shark") {
-    return 25000;
+  if (enemy.balanceBand === "big" || enemy.form === "megalodon") {
+    return 10000;
   }
 
-  return 10000;
+  if (enemy.aiType === "stalker" || enemy.aiType === "brute" || enemy.aiType === "hunter" || enemy.balanceBand === "strong" || enemy.form === "shark") {
+    return 5000;
+  }
+
+  return 1500;
 }
 
 function clampLateGamePearls(state: NextEngineState, enemy: NextFishEntity, rawPearls: number) {
