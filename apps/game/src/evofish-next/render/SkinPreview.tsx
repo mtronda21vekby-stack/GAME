@@ -16,10 +16,6 @@ function resolveForm(skin: EvoFishSkinDefinition, form?: EvoFishFormId): EvoFish
   return skin.form === "any" ? "fish" : skin.form;
 }
 
-function shouldUseShowcaseImage(form: EvoFishFormId) {
-  return form === "fish";
-}
-
 function Pattern(props: { skin: EvoFishSkinDefinition; form: EvoFishFormId }) {
   const { skin, form } = props;
   const accent = skin.palette.accent;
@@ -142,6 +138,47 @@ function FallbackFish(props: { skin: EvoFishSkinDefinition; form: EvoFishFormId 
   return <Fish skin={skin} />;
 }
 
+function PreviewDefs({ skin }: { skin: EvoFishSkinDefinition }) {
+  return (
+    <defs>
+      <linearGradient id="body" x1="0" x2="1" y1="0" y2="1">
+        <stop offset="0" stopColor={skin.palette.primary} />
+        <stop offset="0.62" stopColor={skin.palette.secondary} />
+        <stop offset="1" stopColor={skin.palette.shadow || skin.palette.accent} />
+      </linearGradient>
+    </defs>
+  );
+}
+
+function staticAssetBox(form: EvoFishFormId) {
+  if (form === "shark") return { w: 178, h: 86 };
+  if (form === "megalodon") return { w: 186, h: 92 };
+  return { w: 168, h: 84 };
+}
+
+function StaticPreview(props: { skin: EvoFishSkinDefinition; form: EvoFishFormId; assetPath?: string; showAsset: boolean; onAssetError: () => void }) {
+  const { skin, form, assetPath, showAsset, onAssetError } = props;
+  const box = staticAssetBox(form);
+
+  return (
+    <svg viewBox="0 0 256 144" role="img">
+      <PreviewDefs skin={skin} />
+      <rect width="256" height="144" rx="28" fill="#031827" />
+      <circle cx="128" cy="72" r="64" fill={skin.palette.glow || skin.palette.accent} opacity="0.14" />
+      <circle cx="128" cy="72" r="60" fill="none" stroke="rgba(129,229,255,.16)" strokeWidth="2" />
+      {showAsset && assetPath ? (
+        <g transform="translate(128 72)">
+          <image href={assetPath} x={-box.w / 2} y={-box.h / 2} width={box.w} height={box.h} preserveAspectRatio="xMidYMid meet" onError={onAssetError} />
+        </g>
+      ) : (
+        <FallbackFish skin={skin} form={form} />
+      )}
+      <circle cx="40" cy="98" r="3.5" fill="rgba(190,245,255,.45)" />
+      <circle cx="48" cy="95" r="5.5" fill="rgba(190,245,255,.18)" />
+    </svg>
+  );
+}
+
 function AnimatedSkinShowcase(props: { skin: EvoFishSkinDefinition; assetPath: string; form: EvoFishFormId; onAssetError: () => void }) {
   const { skin, assetPath, form, onAssetError } = props;
   const sceneStyle = {
@@ -155,63 +192,31 @@ function AnimatedSkinShowcase(props: { skin: EvoFishSkinDefinition; assetPath: s
   return (
     <div className="efSkinShowcase" style={sceneStyle}>
       <div className="efSkinLightCone" />
-      <div className="efSkinSphere" />
-      <img className={`efSphereFish ${form}`} src={assetPath} alt="" draggable={false} onError={onAssetError} />
-      <div className="efSphereHighlight" />
-      <div className="efSkinBubbles"><span /><span /><span /></div>
+      <div className="efSkinShaderBloom" />
+      <div className="efSkinShaderFog" />
+      <div className="efSkinBubbles"><span className="b1" /><span className="b2" /><span className="b3" /><span className="b4" /><span className="b5" /></div>
+      <div className="efSkinSphere">
+        <div className="efSphereGlass" />
+        <div className="efSphereCaustics" />
+        <div className="efSphereFishWrap"><img className={`efSphereFish ${form}`} src={assetPath} alt="" draggable={false} onError={onAssetError} /></div>
+        <div className="efSphereHighlight" />
+      </div>
+      <div className="efSkinFloorGlow" />
     </div>
   );
 }
 
 const SKIN_PREVIEW_STYLE = `
-.efSkinPreview{position:relative;width:100%;isolation:isolate;--ef-fish-optical-x:-8%;--ef-fish-optical-y:0%}
-.efSkinPreview.sprite{display:grid;place-items:center;overflow:hidden}
-.efSkinPreview>svg{display:block;width:100%;height:auto;border-radius:28px;overflow:hidden}
-.efSkinPreview.sm>svg{border-radius:15px}
-.efSkinPreview.md{max-width:360px}
-.efSkinPreview.lg{width:min(560px,100%)}
-.efSkinSpriteImg{display:block;width:100%;height:auto;object-fit:contain;object-position:44% 50%;transform:translateX(var(--ef-fish-optical-x));filter:drop-shadow(0 18px 26px rgba(0,0,0,.32)) drop-shadow(0 0 16px rgba(53,216,255,.16));user-select:none;-webkit-user-drag:none}
-.efSkinSpriteSvg{display:block;width:100%;height:auto;filter:drop-shadow(0 18px 26px rgba(0,0,0,.32)) drop-shadow(0 0 16px rgba(53,216,255,.16))}
-.efSkinShowcase{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:28px;background-image:linear-gradient(180deg,rgba(0,5,16,.02),rgba(0,7,18,.16)),var(--ef-showcase-bg);background-size:cover;background-position:center;background-repeat:no-repeat;border:1px solid rgba(151,229,255,.22);box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 14px 34px rgba(0,0,0,.26);contain:layout paint}
-.efSkinPreview.sm .efSkinShowcase{border-radius:15px}
-.efSkinShowcase:after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 75%,rgba(68,230,255,.15),transparent 30%),linear-gradient(90deg,rgba(0,0,0,.18),transparent 16%,transparent 84%,rgba(0,0,0,.18));pointer-events:none}
-.efSkinLightCone{position:absolute;left:50%;top:-4%;width:34%;height:58%;transform:translateX(-50%);background:linear-gradient(180deg,rgba(190,252,255,.26),rgba(95,225,255,.10) 50%,transparent);clip-path:polygon(43% 0,57% 0,100% 100%,0 100%);opacity:.58;pointer-events:none}
-.efSkinSphere{position:absolute;left:50%;top:50%;width:52%;aspect-ratio:1;border-radius:999px;transform:translate(-50%,-50%);background:radial-gradient(circle at 42% 10%,rgba(255,255,255,.18),rgba(255,255,255,.04) 20%,transparent 38%),radial-gradient(circle at 50% 50%,rgba(120,240,255,.10),transparent 58%);box-shadow:0 0 0 1px rgba(132,236,255,.25),inset -12px -18px 30px rgba(0,0,0,.22),0 0 28px rgba(60,210,255,.20);pointer-events:none}
-.efSkinPreview.sm .efSkinSphere{width:54%}
-.efSphereFish{position:absolute;left:calc(50% + var(--ef-fish-optical-x));top:50%;width:69%;height:50%;object-fit:contain;object-position:center;transform:translate(-50%,-50%);filter:drop-shadow(0 12px 16px rgba(0,0,0,.40)) drop-shadow(0 0 12px color-mix(in srgb,var(--ef-skin-glow) 46%,transparent));user-select:none;-webkit-user-drag:none;z-index:2;pointer-events:none}
-.efSphereFish.shark{left:44%;width:74%;height:54%}
-.efSphereFish.megalodon{left:43%;width:78%;height:58%}
-.efSkinPreview.sm .efSphereFish{left:43.5%;width:72%;height:52%}
-.efSphereHighlight{position:absolute;inset:0;border-radius:inherit;background:linear-gradient(120deg,rgba(255,255,255,.08),transparent 30%,transparent 66%,rgba(126,235,255,.05));mix-blend-mode:screen;pointer-events:none}
-.efSkinBubbles span{position:absolute;width:4%;aspect-ratio:1;border-radius:999px;background:radial-gradient(circle at 34% 30%,rgba(255,255,255,.72),rgba(119,235,255,.24) 38%,transparent 72%);box-shadow:0 0 10px rgba(100,225,255,.18);pointer-events:none}
-.efSkinBubbles span:nth-child(1){left:10%;bottom:20%}.efSkinBubbles span:nth-child(2){right:10%;bottom:28%;width:4.8%}.efSkinBubbles span:nth-child(3){right:17%;top:25%;width:2.9%}
+.efSkinPreview{position:relative;width:100%;isolation:isolate}.efSkinPreview.sprite{display:grid;place-items:center;overflow:hidden}.efSkinPreview>svg{display:block;width:100%;height:auto;border-radius:28px}.efSkinPreview.sm>svg{border-radius:15px}.efSkinPreview.md{max-width:360px}.efSkinPreview.lg{width:min(560px,100%)}
+.efSkinSpriteBox{width:100%;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;overflow:hidden}.efSkinSpriteImg{display:block;max-width:72%;max-height:54%;width:auto;height:auto;object-fit:contain;object-position:center center;margin:auto;filter:drop-shadow(0 18px 26px rgba(0,0,0,.32)) drop-shadow(0 0 16px rgba(53,216,255,.16));user-select:none;-webkit-user-drag:none}.efSkinSpriteSvg{display:block;width:100%;height:auto;filter:drop-shadow(0 18px 26px rgba(0,0,0,.32)) drop-shadow(0 0 16px rgba(53,216,255,.16))}
+.efSkinShowcase{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:28px;background-image:linear-gradient(180deg,rgba(0,5,16,.03),rgba(0,7,18,.14)),var(--ef-showcase-bg);background-size:cover;background-position:center;background-repeat:no-repeat;border:1px solid rgba(151,229,255,.22);box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 14px 34px rgba(0,0,0,.26);contain:layout paint}.efSkinPreview.sm .efSkinShowcase{border-radius:15px}.efSkinShowcase:after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 76%,rgba(68,230,255,.14),transparent 30%),linear-gradient(90deg,rgba(0,0,0,.18),transparent 16%,transparent 84%,rgba(0,0,0,.18));pointer-events:none}
+.efSkinLightCone{position:absolute;left:50%;top:-4%;width:34%;height:58%;transform:translateX(-50%);background:linear-gradient(180deg,rgba(190,252,255,.28),rgba(95,225,255,.10) 52%,transparent);clip-path:polygon(43% 0,57% 0,100% 100%,0 100%);opacity:.62;filter:blur(6px);pointer-events:none;animation:efLightSweep 5.6s ease-in-out infinite}.efSkinShaderBloom,.efSkinShaderFog{position:absolute;inset:0;pointer-events:none}.efSkinShaderBloom{background:radial-gradient(circle at 50% 6%,rgba(255,255,255,.24),rgba(120,238,255,.14) 14%,transparent 28%),radial-gradient(ellipse at 50% 88%,rgba(61,231,255,.24),rgba(30,160,255,.09) 34%,transparent 62%);filter:blur(4px) saturate(1.2);mix-blend-mode:screen;opacity:.7;animation:efShaderBloom 5.2s ease-in-out infinite}.efSkinShaderFog{inset:-6%;background:radial-gradient(ellipse at 24% 68%,rgba(140,234,255,.14),transparent 36%),radial-gradient(ellipse at 76% 62%,rgba(99,205,255,.14),transparent 34%),radial-gradient(ellipse at 50% 92%,rgba(76,231,255,.18),transparent 38%);filter:blur(12px);mix-blend-mode:screen;opacity:.62;animation:efShaderFog 8s ease-in-out infinite}
+.efSkinSphere{position:absolute;left:50%;top:50%;width:52%;aspect-ratio:1;border-radius:999px;transform:translate(-50%,-50%);pointer-events:none}.efSkinPreview.sm .efSkinSphere{width:54%}.efSphereGlass{position:absolute;inset:0;border-radius:inherit;background:radial-gradient(circle at 44% 8%,rgba(255,255,255,.18),rgba(255,255,255,.04) 20%,transparent 36%),linear-gradient(135deg,rgba(255,255,255,.05),transparent 42%,rgba(135,240,255,.06));box-shadow:0 0 0 1px rgba(132,236,255,.25),inset -12px -18px 30px rgba(0,0,0,.22),inset 10px 10px 18px rgba(161,244,255,.06),0 0 28px rgba(60,210,255,.18)}.efSphereCaustics{position:absolute;left:14%;right:14%;bottom:8%;height:34%;border-radius:50%;background:radial-gradient(ellipse at 48% 62%,rgba(118,240,255,.18),transparent 32%),radial-gradient(ellipse at 56% 76%,rgba(255,255,255,.12),transparent 18%);filter:blur(1.6px);opacity:.5;mix-blend-mode:screen;animation:efCaustics 5.2s ease-in-out infinite}
+.efSphereFishWrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:2}.efSphereFish{display:block;width:auto;height:auto;max-width:72%;max-height:54%;object-fit:contain;object-position:center center;margin:auto;filter:drop-shadow(0 12px 16px rgba(0,0,0,.40)) drop-shadow(0 0 12px color-mix(in srgb,var(--ef-skin-glow) 46%,transparent));user-select:none;-webkit-user-drag:none;animation:efFishFloat 3.8s ease-in-out infinite}.efSphereFish.shark{max-width:78%;max-height:58%}.efSphereFish.megalodon{max-width:82%;max-height:62%}.efSphereHighlight{position:absolute;inset:0;border-radius:inherit;background:linear-gradient(120deg,rgba(255,255,255,.08),transparent 31%,transparent 64%,rgba(126,235,255,.05));mix-blend-mode:screen;pointer-events:none}
+.efSkinFloorGlow{position:absolute;left:50%;bottom:8%;width:42%;height:7%;transform:translateX(-50%);border-radius:999px;background:radial-gradient(ellipse,rgba(92,236,255,.38),rgba(54,190,255,.14) 50%,transparent 74%);filter:blur(7px);mix-blend-mode:screen;animation:efFloorGlow 4.8s ease-in-out infinite}.efSkinBubbles span{position:absolute;border-radius:999px;background:radial-gradient(circle at 34% 30%,rgba(255,255,255,.82),rgba(119,235,255,.24) 38%,transparent 72%);box-shadow:0 0 10px rgba(100,225,255,.18);animation:efBubbleRise 6.2s ease-in infinite}.efSkinBubbles .b1{left:8%;bottom:17%;width:3.6%;aspect-ratio:1;animation-delay:-1.4s}.efSkinBubbles .b2{right:8%;bottom:24%;width:4.4%;aspect-ratio:1;animation-delay:-3.3s}.efSkinBubbles .b3{right:15%;bottom:44%;width:2.5%;aspect-ratio:1;animation-delay:-.6s}.efSkinBubbles .b4{left:12%;bottom:58%;width:2.8%;aspect-ratio:1;animation-delay:-4.8s}.efSkinBubbles .b5{left:80%;bottom:67%;width:2.2%;aspect-ratio:1;animation-delay:-2.1s}
+@keyframes efFishFloat{0%,100%{transform:translateY(0) rotate(-1deg) scale(1)}45%{transform:translateY(-3px) rotate(1deg) scale(1.02)}70%{transform:translateY(1px) rotate(-.5deg) scale(.995)}}@keyframes efCaustics{0%,100%{transform:translate3d(-1%,1%,0) scale(1);opacity:.36}50%{transform:translate3d(1%,-1%,0) scale(1.06);opacity:.56}}@keyframes efBubbleRise{0%{transform:translateY(22px) scale(.62);opacity:0}16%{opacity:.86}78%{opacity:.72}100%{transform:translateY(-118px) scale(1.12);opacity:0}}@keyframes efLightSweep{0%,100%{transform:translateX(-52%) skewX(-2deg);opacity:.64}50%{transform:translateX(-48%) skewX(3deg);opacity:.92}}@keyframes efFloorGlow{0%,100%{opacity:.55;transform:translateX(-50%) scaleX(1)}50%{opacity:.82;transform:translateX(-50%) scaleX(1.18)}}@keyframes efShaderBloom{0%,100%{opacity:.62;transform:scale(1)}50%{opacity:.84;transform:scale(1.03)}}@keyframes efShaderFog{0%,100%{transform:translate3d(-1%,.5%,0) scale(1);opacity:.56}50%{transform:translate3d(1.2%,-.8%,0) scale(1.04);opacity:.76}}
 @media(prefers-reduced-motion:reduce){.efSkinShowcase *{animation-duration:.01ms!important;animation-iteration-count:1!important}}
 `;
-
-function PreviewDefs({ skin }: { skin: EvoFishSkinDefinition }) {
-  return (
-    <defs>
-      <linearGradient id="body" x1="0" x2="1" y1="0" y2="1">
-        <stop offset="0" stopColor={skin.palette.primary} />
-        <stop offset="0.62" stopColor={skin.palette.secondary} />
-        <stop offset="1" stopColor={skin.palette.shadow || skin.palette.accent} />
-      </linearGradient>
-    </defs>
-  );
-}
-
-function StaticPreview(props: { skin: EvoFishSkinDefinition; form: EvoFishFormId; assetPath?: string; showAsset: boolean; onAssetError: () => void }) {
-  const { skin, form, assetPath, showAsset, onAssetError } = props;
-  return (
-    <svg viewBox="0 0 256 144" role="img">
-      <PreviewDefs skin={skin} />
-      <rect width="256" height="144" rx="28" fill="#031827" />
-      <circle cx="128" cy="72" r="66" fill={skin.palette.glow || skin.palette.accent} opacity="0.14" />
-      {showAsset && assetPath ? <image href={assetPath} x="2" y="20" width="212" height="102" preserveAspectRatio="xMidYMid meet" onError={onAssetError} /> : null}
-      {!showAsset ? <g transform="translate(10 0)"><FallbackFish skin={skin} form={form} /></g> : null}
-    </svg>
-  );
-}
 
 export function SkinPreview({ skin, form, size = "md", variant = "showcase", className }: SkinPreviewProps) {
   const resolvedForm = resolveForm(skin, form);
@@ -219,7 +224,6 @@ export function SkinPreview({ skin, form, size = "md", variant = "showcase", cla
   const assetPath = skin.assetPath || skin.image;
   const [assetFailed, setAssetFailed] = React.useState(false);
   const showAsset = Boolean(assetPath && !assetFailed);
-  const showShowcaseImage = Boolean(variant !== "sprite" && showAsset && assetPath && shouldUseShowcaseImage(resolvedForm));
 
   React.useEffect(() => {
     setAssetFailed(false);
@@ -230,11 +234,7 @@ export function SkinPreview({ skin, form, size = "md", variant = "showcase", cla
   if (variant === "sprite") {
     return (
       <div className={cls} aria-label={skin.name}>
-        {showAsset && assetPath ? (
-          <img className="efSkinSpriteImg" src={assetPath} alt="" draggable={false} onError={onAssetError} />
-        ) : (
-          <StaticPreview skin={skin} form={resolvedForm} showAsset={false} onAssetError={onAssetError} />
-        )}
+        {showAsset && assetPath ? <div className="efSkinSpriteBox"><img className="efSkinSpriteImg" src={assetPath} alt="" draggable={false} onError={onAssetError} /></div> : <StaticPreview skin={skin} form={resolvedForm} showAsset={false} onAssetError={onAssetError} />}
         <style>{SKIN_PREVIEW_STYLE}</style>
       </div>
     );
@@ -242,11 +242,7 @@ export function SkinPreview({ skin, form, size = "md", variant = "showcase", cla
 
   return (
     <div className={cls} aria-label={skin.name}>
-      {showShowcaseImage && assetPath ? (
-        <AnimatedSkinShowcase skin={skin} form={resolvedForm} assetPath={assetPath} onAssetError={onAssetError} />
-      ) : (
-        <StaticPreview skin={skin} form={resolvedForm} assetPath={assetPath || undefined} showAsset={showAsset} onAssetError={onAssetError} />
-      )}
+      {showAsset && assetPath ? <AnimatedSkinShowcase skin={skin} form={resolvedForm} assetPath={assetPath} onAssetError={onAssetError} /> : <StaticPreview skin={skin} form={resolvedForm} assetPath={assetPath || undefined} showAsset={showAsset} onAssetError={onAssetError} />}
       <style>{SKIN_PREVIEW_STYLE}</style>
     </div>
   );
