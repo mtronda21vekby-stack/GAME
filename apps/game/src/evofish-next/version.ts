@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-real-daily-weekly-rotation-6.15.3";
+export const EVOFISH_NEXT_VERSION = "next-main-lobby-daily-login-6.15.4";
