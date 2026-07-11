@@ -12,6 +12,7 @@ import { BetaReport } from "../evofish-next/ui/BetaReport";
 import { DeepTreasuresHub } from "../evofish-next/ui/DeepTreasuresHub";
 import { GameSettingsHub } from "../evofish-next/ui/GameSettingsHub";
 import { Leaderboard } from "../evofish-next/ui/Leaderboard";
+import { LobbyDailyLoginReward } from "../evofish-next/ui/LobbyDailyLoginReward";
 import { LobbySkinCarousel } from "../evofish-next/ui/LobbySkinCarousel";
 import { ProfileHub } from "../evofish-next/ui/ProfileHub";
 import { SeasonHub } from "../evofish-next/ui/SeasonHub";
@@ -57,6 +58,27 @@ function GameModeEntry() {
   if (mode === "classic") return <Game />;
   if (mode === "next") return <NextPlaySession />;
   return <BetaHome />;
+}
+
+function isLobbyPath(pathname: string) {
+  const path = pathname.replace(/\/+$/, "") || "/";
+  return ["/", "/game", "/game/lobby", "/game/next", "/game/next/lobby", "/next", "/next/lobby"].includes(path);
+}
+
+function LobbyDailyLoginMount() {
+  const [path, setPath] = useState(() => window.location.pathname);
+
+  useEffect(() => {
+    const sync = () => setPath(window.location.pathname);
+    window.addEventListener("popstate", sync);
+    window.addEventListener("focus", sync);
+    return () => {
+      window.removeEventListener("popstate", sync);
+      window.removeEventListener("focus", sync);
+    };
+  }, []);
+
+  return isLobbyPath(path) ? <LobbyDailyLoginReward /> : null;
 }
 
 function DeepTreasuresMenuTab() {
@@ -149,6 +171,7 @@ export function App() {
         notFound={withBoundary(<BetaHome />)}
       />
       <LobbySkinCarousel />
+      <LobbyDailyLoginMount />
       <DeepTreasuresMenuTab />
     </>
   );
