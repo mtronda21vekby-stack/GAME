@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-quest-panel-scroll-polish-6.15.2";
+export const EVOFISH_NEXT_VERSION = "next-real-daily-weekly-rotation-6.15.3";
