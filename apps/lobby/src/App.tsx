@@ -1,4 +1,5 @@
 import React from "react";
+import { DailyLoginReward } from "./components/DailyLoginReward";
 import { Lobby } from "./routes/Lobby";
 
 function safeId() {
@@ -61,13 +62,9 @@ export function App() {
   React.useEffect(() => {
     let alive = true;
 
-    // ensure user first
     ensureGuestUser();
-
-    // immediate ping
     ping();
 
-    // periodic ping
     const t = window.setInterval(() => {
       if (!alive) return;
       if (document.visibilityState === "visible") ping();
@@ -88,5 +85,10 @@ export function App() {
     };
   }, []);
 
-  return <Lobby />;
+  return (
+    <>
+      <Lobby />
+      <DailyLoginReward />
+    </>
+  );
 }
