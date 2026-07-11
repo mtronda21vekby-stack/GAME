@@ -1,7 +1,7 @@
 import type { EvoFishCurrency, EvoFishSkinDefinition } from "../core/types";
 
 export const EVOFISH_SKIN_ASSET_BASE = "/game/skins/custom";
-export const EVOFISH_SKIN_ASSET_VERSION = "shark-silhouette-lock-10";
+export const EVOFISH_SKIN_ASSET_VERSION = "shark-png-skins-11";
 
 const DEFAULT_BLUE_FISH_ASSET = new URL("../assets/skins/default-blue-fish.png", import.meta.url).href;
 const NEON_KOI_ASSET = new URL("../assets/skins/neon-koi.png", import.meta.url).href;
@@ -25,11 +25,20 @@ const SKIN_ASSET_URLS: Record<string, string> = {
   pirate_fish: PIRATE_FISH_ASSET
 };
 
+const PUBLIC_SKIN_ASSET_EXTENSIONS: Record<string, "svg" | "png"> = {
+  shark_classic: "png",
+  shark_tiger: "png",
+  shark_shadow: "png",
+  shark_azure: "png",
+  shark_white: "png"
+};
+
 export function getSkinAssetPath(id: string) {
   const assetUrl = SKIN_ASSET_URLS[id];
   if (assetUrl) return assetUrl;
 
-  return `${EVOFISH_SKIN_ASSET_BASE}/${id}.svg?v=${EVOFISH_SKIN_ASSET_VERSION}`;
+  const extension = PUBLIC_SKIN_ASSET_EXTENSIONS[id] || "svg";
+  return `${EVOFISH_SKIN_ASSET_BASE}/${id}.${extension}?v=${EVOFISH_SKIN_ASSET_VERSION}`;
 }
 
 function withAsset(skin: Omit<EvoFishSkinDefinition, "assetPath" | "image">): EvoFishSkinDefinition {
@@ -170,7 +179,7 @@ export const EVOFISH_SKINS: EvoFishSkinDefinition[] = [
     accent: "#ffffff"
   }, "pirate", ["character"]),
 
-  pearlSkin("shark_classic", "Акула Классик", "shark", 100000, "premium", "Классический скин на зафиксированном силуэте акулы.", {
+  pearlSkin("shark_classic", "Стандартная акула", "shark", 100000, "premium", "Классический скин на зафиксированном силуэте акулы.", {
     primary: "#bfc7d0",
     secondary: "#546070",
     accent: "#ffffff"

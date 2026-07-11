@@ -1,5 +1,5 @@
 {
-  "version": 9,
+  "version": 10,
   "basePath": "/game/skins/custom",
   "defaultSkinId": "default",
   "skins": {
@@ -12,11 +12,11 @@
     "gold_scale": "gold_scale.png",
     "cyber_fish": "cyber_fish.png",
     "pirate_fish": "pirate_fish.png",
-    "shark_classic": "shark_classic.svg",
-    "shark_tiger": "shark_tiger.svg",
-    "shark_shadow": "shark_shadow.svg",
-    "shark_azure": "shark_azure.svg",
-    "shark_white": "shark_white.svg",
+    "shark_classic": "shark_classic.png",
+    "shark_tiger": "shark_tiger.png",
+    "shark_shadow": "shark_shadow.png",
+    "shark_azure": "shark_azure.png",
+    "shark_white": "shark_white.png",
     "mega_deep": "mega_deep.svg",
     "mega_bone": "mega_bone.svg",
     "mega_lava": "mega_lava.svg",
