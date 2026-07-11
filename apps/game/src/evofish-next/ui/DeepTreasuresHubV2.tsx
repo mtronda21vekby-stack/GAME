@@ -72,8 +72,8 @@ function roll(state: TrenchState): Reward {
   return { ...pool[0], id: id(), multiplier: 1 };
 }
 function buildReel(state: TrenchState, win?: Reward) {
-  const list = Array.from({ length: 58 }, () => ({ ...roll(state), id: id(), multiplier: 1 }));
-  if (win) list[WIN_INDEX] = win;
+  const list: Reward[] = Array.from({ length: 58 }, () => ({ ...roll(state), id: id(), multiplier: 1 }));
+  if (win) list[WIN_INDEX] = { ...win, id: win.id || id(), multiplier: win.multiplier || 1 };
   return list;
 }
 function grantSkin(kind: Kind, state: TrenchState) {
@@ -86,7 +86,7 @@ function grantSkin(kind: Kind, state: TrenchState) {
 }
 function applyReward(base: TrenchState, reward: Reward) {
   const a = amount(reward);
-  let state = { ...base, pendingReward: null, skins: { ...base.skins } };
+  let state: TrenchState = { ...base, pendingReward: null, skins: { ...base.skins } };
   let message = `Награда получена: ${text(reward)}`;
   const save = loadEvoFishNextSave();
   if (reward.kind === "xp") saveEvoFishNextSave(addXp(save, a));

@@ -4,8 +4,8 @@ import { loadEvoFishNextSave, saveEvoFishNextSave } from "../state/nextSaveStore
 
 const QUEST_ROTATION_RELOAD_KEY = "evofish_next_quest_rotation_reload_v1";
 
-function removeCompletedByPrefix(completed: Record<string, boolean>, prefix: "daily_" | "weekly_") {
-  const next: Record<string, boolean> = {};
+function removeCompletedByPrefix(completed: Record<string, true>, prefix: "daily_" | "weekly_") {
+  const next: Record<string, true> = {};
   for (const [id, value] of Object.entries(completed || {})) {
     if (!id.startsWith(prefix)) next[id] = value;
   }

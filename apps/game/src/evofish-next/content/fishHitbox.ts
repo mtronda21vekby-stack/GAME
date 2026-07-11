@@ -4,7 +4,7 @@ import type { NextEnemyArchetypeId } from "./enemyArchetypes";
 
 export const EVOFISH_SHARED_FISH_HITBOX_RADIUS = 24;
 
-type FishLike = Pick<NextFishEntity, "form" | "mass" | "aiType"> & { angle?: number };
+type FishLike = Pick<NextFishEntity, "form" | "mass"> & { aiType?: NextEnemyArchetypeId; angle?: number };
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
