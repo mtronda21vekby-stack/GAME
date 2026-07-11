@@ -240,7 +240,7 @@ export const EVOFISH_SKINS: EvoFishSkinDefinition[] = [
 export const EVOFISH_SKIN_BY_ID = Object.fromEntries(EVOFISH_SKINS.map((skin) => [skin.id, skin] as const));
 
 export function getSkinsForForm(form: EvoFishSkinDefinition["form"]) {
-  return EVOFISH_SKINS.filter((skin) => skin.form === "any" || skin.form === form);
+  return EVOFISH_SKINS.filter((skin) => skin.form === form || (form === "fish" && skin.form === "any"));
 }
 
 export function getDefaultSkinId() {
