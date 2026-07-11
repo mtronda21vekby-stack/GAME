@@ -1,1 +1,1 @@
-export const EVOFISH_NEXT_VERSION = "next-centered-skin-previews-6.15.0";
+export const EVOFISH_NEXT_VERSION = "next-centered-shop-fish-vfx-6.15.1";
