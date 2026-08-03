@@ -1,0 +1,68 @@
+name: CROWN FRONT — Unity WebGL cloud build
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: Build note
+        required: false
+        default: Manual Crown Engine prototype build
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crown-engine-unity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-webgl:
+    name: Build THE CROWN ENGINE WebGL
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: unity/crown-front/Library
+          key: crown-front-unity-${{ runner.os }}-6000.5.3f1-${{ hashFiles('unity/crown-front/Packages/manifest.json', 'unity/crown-front/Assets/**/*.cs') }}
+          restore-keys: |
+            crown-front-unity-${{ runner.os }}-6000.5.3f1-
+            crown-front-unity-${{ runner.os }}-
+
+      - name: Build WebGL with Unity
+        uses: game-ci/unity-builder@v5.0.0
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+        with:
+          projectPath: unity/crown-front
+          unityVersion: auto
+          targetPlatform: WebGL
+          buildMethod: CrownFront.Editor.CrownEngineCloudBuild.BuildWebGL
+          customParameters: -outputPath Builds/CloudWebGL
+          allowDirtyBuild: true
+          versioning: None
+
+      - name: Generate SHA-256 manifest
+        shell: bash
+        run: |
+          cd unity/crown-front/Builds/CloudWebGL
+          find . -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt
+          du -sh .
+
+      - name: Upload WebGL artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: crown-engine-webgl-${{ github.sha }}
+          path: unity/crown-front/Builds/CloudWebGL
+          if-no-files-found: error
+          retention-days: 14
