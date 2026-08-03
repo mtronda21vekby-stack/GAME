@@ -1,0 +1,71 @@
+name: Crown Engine WebGL Cloud Build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  UNITY_PROJECT_PATH: unity/CROWN-FRONT
+  UNITY_VERSION: 6000.5.3f1
+
+jobs:
+  build-webgl:
+    name: Build THE CROWN ENGINE WebGL prototype
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          lfs: true
+
+      - name: Check Unity license secret
+        shell: bash
+        env:
+          UNITY_LICENSE_VALUE: ${{ secrets.UNITY_LICENSE }}
+        run: |
+          if [ -z "$UNITY_LICENSE_VALUE" ]; then
+            echo "UNITY_LICENSE is not configured. Add it under Repository Settings > Secrets and variables > Actions before running this workflow."
+            exit 2
+          fi
+
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.UNITY_PROJECT_PATH }}/Library
+          key: crown-engine-library-${{ runner.os }}-${{ env.UNITY_VERSION }}-${{ hashFiles('unity/CROWN-FRONT/Packages/manifest.json', 'unity/CROWN-FRONT/Assets/**/*.cs') }}
+          restore-keys: |
+            crown-engine-library-${{ runner.os }}-${{ env.UNITY_VERSION }}-
+
+      - name: Build WebGL with Unity
+        uses: game-ci/unity-builder@v5.0.0
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: ${{ env.UNITY_PROJECT_PATH }}
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: WebGL
+          buildMethod: CrownFront.Editor.CrownEngineCloudBuild.Build
+          customParameters: -outputPath ../../build/CrownEngineWebGL
+          allowDirtyBuild: true
+
+      - name: Verify WebGL output
+        shell: bash
+        run: |
+          test -f build/CrownEngineWebGL/index.html
+          find build/CrownEngineWebGL -type f -maxdepth 3 -print
+          du -sh build/CrownEngineWebGL
+
+      - name: Upload WebGL artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: crown-engine-webgl-${{ github.sha }}
+          path: build/CrownEngineWebGL
+          if-no-files-found: error
+          retention-days: 14
