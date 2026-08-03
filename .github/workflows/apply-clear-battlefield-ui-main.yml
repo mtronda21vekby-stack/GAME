@@ -1,0 +1,156 @@
+name: One-shot battlefield UI source patch
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/apply-clear-battlefield-ui-main.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-feature-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/clear-battlefield-ui
+          fetch-depth: 0
+
+      - name: Remove obstructive deployment controls
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("unity/crown-front/Assets/_Project/Runtime/CrownEngineGame.cs")
+          text = path.read_text(encoding="utf-8")
+
+          replacements = [
+              (
+                  "        private bool _finished;\n        private string _result = string.Empty;\n",
+                  "        private bool _finished;\n        private string _result = string.Empty;\n        private int _lastDeploymentFrame = -1;\n",
+              ),
+              (
+                  "            _aiEnergy = Mathf.Min(MaxEnergy, _aiEnergy + dt * 0.72f);\n\n            if (Time.time >= _nextAi) RunAi();\n",
+                  "            _aiEnergy = Mathf.Min(MaxEnergy, _aiEnergy + dt * 0.72f);\n\n            HandleBattlefieldDeploymentInput();\n\n            if (Time.time >= _nextAi) RunAi();\n",
+              ),
+              (
+                  '''            float panelH = 330f;
+            float y = height - panelH - 20f;
+            GUI.color = new Color(0.03f, 0.06f, 0.09f, 0.95f);
+            GUI.Box(new Rect(18, y, width - 36, panelH), string.Empty);
+            GUI.color = Color.white;
+            GUI.Label(new Rect(42, y + 20, 400, 42), $"ENERGY  {Mathf.FloorToInt(_energy)}/10");
+            GUI.Label(new Rect(width - 450, y + 20, 410, 42), $"SELECTED  {_selected}", RightStyle());
+
+            float cardW = (width - 96f) / 3f;
+            DrawUnitButton(new Rect(30, y + 78, cardW, 100), CrownUnitKind.Assault, "ASSAULT", 3);
+            DrawUnitButton(new Rect(48 + cardW, y + 78, cardW, 100), CrownUnitKind.Tank, "TANK", 4);
+            DrawUnitButton(new Rect(66 + cardW * 2f, y + 78, cardW, 100), CrownUnitKind.Raider, "RAIDER", 2);
+
+            GUI.Label(new Rect(42, y + 194, width - 84, 38), "DEPLOY TO LANE", CenterStyle());
+            float laneW = (width - 96f) / 3f;
+            if (GUI.Button(new Rect(30, y + 236, laneW, 72), "LEFT")) TryPlayerSpawn(0);
+            if (GUI.Button(new Rect(48 + laneW, y + 236, laneW, 72), "CENTER")) TryPlayerSpawn(1);
+            if (GUI.Button(new Rect(66 + laneW * 2f, y + 236, laneW, 72), "RIGHT")) TryPlayerSpawn(2);
+''',
+                  '''            // Keep the middle of the battlefield completely unobstructed.
+            // After selecting a unit, deploy by tapping/clicking a lane directly on the arena.
+            float panelH = 224f;
+            float y = height - panelH - 20f;
+            GUI.color = new Color(0.03f, 0.06f, 0.09f, 0.95f);
+            GUI.Box(new Rect(18, y, width - 36, panelH), string.Empty);
+            GUI.color = Color.white;
+            GUI.Label(new Rect(42, y + 18, 400, 42), $"ENERGY  {Mathf.FloorToInt(_energy)}/10");
+            GUI.Label(new Rect(width - 520, y + 18, 480, 42), $"{_selected}  •  TAP A LANE", RightStyle());
+
+            float cardW = (width - 96f) / 3f;
+            DrawUnitButton(new Rect(30, y + 76, cardW, 108), CrownUnitKind.Assault, "ASSAULT", 3);
+            DrawUnitButton(new Rect(48 + cardW, y + 76, cardW, 108), CrownUnitKind.Tank, "TANK", 4);
+            DrawUnitButton(new Rect(66 + cardW * 2f, y + 76, cardW, 108), CrownUnitKind.Raider, "RAIDER", 2);
+''',
+              ),
+              (
+                  '''        private void TryPlayerSpawn(int lane)
+        {
+            if (_finished || _units.Count >= MaxUnits) return;
+            float cost = Cost(_selected);
+            if (_energy < cost) return;
+            _energy -= cost;
+            Spawn(CrownTeam.Blue, _selected, lane);
+        }
+
+''',
+                  '''        private void HandleBattlefieldDeploymentInput()
+        {
+            if (_finished || _lastDeploymentFrame == Time.frameCount) return;
+
+            Vector2 screenPosition = default;
+            bool released = false;
+
+            // Touch can also emulate a mouse release. Prefer the real touch path so one release
+            // can never create two squads.
+            if (Input.touchCount > 0)
+            {
+                Touch touch = Input.GetTouch(0);
+                if (touch.phase == TouchPhase.Ended)
+                {
+                    screenPosition = touch.position;
+                    released = true;
+                }
+            }
+            else if (Input.GetMouseButtonUp(0))
+            {
+                screenPosition = Input.mousePosition;
+                released = true;
+            }
+
+            if (!released || Screen.width <= 0 || Screen.height <= 0) return;
+
+            float normalizedY = screenPosition.y / Screen.height;
+            if (normalizedY < 0.16f || normalizedY > 0.90f) return;
+
+            float laneWidth = Screen.width / 3f;
+            int lane = Mathf.Clamp(Mathf.FloorToInt(screenPosition.x / laneWidth), 0, 2);
+            _lastDeploymentFrame = Time.frameCount;
+            TryPlayerSpawn(lane);
+        }
+
+        private void TryPlayerSpawn(int lane)
+        {
+            if (_finished || _units.Count >= MaxUnits) return;
+            float cost = Cost(_selected);
+            if (_energy < cost) return;
+            _energy -= cost;
+            Spawn(CrownTeam.Blue, _selected, lane);
+        }
+
+''',
+              ),
+          ]
+
+          for old, new in replacements:
+              if old not in text:
+                  raise SystemExit("Expected source block was not found; refusing an unsafe partial patch.")
+              text = text.replace(old, new, 1)
+
+          for token in ('"DEPLOY TO LANE"', '"LEFT")) TryPlayerSpawn(0)', '"CENTER")) TryPlayerSpawn(1)', '"RIGHT")) TryPlayerSpawn(2)'):
+              if token in text:
+                  raise SystemExit(f"Obstructive lane control remains: {token}")
+
+          path.write_text(text, encoding="utf-8")
+          PY
+
+      - name: Commit patch to feature branch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add unity/crown-front/Assets/_Project/Runtime/CrownEngineGame.cs
+          git diff --cached --check
+          git commit -m "fix: clear center battlefield UI"
+          git push origin HEAD:feature/clear-battlefield-ui
