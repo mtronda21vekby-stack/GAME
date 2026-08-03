@@ -66,11 +66,6 @@ const headers = [
   "  X-Content-Type-Options: nosniff",
   "  Referrer-Policy: no-referrer",
   "  Permissions-Policy: interest-cohort=()",
-  "",
-  "/",
-  "  Cache-Control: no-cache",
-  "",
-  "/index.html",
   "  Cache-Control: no-cache",
   "",
   "/assets/*",
@@ -84,32 +79,6 @@ const headers = [
   "",
   "/game/*",
   "  Cache-Control: no-store",
-  "",
-  "/lobby/*",
-  "  Cache-Control: no-cache",
-  "",
-  "/games/crown-front/index.html",
-  "  Cache-Control: no-cache",
-  "  Content-Type: text/html; charset=utf-8",
-  "",
-  "/games/crown-front/TemplateData/*",
-  "  Cache-Control: public, max-age=3600",
-  "",
-  "/games/crown-front/Build/CROWN-FRONT-0.1.0-alpha.1.loader.js",
-  "  Cache-Control: no-cache",
-  "  Content-Type: application/javascript; charset=utf-8",
-  "",
-  "/games/crown-front/Build/CROWN-FRONT-0.1.0-alpha.1.data.unityweb",
-  "  Cache-Control: public, max-age=31536000, immutable",
-  "  Content-Type: application/octet-stream",
-  "",
-  "/games/crown-front/Build/CROWN-FRONT-0.1.0-alpha.1.framework.js.unityweb",
-  "  Cache-Control: public, max-age=31536000, immutable",
-  "  Content-Type: application/javascript",
-  "",
-  "/games/crown-front/Build/CROWN-FRONT-0.1.0-alpha.1.wasm.unityweb",
-  "  Cache-Control: public, max-age=31536000, immutable",
-  "  Content-Type: application/wasm",
   ""
 ].join("\n");
 fs.writeFileSync(path.join(OUT, "_headers"), headers, "utf-8");
@@ -119,4 +88,3 @@ console.log("Routes:");
 console.log("  /        -> site");
 console.log("  /game/   -> game");
 console.log("  /lobby/  -> lobby");
-console.log("  /games/crown-front/ -> CROWN//FRONT WebGL alpha");

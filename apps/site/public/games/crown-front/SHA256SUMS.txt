@@ -1,0 +1,7 @@
+5f377d1d7e7315de1463b44fd729cfffe0a653932e481fdc2aeca99dae69fa89  Build/CROWN-FRONT-0.1.0-alpha.1.data.unityweb
+6bfe68578130bef01f8a89edb52c85afbbd60bbfe9f8ac1337674997ddff459e  Build/CROWN-FRONT-0.1.0-alpha.1.framework.js.unityweb
+03103429ff077f7125649a988f70c7c889aef77c4099ca4e934a110b005e3ed7  Build/CROWN-FRONT-0.1.0-alpha.1.loader.js
+62df4b34e829fde0965d23b9082d54156dc7052030cd0db7b0f948ad29f194cd  Build/CROWN-FRONT-0.1.0-alpha.1.wasm.unityweb
+7a74d3471cef59b8b7f436a18ce8c0366948aa2b601f2286898febee4a641831  README_ALPHA.md
+26b4444320eb60d1881b6d4a78c587bd86d220bd67e5cf6bff6e875a83b8556d  TemplateData/style.css
+25a337187669684dd0399b835abdbd75aded95c97b2ab83fc51b44e7ae256d15  index.html

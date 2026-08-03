@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,height=device-height,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#03070c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>CROWN//FRONT — Alpha</title>
+  <link rel="stylesheet" href="TemplateData/style.css">
+</head>
+<body>
+  <main id="shell">
+    <header id="player-bar">
+      <button id="back" class="chrome-button" type="button" aria-label="Back to BlackCrown lobby">
+        <span aria-hidden="true">‹</span> LOBBY
+      </button>
+      <div id="game-id" aria-label="CROWN FRONT alpha version 0.1.0 alpha 1">
+        <strong>CROWN<span>//</span>FRONT</strong>
+        <small>0.1.0-alpha.1</small>
+      </div>
+      <button id="fullscreen" class="chrome-button hidden" type="button" aria-label="Enter fullscreen">FULLSCREEN</button>
+    </header>
+
+    <section id="game-surface" aria-label="CROWN FRONT game surface">
+      <canvas id="unity-canvas" width="540" height="960" tabindex="0" aria-label="CROWN FRONT game"></canvas>
+
+      <section id="loading" class="panel" aria-live="polite">
+        <div class="reactor-mark" aria-hidden="true"><i></i><i></i><i></i></div>
+        <div class="crown">CROWN<span>//</span>FRONT</div>
+        <div id="loading-status">Checking browser…</div>
+        <div class="track"><div id="progress"></div></div>
+        <div id="loading-detail">Alpha build 0.1.0-alpha.1</div>
+      </section>
+
+      <section id="failure" class="panel hidden" role="alert">
+        <h1 id="failure-title">LOAD INTERRUPTED</h1>
+        <p id="failure-message">The alpha could not be loaded. Your local save has not been changed.</p>
+        <button id="retry" class="action-button" type="button">RETRY</button>
+      </section>
+
+      <section id="rotate" class="panel hidden" aria-live="polite">
+        <div class="rotate-icon" aria-hidden="true">↻</div>
+        <h1>ROTATE TO PORTRAIT</h1>
+        <p>CROWN//FRONT is optimized for one-hand play. Fullscreen is optional.</p>
+      </section>
+
+      <div id="notice" class="notice hidden" role="status" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const LOBBY_URL = "/";
+      const BUILD_VERSION = "0.1.0-alpha.1";
+      const shell = document.getElementById("shell");
+      const surface = document.getElementById("game-surface");
+      const canvas = document.getElementById("unity-canvas");
+      const loading = document.getElementById("loading");
+      const status = document.getElementById("loading-status");
+      const detail = document.getElementById("loading-detail");
+      const progress = document.getElementById("progress");
+      const failure = document.getElementById("failure");
+      const failureTitle = document.getElementById("failure-title");
+      const failureMessage = document.getElementById("failure-message");
+      const rotate = document.getElementById("rotate");
+      const fullscreen = document.getElementById("fullscreen");
+      const back = document.getElementById("back");
+      const retry = document.getElementById("retry");
+      const notice = document.getElementById("notice");
+      const mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "");
+      const cleanupTasks = [];
+      let unityInstance = null;
+      let loaderScript = null;
+      let leaving = false;
+      let noticeTimer = 0;
+
+      const listen = (target, type, handler, options) => {
+        target.addEventListener(type, handler, options);
+        cleanupTasks.push(() => target.removeEventListener(type, handler, options));
+      };
+
+      const getAudioContext = () => unityInstance?.Module?.WEBAudio?.audioContext || null;
+
+      function syncViewport() {
+        const viewport = window.visualViewport;
+        const height = Math.round(viewport?.height || window.innerHeight);
+        const top = Math.round(viewport?.offsetTop || 0);
+        document.documentElement.style.setProperty("--player-vh", `${height}px`);
+        document.documentElement.style.setProperty("--player-vtop", `${top}px`);
+      }
+
+      function updateOrientation() {
+        const landscape = window.innerWidth > window.innerHeight;
+        rotate.classList.toggle("hidden", !(mobile && landscape));
+      }
+
+      function flashNotice(message) {
+        window.clearTimeout(noticeTimer);
+        notice.textContent = message;
+        notice.classList.remove("hidden");
+        noticeTimer = window.setTimeout(() => notice.classList.add("hidden"), 3600);
+      }
+
+      function friendlyLoadError(value) {
+        const message = String(value || "").toLowerCase();
+        if (message.includes("memory") || message.includes("out of memory") || message.includes("allocation")) {
+          return ["NOT ENOUGH BROWSER MEMORY", "Close other tabs, reload this page, or use a device with more available memory."];
+        }
+        if (!navigator.onLine) {
+          return ["YOU ARE OFFLINE", "Reconnect to the internet, then choose Retry. Your local save is unchanged."];
+        }
+        return ["LOAD INTERRUPTED", "The alpha could not finish loading. Reload the page or try a current Chrome, Safari, Edge, or Firefox."];
+      }
+
+      function showFailure(title, message) {
+        loading.classList.add("hidden");
+        failureTitle.textContent = title;
+        failureMessage.textContent = message;
+        failure.classList.remove("hidden");
+      }
+
+      async function unlockAudio() {
+        const audioContext = getAudioContext();
+        if (audioContext?.state === "suspended") {
+          try { await audioContext.resume(); } catch { /* A later user gesture may retry. */ }
+        }
+      }
+
+      async function cleanupPlayer() {
+        for (const cleanup of cleanupTasks.splice(0)) {
+          try { cleanup(); } catch { /* Best effort cleanup before navigation. */ }
+        }
+        window.clearTimeout(noticeTimer);
+
+        const audioContext = getAudioContext();
+        if (audioContext) {
+          try { await audioContext.suspend(); } catch { /* Continue cleanup. */ }
+          try { await audioContext.close(); } catch { /* Unity may own a non-closeable context. */ }
+        }
+
+        try { loaderScript?.remove(); } catch { /* Continue cleanup. */ }
+        try { canvas.remove(); } catch { /* Continue cleanup. */ }
+        unityInstance = null;
+      }
+
+      async function returnToLobby() {
+        if (leaving) return;
+        leaving = true;
+        back.disabled = true;
+        back.textContent = "EXITING…";
+
+        try {
+          if (document.fullscreenElement && document.exitFullscreen) {
+            await document.exitFullscreen().catch(() => undefined);
+          }
+          if (unityInstance?.Quit) {
+            await Promise.race([
+              unityInstance.Quit(),
+              new Promise(resolve => window.setTimeout(resolve, 2500)),
+            ]);
+          }
+        } catch {
+          // Navigation remains available even when a browser cannot complete Unity Quit().
+        } finally {
+          await cleanupPlayer();
+          window.location.assign(LOBBY_URL);
+        }
+      }
+
+      async function enterFullscreen() {
+        try {
+          await unlockAudio();
+          if (unityInstance?.SetFullscreen) {
+            unityInstance.SetFullscreen(1);
+            return;
+          }
+          if (shell.requestFullscreen) {
+            await shell.requestFullscreen();
+            return;
+          }
+          flashNotice("Fullscreen is unavailable in this browser. You can continue playing normally.");
+        } catch {
+          flashNotice("Fullscreen was not enabled. You can continue playing normally.");
+        }
+      }
+
+      function onVisibilityChange() {
+        // Unity forwards browser focus/pause to AlphaMobileWebGuard in the build.
+        const audioContext = getAudioContext();
+        if (document.hidden) {
+          canvas.blur();
+          if (audioContext?.state === "running") audioContext.suspend().catch(() => undefined);
+        }
+      }
+
+      function blockGameGesture(event) {
+        if (event.target.closest?.("#game-surface")) event.preventDefault();
+      }
+
+      syncViewport();
+      updateOrientation();
+      listen(window, "resize", () => { syncViewport(); updateOrientation(); });
+      listen(window, "orientationchange", () => { syncViewport(); updateOrientation(); });
+      if (window.visualViewport) {
+        listen(window.visualViewport, "resize", syncViewport);
+        listen(window.visualViewport, "scroll", syncViewport);
+      }
+      listen(window, "offline", () => showFailure("YOU ARE OFFLINE", "Reconnect to the internet, then choose Retry. Your local save is unchanged."));
+      listen(window, "online", () => { if (!unityInstance) flashNotice("Connection restored. Choose Retry to reload the alpha."); });
+      listen(document, "visibilitychange", onVisibilityChange);
+      listen(surface, "contextmenu", event => event.preventDefault());
+      listen(surface, "gesturestart", blockGameGesture, { passive: false });
+      listen(surface, "touchmove", blockGameGesture, { passive: false });
+      listen(surface, "wheel", event => { if (event.ctrlKey) event.preventDefault(); }, { passive: false });
+      listen(surface, "pointerdown", () => { canvas.focus(); unlockAudio(); });
+      listen(back, "click", returnToLobby);
+      listen(fullscreen, "click", enterFullscreen);
+      listen(retry, "click", () => window.location.reload());
+      listen(window, "pagehide", () => { const audioContext = getAudioContext(); audioContext?.suspend?.().catch(() => undefined); });
+      listen(window, "error", event => {
+        if (!unityInstance && !leaving) {
+          const copy = friendlyLoadError(event.message);
+          showFailure(copy[0], copy[1]);
+        }
+      });
+
+      if (!navigator.onLine) {
+        showFailure("YOU ARE OFFLINE", "Reconnect to the internet, then choose Retry. Your local save is unchanged.");
+        return;
+      }
+      if (typeof WebAssembly !== "object" || typeof WebGLRenderingContext !== "function") {
+        showFailure("BROWSER NOT SUPPORTED", "This browser cannot run the WebGL alpha. Use a current Chrome, Safari, Edge, or Firefox.");
+        return;
+      }
+
+      const buildUrl = "Build";
+      const loaderUrl = `${buildUrl}/CROWN-FRONT-${BUILD_VERSION}.loader.js`;
+      const config = {
+        arguments: [],
+        dataUrl: `${buildUrl}/CROWN-FRONT-${BUILD_VERSION}.data.unityweb`,
+        frameworkUrl: `${buildUrl}/CROWN-FRONT-${BUILD_VERSION}.framework.js.unityweb`,
+        codeUrl: `${buildUrl}/CROWN-FRONT-${BUILD_VERSION}.wasm.unityweb`,
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "Crown Front Prototype",
+        productName: "CROWN__FRONT",
+        productVersion: BUILD_VERSION,
+        autoSyncPersistentDataPath: true,
+        showBanner: (message, type) => {
+          if (type === "error") {
+            const copy = friendlyLoadError(message);
+            showFailure(copy[0], copy[1]);
+          }
+        },
+      };
+      if (mobile) config.devicePixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+
+      status.textContent = "Downloading game data…";
+      detail.textContent = "The first load may take a moment.";
+      loaderScript = document.createElement("script");
+      loaderScript.src = loaderUrl;
+      loaderScript.onload = () => {
+        if (leaving) return;
+        window.createUnityInstance(canvas, config, value => {
+          const percent = Math.round(value * 100);
+          progress.style.width = `${percent}%`;
+          status.textContent = `Loading ${percent}%`;
+        }).then(instance => {
+          if (leaving) {
+            instance.Quit?.();
+            return;
+          }
+          unityInstance = instance;
+          loading.classList.add("hidden");
+          canvas.classList.add("ready");
+          fullscreen.classList.remove("hidden");
+          canvas.focus();
+        }).catch(error => {
+          const copy = friendlyLoadError(error);
+          showFailure(copy[0], copy[1]);
+        });
+      };
+      loaderScript.onerror = () => showFailure("LOADER UNAVAILABLE", "The game loader could not be downloaded. Check the connection and choose Retry.");
+      document.body.appendChild(loaderScript);
+    })();
+  </script>
+</body>
+</html>

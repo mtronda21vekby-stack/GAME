@@ -274,15 +274,12 @@ function FeatureCard(props: {
   href?: string;
   kind?: "site" | "external";
   imageSrc?: string;
-  imageAlt?: string;
-  className?: string;
-  showOpenButton?: boolean;
 }) {
   const kind = props.kind ?? "site";
 
   return (
     <div
-      className={`glassStrong bc-motion bcHotCard ${props.className ?? ""}`.trim()}
+      className="glassStrong bc-motion bcHotCard"
       role={props.href ? "link" : undefined}
       tabIndex={props.href ? 0 : undefined}
       onClick={() => {
@@ -314,31 +311,34 @@ function FeatureCard(props: {
         <div style={{ marginTop: 8, opacity: 0.86, lineHeight: 1.45 }}>{props.desc}</div>
 
         <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <span onClick={(e) => e.stopPropagation()} style={{ display: "inline-flex" }}>
-            <Button variant="secondary" onClick={props.onAction}>
-              {props.actionLabel}
-            </Button>
-          </span>
+          <Button
+            variant="secondary"
+            onClick={(e) => {
+              e.stopPropagation();
+              props.onAction();
+            }}
+          >
+            {props.actionLabel}
+          </Button>
 
-          {props.href && props.showOpenButton !== false ? (
-            <span onClick={(e) => e.stopPropagation()} style={{ display: "inline-flex" }}>
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  if (kind === "external") navExternal(props.href!);
-                  else navSite(props.href!);
-                }}
-              >
-                Открыть
-              </Button>
-            </span>
+          {props.href ? (
+            <Button
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (kind === "external") navExternal(props.href!);
+                else navSite(props.href!);
+              }}
+            >
+              Открыть
+            </Button>
           ) : null}
         </div>
       </div>
 
       <div style={{ padding: 14, paddingTop: 0 }}>
         <img
-          alt={props.imageAlt ?? ""}
+          alt=""
           src={props.imageSrc ?? HeroArt.cardWave}
           style={{
             width: "100%",
@@ -546,8 +546,8 @@ export function Home() {
             </h1>
 
             <p className="bcLead">
-              BlackCrown — витрина и лончер для наших игр. Исследуй глубины в <b>EvoFish</b> или войди в тактическую alpha
-              <b> CROWN//FRONT</b>. В экосистему входит <b>AI-Coach в Telegram</b>, который помогает с прогрессом и стратегиями.
+              BlackCrown — витрина и лончер для наших игр. Сегодня доступна <b>EvoFish</b>, дальше — новые проекты и события. В
+              экосистему входит <b>AI-Coach в Telegram</b>, который помогает с прогрессом и стратегиями.
             </p>
 
             <div className="bcCtas">
@@ -638,27 +638,13 @@ export function Home() {
 
           <div className="bcCards">
             <FeatureCard
-              title="EvoFish"
-              desc="Evolve, survive, and rule the deep in the original BlackCrown ocean world."
-              tag="LIVE"
-              actionLabel="PLAY EVOFISH"
+              title="Игры"
+              desc="Единый запуск, настройки и управление. Игры открываются как отдельные приложения на этом же домене."
+              tag="Play"
+              actionLabel="Открыть игру"
               onAction={() => navExternal("/game/")}
               href="/game/"
               kind="external"
-            />
-
-            <FeatureCard
-              title="CROWN//FRONT"
-              desc="Tactical warfare on the body of a living mechanical king."
-              tag="ALPHA"
-              actionLabel="PLAY ALPHA"
-              onAction={() => navExternal("/games/crown-front/")}
-              href="/games/crown-front/"
-              kind="external"
-              imageSrc="/assets/games/crown-front/crown-front-preview.svg"
-              imageAlt="CROWN FRONT tactical reactor arena preview"
-              className="bcCrownFrontCard"
-              showOpenButton={false}
             />
 
             <FeatureCard

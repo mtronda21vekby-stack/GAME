@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 480" role="img" aria-labelledby="title desc">
+  <title id="title">CROWN FRONT mechanical king arena</title>
+  <desc id="desc">An original abstract sci-fi battlefield built across the armor of a colossal crowned machine.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#03070c"/><stop offset=".5" stop-color="#08141e"/><stop offset="1" stop-color="#160904"/></linearGradient>
+    <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#283744"/><stop offset=".45" stop-color="#111a22"/><stop offset="1" stop-color="#05090d"/></linearGradient>
+    <linearGradient id="lane" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#0bcdf4"/><stop offset=".48" stop-color="#f4fbff"/><stop offset=".52" stop-color="#fff0df"/><stop offset="1" stop-color="#ff671f"/></linearGradient>
+    <radialGradient id="reactor"><stop stop-color="#fff"/><stop offset=".22" stop-color="#6eeeff"/><stop offset=".5" stop-color="#078eb7"/><stop offset="1" stop-color="#03121b"/></radialGradient>
+    <filter id="cyanGlow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="15" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="orangeGlow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="12" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <pattern id="grid" width="56" height="56" patternUnits="userSpaceOnUse"><path d="M56 0H0V56" fill="none" stroke="#6deeff" stroke-opacity=".055"/></pattern>
+  </defs>
+  <rect width="1200" height="480" fill="url(#sky)"/>
+  <rect width="1200" height="480" fill="url(#grid)"/>
+  <path d="M0 390L170 277 305 300 420 218 600 272 780 218 895 300 1030 277 1200 390V480H0Z" fill="#05090d"/>
+  <path d="M194 314L288 158 382 279 471 87 538 245 600 119 662 245 729 87 818 279 912 158 1006 314 922 344 806 320 704 354 600 329 496 354 394 320 278 344Z" fill="url(#steel)" stroke="#495968" stroke-width="5"/>
+  <path d="M288 158L318 286M471 87L490 300M600 119V329M729 87L710 300M912 158L882 286" fill="none" stroke="#8fa3b2" stroke-opacity=".25" stroke-width="4"/>
+  <path d="M89 379L421 274 600 313 779 274 1111 379" fill="none" stroke="#53616b" stroke-width="82" stroke-opacity=".42" stroke-linejoin="bevel"/>
+  <path d="M89 379L421 274 600 313 779 274 1111 379" fill="none" stroke="#0b1118" stroke-width="72" stroke-linejoin="bevel"/>
+  <path d="M89 379L421 274 600 313 779 274 1111 379" fill="none" stroke="url(#lane)" stroke-width="7" stroke-linejoin="bevel" filter="url(#cyanGlow)"/>
+  <g transform="translate(600 270)"><ellipse rx="128" ry="42" fill="#03070a" stroke="#6beeff" stroke-opacity=".42" stroke-width="6"/><ellipse rx="96" ry="31" fill="none" stroke="#ff671f" stroke-opacity=".58" stroke-width="5" transform="rotate(-11)"/><circle r="58" fill="url(#reactor)" stroke="#d9fbff" stroke-width="5" filter="url(#cyanGlow)"/><path d="M-14-44L0-72 14-44 35-58 29-26H-29L-35-58Z" fill="#e9fbff" stroke="#31dcff" stroke-width="3"/></g>
+  <g fill="#0c1820" stroke="#31dcff" stroke-width="4"><path d="M222 345l24-41 24 41-8 35h-32Z"/><path d="M358 303l24-41 24 41-8 35h-32Z"/></g>
+  <g fill="#170b08" stroke="#ff671f" stroke-width="4" filter="url(#orangeGlow)"><path d="M930 345l24-41 24 41-8 35h-32Z"/><path d="M794 303l24-41 24 41-8 35h-32Z"/></g>
+  <g opacity=".86"><path d="M0 79H274" stroke="#31dcff" stroke-width="2"/><path d="M926 79H1200" stroke="#ff671f" stroke-width="2"/><text x="54" y="66" fill="#dffaff" font-family="system-ui,sans-serif" font-size="25" font-weight="800" letter-spacing="8">CROWN</text><text x="965" y="66" fill="#fff0e7" font-family="system-ui,sans-serif" font-size="25" font-weight="800" letter-spacing="8">FRONT</text></g>
+</svg>
