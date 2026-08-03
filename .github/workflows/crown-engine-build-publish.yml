@@ -1,0 +1,167 @@
+name: CROWN FRONT — Build and publish WebGL
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "unity/crown-front/**"
+      - ".github/workflows/crown-engine-build-publish.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: crown-front-build-publish
+  cancel-in-progress: false
+
+env:
+  RELEASE_VERSION: 0.2.0-alpha.2
+  UNITY_PROJECT_PATH: unity/crown-front
+  UNITY_OUTPUT_PATH: unity/crown-front/Builds/CloudWebGL
+  PUBLIC_GAME_PATH: apps/site/public/games/crown-front
+
+jobs:
+  build-and-publish:
+    name: Build Unity and publish CROWN FRONT
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    env:
+      UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+      UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+      UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Verify Unity licensing
+        shell: bash
+        run: |
+          if [[ -z "$UNITY_LICENSE" && -z "$UNITY_SERIAL" ]]; then
+            echo "::error::Unity licensing is not configured. Add UNITY_LICENSE (Personal) or UNITY_SERIAL (Pro/Industry), plus the required Unity account secrets, under Settings > Secrets and variables > Actions."
+            exit 2
+          fi
+          echo "Unity licensing configuration detected."
+
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.UNITY_PROJECT_PATH }}/Library
+          key: crown-front-${{ runner.os }}-6000.5.3f1-${{ hashFiles('unity/crown-front/Packages/manifest.json', 'unity/crown-front/Assets/**/*.cs') }}
+          restore-keys: |
+            crown-front-${{ runner.os }}-6000.5.3f1-
+            crown-front-${{ runner.os }}-
+
+      - name: Build production WebGL
+        uses: game-ci/unity-builder@v5.0.0
+        with:
+          projectPath: ${{ env.UNITY_PROJECT_PATH }}
+          unityVersion: 6000.5.3f1
+          targetPlatform: WebGL
+          buildMethod: CrownFront.Editor.CrownEngineCloudBuild.BuildWebGL
+          customParameters: -outputPath Builds/CloudWebGL
+          allowDirtyBuild: true
+          versioning: None
+
+      - name: Validate Unity output
+        shell: bash
+        run: |
+          test -f "$UNITY_OUTPUT_PATH/index.html"
+          test -d "$UNITY_OUTPUT_PATH/Build"
+          test -n "$(find "$UNITY_OUTPUT_PATH/Build" -maxdepth 1 -type f -name '*.loader.js' -print -quit)"
+          test -n "$(find "$UNITY_OUTPUT_PATH/Build" -maxdepth 1 -type f -name '*data*' -print -quit)"
+          test -n "$(find "$UNITY_OUTPUT_PATH/Build" -maxdepth 1 -type f -name '*framework*' -print -quit)"
+          test -n "$(find "$UNITY_OUTPUT_PATH/Build" -maxdepth 1 -type f -name '*wasm*' -print -quit)"
+          du -sh "$UNITY_OUTPUT_PATH"
+
+      - name: Install WebGL into BlackCrown route
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          import shutil
+
+          release = "0.2.0-alpha.2"
+          source = Path("unity/crown-front/Builds/CloudWebGL")
+          target = Path("apps/site/public/games/crown-front")
+          build_source = source / "Build"
+          build_target = target / "Build"
+
+          if not build_source.is_dir():
+              raise SystemExit("Unity Build directory is missing")
+
+          loader = next(iter(sorted(build_source.glob("*.loader.js"))), None)
+          data = next((p for p in sorted(build_source.iterdir()) if p.is_file() and ".data" in p.name), None)
+          framework = next((p for p in sorted(build_source.iterdir()) if p.is_file() and ".framework" in p.name), None)
+          wasm = next((p for p in sorted(build_source.iterdir()) if p.is_file() and ".wasm" in p.name), None)
+
+          if not all((loader, data, framework, wasm)):
+              raise SystemExit("Unity WebGL payload is incomplete")
+
+          shell_path = target / "index.html"
+          if not shell_path.is_file():
+              raise SystemExit("BlackCrown mobile player shell is missing")
+          shell = shell_path.read_text(encoding="utf-8")
+
+          if build_target.exists():
+              shutil.rmtree(build_target)
+          shutil.copytree(build_source, build_target)
+
+          template_source = source / "TemplateData"
+          template_target = target / "TemplateData"
+          if template_source.is_dir():
+              if template_target.exists():
+                  shutil.rmtree(template_target)
+              shutil.copytree(template_source, template_target)
+
+          shell = re.sub(r'const BUILD_VERSION = "[^"]+";', f'const BUILD_VERSION = "{release}";', shell, count=1)
+          shell = re.sub(r'const loaderUrl = `\$\{buildUrl\}/[^`]+`;', f'const loaderUrl = `${{buildUrl}}/{loader.name}`;', shell, count=1)
+          shell = re.sub(r'dataUrl: `\$\{buildUrl\}/[^`]+`,', f'dataUrl: `${{buildUrl}}/{data.name}`,', shell, count=1)
+          shell = re.sub(r'frameworkUrl: `\$\{buildUrl\}/[^`]+`,', f'frameworkUrl: `${{buildUrl}}/{framework.name}`,', shell, count=1)
+          shell = re.sub(r'codeUrl: `\$\{buildUrl\}/[^`]+`,', f'codeUrl: `${{buildUrl}}/{wasm.name}`,', shell, count=1)
+          shell = shell.replace("0.1.0-alpha.1", release)
+          shell_path.write_text(shell, encoding="utf-8")
+
+          print("Installed Unity payload:")
+          print(f"  loader: {loader.name}")
+          print(f"  data: {data.name}")
+          print(f"  framework: {framework.name}")
+          print(f"  wasm: {wasm.name}")
+          PY
+
+      - name: Generate integrity manifest
+        shell: bash
+        run: |
+          cd "$PUBLIC_GAME_PATH"
+          find . -type f ! -name SHA256SUMS.txt -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt
+          du -sh .
+
+      - name: Commit published WebGL
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$PUBLIC_GAME_PATH"
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo "Published WebGL is already current."
+            exit 0
+          fi
+          git commit -m "feat: publish CROWN FRONT ${RELEASE_VERSION}"
+          git push origin HEAD:main
+
+      - name: Upload review artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: crown-front-${{ env.RELEASE_VERSION }}-${{ github.sha }}
+          path: ${{ env.PUBLIC_GAME_PATH }}
+          if-no-files-found: error
+          retention-days: 14
