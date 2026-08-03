@@ -6,6 +6,20 @@ apps/*/dist/
 packages/*/node_modules/
 packages/*/dist/
 
+# Unity cloud source caches and generated local output
+unity/**/[Ll]ibrary/
+unity/**/[Tt]emp/
+unity/**/[Oo]bj/
+unity/**/[Ll]ogs/
+unity/**/[Uu]ser[Ss]ettings/
+unity/**/[Mm]emoryCaptures/
+unity/**/[Rr]ecordings/
+unity/**/[Bb]uild/
+unity/**/[Bb]uilds/
+unity/**/*.csproj
+unity/**/*.sln
+unity/**/*.user
+
 .DS_Store
 .env
 .env.*
