@@ -7,14 +7,20 @@ on:
     paths:
       - "unity/crown-front/**"
       - ".github/workflows/crown-engine-build-publish.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "unity/crown-front/**"
+      - ".github/workflows/crown-engine-build-publish.yml"
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: crown-front-build-publish
-  cancel-in-progress: false
+  group: crown-front-build-publish-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   RELEASE_VERSION: 0.2.0-alpha.2
@@ -35,10 +41,9 @@ jobs:
       UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
 
     steps:
-      - name: Checkout main
+      - name: Checkout source
         uses: actions/checkout@v4
         with:
-          ref: main
           fetch-depth: 0
 
       - name: Verify Unity licensing
@@ -145,6 +150,7 @@ jobs:
           du -sh .
 
       - name: Commit published WebGL
+        if: github.event_name != 'pull_request'
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
