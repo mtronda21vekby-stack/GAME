@@ -5,12 +5,11 @@ Status: audit complete; no production deployment authorized
 
 ## Confirmed projects
 
-- BlackCrown source: `/Users/maksim/Documents/game 1/GAME-evofish`
+- BlackCrown source: the existing local `blackcrown-monorepo` checkout
 - Git remote: `https://github.com/mtronda21vekby-stack/GAME.git`
 - Current branch at audit: `main`, clean and aligned with `origin/main`
-- Unity project: `/Users/maksim/CROWN-FRONT`
-- Unity WebGL alpha: `/Users/maksim/CROWN-FRONT/Builds/WebGL/CROWN-FRONT-0.1.0-alpha.1`
-- The originally suggested `/Users/maksim/Documents/CROWN-FRONT` build path does not exist; the verified build above is the source of truth.
+- Unity project: the existing local `CROWN-FRONT` checkout
+- Unity WebGL alpha: `Builds/WebGL/CROWN-FRONT-0.1.0-alpha.1/` inside that checkout
 
 No files or routes related to `planetlocksmiths.com` are in scope.
 

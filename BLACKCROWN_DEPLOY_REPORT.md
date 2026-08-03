@@ -2,11 +2,11 @@
 
 Date: 2026-08-03
 Release: CROWN//FRONT `0.1.0-alpha.1`
-State: local integration complete; production push and deployment not authorized
+State: feature branch pushed; pull request, merge, and production deployment pending
 
 ## Repository and delivery path
 
-- Local repository: `/Users/maksim/Documents/game 1/GAME-evofish`
+- Local repository: existing `blackcrown-monorepo` checkout
 - GitHub repository: `mtronda21vekby-stack/GAME`
 - Remote: `https://github.com/mtronda21vekby-stack/GAME.git`
 - Integration branch: `feature/crown-front-alpha`
@@ -36,7 +36,7 @@ At audit time, the three existing public routes returned HTTP 200 from Cloudflar
 - Added an original code-authored SVG preview with cyan/orange sci-fi accents; no external or copied artwork is used.
 - Added the verified Unity WebGL alpha under `apps/site/public/games/crown-front/` as static assets, outside the site JavaScript bundle.
 - Preserved the original `Build/` and `TemplateData/` structure and all Unity payload names.
-- Confirmed copied Unity payload hashes are identical to the source build in `/Users/maksim/CROWN-FRONT/Builds/WebGL/CROWN-FRONT-0.1.0-alpha.1/`.
+- Confirmed copied Unity payload hashes are identical to the source build at `Builds/WebGL/CROWN-FRONT-0.1.0-alpha.1/` in the local Unity checkout.
 - Added a full-route player shell with loading progress, version, Retry, offline/unsupported/memory errors, optional fullscreen, portrait guidance, visual viewport sizing, safe areas, gesture-scoped scroll/zoom prevention, audio unlock on user interaction, background audio suspension, and Back to Lobby.
 - Back to Lobby attempts `UnityInstance.Quit()`, waits with a safe timeout, removes listeners/script/canvas, suspends/closes the Unity audio context when possible, and navigates to `/` even if cleanup fails.
 - No source files in `apps/game` or `apps/lobby` were changed.
@@ -112,7 +112,8 @@ No SharedArrayBuffer, COOP/COEP, WebAssembly threads, DNS, Cloudflare project, o
 | Original preview render | PASS | SVG rendered successfully for visual inspection |
 | Interactive browser smoke | NOT AVAILABLE | No controllable browser is connected to this session |
 | Real iPhone/Android gameplay | MANUAL REQUIRED | Not claimed as tested |
-| GitHub push / PR / Actions | PENDING APPROVAL | No push performed |
+| GitHub feature push | PASS | `feature/crown-front-alpha` is present on the existing `origin` |
+| Pull request / Actions | PENDING | PR not created yet; production workflow has not started |
 | Public CROWN//FRONT URL | PENDING DEPLOYMENT | Must remain unavailable until approved GitHub flow completes |
 
 The installed local Wrangler 3 preview reports the repository's three existing SPA fallback rules as possible infinite loops. Those rules predate this integration and were not changed; static root, EvoFish, lobby, and CROWN//FRONT directory routes all returned 200. GitHub CI uses `cloudflare/wrangler-action@v3`; this warning should be reviewed separately but is not caused by the new game route.
@@ -121,7 +122,7 @@ The installed local Wrangler 3 preview reports the repository's three existing S
 
 - Required local commit message: `feat: add CROWN FRONT WebGL alpha to game lobby`
 - Local commit SHA: recorded in the handoff after commit; the final deployed SHA will be added here after the approved PR/merge.
-- Push: not performed.
+- Feature branch push: completed through the existing GitHub remote.
 - Pull request: not created.
 - GitHub Actions run: not started.
 - Cloudflare production deployment: not started.
