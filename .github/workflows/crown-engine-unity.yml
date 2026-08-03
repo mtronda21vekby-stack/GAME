@@ -1,6 +1,10 @@
 name: CROWN FRONT — Unity WebGL cloud build
 
 on:
+  pull_request:
+    paths:
+      - "unity/crown-front/**"
+      - ".github/workflows/crown-engine-unity.yml"
   workflow_dispatch:
     inputs:
       reason:
@@ -20,6 +24,11 @@ jobs:
     name: Build THE CROWN ENGINE WebGL
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    env:
+      UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+      UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+      UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
 
     steps:
       - name: Checkout repository
@@ -27,7 +36,22 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Check Unity licensing configuration
+        id: unity-license
+        shell: bash
+        run: |
+          if [[ -n "${UNITY_LICENSE}" || -n "${UNITY_SERIAL}" ]]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+            echo "Unity licensing secrets are configured." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "### Unity build waiting for licensing" >> "$GITHUB_STEP_SUMMARY"
+            echo "Add the required Unity credentials in Settings → Secrets and variables → Actions." >> "$GITHUB_STEP_SUMMARY"
+            echo "Do not place licenses or credentials in source, issues, pull requests, logs, or chat." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Cache Unity Library
+        if: steps.unity-license.outputs.configured == 'true'
         uses: actions/cache@v4
         with:
           path: unity/crown-front/Library
@@ -37,12 +61,8 @@ jobs:
             crown-front-unity-${{ runner.os }}-
 
       - name: Build WebGL with Unity
+        if: steps.unity-license.outputs.configured == 'true'
         uses: game-ci/unity-builder@v5.0.0
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
         with:
           projectPath: unity/crown-front
           unityVersion: auto
@@ -53,6 +73,7 @@ jobs:
           versioning: None
 
       - name: Generate SHA-256 manifest
+        if: steps.unity-license.outputs.configured == 'true'
         shell: bash
         run: |
           cd unity/crown-front/Builds/CloudWebGL
@@ -60,6 +81,7 @@ jobs:
           du -sh .
 
       - name: Upload WebGL artifact
+        if: steps.unity-license.outputs.configured == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: crown-engine-webgl-${{ github.sha }}
