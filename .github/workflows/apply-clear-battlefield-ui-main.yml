@@ -23,8 +23,12 @@ jobs:
           ref: feature/clear-battlefield-ui
           fetch-depth: 0
 
+      - name: Load patch helper from main
+        shell: bash
+        run: git show origin/main:.github/scripts/patch-clear-battlefield-ui.py > /tmp/patch-clear-battlefield-ui.py
+
       - name: Remove obstructive center controls
-        run: python3 .github/scripts/patch-clear-battlefield-ui.py
+        run: python3 /tmp/patch-clear-battlefield-ui.py
 
       - name: Commit source change when needed
         shell: bash
