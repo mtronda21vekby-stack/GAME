@@ -37,6 +37,7 @@ namespace CrownFront.Cloud
         private float _nextAi;
         private bool _finished;
         private string _result = string.Empty;
+        private int _lastDeploymentFrame = -1;
 
         public bool Finished => _finished;
         public IReadOnlyList<CrownUnit> Units => _units;
@@ -60,6 +61,8 @@ namespace CrownFront.Cloud
             _timeLeft = Mathf.Max(0f, _timeLeft - dt);
             _energy = Mathf.Min(MaxEnergy, _energy + dt * 0.72f);
             _aiEnergy = Mathf.Min(MaxEnergy, _aiEnergy + dt * 0.72f);
+
+            HandleBattlefieldDeploymentInput();
 
             if (Time.time >= _nextAi) RunAi();
             if (_timeLeft <= 0f)
@@ -121,24 +124,20 @@ namespace CrownFront.Cloud
             GUI.Label(new Rect(width - 354, 34, 320, 42), "ENEMY CORE", RightStyle());
             GUI.Label(new Rect(width - 354, 78, 320, 38), Mathf.CeilToInt(_redCore.Health).ToString(), RightStyle());
 
-            float panelH = 330f;
+            // Keep the middle of the battlefield completely unobstructed.
+            // Select a unit below, then tap/click the desired lane directly on the arena.
+            float panelH = 224f;
             float y = height - panelH - 20f;
             GUI.color = new Color(0.03f, 0.06f, 0.09f, 0.95f);
             GUI.Box(new Rect(18, y, width - 36, panelH), string.Empty);
             GUI.color = Color.white;
-            GUI.Label(new Rect(42, y + 20, 400, 42), $"ENERGY  {Mathf.FloorToInt(_energy)}/10");
-            GUI.Label(new Rect(width - 450, y + 20, 410, 42), $"SELECTED  {_selected}", RightStyle());
+            GUI.Label(new Rect(42, y + 18, 400, 42), $"ENERGY  {Mathf.FloorToInt(_energy)}/10");
+            GUI.Label(new Rect(width - 520, y + 18, 480, 42), $"{_selected}  •  TAP A LANE", RightStyle());
 
             float cardW = (width - 96f) / 3f;
-            DrawUnitButton(new Rect(30, y + 78, cardW, 100), CrownUnitKind.Assault, "ASSAULT", 3);
-            DrawUnitButton(new Rect(48 + cardW, y + 78, cardW, 100), CrownUnitKind.Tank, "TANK", 4);
-            DrawUnitButton(new Rect(66 + cardW * 2f, y + 78, cardW, 100), CrownUnitKind.Raider, "RAIDER", 2);
-
-            GUI.Label(new Rect(42, y + 194, width - 84, 38), "DEPLOY TO LANE", CenterStyle());
-            float laneW = (width - 96f) / 3f;
-            if (GUI.Button(new Rect(30, y + 236, laneW, 72), "LEFT")) TryPlayerSpawn(0);
-            if (GUI.Button(new Rect(48 + laneW, y + 236, laneW, 72), "CENTER")) TryPlayerSpawn(1);
-            if (GUI.Button(new Rect(66 + laneW * 2f, y + 236, laneW, 72), "RIGHT")) TryPlayerSpawn(2);
+            DrawUnitButton(new Rect(30, y + 76, cardW, 108), CrownUnitKind.Assault, "ASSAULT", 3);
+            DrawUnitButton(new Rect(48 + cardW, y + 76, cardW, 108), CrownUnitKind.Tank, "TANK", 4);
+            DrawUnitButton(new Rect(66 + cardW * 2f, y + 76, cardW, 108), CrownUnitKind.Raider, "RAIDER", 2);
 
             if (_finished)
             {
@@ -164,6 +163,39 @@ namespace CrownFront.Cloud
             if (_selected == kind) GUI.color = new Color(0.25f, 0.9f, 1f, 1f);
             if (GUI.Button(rect, $"{label}\nCOST {cost}")) _selected = kind;
             GUI.color = previous;
+        }
+
+        private void HandleBattlefieldDeploymentInput()
+        {
+            if (_finished || _lastDeploymentFrame == Time.frameCount) return;
+
+            Vector2 screenPosition = default;
+            bool released = false;
+
+            // Touch may also emulate a mouse release. Prefer the real touch path to avoid duplicates.
+            if (Input.touchCount > 0)
+            {
+                Touch touch = Input.GetTouch(0);
+                if (touch.phase == TouchPhase.Ended)
+                {
+                    screenPosition = touch.position;
+                    released = true;
+                }
+            }
+            else if (Input.GetMouseButtonUp(0))
+            {
+                screenPosition = Input.mousePosition;
+                released = true;
+            }
+
+            if (!released || Screen.width <= 0 || Screen.height <= 0) return;
+
+            float normalizedY = screenPosition.y / Screen.height;
+            if (normalizedY < 0.16f || normalizedY > 0.90f) return;
+
+            int lane = Mathf.Clamp(Mathf.FloorToInt(screenPosition.x / (Screen.width / 3f)), 0, 2);
+            _lastDeploymentFrame = Time.frameCount;
+            TryPlayerSpawn(lane);
         }
 
         private void TryPlayerSpawn(int lane)
