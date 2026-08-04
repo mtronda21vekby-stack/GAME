@@ -1,0 +1,38 @@
+name: Report Quaternius structural run
+
+on:
+  push:
+    branches:
+      - feature/crown-front-art-reboot-hero-frame
+    paths:
+      - .github/workflows/report-quaternius-structural-run.yml
+
+permissions:
+  actions: read
+  pull-requests: write
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report latest structural workflow run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          sleep 5
+          json="$(gh run list \
+            --repo '${{ github.repository }}' \
+            --workflow 'Refine Quaternius final-grade structure' \
+            --branch 'feature/crown-front-art-reboot-hero-frame' \
+            --limit 1 \
+            --json databaseId,status,conclusion,jobs,url 2>&1 || true)"
+          gh pr comment 28 \
+            --repo '${{ github.repository }}' \
+            --body "## Quaternius structural workflow status
+
+\`\`\`json
+${json}
+\`\`\`"
