@@ -41,6 +41,8 @@ namespace CrownFront.Editor
                 return;
             }
 
+            HideCoreEvidenceNoise(reviewCore);
+
             Renderer[] renderers = reviewCore.GetComponentsInChildren<Renderer>(false);
             Bounds bounds = default;
             bool hasBounds = false;
@@ -66,6 +68,34 @@ namespace CrownFront.Editor
             camera.transform.position = target + new Vector3(0f, 1.75f, -6.0f);
             camera.transform.LookAt(target + Vector3.up * 0.02f);
             camera.fieldOfView = 30.5f;
+        }
+
+        private static void HideCoreEvidenceNoise(CrownBuilding reviewCore)
+        {
+            CrownUnit[] units = Object.FindObjectsByType<CrownUnit>(FindObjectsInactive.Include);
+            for (int i = 0; i < units.Length; i++)
+            {
+                if (units[i] != null) units[i].gameObject.SetActive(false);
+            }
+
+            CrownProjectile[] projectiles = Object.FindObjectsByType<CrownProjectile>(FindObjectsInactive.Include);
+            for (int i = 0; i < projectiles.Length; i++)
+            {
+                if (projectiles[i] != null) projectiles[i].gameObject.SetActive(false);
+            }
+
+            CrownImpact[] impacts = Object.FindObjectsByType<CrownImpact>(FindObjectsInactive.Include);
+            for (int i = 0; i < impacts.Length; i++)
+            {
+                if (impacts[i] != null) impacts[i].gameObject.SetActive(false);
+            }
+
+            CrownBuilding[] buildings = Object.FindObjectsByType<CrownBuilding>(FindObjectsInactive.Include);
+            for (int i = 0; i < buildings.Length; i++)
+            {
+                CrownBuilding building = buildings[i];
+                if (building != null && building != reviewCore) building.gameObject.SetActive(false);
+            }
         }
     }
 }
