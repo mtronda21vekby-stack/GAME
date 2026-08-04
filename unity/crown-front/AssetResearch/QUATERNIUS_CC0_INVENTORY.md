@@ -1,0 +1,395 @@
+# Quaternius CC0 sci-fi inventory
+
+Generated from public OpenGameArt CC0 archive directories.
+The archives themselves are not committed.
+
+## Sci-Fi Essentials Models
+
+- Source: https://opengameart.org/content/sci-fi-essentials-kit
+- Archive URL: https://opengameart.org/sites/default/files/sci-fi_essentials_kit_models.zip
+- Archive bytes: 87836656
+- Files: 256
+- Models: 148
+- Textures: 33
+
+### Candidate files
+
+- `FBX (Unity)/Enemy_EyeDrone.fbx`
+- `FBX (Unity)/Enemy_QuadShell.fbx`
+- `FBX (Unity)/Enemy_Trilobite.fbx`
+- `FBX (Unity)/Gun_Pistol.fbx`
+- `FBX (Unity)/Gun_Revolver.fbx`
+- `FBX (Unity)/Gun_Rifle.fbx`
+- `FBX (Unity)/Gun_SMG_Ammo.fbx`
+- `FBX (Unity)/Gun_Sniper.fbx`
+- `FBX (Unity)/Gun_Sniper_Ammo.fbx`
+- `FBX (Unity)/Prop_Crate.fbx`
+- `FBX (Unity)/Prop_Crate_Large.fbx`
+- `FBX (Unity)/Prop_Crate_Tarp.fbx`
+- `FBX (Unity)/Prop_Crate_Tarp_Large.fbx`
+- `FBX/Enemy_EyeDrone.fbx`
+- `FBX/Enemy_QuadShell.fbx`
+- `FBX/Enemy_Trilobite.fbx`
+- `FBX/Gun_Pistol.fbx`
+- `FBX/Gun_Revolver.fbx`
+- `FBX/Gun_Rifle.fbx`
+- `FBX/Gun_SMG_Ammo.fbx`
+- `FBX/Gun_Sniper.fbx`
+- `FBX/Gun_Sniper_Ammo.fbx`
+- `FBX/Prop_Crate.fbx`
+- `FBX/Prop_Crate_Large.fbx`
+- `FBX/Prop_Crate_Tarp.fbx`
+- `FBX/Prop_Crate_Tarp_Large.fbx`
+- `OBJ/Enemy_EyeDrone.mtl`
+- `OBJ/Enemy_EyeDrone.obj`
+- `OBJ/Enemy_QuadShell.mtl`
+- `OBJ/Enemy_QuadShell.obj`
+- `OBJ/Enemy_Trilobite.mtl`
+- `OBJ/Enemy_Trilobite.obj`
+- `OBJ/Gun_Pistol.mtl`
+- `OBJ/Gun_Pistol.obj`
+- `OBJ/Gun_Revolver.mtl`
+- `OBJ/Gun_Revolver.obj`
+- `OBJ/Gun_Rifle.mtl`
+- `OBJ/Gun_Rifle.obj`
+- `OBJ/Gun_SMG_Ammo.mtl`
+- `OBJ/Gun_SMG_Ammo.obj`
+- `OBJ/Gun_Sniper.mtl`
+- `OBJ/Gun_Sniper.obj`
+- `OBJ/Gun_Sniper_Ammo.mtl`
+- `OBJ/Gun_Sniper_Ammo.obj`
+- `OBJ/Prop_Crate.mtl`
+- `OBJ/Prop_Crate.obj`
+- `OBJ/Prop_Crate_Large.mtl`
+- `OBJ/Prop_Crate_Large.obj`
+- `OBJ/Prop_Crate_Tarp.mtl`
+- `OBJ/Prop_Crate_Tarp.obj`
+- `OBJ/Prop_Crate_Tarp_Large.mtl`
+- `OBJ/Prop_Crate_Tarp_Large.obj`
+- `glTF/Enemy_EyeDrone.bin`
+- `glTF/Enemy_EyeDrone.gltf`
+- `glTF/Enemy_QuadShell.bin`
+- `glTF/Enemy_QuadShell.gltf`
+- `glTF/Enemy_Trilobite.bin`
+- `glTF/Enemy_Trilobite.gltf`
+- `glTF/Gun_Pistol.bin`
+- `glTF/Gun_Pistol.gltf`
+- `glTF/Gun_Revolver.bin`
+- `glTF/Gun_Revolver.gltf`
+- `glTF/Gun_Rifle.bin`
+- `glTF/Gun_Rifle.gltf`
+- `glTF/Gun_SMG_Ammo.bin`
+- `glTF/Gun_SMG_Ammo.gltf`
+- `glTF/Gun_Sniper.bin`
+- `glTF/Gun_Sniper.gltf`
+- `glTF/Gun_Sniper_Ammo.bin`
+- `glTF/Gun_Sniper_Ammo.gltf`
+- `glTF/Prop_Crate.bin`
+- `glTF/Prop_Crate.gltf`
+- `glTF/Prop_Crate_Large.bin`
+- `glTF/Prop_Crate_Large.gltf`
+- `glTF/Prop_Crate_Tarp.bin`
+- `glTF/Prop_Crate_Tarp.gltf`
+- `glTF/Prop_Crate_Tarp_Large.bin`
+- `glTF/Prop_Crate_Tarp_Large.gltf`
+- `glTF/T_Guns_Batch1_BaseColor.png`
+- `glTF/T_Guns_Batch1_Normal.png`
+- `glTF/T_Guns_Batch1_ORM.png`
+- `glTF/T_Guns_Batch2_BaseColor.png`
+- `glTF/T_Guns_Batch2_Normal.png`
+- `glTF/T_Guns_Batch2_ORM.png`
+- `glTF/T_Props_Crates_BaseColor.png`
+- `glTF/T_Props_Crates_Normal.png`
+- `glTF/T_Props_Crates_ORM.png`
+
+### All model files
+
+- `FBX (Unity)/Enemy_EyeDrone.fbx`
+- `FBX (Unity)/Enemy_QuadShell.fbx`
+- `FBX (Unity)/Enemy_Trilobite.fbx`
+- `FBX (Unity)/Gun_Pistol.fbx`
+- `FBX (Unity)/Gun_Revolver.fbx`
+- `FBX (Unity)/Gun_Rifle.fbx`
+- `FBX (Unity)/Gun_SMG_Ammo.fbx`
+- `FBX (Unity)/Gun_Sniper.fbx`
+- `FBX (Unity)/Gun_Sniper_Ammo.fbx`
+- `FBX (Unity)/Prop_Ammo.fbx`
+- `FBX (Unity)/Prop_Ammo_Closed.fbx`
+- `FBX (Unity)/Prop_Ammo_Small.fbx`
+- `FBX (Unity)/Prop_Barrel1.fbx`
+- `FBX (Unity)/Prop_Barrel2_Closed.fbx`
+- `FBX (Unity)/Prop_Barrel2_Open.fbx`
+- `FBX (Unity)/Prop_Chair.fbx`
+- `FBX (Unity)/Prop_Chest.fbx`
+- `FBX (Unity)/Prop_Crate.fbx`
+- `FBX (Unity)/Prop_Crate_Large.fbx`
+- `FBX (Unity)/Prop_Crate_Tarp.fbx`
+- `FBX (Unity)/Prop_Crate_Tarp_Large.fbx`
+- `FBX (Unity)/Prop_Desk_L.fbx`
+- `FBX (Unity)/Prop_Desk_Medium.fbx`
+- `FBX (Unity)/Prop_Desk_Small.fbx`
+- `FBX (Unity)/Prop_Grenade.fbx`
+- `FBX (Unity)/Prop_HealthPack.fbx`
+- `FBX (Unity)/Prop_HealthPack_Tube.fbx`
+- `FBX (Unity)/Prop_KeyCard.fbx`
+- `FBX (Unity)/Prop_Locker.fbx`
+- `FBX (Unity)/Prop_Mine.fbx`
+- `FBX (Unity)/Prop_Mug.fbx`
+- `FBX (Unity)/Prop_SatelliteDish.fbx`
+- `FBX (Unity)/Prop_Shelves_ThinShort.fbx`
+- `FBX (Unity)/Prop_Shelves_ThinTall.fbx`
+- `FBX (Unity)/Prop_Shelves_WideShort.fbx`
+- `FBX (Unity)/Prop_Shelves_WideTall.fbx`
+- `FBX (Unity)/Prop_Syringe.fbx`
+- `FBX/Enemy_EyeDrone.fbx`
+- `FBX/Enemy_QuadShell.fbx`
+- `FBX/Enemy_Trilobite.fbx`
+- `FBX/Gun_Pistol.fbx`
+- `FBX/Gun_Revolver.fbx`
+- `FBX/Gun_Rifle.fbx`
+- `FBX/Gun_SMG_Ammo.fbx`
+- `FBX/Gun_Sniper.fbx`
+- `FBX/Gun_Sniper_Ammo.fbx`
+- `FBX/Prop_Ammo.fbx`
+- `FBX/Prop_Ammo_Closed.fbx`
+- `FBX/Prop_Ammo_Small.fbx`
+- `FBX/Prop_Barrel1.fbx`
+- `FBX/Prop_Barrel2_Closed.fbx`
+- `FBX/Prop_Barrel2_Open.fbx`
+- `FBX/Prop_Chair.fbx`
+- `FBX/Prop_Chest.fbx`
+- `FBX/Prop_Crate.fbx`
+- `FBX/Prop_Crate_Large.fbx`
+- `FBX/Prop_Crate_Tarp.fbx`
+- `FBX/Prop_Crate_Tarp_Large.fbx`
+- `FBX/Prop_Desk_L.fbx`
+- `FBX/Prop_Desk_Medium.fbx`
+- `FBX/Prop_Desk_Small.fbx`
+- `FBX/Prop_Grenade.fbx`
+- `FBX/Prop_HealthPack.fbx`
+- `FBX/Prop_HealthPack_Tube.fbx`
+- `FBX/Prop_KeyCard.fbx`
+- `FBX/Prop_Locker.fbx`
+- `FBX/Prop_Mine.fbx`
+- `FBX/Prop_Mug.fbx`
+- `FBX/Prop_SatelliteDish.fbx`
+- `FBX/Prop_Shelves_ThinShort.fbx`
+- `FBX/Prop_Shelves_ThinTall.fbx`
+- `FBX/Prop_Shelves_WideShort.fbx`
+- `FBX/Prop_Shelves_WideTall.fbx`
+- `FBX/Prop_Syringe.fbx`
+- `OBJ/Enemy_EyeDrone.obj`
+- `OBJ/Enemy_QuadShell.obj`
+- `OBJ/Enemy_Trilobite.obj`
+- `OBJ/Gun_Pistol.obj`
+- `OBJ/Gun_Revolver.obj`
+- `OBJ/Gun_Rifle.obj`
+- `OBJ/Gun_SMG_Ammo.obj`
+- `OBJ/Gun_Sniper.obj`
+- `OBJ/Gun_Sniper_Ammo.obj`
+- `OBJ/Prop_Ammo.obj`
+- `OBJ/Prop_Ammo_Closed.obj`
+- `OBJ/Prop_Ammo_Small.obj`
+- `OBJ/Prop_Barrel1.obj`
+- `OBJ/Prop_Barrel2_Closed.obj`
+- `OBJ/Prop_Barrel2_Open.obj`
+- `OBJ/Prop_Chair.obj`
+- `OBJ/Prop_Chest.obj`
+- `OBJ/Prop_Crate.obj`
+- `OBJ/Prop_Crate_Large.obj`
+- `OBJ/Prop_Crate_Tarp.obj`
+- `OBJ/Prop_Crate_Tarp_Large.obj`
+- `OBJ/Prop_Desk_L.obj`
+- `OBJ/Prop_Desk_Medium.obj`
+- `OBJ/Prop_Desk_Small.obj`
+- `OBJ/Prop_Grenade.obj`
+- `OBJ/Prop_HealthPack.obj`
+- `OBJ/Prop_HealthPack_Tube.obj`
+- `OBJ/Prop_KeyCard.obj`
+- `OBJ/Prop_Locker.obj`
+- `OBJ/Prop_Mine.obj`
+- `OBJ/Prop_Mug.obj`
+- `OBJ/Prop_SatelliteDish.obj`
+- `OBJ/Prop_Shelves_ThinShort.obj`
+- `OBJ/Prop_Shelves_ThinTall.obj`
+- `OBJ/Prop_Shelves_WideShort.obj`
+- `OBJ/Prop_Shelves_WideTall.obj`
+- `OBJ/Prop_Syringe.obj`
+- `glTF/Enemy_EyeDrone.gltf`
+- `glTF/Enemy_QuadShell.gltf`
+- `glTF/Enemy_Trilobite.gltf`
+- `glTF/Gun_Pistol.gltf`
+- `glTF/Gun_Revolver.gltf`
+- `glTF/Gun_Rifle.gltf`
+- `glTF/Gun_SMG_Ammo.gltf`
+- `glTF/Gun_Sniper.gltf`
+- `glTF/Gun_Sniper_Ammo.gltf`
+- `glTF/Prop_Ammo.gltf`
+- `glTF/Prop_Ammo_Closed.gltf`
+- `glTF/Prop_Ammo_Small.gltf`
+- `glTF/Prop_Barrel1.gltf`
+- `glTF/Prop_Barrel2_Closed.gltf`
+- `glTF/Prop_Barrel2_Open.gltf`
+- `glTF/Prop_Chair.gltf`
+- `glTF/Prop_Chest.gltf`
+- `glTF/Prop_Crate.gltf`
+- `glTF/Prop_Crate_Large.gltf`
+- `glTF/Prop_Crate_Tarp.gltf`
+- `glTF/Prop_Crate_Tarp_Large.gltf`
+- `glTF/Prop_Desk_L.gltf`
+- `glTF/Prop_Desk_Medium.gltf`
+- `glTF/Prop_Desk_Small.gltf`
+- `glTF/Prop_Grenade.gltf`
+- `glTF/Prop_HealthPack.gltf`
+- `glTF/Prop_HealthPack_Tube.gltf`
+- `glTF/Prop_KeyCard.gltf`
+- `glTF/Prop_Locker.gltf`
+- `glTF/Prop_Mine.gltf`
+- `glTF/Prop_Mug.gltf`
+- `glTF/Prop_SatelliteDish.gltf`
+- `glTF/Prop_Shelves_ThinShort.gltf`
+- `glTF/Prop_Shelves_ThinTall.gltf`
+- `glTF/Prop_Shelves_WideShort.gltf`
+- `glTF/Prop_Shelves_WideTall.gltf`
+- `glTF/Prop_Syringe.gltf`
+
+## Sci-Fi Essentials Textures
+
+- Source: https://opengameart.org/content/sci-fi-essentials-kit
+- Archive URL: https://opengameart.org/sites/default/files/sci-fi_essentials_kit_textures.zip
+- Archive bytes: 79073911
+- Files: 36
+- Models: 0
+- Textures: 36
+
+### Candidate files
+
+- `Textures/T_Guns_Batch1_BaseColor.png`
+- `Textures/T_Guns_Batch1_Emissive.png`
+- `Textures/T_Guns_Batch1_Normal.png`
+- `Textures/T_Guns_Batch1_ORM.png`
+- `Textures/T_Guns_Batch2_BaseColor.png`
+- `Textures/T_Guns_Batch2_Emissive.png`
+- `Textures/T_Guns_Batch2_Normal.png`
+- `Textures/T_Guns_Batch2_ORM.png`
+- `Textures/T_Props_Crates_BaseColor.png`
+- `Textures/T_Props_Crates_Normal.png`
+- `Textures/T_Props_Crates_ORM.png`
+
+### All model files
+
+
+## Ultimate Space Kit GLB
+
+- Source: https://opengameart.org/content/ultimate-space-kit-by-quaternius
+- Archive URL: https://opengameart.org/sites/default/files/ultimate_space_kit-glb.zip
+- Archive bytes: 5785836
+- Files: 87
+- Models: 87
+- Textures: 0
+
+### Candidate files
+
+- `Enemy Flying.glb`
+- `Enemy Large.glb`
+- `Enemy Small.glb`
+- `Mech-4UvIHxnoSR.glb`
+- `Mech-D5wW2jDO42.glb`
+- `Mech-o3Ps8z8ByP.glb`
+- `Mech.glb`
+- `Pickup Crate.glb`
+- `Spaceship-Jqfed124pQ.glb`
+- `Spaceship-VSxUAFhzbA.glb`
+- `Spaceship-u105mYHLHU.glb`
+- `Spaceship.glb`
+
+### All model files
+
+- `Astronaut-0D54W8yfrA.glb`
+- `Astronaut-OgeSH89Nmx.glb`
+- `Astronaut.glb`
+- `Base Large.glb`
+- `Building L.glb`
+- `Bullets Pickup.glb`
+- `Bush-RfUP3gXj69.glb`
+- `Bush-tX1aT9IB1P.glb`
+- `Bush.glb`
+- `Connector.glb`
+- `Enemy Flying.glb`
+- `Enemy Large.glb`
+- `Enemy Small.glb`
+- `Geodesic Dome.glb`
+- `Grass-Db4UVcNWnF.glb`
+- `Grass-iw6l7gqcdQ.glb`
+- `Grass.glb`
+- `House Cylinder.glb`
+- `House Long.glb`
+- `House Open.glb`
+- `House Pod.glb`
+- `House Single Support.glb`
+- `House Single.glb`
+- `Mech-4UvIHxnoSR.glb`
+- `Mech-D5wW2jDO42.glb`
+- `Mech-o3Ps8z8ByP.glb`
+- `Mech.glb`
+- `Metal Support.glb`
+- `Pickup Crate.glb`
+- `Pickup Health.glb`
+- `Pickup Jar.glb`
+- `Pickup Key Card.glb`
+- `Pickup Sphere.glb`
+- `Pickup Thunder.glb`
+- `Planet-18Uxrb2dIc.glb`
+- `Planet-4NxxeyYMPJ.glb`
+- `Planet-5zzi8WUMXj.glb`
+- `Planet-9g1aIbfR9Y.glb`
+- `Planet-B7xd3SZq0z.glb`
+- `Planet-EC1Lk2IamI.glb`
+- `Planet-IVnmauIgWX.glb`
+- `Planet-hKZtOOMadH.glb`
+- `Planet-pHZz4EMvVM.glb`
+- `Planet-rYguWNNPvA.glb`
+- `Planet.glb`
+- `Plant-VwXvoIpCHP.glb`
+- `Plant-s0joFFrQoy.glb`
+- `Plant.glb`
+- `Ramp.glb`
+- `Rock Large-d2VWOdthtR.glb`
+- `Rock Large-li0YBlBEMz.glb`
+- `Rock Large.glb`
+- `Rock-34W5ymEePk.glb`
+- `Rock-R2UjZAX3By.glb`
+- `Rock-b7gRkv0cEa.glb`
+- `Rock.glb`
+- `Roof Antenna.glb`
+- `Roof Radar.glb`
+- `Round Rover.glb`
+- `Rover-WRd1piJOfh.glb`
+- `Rover.glb`
+- `Solar Panel Ground.glb`
+- `Solar Panel Structure.glb`
+- `Solar Panel.glb`
+- `Spaceship-Jqfed124pQ.glb`
+- `Spaceship-VSxUAFhzbA.glb`
+- `Spaceship-u105mYHLHU.glb`
+- `Spaceship.glb`
+- `Stairs.glb`
+- `Tree Blob-QHYRrAnKzW.glb`
+- `Tree Blob-j0byyoIGOv.glb`
+- `Tree Blob.glb`
+- `Tree Floating-sdtjU7iczl.glb`
+- `Tree Floating-tj2fePl8Eu.glb`
+- `Tree Floating.glb`
+- `Tree Lava-9gRfmVKx9W.glb`
+- `Tree Lava-sTYjmQObr1.glb`
+- `Tree Lava.glb`
+- `Tree Light-om4BJAL82T.glb`
+- `Tree Light.glb`
+- `Tree Spikes-a6Vo1seJw9.glb`
+- `Tree Spikes.glb`
+- `Tree Spiral-gI3kqnqg80.glb`
+- `Tree Spiral-kBomlgZ5xu.glb`
+- `Tree Spiral.glb`
+- `Tree Swirl-iLxXSXIx2t.glb`
+- `Tree Swirl.glb`
+
