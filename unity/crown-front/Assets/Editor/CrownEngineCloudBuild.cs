@@ -23,6 +23,7 @@ namespace CrownFront.Editor
             GameObject root = new GameObject("CrownEngineGame");
             root.AddComponent<CrownEngineGame>();
             root.AddComponent<CrownArtRebootHeroFrame>();
+            root.AddComponent<CrownArtRebootIteration2>();
 
             EditorSceneManager.MarkSceneDirty(scene);
             if (!EditorSceneManager.SaveScene(scene, ScenePath))
@@ -82,7 +83,7 @@ namespace CrownFront.Editor
                 $"totalTime={summary.totalTime}{Environment.NewLine}" +
                 $"warnings={summary.totalWarnings}{Environment.NewLine}" +
                 $"errors={summary.totalErrors}{Environment.NewLine}" +
-                $"artRebootSlice=hero-frame{Environment.NewLine}");
+                $"artRebootSlice=hero-frame-iteration2{Environment.NewLine}");
 
             if (summary.result != BuildResult.Succeeded)
             {
