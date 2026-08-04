@@ -232,7 +232,7 @@ namespace CrownFront.Cloud
 
         private void SkinBuildings()
         {
-            CrownBuilding[] buildings = FindObjectsByType<CrownBuilding>(FindObjectsInactive.Include);
+            CrownBuilding[] buildings = FindObjectsByType<CrownBuilding>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             for (int i = 0; i < buildings.Length; i++)
             {
                 CrownBuilding building = buildings[i];
@@ -293,7 +293,7 @@ namespace CrownFront.Cloud
 
         private void SkinUnits()
         {
-            CrownUnit[] units = FindObjectsByType<CrownUnit>(FindObjectsInactive.Include);
+            CrownUnit[] units = FindObjectsByType<CrownUnit>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             for (int i = 0; i < units.Length; i++)
             {
                 CrownUnit unit = units[i];
