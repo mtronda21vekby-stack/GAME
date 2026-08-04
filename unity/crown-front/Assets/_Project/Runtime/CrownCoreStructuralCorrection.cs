@@ -56,13 +56,7 @@ namespace CrownFront.Cloud
                 SetActiveNamed(qCore, "Embedded Reactor Base", false);
                 SetActiveNamed(qCore, "Reactor Containment Dome", false);
                 SetActiveNamed(qCore, "Reactor Stabilizers", false);
-
-                Transform lens = FindDeep(qCore, "Living Crown Lens");
-                if (lens != null)
-                {
-                    lens.localScale = Vector3.one * 0.045f;
-                    lens.localPosition = new Vector3(0f, 0.66f, 0f);
-                }
+                SetActiveNamed(qCore, "Living Crown Lens", false);
             }
 
             Transform corePolish = FindDeep(building.transform, "HYBRID POLISH // CORE");
@@ -86,7 +80,9 @@ namespace CrownFront.Cloud
             Transform correction = Group("CORE STRUCTURAL CORRECTION", building.transform);
             Part("Reactor Pedestal", correction, plate, new Vector3(0f, 0.24f, 0f), new Vector3(0.72f, 0.34f, 0.72f), steel);
             Part("Reactor Pedestal Shadow", correction, plate, new Vector3(0f, 0.06f, 0f), new Vector3(1.06f, 0.09f, 1.06f), graphite);
-            Part("Reactor Crown Cap", correction, blade, new Vector3(0f, 0.59f, 0f), new Vector3(0.12f, 0.18f, 0.12f), white);
+            Part("Reactor Crown Housing", correction, plate, new Vector3(0f, 0.56f, 0f), new Vector3(0.30f, 0.22f, 0.30f), steel);
+            Part("Reactor Energy Prism", correction, plate, new Vector3(0f, 0.68f, 0f), new Vector3(0.16f, 0.18f, 0.16f), energy);
+            Part("Reactor White Aperture", correction, plate, new Vector3(0f, 0.70f, -0.10f), new Vector3(0.08f, 0.10f, 0.05f), white);
 
             for (int i = 0; i < 3; i++)
             {
