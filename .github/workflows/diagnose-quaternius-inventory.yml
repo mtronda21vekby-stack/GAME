@@ -1,0 +1,49 @@
+name: Diagnose Quaternius inventory
+
+on:
+  push:
+    branches:
+      - feature/crown-front-art-reboot-hero-frame
+    paths:
+      - .github/workflows/diagnose-quaternius-inventory.yml
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/crown-front-art-reboot-hero-frame
+          fetch-depth: 0
+      - name: Inspect latest inventory run
+        shell: bash
+        run: |
+          set -euo pipefail
+          run_id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow 'Inventory Quaternius CC0 sci-fi assets' --branch feature/crown-front-art-reboot-hero-frame --limit 1 --json databaseId --jq '.[0].databaseId')"
+          if [[ -z "$run_id" || "$run_id" == "null" ]]; then
+            echo 'No inventory run found.' > /tmp/summary.txt
+          else
+            gh run view "$run_id" --repo "$GITHUB_REPOSITORY" --json databaseId,status,conclusion,url > /tmp/meta.json
+            gh run view "$run_id" --repo "$GITHUB_REPOSITORY" --log-failed > /tmp/fail.log || true
+            { cat /tmp/meta.json; echo; tail -n 160 /tmp/fail.log; } > /tmp/summary.txt
+          fi
+      - name: Comment exact status
+        shell: bash
+        run: |
+          { echo '## Quaternius inventory diagnostic'; echo; echo '```text'; cat /tmp/summary.txt; echo '```'; } > /tmp/comment.md
+          gh pr comment 28 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
+      - name: Remove diagnostic workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/diagnose-quaternius-inventory.yml
+          git commit -m "chore: remove Quaternius inventory diagnostic"
+          git push origin HEAD:feature/crown-front-art-reboot-hero-frame
