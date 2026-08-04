@@ -1,0 +1,83 @@
+name: Fix Art Reboot Unity 6000.5 entity API
+
+on:
+  push:
+    branches:
+      - feature/crown-front-art-reboot-hero-frame
+    paths:
+      - .github/workflows/fix-art-reboot-entity-api.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/crown-front-art-reboot-hero-frame
+          fetch-depth: 0
+
+      - name: Remove deprecated InstanceID dependencies
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          runtime = Path('unity/crown-front/Assets/_Project/Runtime/CrownArtRebootHeroFrame.cs')
+          capture = Path('unity/crown-front/Assets/Editor/CrownArtRebootReviewCapture.cs')
+          text = runtime.read_text(encoding='utf-8')
+
+          replacements = {
+              'private readonly HashSet<int> _skinnedBuildings = new HashSet<int>();':
+                  'private readonly HashSet<CrownBuilding> _skinnedBuildings = new HashSet<CrownBuilding>();',
+              'private readonly HashSet<int> _skinnedUnits = new HashSet<int>();':
+                  'private readonly HashSet<CrownUnit> _skinnedUnits = new HashSet<CrownUnit>();',
+              'FindObjectsByType<CrownBuilding>(FindObjectsInactive.Include, FindObjectsSortMode.None)':
+                  'FindObjectsByType<CrownBuilding>(FindObjectsInactive.Include)',
+              'FindObjectsByType<CrownUnit>(FindObjectsInactive.Include, FindObjectsSortMode.None)':
+                  'FindObjectsByType<CrownUnit>(FindObjectsInactive.Include)',
+              '_skinnedBuildings.Contains(building.GetInstanceID())':
+                  '_skinnedBuildings.Contains(building)',
+              '_skinnedBuildings.Add(building.GetInstanceID())':
+                  '_skinnedBuildings.Add(building)',
+              '_skinnedUnits.Contains(unit.GetInstanceID())':
+                  '_skinnedUnits.Contains(unit)',
+              '_skinnedUnits.Add(unit.GetInstanceID())':
+                  '_skinnedUnits.Add(unit)',
+              '_seed = unit.GetInstanceID() * 0.017f;':
+                  '_seed = ((int)unit.Team * 17 + (int)unit.Kind * 5 + unit.Lane) * 0.37f;',
+          }
+
+          for old, new in replacements.items():
+              if old not in text:
+                  raise SystemExit(f'Missing expected runtime token: {old}')
+              text = text.replace(old, new)
+
+          if 'GetInstanceID()' in text or 'FindObjectsSortMode' in text:
+              raise SystemExit('Deprecated Unity identity API remains in Art Reboot runtime')
+          runtime.write_text(text, encoding='utf-8')
+
+          capture_text = capture.read_text(encoding='utf-8')
+          old = 'FindObjectsByType<CrownUnit>(FindObjectsInactive.Exclude, FindObjectsSortMode.None)'
+          new = 'FindObjectsByType<CrownUnit>(FindObjectsInactive.Exclude)'
+          if old not in capture_text:
+              raise SystemExit('Missing expected capture object-search token')
+          capture_text = capture_text.replace(old, new)
+          if 'FindObjectsSortMode' in capture_text:
+              raise SystemExit('Deprecated sort mode remains in capture utility')
+          capture.write_text(capture_text, encoding='utf-8')
+          PY
+          git rm .github/workflows/fix-art-reboot-entity-api.yml
+
+      - name: Commit compatibility repair
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add unity/crown-front/Assets/_Project/Runtime/CrownArtRebootHeroFrame.cs unity/crown-front/Assets/Editor/CrownArtRebootReviewCapture.cs
+          git diff --cached --check
+          git commit -m "fix: remove deprecated Unity object identity APIs"
+          git push origin HEAD:feature/crown-front-art-reboot-hero-frame
