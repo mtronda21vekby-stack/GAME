@@ -26,10 +26,15 @@ namespace CrownFront.Cloud
         private readonly List<CrownUnit> _units = new List<CrownUnit>(MaxUnits);
         private readonly List<CrownBuilding> _buildings = new List<CrownBuilding>(8);
         private readonly Dictionary<string, Material> _materials = new Dictionary<string, Material>();
+        private readonly Queue<CrownProjectile> _projectilePool = new Queue<CrownProjectile>(64);
+        private readonly Queue<CrownImpact> _impactPool = new Queue<CrownImpact>(72);
 
         private Transform _titan;
+        private Transform _poolRoot;
         private CrownBuilding _blueCore;
         private CrownBuilding _redCore;
+        private CrownCameraPresentation _cameraPresentation;
+        private CrownAudioHooks _audioHooks;
         private CrownUnitKind _selected = CrownUnitKind.Assault;
         private float _energy = 6f;
         private float _aiEnergy = 6f;
@@ -41,6 +46,8 @@ namespace CrownFront.Cloud
 
         public bool Finished => _finished;
         public IReadOnlyList<CrownUnit> Units => _units;
+        public int SharedMaterialCount => _materials.Count;
+        public int RealtimeLightCount => FindObjectsByType<Light>(FindObjectsInactive.Exclude).Length;
 
         private void Awake()
         {
@@ -49,6 +56,7 @@ namespace CrownFront.Cloud
             Input.multiTouchEnabled = true;
             CreateMaterials();
             BuildWorld();
+            BuildPools();
             BeginMatch();
         }
 
@@ -109,35 +117,52 @@ namespace CrownFront.Cloud
             float width = Screen.width / scale;
             float height = Screen.height / scale;
 
-            GUI.skin.label.fontSize = 30;
+            GUI.skin.label.fontSize = 26;
             GUI.skin.label.fontStyle = FontStyle.Bold;
-            GUI.skin.button.fontSize = 25;
+            GUI.skin.button.fontSize = 24;
             GUI.skin.button.fontStyle = FontStyle.Bold;
-            GUI.skin.box.fontSize = 28;
+            GUI.skin.box.fontSize = 24;
 
-            GUI.color = new Color(0.03f, 0.06f, 0.09f, 0.92f);
-            GUI.Box(new Rect(18, 18, width - 36, 118), string.Empty);
+            float safeTop = Mathf.Max(18f, Screen.safeArea.yMax < Screen.height ? 48f : 18f);
+            GUI.color = new Color(0.012f, 0.025f, 0.042f, 0.88f);
+            GUI.Box(new Rect(18, safeTop, width - 36, 112), string.Empty);
+            GUI.color = new Color(0.05f, 0.82f, 1f, 0.9f);
+            GUI.Box(new Rect(20, safeTop + 108, width * 0.5f - 22, 4), string.Empty);
+            GUI.color = new Color(1f, 0.19f, 0.05f, 0.9f);
+            GUI.Box(new Rect(width * 0.5f + 2, safeTop + 108, width * 0.5f - 22, 4), string.Empty);
             GUI.color = Color.white;
-            GUI.Label(new Rect(42, 34, 320, 42), "CROWN//FRONT");
-            GUI.Label(new Rect(42, 78, 320, 38), $"CORE  {Mathf.CeilToInt(_blueCore.Health)}");
-            GUI.Label(new Rect(width * 0.5f - 70, 48, 140, 44), FormatTime(_timeLeft));
-            GUI.Label(new Rect(width - 354, 34, 320, 42), "ENEMY CORE", RightStyle());
-            GUI.Label(new Rect(width - 354, 78, 320, 38), Mathf.CeilToInt(_redCore.Health).ToString(), RightStyle());
+            GUI.Label(new Rect(42, safeTop + 14, 340, 40), "CROWN//FRONT");
+            GUI.skin.label.fontSize = 18;
+            GUI.Label(new Rect(44, safeTop + 52, 300, 30), "0.3.0-alpha.3  //  CROWN ENGINE");
+            GUI.skin.label.fontSize = 24;
+            GUI.Label(new Rect(42, safeTop + 78, 320, 30), $"BLUE CORE  {Mathf.CeilToInt(_blueCore.Health)}");
+            GUI.skin.label.fontSize = 31;
+            GUI.Label(new Rect(width * 0.5f - 82, safeTop + 38, 164, 44), FormatTime(_timeLeft), CenterStyle());
+            GUI.skin.label.fontSize = 24;
+            GUI.Label(new Rect(width - 354, safeTop + 18, 320, 38), "HOSTILE CROWN", RightStyle());
+            GUI.Label(new Rect(width - 354, safeTop + 78, 320, 30), $"RED CORE  {Mathf.CeilToInt(_redCore.Health)}", RightStyle());
 
             // Keep the middle of the battlefield completely unobstructed.
             // Select a unit below, then tap/click the desired lane directly on the arena.
-            float panelH = 224f;
+            float panelH = 232f;
             float y = height - panelH - 20f;
-            GUI.color = new Color(0.03f, 0.06f, 0.09f, 0.95f);
+            GUI.color = new Color(0.012f, 0.025f, 0.042f, 0.91f);
             GUI.Box(new Rect(18, y, width - 36, panelH), string.Empty);
+            for (int i = 0; i < 10; i++)
+            {
+                GUI.color = i < Mathf.FloorToInt(_energy) ? new Color(0.02f, 0.82f, 1f, 1f) : new Color(0.08f, 0.13f, 0.18f, 0.9f);
+                GUI.Box(new Rect(42 + i * 31, y + 27, 24, 13), string.Empty);
+            }
             GUI.color = Color.white;
-            GUI.Label(new Rect(42, y + 18, 400, 42), $"ENERGY  {Mathf.FloorToInt(_energy)}/10");
-            GUI.Label(new Rect(width - 520, y + 18, 480, 42), $"{_selected}  •  TAP A LANE", RightStyle());
+            GUI.Label(new Rect(42, y + 48, 350, 36), $"ENERGY  {Mathf.FloorToInt(_energy)}/10");
+            GUI.skin.label.fontSize = 20;
+            GUI.Label(new Rect(width - 540, y + 31, 500, 36), $"{_selected.ToString().ToUpperInvariant()} SELECTED", RightStyle());
+            GUI.Label(new Rect(width - 540, y + 59, 500, 30), "SELECT A UNIT • TAP THE BATTLEFIELD", RightStyle());
 
             float cardW = (width - 96f) / 3f;
-            DrawUnitButton(new Rect(30, y + 76, cardW, 108), CrownUnitKind.Assault, "ASSAULT", 3);
-            DrawUnitButton(new Rect(48 + cardW, y + 76, cardW, 108), CrownUnitKind.Tank, "TANK", 4);
-            DrawUnitButton(new Rect(66 + cardW * 2f, y + 76, cardW, 108), CrownUnitKind.Raider, "RAIDER", 2);
+            DrawUnitButton(new Rect(30, y + 96, cardW, 112), CrownUnitKind.Assault, "ASSAULT", 3, "STRIKE");
+            DrawUnitButton(new Rect(48 + cardW, y + 96, cardW, 112), CrownUnitKind.Tank, "TANK", 4, "HEAVY");
+            DrawUnitButton(new Rect(66 + cardW * 2f, y + 96, cardW, 112), CrownUnitKind.Raider, "RAIDER", 2, "RAPID");
 
             if (_finished)
             {
@@ -157,11 +182,18 @@ namespace CrownFront.Cloud
             GUI.matrix = old;
         }
 
-        private void DrawUnitButton(Rect rect, CrownUnitKind kind, string label, int cost)
+        private void DrawUnitButton(Rect rect, CrownUnitKind kind, string label, int cost, string role)
         {
             Color previous = GUI.color;
-            if (_selected == kind) GUI.color = new Color(0.25f, 0.9f, 1f, 1f);
-            if (GUI.Button(rect, $"{label}\nCOST {cost}")) _selected = kind;
+            bool available = _energy >= cost;
+            if (!available) GUI.color = new Color(0.32f, 0.38f, 0.43f, 0.82f);
+            else if (_selected == kind) GUI.color = new Color(0.18f, 0.88f, 1f, 1f);
+            else GUI.color = new Color(0.78f, 0.86f, 0.93f, 1f);
+            if (GUI.Button(rect, $"{label}\n{role}  •  {cost}⚡"))
+            {
+                _selected = kind;
+                PlayAudio(CrownAudioCue.UiSelect);
+            }
             GUI.color = previous;
         }
 
@@ -237,19 +269,23 @@ namespace CrownFront.Cloud
 
         private void CreateMaterials()
         {
-            AddMaterial("metal", new Color(0.09f, 0.12f, 0.16f), 0.75f, 0.7f);
-            AddMaterial("dark", new Color(0.018f, 0.027f, 0.045f), 0.92f, 0.55f);
-            AddMaterial("blue", new Color(0.01f, 0.25f, 0.85f), 0.55f, 0.65f, new Color(0f, 0.3f, 1.2f));
-            AddMaterial("red", new Color(0.72f, 0.025f, 0.02f), 0.6f, 0.6f, new Color(1.2f, 0.02f, 0f));
-            AddMaterial("cyan", new Color(0.02f, 0.72f, 1f), 0.2f, 0.45f, new Color(0f, 1.3f, 2.4f));
-            AddMaterial("orange", new Color(1f, 0.2f, 0.01f), 0.25f, 0.5f, new Color(2.3f, 0.18f, 0f));
-            AddMaterial("gold", new Color(0.65f, 0.38f, 0.07f), 0.85f, 0.68f);
-            AddMaterial("white", new Color(0.72f, 0.8f, 0.9f), 0.5f, 0.7f);
+            AddMaterial("graphite", new Color(0.035f, 0.052f, 0.07f), 0.78f, 0.46f);
+            AddMaterial("dark", new Color(0.009f, 0.016f, 0.028f), 0.62f, 0.35f);
+            AddMaterial("metal", new Color(0.16f, 0.21f, 0.27f), 0.9f, 0.66f);
+            AddMaterial("armor", new Color(0.24f, 0.29f, 0.34f), 0.82f, 0.53f);
+            AddMaterial("blue", new Color(0.015f, 0.18f, 0.55f), 0.58f, 0.62f, new Color(0f, 0.18f, 0.72f));
+            AddMaterial("red", new Color(0.43f, 0.015f, 0.012f), 0.62f, 0.58f, new Color(0.8f, 0.015f, 0f));
+            AddMaterial("cyan", new Color(0.015f, 0.56f, 0.82f), 0.12f, 0.75f, new Color(0f, 1.35f, 2.8f));
+            AddMaterial("orange", new Color(0.96f, 0.13f, 0.005f), 0.14f, 0.72f, new Color(3f, 0.18f, 0f));
+            AddMaterial("gold", new Color(0.47f, 0.26f, 0.055f), 0.92f, 0.61f);
+            AddMaterial("white", new Color(0.75f, 0.86f, 0.95f), 0.42f, 0.76f, new Color(0.15f, 0.24f, 0.32f));
+            AddMaterial("cloud", new Color(0.075f, 0.11f, 0.16f), 0.05f, 0.18f);
         }
 
         private void AddMaterial(string key, Color color, float metallic, float smoothness, Color? emission = null)
         {
             Shader shader =
+                Shader.Find("CrownFront/EngineSurface") ??
                 Shader.Find("Standard") ??
                 Shader.Find("Universal Render Pipeline/Lit") ??
                 Shader.Find("Unlit/Color") ??
@@ -260,6 +296,7 @@ namespace CrownFront.Cloud
                 throw new InvalidOperationException("No WebGL-compatible presentation shader is available.");
             }
             Material material = new Material(shader) { name = key };
+            material.enableInstancing = true;
             if (material.HasProperty("_Color")) material.SetColor("_Color", color);
             if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", color);
             if (material.HasProperty("_Metallic")) material.SetFloat("_Metallic", metallic);
@@ -270,6 +307,7 @@ namespace CrownFront.Cloud
                 material.EnableKeyword("_EMISSION");
                 material.SetColor("_EmissionColor", emission.Value);
             }
+            if (emission.HasValue && material.HasProperty("_Emission")) material.SetColor("_Emission", emission.Value);
             _materials[key] = material;
         }
 
@@ -283,7 +321,7 @@ namespace CrownFront.Cloud
             RenderSettings.fogColor = new Color(0.008f, 0.018f, 0.035f);
             RenderSettings.fogDensity = 0.012f;
 
-            _titan = new GameObject("THE CROWN ENGINE").transform;
+            _titan = new GameObject("THE CROWN ENGINE // PRESENTATION ROOT").transform;
             BuildCameraAndLight();
             BuildTitan();
             BuildArena();
@@ -296,59 +334,108 @@ namespace CrownFront.Cloud
             camera.tag = "MainCamera";
             camera.backgroundColor = new Color(0.003f, 0.008f, 0.018f);
             camera.clearFlags = CameraClearFlags.SolidColor;
-            camera.fieldOfView = 37f;
-            camera.transform.position = new Vector3(0f, 24f, -25f);
-            camera.transform.LookAt(new Vector3(0f, 1.4f, 2.4f));
+            camera.fieldOfView = 35.5f;
+            camera.nearClipPlane = 0.2f;
+            camera.farClipPlane = 90f;
+            camera.transform.position = new Vector3(0f, 24.8f, -25.8f);
+            camera.transform.LookAt(new Vector3(0f, 1.6f, 1.3f));
+            _cameraPresentation = camera.gameObject.AddComponent<CrownCameraPresentation>();
+            _cameraPresentation.Configure(camera);
 
-            Light key = new GameObject("Storm Light").AddComponent<Light>();
+            Light key = new GameObject("Crown Key Light").AddComponent<Light>();
             key.type = LightType.Directional;
-            key.intensity = 1.2f;
-            key.color = new Color(0.72f, 0.82f, 1f);
+            key.intensity = 1.12f;
+            key.color = new Color(0.79f, 0.86f, 0.94f);
             key.shadows = LightShadows.Soft;
-            key.transform.rotation = Quaternion.Euler(48f, -28f, 0f);
-
-            Light reactor = new GameObject("Core Rim").AddComponent<Light>();
-            reactor.type = LightType.Point;
-            reactor.color = new Color(0f, 0.55f, 1f);
-            reactor.intensity = 6f;
-            reactor.range = 22f;
-            reactor.transform.position = new Vector3(0f, 4f, -7.5f);
+            key.shadowStrength = 0.62f;
+            key.transform.rotation = Quaternion.Euler(52f, -31f, 0f);
+            _audioHooks = gameObject.AddComponent<CrownAudioHooks>();
         }
 
         private void BuildTitan()
         {
-            Primitive(PrimitiveType.Cube, "Torso", _titan, new Vector3(0, 0, 1.5f), new Vector3(14.5f, 2.5f, 25f), "dark");
-            Primitive(PrimitiveType.Capsule, "Left Shoulder", _titan, new Vector3(-10.2f, 0.8f, 5f), new Vector3(6f, 7f, 7f), "dark");
-            Primitive(PrimitiveType.Capsule, "Right Shoulder", _titan, new Vector3(10.2f, 0.8f, 5f), new Vector3(6f, 7f, 7f), "dark");
-            Primitive(PrimitiveType.Cube, "Left Arm", _titan, new Vector3(-11.3f, -2.4f, -2f), new Vector3(4f, 5.5f, 19f), "dark").transform.rotation = Quaternion.Euler(7f, 0f, -7f);
-            Primitive(PrimitiveType.Cube, "Right Arm", _titan, new Vector3(11.3f, -2.4f, -2f), new Vector3(4f, 5.5f, 19f), "dark").transform.rotation = Quaternion.Euler(7f, 0f, 7f);
-            Primitive(PrimitiveType.Cube, "Head", _titan, new Vector3(0f, 7f, 16f), new Vector3(7.8f, 7f, 5.4f), "metal");
-            Primitive(PrimitiveType.Cube, "Face", _titan, new Vector3(0f, 6.5f, 13.2f), new Vector3(5.8f, 4.6f, 0.45f), "dark");
-            Primitive(PrimitiveType.Sphere, "Left Eye", _titan, new Vector3(-1.5f, 7.2f, 12.9f), new Vector3(0.55f, 0.28f, 0.18f), "orange");
-            Primitive(PrimitiveType.Sphere, "Right Eye", _titan, new Vector3(1.5f, 7.2f, 12.9f), new Vector3(0.55f, 0.28f, 0.18f), "orange");
-            for (int i = -3; i <= 3; i++)
+            Transform body = Group("[PRESENTATION] COLOSSUS BODY", _titan);
+            Primitive(PrimitiveType.Cube, "Armored Sternum", body, new Vector3(0, -0.45f, 1.8f), new Vector3(15.8f, 3.1f, 25.8f), "graphite");
+            Primitive(PrimitiveType.Cube, "Lower Keel", body, new Vector3(0, -3.4f, 2.4f), new Vector3(11.8f, 3.4f, 22f), "dark");
+            for (int side = -1; side <= 1; side += 2)
             {
-                float h = 2.3f + (3 - Mathf.Abs(i)) * 0.65f;
-                Primitive(PrimitiveType.Cube, "Crown Spike", _titan, new Vector3(i * 1.15f, 11.4f + h * 0.45f, 15.8f), new Vector3(0.58f, h, 0.72f), "gold").transform.rotation = Quaternion.Euler(0f, 0f, -i * 3f);
+                Primitive(PrimitiveType.Cube, "Shoulder Bastion", body, new Vector3(side * 10.6f, -0.15f, 5.1f), new Vector3(5.9f, 4.2f, 9.4f), "graphite").transform.rotation = Quaternion.Euler(0f, side * 7f, side * 9f);
+                Primitive(PrimitiveType.Cube, "Articulated Arm", body, new Vector3(side * 12.1f, -4.2f, -2.1f), new Vector3(4.4f, 5.2f, 18.8f), "dark").transform.rotation = Quaternion.Euler(8f, 0f, side * 8f);
+                Primitive(PrimitiveType.Cylinder, "Shoulder Joint", body, new Vector3(side * 9.4f, -1.1f, 4.7f), new Vector3(4.2f, 1.6f, 4.2f), "metal").transform.rotation = Quaternion.Euler(0f, 0f, 90f);
+                for (int z = -7; z <= 9; z += 4)
+                {
+                    Primitive(PrimitiveType.Cylinder, "Hydraulic Joint", body, new Vector3(side * 9f, -2.2f, z), new Vector3(0.48f, 2.1f, 0.48f), "armor").transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+                }
+            }
+
+            Transform head = Group("THE SLEEPING KING", body);
+            Primitive(PrimitiveType.Cube, "Crown Skull", head, new Vector3(0f, 6.9f, 16.4f), new Vector3(8.8f, 6.9f, 5.8f), "graphite");
+            Primitive(PrimitiveType.Cube, "Face Mask", head, new Vector3(0f, 6.45f, 13.35f), new Vector3(6.5f, 4.5f, 0.5f), "dark");
+            Primitive(PrimitiveType.Cube, "Jaw Armor", head, new Vector3(0f, 4.5f, 14f), new Vector3(5.2f, 1.15f, 1.4f), "armor");
+            Primitive(PrimitiveType.Cube, "Left Eye Slit", head, new Vector3(-1.65f, 7.2f, 13.02f), new Vector3(1.15f, 0.18f, 0.12f), "orange");
+            Primitive(PrimitiveType.Cube, "Right Eye Slit", head, new Vector3(1.65f, 7.2f, 13.02f), new Vector3(1.15f, 0.18f, 0.12f), "orange");
+            for (int i = -2; i <= 2; i++)
+            {
+                float h = i == 0 ? 5.4f : Mathf.Abs(i) == 1 ? 4.35f : 3.2f;
+                GameObject spike = Primitive(PrimitiveType.Cube, "Crown Blade", head, new Vector3(i * 1.5f, 11f + h * 0.5f, 16.3f), new Vector3(0.72f, h, 1.05f), i == 0 ? "gold" : "metal");
+                spike.transform.rotation = Quaternion.Euler(0f, 0f, -i * 4f);
+            }
+
+            Transform depth = Group("[PRESENTATION] REACTOR DEPTH", _titan);
+            for (int z = -8; z <= 10; z += 4)
+            {
+                GameObject rotor = Primitive(PrimitiveType.Cylinder, "Subdeck Rotor", depth, new Vector3(0f, -2.1f, z), new Vector3(3.4f, 0.35f, 3.4f), z % 8 == 0 ? "cyan" : "metal", false);
+                rotor.AddComponent<CrownAmbientMotion>().DegreesPerSecond = z % 8 == 0 ? 10f : -14f;
+            }
+            for (int side = -1; side <= 1; side += 2)
+            {
+                GameObject conduit = Primitive(PrimitiveType.Cylinder, "Primary Power Spine", depth, new Vector3(side * 7.15f, -1.9f, 1f), new Vector3(0.5f, 10.8f, 0.5f), side < 0 ? "cyan" : "orange", false);
+                conduit.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+            }
+            for (int i = 0; i < 9; i++)
+            {
+                float x = (i - 4) * 4.2f;
+                float z = 4f + Mathf.Sin(i * 1.7f) * 8f;
+                Primitive(PrimitiveType.Sphere, "Atmospheric Cloud", depth, new Vector3(x, -7.4f - (i % 3), z), new Vector3(5.2f, 1.4f, 3.6f), "cloud", false);
             }
         }
 
         private void BuildArena()
         {
+            Transform arena = Group("[PRESENTATION] CROWN DECK", _titan);
+            Primitive(PrimitiveType.Cube, "Main Armored Deck", arena, new Vector3(0f, 1.12f, 0.65f), new Vector3(14.2f, 1.15f, 22.8f), "graphite");
+            Primitive(PrimitiveType.Cube, "Blue Forward Mass", arena, new Vector3(0f, 1.55f, -7.3f), new Vector3(12.8f, 0.65f, 4.6f), "dark");
+            Primitive(PrimitiveType.Cube, "Red Forward Mass", arena, new Vector3(0f, 1.55f, 8.5f), new Vector3(12.8f, 0.65f, 4.6f), "dark");
             for (int lane = 0; lane < 3; lane++)
             {
                 float x = LaneX[lane];
-                Primitive(PrimitiveType.Cube, $"Lane {lane}", _titan, new Vector3(x, 1.55f, 0.6f), new Vector3(2.7f, 0.34f, 21.7f), "metal");
-                Primitive(PrimitiveType.Cube, "Lane Energy", _titan, new Vector3(x, 1.77f, 0.6f), new Vector3(0.12f, 0.05f, 20.8f), lane == 1 ? "cyan" : "blue");
+                float laneWidth = lane == 1 ? 3.15f : 2.75f;
+                Primitive(PrimitiveType.Cube, $"Tactical Conduit {lane}", arena, new Vector3(x, 1.86f, 0.6f), new Vector3(laneWidth, 0.32f, 20.7f), lane == 1 ? "armor" : "metal");
+                Primitive(PrimitiveType.Cube, "Embedded Energy Seam", arena, new Vector3(x, 2.055f, 0.6f), new Vector3(0.09f, 0.035f, 20.4f), lane == 1 ? "cyan" : "blue", false);
                 for (int z = -8; z <= 10; z += 3)
                 {
-                    Primitive(PrimitiveType.Cube, "Armor Segment", _titan, new Vector3(x, 1.82f, z), new Vector3(2.45f, 0.18f, 1.9f), "dark");
+                    GameObject plate = Primitive(PrimitiveType.Cube, "Beveled Combat Plate", arena, new Vector3(x, 2.08f, z), new Vector3(laneWidth - 0.24f, 0.12f, 1.88f), "graphite");
+                    plate.transform.rotation = Quaternion.Euler(0f, ((z + lane) & 1) == 0 ? 1.2f : -1.2f, 0f);
                 }
             }
 
+            Transform focus = Group("Central Crown Junction", arena);
+            Primitive(PrimitiveType.Cylinder, "Junction Well", focus, new Vector3(0f, 1.87f, 1f), new Vector3(3.8f, 0.22f, 3.8f), "dark");
+            Primitive(PrimitiveType.Cylinder, "Junction Ring", focus, new Vector3(0f, 2.12f, 1f), new Vector3(3.15f, 0.11f, 3.15f), "metal").AddComponent<CrownAmbientMotion>().DegreesPerSecond = 4f;
+            Primitive(PrimitiveType.Cylinder, "Junction Energy", focus, new Vector3(0f, 2.18f, 1f), new Vector3(1.15f, 0.08f, 1.15f), "white", false).AddComponent<CrownPulse>().Amount = 0.08f;
+
             for (int i = -4; i <= 4; i++)
             {
-                Primitive(PrimitiveType.Cube, "Rib Plate", _titan, new Vector3(i * 1.65f, 1.5f, 2.2f), new Vector3(1.1f, 0.3f, 2.3f), "metal").transform.rotation = Quaternion.Euler(0f, i * 1.5f, 0f);
+                if (i == 0) continue;
+                Primitive(PrimitiveType.Cube, "Structural Rib", arena, new Vector3(i * 1.65f, 1.7f, 1.2f), new Vector3(1.05f, 0.34f, 2.65f), "armor").transform.rotation = Quaternion.Euler(0f, i * 1.8f, 0f);
+            }
+            for (int side = -1; side <= 1; side += 2)
+            {
+                for (int z = -7; z <= 8; z += 5)
+                {
+                    Primitive(PrimitiveType.Cube, "Deck Buttress", arena, new Vector3(side * 7.35f, 2.15f, z), new Vector3(1.35f, 1.45f, 2.3f), "graphite").transform.rotation = Quaternion.Euler(0f, side * 10f, side * 7f);
+                    Primitive(PrimitiveType.Cylinder, "Cooling Vent", arena, new Vector3(side * 6.9f, 2.65f, z), new Vector3(0.72f, 0.18f, 0.72f), "metal");
+                }
             }
         }
 
@@ -368,10 +455,45 @@ namespace CrownFront.Cloud
             Transform root = new GameObject($"{team} CORE").transform;
             root.SetParent(_titan, false);
             root.position = position;
-            Primitive(PrimitiveType.Cylinder, "Core Base", root, Vector3.zero, new Vector3(3.2f, 0.7f, 3.2f), "dark");
-            Primitive(PrimitiveType.Cylinder, "Core Ring", root, new Vector3(0, 0.65f, 0), new Vector3(2.3f, 0.45f, 2.3f), team == CrownTeam.Blue ? "blue" : "red").AddComponent<CrownSpin>().DegreesPerSecond = team == CrownTeam.Blue ? 28f : -28f;
-            Primitive(PrimitiveType.Sphere, "Core Energy", root, new Vector3(0, 1.3f, 0), Vector3.one * 1.45f, team == CrownTeam.Blue ? "cyan" : "orange").AddComponent<CrownPulse>();
+            Transform visual = Group("[PRESENTATION] Crown Reactor", root);
+            string accent = team == CrownTeam.Blue ? "blue" : "red";
+            string energyMaterial = team == CrownTeam.Blue ? "cyan" : "orange";
+            Primitive(PrimitiveType.Cylinder, "Integrated Foundation", visual, Vector3.zero, new Vector3(3.55f, 0.48f, 3.55f), "dark");
+            Primitive(PrimitiveType.Cylinder, "Armored Plinth", visual, new Vector3(0f, 0.42f, 0f), new Vector3(2.85f, 0.62f, 2.85f), "graphite");
+            Primitive(PrimitiveType.Cylinder, "Team Conduit", visual, new Vector3(0f, 0.92f, 0f), new Vector3(2.28f, 0.16f, 2.28f), accent);
+            Transform energy = Primitive(PrimitiveType.Sphere, "Contained Star", visual, new Vector3(0f, 2.02f, 0f), Vector3.one * 1.18f, energyMaterial, false).transform;
+            energy.gameObject.AddComponent<CrownPulse>().Amount = 0.065f;
+            Primitive(PrimitiveType.Cylinder, "Vertical Energy Column", visual, new Vector3(0f, 2.08f, 0f), new Vector3(0.34f, 1.9f, 0.34f), "white", false).AddComponent<CrownPulse>().Speed = 3.4f;
+
+            Transform[] rings = new Transform[3];
+            for (int i = 0; i < rings.Length; i++)
+            {
+                Transform ring = BuildSegmentRing(visual, $"Magnetic Crown Ring {i + 1}", new Vector3(0f, 2f, 0f), 1.32f + i * 0.32f, i == 1 ? accent : "metal");
+                ring.rotation = Quaternion.Euler(i == 0 ? 68f : i == 1 ? 0f : -68f, i * 37f, 0f);
+                rings[i] = ring;
+            }
+
+            for (int side = -1; side <= 1; side += 2)
+            {
+                for (int axis = -1; axis <= 1; axis += 2)
+                {
+                    Vector3 p = new Vector3(side * 1.85f, 1.35f, axis * 1.35f);
+                    GameObject stabilizer = Primitive(PrimitiveType.Cube, "Reactor Stabilizer", visual, p, new Vector3(0.58f, 2.1f, 0.78f), "armor");
+                    stabilizer.transform.rotation = Quaternion.Euler(axis * 7f, side * 16f, side * 10f);
+                    Primitive(PrimitiveType.Cube, "Stabilizer Energy Slit", visual, p + Vector3.up * 0.08f, new Vector3(0.62f, 0.12f, 0.82f), energyMaterial, false);
+                }
+            }
+
+            for (int crown = -1; crown <= 1; crown++)
+            {
+                float height = crown == 0 ? 2.35f : 1.75f;
+                GameObject blade = Primitive(PrimitiveType.Cube, "Trident Crown Blade", visual, new Vector3(crown * 0.78f, 3.18f + height * 0.42f, -0.75f), new Vector3(0.28f, height, 0.48f), crown == 0 ? "white" : accent);
+                blade.transform.rotation = Quaternion.Euler(-10f, 0f, -crown * 8f);
+            }
+
             CrownBuilding building = root.gameObject.AddComponent<CrownBuilding>();
+            CrownBuildingPresentation presentation = root.gameObject.AddComponent<CrownBuildingPresentation>();
+            presentation.Configure(true, visual, null, null, null, energy, rings);
             building.Configure(this, team, 3200f, 1, true);
             _buildings.Add(building);
             return building;
@@ -382,11 +504,25 @@ namespace CrownFront.Cloud
             Transform root = new GameObject($"{team} Tower {lane}").transform;
             root.SetParent(_titan, false);
             root.position = position;
-            Primitive(PrimitiveType.Cylinder, "Tower Base", root, Vector3.zero, new Vector3(1.55f, 0.65f, 1.55f), "dark");
-            Primitive(PrimitiveType.Cylinder, "Turret", root, new Vector3(0, 0.7f, 0), new Vector3(1.05f, 0.7f, 1.05f), team == CrownTeam.Blue ? "blue" : "red").AddComponent<CrownSpin>().DegreesPerSecond = team == CrownTeam.Blue ? 18f : -18f;
-            GameObject barrel = Primitive(PrimitiveType.Cube, "Barrel", root, new Vector3(0, 1.15f, team == CrownTeam.Blue ? 0.9f : -0.9f), new Vector3(0.42f, 0.42f, 2.3f), "metal");
-            barrel.transform.rotation = Quaternion.Euler(team == CrownTeam.Blue ? -5f : 5f, 0f, 0f);
+            Transform visual = Group("[PRESENTATION] Integrated Turret", root);
+            string accent = team == CrownTeam.Blue ? "blue" : "red";
+            string energyMaterial = team == CrownTeam.Blue ? "cyan" : "orange";
+            Primitive(PrimitiveType.Cylinder, "Socket", visual, Vector3.zero, new Vector3(1.75f, 0.36f, 1.75f), "dark");
+            Primitive(PrimitiveType.Cylinder, "Armored Pedestal", visual, new Vector3(0f, 0.38f, 0f), new Vector3(1.42f, 0.58f, 1.42f), "graphite");
+            Transform turret = Group("Tracking Combat Module", visual);
+            turret.localPosition = new Vector3(0f, 0.95f, 0f);
+            Primitive(PrimitiveType.Cube, "Sloped Gun Housing", turret, Vector3.zero, new Vector3(1.55f, 0.72f, 1.45f), "armor").transform.rotation = Quaternion.Euler(0f, 45f, 0f);
+            Primitive(PrimitiveType.Cylinder, "Energy Collar", turret, new Vector3(0f, 0.08f, 0f), new Vector3(1.05f, 0.16f, 1.05f), accent, false);
+            Transform barrel = Primitive(PrimitiveType.Cube, "Rail Cannon", turret, new Vector3(0f, 0.18f, 1.22f), new Vector3(0.42f, 0.42f, 2.35f), "metal").transform;
+            Primitive(PrimitiveType.Cube, "Rail Energy Slot", barrel, new Vector3(0f, 0.48f, 0f), new Vector3(0.5f, 0.08f, 0.82f), energyMaterial, false);
+            Transform muzzle = Primitive(PrimitiveType.Sphere, "Muzzle Flash", barrel, new Vector3(0f, 0f, 0.58f), Vector3.zero, energyMaterial, false).transform;
+            for (int fin = -1; fin <= 1; fin += 2)
+            {
+                Primitive(PrimitiveType.Cube, "Crown Armor Fin", turret, new Vector3(fin * 0.92f, 0.24f, -0.22f), new Vector3(0.26f, 1.15f, 0.72f), accent).transform.rotation = Quaternion.Euler(0f, 0f, fin * 14f);
+            }
             CrownBuilding building = root.gameObject.AddComponent<CrownBuilding>();
+            CrownBuildingPresentation presentation = root.gameObject.AddComponent<CrownBuildingPresentation>();
+            presentation.Configure(false, visual, turret, barrel, muzzle, turret.Find("Energy Collar"), new Transform[0]);
             building.Configure(this, team, 980f, lane, false);
             _buildings.Add(building);
         }
@@ -402,38 +538,80 @@ namespace CrownFront.Cloud
             CrownUnit unit = root.gameObject.AddComponent<CrownUnit>();
             unit.Configure(this, team, kind, lane);
             _units.Add(unit);
+            Impact(root.position + Vector3.up * 0.6f, team, kind == CrownUnitKind.Tank ? 1.15f : 0.78f);
+            PlayAudio(CrownAudioCue.Deploy);
         }
 
         private Transform BuildUnitVisual(CrownTeam team, CrownUnitKind kind)
         {
             Transform root = new GameObject($"{team} {kind}").transform;
-            string color = team == CrownTeam.Blue ? "blue" : "red";
-            float scale = kind == CrownUnitKind.Tank ? 1.35f : kind == CrownUnitKind.Raider ? 0.83f : 1f;
-            Primitive(PrimitiveType.Capsule, "Body", root, new Vector3(0, 0.55f, 0), new Vector3(0.75f, 1.2f, 0.72f) * scale, "dark");
-            Primitive(PrimitiveType.Sphere, "Helmet", root, new Vector3(0, 1.5f, 0), Vector3.one * 0.58f * scale, "metal");
-            Primitive(PrimitiveType.Cube, "Visor", root, new Vector3(0, 1.52f, 0.42f * scale), new Vector3(0.52f, 0.18f, 0.12f) * scale, color);
-            Primitive(PrimitiveType.Cube, "Shoulders", root, new Vector3(0, 1.04f, 0), new Vector3(1.2f, 0.28f, 0.55f) * scale, "metal");
+            Transform visual = Group("[PRESENTATION] Visual Root", root);
+            string accent = team == CrownTeam.Blue ? "blue" : "red";
+            string energyMaterial = team == CrownTeam.Blue ? "cyan" : "orange";
+            float scale = kind == CrownUnitKind.Tank ? 1.42f : kind == CrownUnitKind.Raider ? 0.9f : 1.08f;
+            Transform leftLeg = Primitive(PrimitiveType.Cube, "Left Armored Leg", visual, new Vector3(-0.27f, 0.34f, 0f) * scale, new Vector3(0.32f, 0.72f, 0.38f) * scale, "graphite").transform;
+            Transform rightLeg = Primitive(PrimitiveType.Cube, "Right Armored Leg", visual, new Vector3(0.27f, 0.34f, 0f) * scale, new Vector3(0.32f, 0.72f, 0.38f) * scale, "graphite").transform;
+            Primitive(PrimitiveType.Cube, "Left Heavy Boot", leftLeg, new Vector3(0f, -0.42f, 0.12f), new Vector3(1.05f, 0.34f, 1.42f), "metal");
+            Primitive(PrimitiveType.Cube, "Right Heavy Boot", rightLeg, new Vector3(0f, -0.42f, 0.12f), new Vector3(1.05f, 0.34f, 1.42f), "metal");
+            Transform torso = Group("Layered Torso", visual);
+            torso.localPosition = new Vector3(0f, 1.1f, 0f) * scale;
+            Primitive(PrimitiveType.Cube, "Graphite Chest", torso, Vector3.zero, new Vector3(0.82f, 0.86f, 0.58f) * scale, "graphite").transform.rotation = Quaternion.Euler(7f, 0f, 0f);
+            Primitive(PrimitiveType.Cube, "Crown Breastplate", torso, new Vector3(0f, 0.02f, 0.34f) * scale, new Vector3(0.52f, 0.45f, 0.1f) * scale, accent);
+            Primitive(PrimitiveType.Cube, "Left Shoulder Plate", torso, new Vector3(-0.63f, 0.28f, 0f) * scale, new Vector3(0.48f, 0.35f, 0.7f) * scale, "armor").transform.rotation = Quaternion.Euler(0f, 0f, -16f);
+            Primitive(PrimitiveType.Cube, "Right Shoulder Plate", torso, new Vector3(0.63f, 0.28f, 0f) * scale, new Vector3(0.48f, 0.35f, 0.7f) * scale, "armor").transform.rotation = Quaternion.Euler(0f, 0f, 16f);
+            Primitive(PrimitiveType.Sphere, "Angular Helmet", torso, new Vector3(0f, 0.82f, 0.03f) * scale, Vector3.one * 0.5f * scale, "metal");
+            Primitive(PrimitiveType.Cube, "Team Visor", torso, new Vector3(0f, 0.84f, 0.44f) * scale, new Vector3(0.62f, 0.16f, 0.12f) * scale, energyMaterial, false);
+            Transform reactor = Primitive(PrimitiveType.Cylinder, "Magnetic Backpack Reactor", torso, new Vector3(0f, 0.04f, -0.48f) * scale, new Vector3(0.43f, 0.16f, 0.43f) * scale, energyMaterial, false).transform;
+            reactor.rotation = Quaternion.Euler(90f, 0f, 0f);
+            Transform weapon;
 
             if (kind == CrownUnitKind.Tank)
             {
-                Primitive(PrimitiveType.Cube, "Tracks", root, new Vector3(0, 0.05f, 0), new Vector3(1.55f, 0.5f, 1.7f), "metal");
-                Primitive(PrimitiveType.Cube, "Heavy Cannon", root, new Vector3(0, 1.05f, 1.05f), new Vector3(0.4f, 0.4f, 2.2f), color);
+                Primitive(PrimitiveType.Cube, "Heavy Frontal Shield", torso, new Vector3(0f, -0.18f, 0.62f) * scale, new Vector3(1.18f, 1.05f, 0.24f) * scale, "armor");
+                Primitive(PrimitiveType.Cube, "Shield Energy Cross", torso, new Vector3(0f, -0.18f, 0.76f) * scale, new Vector3(0.13f, 0.7f, 0.05f) * scale, energyMaterial, false);
+                weapon = Primitive(PrimitiveType.Cube, "Siege Cannon", torso, new Vector3(0.58f, 0.06f, 0.94f) * scale, new Vector3(0.34f, 0.34f, 1.65f) * scale, "metal").transform;
             }
             else if (kind == CrownUnitKind.Raider)
             {
-                Primitive(PrimitiveType.Cylinder, "Left Booster", root, new Vector3(-0.42f, 0.7f, -0.35f), new Vector3(0.28f, 0.55f, 0.28f), "orange").transform.rotation = Quaternion.Euler(90f, 0f, 0f);
-                Primitive(PrimitiveType.Cylinder, "Right Booster", root, new Vector3(0.42f, 0.7f, -0.35f), new Vector3(0.28f, 0.55f, 0.28f), "orange").transform.rotation = Quaternion.Euler(90f, 0f, 0f);
-                Primitive(PrimitiveType.Cube, "Blade", root, new Vector3(0.55f, 0.72f, 0.55f), new Vector3(0.12f, 0.12f, 1.25f), color).transform.rotation = Quaternion.Euler(0f, 18f, 0f);
+                Primitive(PrimitiveType.Cylinder, "Left Vector Thruster", torso, new Vector3(-0.47f, -0.12f, -0.52f) * scale, new Vector3(0.21f, 0.52f, 0.21f) * scale, energyMaterial, false).transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+                Primitive(PrimitiveType.Cylinder, "Right Vector Thruster", torso, new Vector3(0.47f, -0.12f, -0.52f) * scale, new Vector3(0.21f, 0.52f, 0.21f) * scale, energyMaterial, false).transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+                weapon = Primitive(PrimitiveType.Cube, "Monomolecular Crown Blade", torso, new Vector3(0.58f, -0.1f, 0.72f) * scale, new Vector3(0.13f, 0.13f, 1.42f) * scale, energyMaterial, false).transform;
+                weapon.rotation = Quaternion.Euler(0f, 18f, -9f);
             }
             else
             {
-                Primitive(PrimitiveType.Cube, "Rifle", root, new Vector3(0.38f, 0.85f, 0.68f), new Vector3(0.18f, 0.22f, 1.45f), color).transform.rotation = Quaternion.Euler(-7f, 0f, 0f);
+                weapon = Primitive(PrimitiveType.Cube, "Crown Energy Carbine", torso, new Vector3(0.42f, -0.08f, 0.84f) * scale, new Vector3(0.2f, 0.23f, 1.42f) * scale, "metal").transform;
+                Primitive(PrimitiveType.Cube, "Carbine Energy Magazine", weapon, new Vector3(0f, -0.6f, -0.06f), new Vector3(0.72f, 0.48f, 0.34f), energyMaterial, false);
             }
 
+            CrownUnitPresentation presentation = root.gameObject.AddComponent<CrownUnitPresentation>();
+            presentation.Configure(kind, visual, torso, weapon, leftLeg, rightLeg, reactor);
             return root;
         }
 
-        private GameObject Primitive(PrimitiveType type, string name, Transform parent, Vector3 position, Vector3 scale, string material)
+        private static Transform Group(string name, Transform parent)
+        {
+            Transform group = new GameObject(name).transform;
+            group.SetParent(parent, false);
+            return group;
+        }
+
+        private Transform BuildSegmentRing(Transform parent, string name, Vector3 position, float radius, string material)
+        {
+            Transform ring = Group(name, parent);
+            ring.localPosition = position;
+            const int segments = 10;
+            for (int i = 0; i < segments; i++)
+            {
+                float angle = i * Mathf.PI * 2f / segments;
+                Vector3 p = new Vector3(Mathf.Sin(angle) * radius, 0f, Mathf.Cos(angle) * radius);
+                GameObject segment = Primitive(PrimitiveType.Cube, "Magnetic Segment", ring, p, new Vector3(0.24f, 0.14f, radius * 0.62f), material, false);
+                segment.transform.localRotation = Quaternion.Euler(0f, angle * Mathf.Rad2Deg + 90f, 0f);
+            }
+            return ring;
+        }
+
+        private GameObject Primitive(PrimitiveType type, string name, Transform parent, Vector3 position, Vector3 scale, string material, bool castShadows = true)
         {
             GameObject go = GameObject.CreatePrimitive(type);
             go.name = name;
@@ -441,7 +619,12 @@ namespace CrownFront.Cloud
             go.transform.localPosition = position;
             go.transform.localScale = scale;
             Renderer renderer = go.GetComponent<Renderer>();
-            if (renderer != null) renderer.sharedMaterial = _materials[material];
+            if (renderer != null)
+            {
+                renderer.sharedMaterial = _materials[material];
+                renderer.shadowCastingMode = castShadows ? UnityEngine.Rendering.ShadowCastingMode.On : UnityEngine.Rendering.ShadowCastingMode.Off;
+                renderer.receiveShadows = castShadows;
+            }
             Collider collider = go.GetComponent<Collider>();
             if (collider != null) Destroy(collider);
             return go;
@@ -487,32 +670,86 @@ namespace CrownFront.Cloud
 
         public void Fire(Vector3 origin, ICrownTarget target, CrownTeam team, float damage, float speed, float scale)
         {
-            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            go.name = "Energy Projectile";
-            go.transform.position = origin;
-            go.transform.localScale = Vector3.one * scale;
-            go.GetComponent<Renderer>().sharedMaterial = _materials[team == CrownTeam.Blue ? "cyan" : "orange"];
-            Destroy(go.GetComponent<Collider>());
-            CrownProjectile projectile = go.AddComponent<CrownProjectile>();
-            projectile.Configure(this, target, team, damage, speed);
+            CrownProjectile projectile = _projectilePool.Count > 0 ? _projectilePool.Dequeue() : CreateProjectileObject();
+            projectile.gameObject.SetActive(true);
+            projectile.Configure(this, target, team, damage, speed, origin, scale, _materials[team == CrownTeam.Blue ? "cyan" : "orange"]);
         }
 
         public void Impact(Vector3 point, CrownTeam team, float size)
         {
-            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            go.name = "Impact";
-            go.transform.position = point;
-            go.transform.localScale = Vector3.one * 0.1f;
-            go.GetComponent<Renderer>().sharedMaterial = _materials[team == CrownTeam.Blue ? "cyan" : "orange"];
-            Destroy(go.GetComponent<Collider>());
-            CrownImpact impact = go.AddComponent<CrownImpact>();
-            impact.Configure(size, 0.24f);
+            CrownImpact impact = _impactPool.Count > 0 ? _impactPool.Dequeue() : CreateImpactObject();
+            impact.gameObject.SetActive(true);
+            impact.Configure(this, point, _materials[team == CrownTeam.Blue ? "cyan" : "orange"], size, 0.24f);
+            PlayAudio(CrownAudioCue.Impact);
+        }
+
+        private void BuildPools()
+        {
+            _poolRoot = Group("[POOL] MOBILE VFX", transform);
+            for (int i = 0; i < 64; i++)
+            {
+                CrownProjectile projectile = CreateProjectileObject();
+                projectile.gameObject.SetActive(false);
+                _projectilePool.Enqueue(projectile);
+            }
+            for (int i = 0; i < 72; i++)
+            {
+                CrownImpact impact = CreateImpactObject();
+                impact.gameObject.SetActive(false);
+                _impactPool.Enqueue(impact);
+            }
+        }
+
+        private CrownProjectile CreateProjectileObject()
+        {
+            Transform root = Group("Pooled Energy Projectile", _poolRoot);
+            Renderer core = Primitive(PrimitiveType.Sphere, "White-hot Core", root, Vector3.zero, Vector3.one, "white", false).GetComponent<Renderer>();
+            Renderer trail = Primitive(PrimitiveType.Cube, "Controlled Trail", root, new Vector3(0f, 0f, -0.75f), new Vector3(0.22f, 0.22f, 1.45f), "cyan", false).GetComponent<Renderer>();
+            CrownProjectile projectile = root.gameObject.AddComponent<CrownProjectile>();
+            projectile.SetRenderers(core, trail);
+            return projectile;
+        }
+
+        private CrownImpact CreateImpactObject()
+        {
+            Transform root = Group("Pooled Impact", _poolRoot);
+            Renderer flash = Primitive(PrimitiveType.Sphere, "Impact Flash", root, Vector3.zero, Vector3.one, "cyan", false).GetComponent<Renderer>();
+            Renderer debris = Primitive(PrimitiveType.Cube, "Armor Spark", root, new Vector3(0.3f, 0.15f, 0f), new Vector3(0.5f, 0.08f, 0.08f), "white", false).GetComponent<Renderer>();
+            CrownImpact impact = root.gameObject.AddComponent<CrownImpact>();
+            impact.SetRenderers(flash, debris);
+            return impact;
+        }
+
+        public void ReturnProjectile(CrownProjectile projectile)
+        {
+            if (projectile == null) return;
+            projectile.gameObject.SetActive(false);
+            projectile.transform.SetParent(_poolRoot, false);
+            _projectilePool.Enqueue(projectile);
+        }
+
+        public void ReturnImpact(CrownImpact impact)
+        {
+            if (impact == null) return;
+            impact.gameObject.SetActive(false);
+            impact.transform.SetParent(_poolRoot, false);
+            _impactPool.Enqueue(impact);
+        }
+
+        public void PlayAudio(CrownAudioCue cue)
+        {
+            if (_audioHooks != null) _audioHooks.Play(cue);
         }
 
         public void BuildingDestroyed(CrownBuilding building)
         {
             Impact(building.AimPoint, building.Team == CrownTeam.Blue ? CrownTeam.Red : CrownTeam.Blue, building.IsCore ? 3f : 1.7f);
-            if (building.IsCore) Finish(building.Team == CrownTeam.Blue ? CrownTeam.Red : CrownTeam.Blue);
+            _cameraPresentation?.Impact(building.IsCore ? 0.2f : 0.08f);
+            if (building.IsCore)
+            {
+                PlayAudio(CrownAudioCue.CoreDestroyed);
+                Finish(building.Team == CrownTeam.Blue ? CrownTeam.Red : CrownTeam.Blue);
+            }
         }
 
         private void Finish(CrownTeam winner)
@@ -520,6 +757,8 @@ namespace CrownFront.Cloud
             if (_finished) return;
             _finished = true;
             _result = winner == CrownTeam.Blue ? "VICTORY" : "DEFEAT";
+            _cameraPresentation?.Finish();
+            PlayAudio(winner == CrownTeam.Blue ? CrownAudioCue.Victory : CrownAudioCue.Defeat);
         }
 
         private void AnimateTitan()
@@ -542,8 +781,7 @@ namespace CrownFront.Cloud
         private float _attackInterval;
         private float _nextAttack;
         private float _deathAt;
-        private float _bobSeed;
-        private Vector3 _baseScale;
+        private CrownUnitPresentation _presentation;
 
         public CrownTeam Team { get; private set; }
         public CrownUnitKind Kind { get; private set; }
@@ -557,8 +795,7 @@ namespace CrownFront.Cloud
             Team = team;
             Kind = kind;
             Lane = lane;
-            _bobSeed = UnityEngine.Random.Range(0f, 10f);
-            _baseScale = transform.localScale;
+            _presentation = GetComponent<CrownUnitPresentation>();
             if (kind == CrownUnitKind.Tank) { _health = 640f; _speed = 1.55f; _damage = 72f; _range = 4.8f; _attackInterval = 1.55f; }
             else if (kind == CrownUnitKind.Raider) { _health = 190f; _speed = 4.3f; _damage = 42f; _range = 1.45f; _attackInterval = 0.66f; }
             else { _health = 330f; _speed = 2.65f; _damage = 48f; _range = 4.1f; _attackInterval = 0.92f; }
@@ -569,22 +806,17 @@ namespace CrownFront.Cloud
             if (IsDead)
             {
                 float remaining = _deathAt - Time.time;
-                transform.localScale = _baseScale * Mathf.Clamp01(remaining / 0.55f);
                 if (remaining <= 0f) Destroy(gameObject);
                 return;
             }
             if (_game == null || _game.Finished) return;
-
-            Vector3 p = transform.position;
-            p.y = 2.35f + Mathf.Sin(Time.time * (Kind == CrownUnitKind.Raider ? 7f : 4f) + _bobSeed) * 0.05f;
-            transform.position = p;
 
             if (_target == null || _target.IsDead) _target = _game.FindTarget(this);
             if (_target != null && !_target.IsDead)
             {
                 Vector3 delta = _target.AimPoint - AimPoint;
                 float distance = delta.magnitude;
-                if (distance <= _range) { Face(delta); Attack(); return; }
+                if (distance <= _range) { _presentation?.SetMoving(false); Face(delta); Attack(); return; }
                 if (distance < 9f) { Move(delta.normalized); return; }
             }
             Move(Team == CrownTeam.Blue ? Vector3.forward : Vector3.back);
@@ -595,6 +827,7 @@ namespace CrownFront.Cloud
             direction.y = 0f;
             if (direction.sqrMagnitude < 0.001f) return;
             direction.Normalize();
+            _presentation?.SetMoving(true);
             transform.position += direction * (_speed * Time.deltaTime);
             Face(direction);
         }
@@ -609,13 +842,16 @@ namespace CrownFront.Cloud
         {
             if (Time.time < _nextAttack || _target == null || _target.IsDead) return;
             _nextAttack = Time.time + _attackInterval;
+            _presentation?.PlayAttack();
             if (Kind == CrownUnitKind.Raider)
             {
+                _game.PlayAudio(CrownAudioCue.RaiderAttack);
                 _target.Damage(_damage, Team);
                 _game.Impact(_target.AimPoint, Team, 0.7f);
             }
             else
             {
+                _game.PlayAudio(Kind == CrownUnitKind.Tank ? CrownAudioCue.TankShot : CrownAudioCue.AssaultShot);
                 _game.Fire(AimPoint + transform.forward * 0.65f, _target, Team, _damage, Kind == CrownUnitKind.Tank ? 11f : 15f, Kind == CrownUnitKind.Tank ? 0.4f : 0.24f);
             }
         }
@@ -624,18 +860,16 @@ namespace CrownFront.Cloud
         {
             if (IsDead) return;
             _health -= amount;
-            transform.localScale = _baseScale * 1.08f;
-            CancelInvoke(nameof(Restore));
-            Invoke(nameof(Restore), 0.08f);
+            _presentation?.PlayHit();
             if (_health <= 0f)
             {
                 IsDead = true;
                 _deathAt = Time.time + 0.55f;
+                _presentation?.SetMoving(false);
+                _presentation?.PlayDeath();
                 _game.Impact(AimPoint, source, Kind == CrownUnitKind.Tank ? 1.35f : 0.85f);
             }
         }
-
-        private void Restore() { if (!IsDead) transform.localScale = _baseScale; }
     }
 
     public sealed class CrownBuilding : MonoBehaviour, ICrownTarget
@@ -643,7 +877,7 @@ namespace CrownFront.Cloud
         private CrownEngineGame _game;
         private float _nextAttack;
         private float _maxHealth;
-        private Vector3 _baseScale;
+        private CrownBuildingPresentation _presentation;
 
         public CrownTeam Team { get; private set; }
         public int Lane { get; private set; }
@@ -659,7 +893,7 @@ namespace CrownFront.Cloud
             Lane = lane;
             IsCore = isCore;
             Health = _maxHealth = health;
-            _baseScale = transform.localScale;
+            _presentation = GetComponent<CrownBuildingPresentation>();
         }
 
         private void Update()
@@ -667,7 +901,10 @@ namespace CrownFront.Cloud
             if (IsDead || IsCore || _game == null || _game.Finished || Time.time < _nextAttack) return;
             CrownUnit target = _game.FindTowerTarget(Team, Lane, transform.position);
             if (target == null) return;
+            _presentation?.Track(target.AimPoint);
             _nextAttack = Time.time + 1.2f;
+            _presentation?.PlayShot();
+            _game.PlayAudio(CrownAudioCue.TowerShot);
             _game.Fire(AimPoint, target, Team, 62f, 17f, 0.31f);
         }
 
@@ -675,12 +912,13 @@ namespace CrownFront.Cloud
         {
             if (IsDead) return;
             Health = Mathf.Max(0f, Health - amount);
-            transform.localScale = _baseScale * (1f + (1f - Health / _maxHealth) * 0.08f);
+            _presentation?.PlayHit(1f - Health / _maxHealth);
             _game.Impact(AimPoint, source, IsCore ? 0.9f : 0.55f);
+            if (IsCore) _game.PlayAudio(CrownAudioCue.CoreDamage);
             if (Health <= 0f)
             {
                 IsDead = true;
-                gameObject.SetActive(false);
+                _presentation?.PlayDestroyed();
                 _game.BuildingDestroyed(this);
             }
         }
@@ -695,8 +933,16 @@ namespace CrownFront.Cloud
         private float _speed;
         private float _dieAt;
         private Vector3 _baseScale;
+        private Renderer _core;
+        private Renderer _trail;
 
-        public void Configure(CrownEngineGame game, ICrownTarget target, CrownTeam team, float damage, float speed)
+        public void SetRenderers(Renderer core, Renderer trail)
+        {
+            _core = core;
+            _trail = trail;
+        }
+
+        public void Configure(CrownEngineGame game, ICrownTarget target, CrownTeam team, float damage, float speed, Vector3 origin, float scale, Material material)
         {
             _game = game;
             _target = target;
@@ -704,19 +950,25 @@ namespace CrownFront.Cloud
             _damage = damage;
             _speed = speed;
             _dieAt = Time.time + 3f;
-            _baseScale = transform.localScale;
+            transform.position = origin;
+            transform.localScale = Vector3.one * scale;
+            _baseScale = Vector3.one * scale;
+            if (_core != null) _core.sharedMaterial = material;
+            if (_trail != null) _trail.sharedMaterial = material;
         }
 
         private void Update()
         {
-            if (_target == null || _target.IsDead || Time.time >= _dieAt) { Destroy(gameObject); return; }
+            if (_target == null || _target.IsDead || Time.time >= _dieAt) { _game.ReturnProjectile(this); return; }
+            Vector3 direction = _target.AimPoint - transform.position;
+            if (direction.sqrMagnitude > 0.001f) transform.rotation = Quaternion.LookRotation(direction);
             transform.position = Vector3.MoveTowards(transform.position, _target.AimPoint, _speed * Time.deltaTime);
             transform.localScale = _baseScale * (0.9f + Mathf.Sin(Time.time * 18f) * 0.12f);
             if ((transform.position - _target.AimPoint).sqrMagnitude <= 0.06f)
             {
                 _target.Damage(_damage, _team);
                 _game.Impact(_target.AimPoint, _team, 0.65f);
-                Destroy(gameObject);
+                _game.ReturnProjectile(this);
             }
         }
     }
@@ -738,15 +990,38 @@ namespace CrownFront.Cloud
 
     public sealed class CrownImpact : MonoBehaviour
     {
+        private CrownEngineGame _game;
         private float _target;
         private float _duration;
         private float _start;
-        public void Configure(float target, float duration) { _target = target; _duration = duration; _start = Time.time; }
+        private Renderer _flash;
+        private Renderer _debris;
+
+        public void SetRenderers(Renderer flash, Renderer debris)
+        {
+            _flash = flash;
+            _debris = debris;
+        }
+
+        public void Configure(CrownEngineGame game, Vector3 point, Material material, float target, float duration)
+        {
+            _game = game;
+            transform.position = point;
+            transform.rotation = Quaternion.Euler(UnityEngine.Random.Range(-30f, 30f), UnityEngine.Random.Range(0f, 180f), UnityEngine.Random.Range(-30f, 30f));
+            transform.localScale = Vector3.one * 0.1f;
+            if (_flash != null) _flash.sharedMaterial = material;
+            if (_debris != null) _debris.sharedMaterial = material;
+            _target = target;
+            _duration = duration;
+            _start = Time.time;
+        }
         private void Update()
         {
             float t = Mathf.Clamp01((Time.time - _start) / Mathf.Max(0.01f, _duration));
-            transform.localScale = Vector3.one * Mathf.Lerp(0.1f, _target, t);
-            if (t >= 1f) Destroy(gameObject);
+            float envelope = Mathf.Sin(t * Mathf.PI);
+            transform.localScale = Vector3.one * Mathf.Lerp(0.1f, _target, envelope);
+            transform.Rotate(new Vector3(130f, 210f, 75f) * Time.deltaTime, Space.Self);
+            if (t >= 1f) _game.ReturnImpact(this);
         }
     }
 }
