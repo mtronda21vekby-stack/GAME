@@ -1,0 +1,127 @@
+name: Wire Quaternius hybrid polish
+
+on:
+  push:
+    branches:
+      - feature/crown-front-art-reboot-hero-frame
+    paths:
+      - .github/workflows/wire-quaternius-hybrid-polish.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/crown-front-art-reboot-hero-frame
+          fetch-depth: 0
+
+      - name: Wire generated scene and evidence capture
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          build = Path('unity/crown-front/Assets/Editor/CrownEngineCloudBuild.cs')
+          text = build.read_text(encoding='utf-8')
+          old = '            root.AddComponent<CrownQuaterniusArtReboot>();\n'
+          new = old + '            root.AddComponent<CrownQuaterniusHybridPolish>();\n'
+          if 'root.AddComponent<CrownQuaterniusHybridPolish>();' not in text:
+              if old not in text:
+                  raise SystemExit('Quaternius generated-scene component hook was not found')
+              text = text.replace(old, new, 1)
+          text = text.replace(
+              'artRebootSlice=quaternius-hero-frame-review',
+              'artRebootSlice=quaternius-hybrid-polish-review')
+          text = text.replace(
+              'CROWN//FRONT — QUATERNIUS HERO FRAME',
+              'CROWN//FRONT — QUATERNIUS HYBRID POLISH')
+          text = text.replace(
+              '0.4.0-quaternius-hero-frame-review',
+              '0.4.0-quaternius-hybrid-polish-review')
+          build.write_text(text, encoding='utf-8')
+
+          capture = Path('unity/crown-front/Assets/Editor/CrownArtRebootReviewCapture.cs')
+          text = capture.read_text(encoding='utf-8')
+          old = '''            CrownQuaterniusArtReboot quaternius = game.GetComponent<CrownQuaterniusArtReboot>();
+            if (quaternius == null) throw new InvalidOperationException("Quaternius Art Reboot component is missing from the review root.");
+            quaternius.ApplyNow();
+'''
+          new = old + '''
+            CrownQuaterniusHybridPolish hybrid = game.GetComponent<CrownQuaterniusHybridPolish>();
+            if (hybrid == null) throw new InvalidOperationException("Quaternius hybrid polish component is missing from the review root.");
+            hybrid.ApplyNow();
+'''
+          if 'hybrid.ApplyNow();' not in text:
+              if old not in text:
+                  raise SystemExit('Quaternius capture initialization hook was not found')
+              text = text.replace(old, new, 1)
+
+          old = '            quaternius.SendMessage("SkinUnits", SendMessageOptions.DontRequireReceiver);\n'
+          new = old + '            hybrid.SendMessage("RefineUnits", SendMessageOptions.DontRequireReceiver);\n'
+          if 'hybrid.SendMessage("RefineUnits"' not in text:
+              if old not in text:
+                  raise SystemExit('Quaternius clash skin hook was not found')
+              text = text.replace(old, new, 1)
+
+          old = '''            CrownQuaterniusHeroCamera camera4 = camera.GetComponent<CrownQuaterniusHeroCamera>();
+            if (camera4 != null) camera4.enabled = false;
+'''
+          new = old + '''            CrownHybridHeroCamera camera5 = camera.GetComponent<CrownHybridHeroCamera>();
+            if (camera5 != null) camera5.enabled = false;
+'''
+          if 'CrownHybridHeroCamera camera5' not in text:
+              if old not in text:
+                  raise SystemExit('Quaternius camera disable hook was not found')
+              text = text.replace(old, new, 1)
+
+          text = text.replace(
+              'CROWN//FRONT Quaternius hero-frame review package captured',
+              'CROWN//FRONT Quaternius hybrid-polish review package captured')
+          capture.write_text(text, encoding='utf-8')
+
+          polish = Path('unity/crown-front/Assets/_Project/Runtime/CrownQuaterniusHybridPolish.cs')
+          text = polish.read_text(encoding='utf-8')
+          old = '''                CrownUnit unit = units[i];
+                if (unit == null) continue;
+                Transform root = FindDeep(unit.transform, "QUATERNIUS ART // UNIT");
+'''
+          new = '''                CrownUnit unit = units[i];
+                if (unit == null) continue;
+                if (FindDeep(unit.transform, "HYBRID POLISH // UNIT") != null) continue;
+                Transform root = FindDeep(unit.transform, "QUATERNIUS ART // UNIT");
+'''
+          if 'if (FindDeep(unit.transform, "HYBRID POLISH // UNIT") != null) continue;' not in text:
+              if old not in text:
+                  raise SystemExit('Hybrid unit refinement loop was not found')
+              text = text.replace(old, new, 1)
+          polish.write_text(text, encoding='utf-8')
+          PY
+
+          git rm .github/workflows/wire-quaternius-hybrid-polish.yml
+
+      - name: Commit and push hybrid wiring
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='feature/crown-front-art-reboot-hero-frame'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            unity/crown-front/Assets/Editor/CrownEngineCloudBuild.cs \
+            unity/crown-front/Assets/Editor/CrownArtRebootReviewCapture.cs \
+            unity/crown-front/Assets/_Project/Runtime/CrownQuaterniusHybridPolish.cs
+          git diff --cached --check
+          git commit -m 'feat: enable Quaternius hybrid-polish review build'
+
+          for attempt in 1 2 3 4; do
+            git fetch origin "$branch"
+            git rebase "origin/$branch"
+            if git push origin "HEAD:$branch"; then exit 0; fi
+            sleep $((attempt * 2))
+          done
+          exit 1
