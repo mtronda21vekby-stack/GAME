@@ -23,7 +23,7 @@ jobs:
   build-webgl:
     name: Build THE CROWN ENGINE WebGL
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
     env:
       UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
       UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
@@ -60,7 +60,7 @@ jobs:
             crown-front-unity-${{ runner.os }}-6000.5.3f1-
             crown-front-unity-${{ runner.os }}-
 
-      - name: Build WebGL with Unity
+      - name: Build WebGL with Unity and capture Art Reboot review frames
         if: steps.unity-license.outputs.configured == 'true'
         uses: game-ci/unity-builder@v5.0.0
         with:
@@ -72,6 +72,17 @@ jobs:
           allowDirtyBuild: true
           versioning: None
 
+      - name: Validate Art Reboot evidence package
+        if: steps.unity-license.outputs.configured == 'true'
+        shell: bash
+        run: |
+          test -f VisualReview/ArtRebootSlice1/hero_match_start.png
+          test -f VisualReview/ArtRebootSlice1/hero_first_clash.png
+          test -f VisualReview/ArtRebootSlice1/hero_core_closeup.png
+          test -f VisualReview/ArtRebootSlice1/hero_grayscale.png
+          test -f VisualReview/ArtRebootSlice1/hero_thumbnail.png
+          du -sh VisualReview/ArtRebootSlice1
+
       - name: Generate SHA-256 manifest
         if: steps.unity-license.outputs.configured == 'true'
         shell: bash
@@ -81,11 +92,20 @@ jobs:
           find . -type f ! -name SHA256SUMS.txt -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt
           du -sh .
 
-      - name: Upload WebGL artifact
+      - name: Upload WebGL review artifact
         if: steps.unity-license.outputs.configured == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: crown-engine-webgl-${{ github.sha }}
+          name: crown-art-reboot-webgl-${{ github.sha }}
           path: unity/crown-front/Builds/CloudWebGL
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload real Unity review captures
+        if: steps.unity-license.outputs.configured == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: crown-art-reboot-frames-${{ github.sha }}
+          path: VisualReview/ArtRebootSlice1
           if-no-files-found: error
           retention-days: 14
