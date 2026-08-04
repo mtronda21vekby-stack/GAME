@@ -1,0 +1,127 @@
+name: Import Kenney Art Reboot assets
+
+on:
+  push:
+    branches:
+      - feature/crown-front-art-reboot-hero-frame
+    paths:
+      - .github/workflows/import-kenney-art-reboot-assets.yml
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout review branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/crown-front-art-reboot-hero-frame
+          fetch-depth: 0
+
+      - name: Download and extract selected CC0 source models
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/kenney
+          curl -fL --retry 4 --retry-delay 2 \
+            'https://www.kenney.nl/media/pages/assets/space-kit/20874c75ac-1677698978/kenney_space-kit.zip' \
+            -o /tmp/kenney/space.zip
+          curl -fL --retry 4 --retry-delay 2 \
+            'https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip' \
+            -o /tmp/kenney/factory.zip
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import shutil
+          import zipfile
+
+          root = Path('unity/crown-front/Assets/Resources/CrownArt')
+          space_out = root / 'SpaceKit'
+          factory_out = root / 'FactoryKit'
+          space_out.mkdir(parents=True, exist_ok=True)
+          factory_out.mkdir(parents=True, exist_ok=True)
+
+          selections = {
+              Path('/tmp/kenney/space.zip'): (
+                  space_out,
+                  [
+                      'astronautA.fbx', 'astronautB.fbx',
+                      'turret_double.fbx', 'turret_single.fbx',
+                      'weapon_gun.fbx', 'weapon_rifle.fbx',
+                      'machine_generator.fbx', 'machine_generatorLarge.fbx',
+                      'machine_wireless.fbx', 'machine_wirelessCable.fbx',
+                      'platform_center.fbx', 'platform_large.fbx', 'platform_long.fbx',
+                      'platform_side.fbx', 'platform_cornerRound.fbx',
+                      'corridor_wall.fbx', 'corridor_wallCorner.fbx',
+                      'pipe_straight.fbx', 'pipe_cornerRoundLarge.fbx', 'pipe_ringHigh.fbx',
+                      'satelliteDish_detailed.fbx',
+                  ],
+              ),
+              Path('/tmp/kenney/factory.zip'): (
+                  factory_out,
+                  [
+                      'machine.fbx', 'machine-fortified.fbx', 'machine-bed.fbx',
+                      'robot-arm-a.fbx', 'robot-arm-b.fbx',
+                      'pipe-large.fbx', 'pipe-large-bend.fbx', 'pipe-large-junction.fbx',
+                      'screen-panel-wide.fbx', 'screen-panel-small.fbx',
+                      'structure-wall.fbx',
+                  ],
+              ),
+          }
+
+          imported = []
+          license_texts = []
+          for archive, (destination, wanted) in selections.items():
+              with zipfile.ZipFile(archive) as zf:
+                  names = zf.namelist()
+                  for filename in wanted:
+                      matches = [name for name in names if name.endswith('/FBX format/' + filename)]
+                      if len(matches) != 1:
+                          raise SystemExit(f'Expected exactly one {filename} in {archive}, found {matches}')
+                      source_name = matches[0]
+                      target = destination / filename
+                      with zf.open(source_name) as src, target.open('wb') as dst:
+                          shutil.copyfileobj(src, dst)
+                      imported.append(str(target))
+                  license_matches = [name for name in names if name.lower().endswith('license.txt')]
+                  if not license_matches:
+                      raise SystemExit(f'License.txt missing in {archive}')
+                  license_texts.append(zf.read(license_matches[0]).decode('utf-8', errors='replace').strip())
+
+          notice = Path('unity/crown-front/THIRD_PARTY_NOTICES.md')
+          notice.write_text(
+              '# Third-party notices\n\n'
+              '## Kenney Space Kit\n\n'
+              '- Source: https://www.kenney.nl/assets/space-kit\n'
+              '- License: CC0 1.0\n\n'
+              '## Kenney Factory Kit\n\n'
+              '- Source: https://kenney.nl/assets/factory-kit\n'
+              '- License: CC0 1.0\n\n'
+              'Selected FBX source models are stored under `Assets/Resources/CrownArt/`. '
+              'They may be modified and used commercially under CC0.\n\n'
+              '### Pack license text\n\n```text\n' + '\n\n'.join(license_texts) + '\n```\n',
+              encoding='utf-8'
+          )
+
+          manifest = Path('unity/crown-front/Assets/Resources/CrownArt/IMPORTED_MODELS.md')
+          manifest.write_text(
+              '# Imported CC0 models\n\n' +
+              '\n'.join(f'- `{path}`' for path in imported) + '\n',
+              encoding='utf-8'
+          )
+          print(f'Imported {len(imported)} selected FBX models')
+          PY
+
+          git rm .github/workflows/import-kenney-art-reboot-assets.yml
+
+      - name: Commit selected source assets
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add unity/crown-front/Assets/Resources/CrownArt unity/crown-front/THIRD_PARTY_NOTICES.md
+          git diff --cached --check
+          git commit -m "feat: import selected Kenney CC0 Art Reboot models"
+          git push origin HEAD:feature/crown-front-art-reboot-hero-frame
