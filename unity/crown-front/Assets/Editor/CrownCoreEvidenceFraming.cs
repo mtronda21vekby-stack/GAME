@@ -23,28 +23,51 @@ namespace CrownFront.Editor
             if (grade == null || rig == null || rig.enabled) return;
 
             CrownBuilding[] buildings = Object.FindObjectsByType<CrownBuilding>(FindObjectsInactive.Include);
-            bool hasReviewCore = false;
+            CrownBuilding reviewCore = null;
             for (int i = 0; i < buildings.Length; i++)
             {
                 CrownBuilding building = buildings[i];
                 if (building != null && building.IsCore && building.Team == CrownTeam.Blue)
                 {
-                    hasReviewCore = true;
+                    reviewCore = building;
                     break;
                 }
             }
-            if (!hasReviewCore) return;
+            if (reviewCore == null) return;
 
-            // Match the evidence render to the runtime presentation. The correction is
-            // idempotent, so repeated editor pre-cull callbacks cannot duplicate geometry.
+            // Match evidence to the runtime presentation before calculating framing.
+            // ApplyAll is idempotent and cannot duplicate the correction geometry.
             if (!CrownCoreStructuralCorrection.ApplyAll())
             {
                 Debug.LogWarning("CROWN//FRONT Core structural correction was not ready before evidence render.");
+                return;
             }
 
-            camera.transform.position = new Vector3(0f, 7.4f, -14.4f);
-            camera.transform.LookAt(new Vector3(0f, 0.62f, -8.5f));
-            camera.fieldOfView = 23.5f;
+            Renderer[] renderers = reviewCore.GetComponentsInChildren<Renderer>(false);
+            Bounds bounds = default;
+            bool hasBounds = false;
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                Renderer renderer = renderers[i];
+                if (renderer == null || !renderer.enabled || !renderer.gameObject.activeInHierarchy) continue;
+                if (!hasBounds)
+                {
+                    bounds = renderer.bounds;
+                    hasBounds = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(renderer.bounds);
+                }
+            }
+
+            Vector3 target = hasBounds
+                ? bounds.center
+                : reviewCore.transform.position + Vector3.up * 0.82f;
+
+            camera.transform.position = target + new Vector3(0f, 3.2f, -8.2f);
+            camera.transform.LookAt(target + Vector3.up * 0.03f);
+            camera.fieldOfView = 29.5f;
         }
     }
 }
