@@ -44,6 +44,10 @@ namespace CrownFront.Editor
             if (quaternius == null) throw new InvalidOperationException("Quaternius Art Reboot component is missing from the review root.");
             quaternius.ApplyNow();
 
+            CrownQuaterniusHybridPolish hybrid = game.GetComponent<CrownQuaterniusHybridPolish>();
+            if (hybrid == null) throw new InvalidOperationException("Quaternius hybrid polish component is missing from the review root.");
+            hybrid.ApplyNow();
+
             Camera camera = Camera.main;
             if (camera == null) throw new InvalidOperationException("Art Reboot review camera is missing.");
 
@@ -69,9 +73,11 @@ namespace CrownFront.Editor
             if (camera3 != null) camera3.enabled = false;
             CrownQuaterniusHeroCamera camera4 = camera.GetComponent<CrownQuaterniusHeroCamera>();
             if (camera4 != null) camera4.enabled = false;
-            camera.transform.position = new Vector3(0f, 14.2f, -18.4f);
-            camera.transform.LookAt(new Vector3(0f, 1.45f, -8.5f));
-            camera.fieldOfView = 28f;
+            CrownHybridHeroCamera camera5 = camera.GetComponent<CrownHybridHeroCamera>();
+            if (camera5 != null) camera5.enabled = false;
+            camera.transform.position = new Vector3(0f, 13.8f, -20.2f);
+            camera.transform.LookAt(new Vector3(0f, 1.25f, -8.5f));
+            camera.fieldOfView = 30f;
             Texture2D coreCloseup = Render(camera, Width, Height);
             Write(directory, "hero_core_closeup.png", coreCloseup);
 
@@ -79,7 +85,7 @@ namespace CrownFront.Editor
             UnityEngine.Object.DestroyImmediate(firstClash);
             UnityEngine.Object.DestroyImmediate(coreCloseup);
             AssetDatabase.Refresh();
-            Debug.Log($"CROWN//FRONT Quaternius hero-frame review package captured at {directory}");
+            Debug.Log($"CROWN//FRONT Quaternius hybrid-polish review package captured at {directory}");
         }
 
         private static void AddClashUnits(CrownEngineGame game, MethodInfo spawn)
