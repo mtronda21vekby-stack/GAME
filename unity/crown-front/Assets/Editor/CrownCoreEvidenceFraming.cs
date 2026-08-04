@@ -1,5 +1,4 @@
 #if UNITY_EDITOR
-using System;
 using CrownFront.Cloud;
 using UnityEditor;
 using UnityEngine;
@@ -19,11 +18,13 @@ namespace CrownFront.Editor
         {
             if (camera == null || camera != Camera.main) return;
 
-            CrownQuaterniusFinalGrade grade = Object.FindAnyObjectByType<CrownQuaterniusFinalGrade>();
+            CrownQuaterniusFinalGrade grade =
+                UnityEngine.Object.FindAnyObjectByType<CrownQuaterniusFinalGrade>();
             CrownFinalGradeCamera rig = camera.GetComponent<CrownFinalGradeCamera>();
             if (grade == null || rig == null || rig.enabled) return;
 
-            CrownBuilding[] buildings = Object.FindObjectsByType<CrownBuilding>(FindObjectsInactive.Include);
+            CrownBuilding[] buildings =
+                UnityEngine.Object.FindObjectsByType<CrownBuilding>(FindObjectsInactive.Include);
             CrownBuilding reviewCore = null;
             for (int i = 0; i < buildings.Length; i++)
             {
@@ -73,38 +74,49 @@ namespace CrownFront.Editor
 
         private static void HideCoreEvidenceNoise(CrownBuilding reviewCore)
         {
-            CrownUnit[] units = Object.FindObjectsByType<CrownUnit>(FindObjectsInactive.Include);
+            CrownUnit[] units =
+                UnityEngine.Object.FindObjectsByType<CrownUnit>(FindObjectsInactive.Include);
             for (int i = 0; i < units.Length; i++)
             {
                 if (units[i] != null) units[i].gameObject.SetActive(false);
             }
 
-            CrownProjectile[] projectiles = Object.FindObjectsByType<CrownProjectile>(FindObjectsInactive.Include);
+            CrownProjectile[] projectiles =
+                UnityEngine.Object.FindObjectsByType<CrownProjectile>(FindObjectsInactive.Include);
             for (int i = 0; i < projectiles.Length; i++)
             {
                 if (projectiles[i] != null) projectiles[i].gameObject.SetActive(false);
             }
 
-            CrownImpact[] impacts = Object.FindObjectsByType<CrownImpact>(FindObjectsInactive.Include);
+            CrownImpact[] impacts =
+                UnityEngine.Object.FindObjectsByType<CrownImpact>(FindObjectsInactive.Include);
             for (int i = 0; i < impacts.Length; i++)
             {
                 if (impacts[i] != null) impacts[i].gameObject.SetActive(false);
             }
 
-            CrownBuilding[] buildings = Object.FindObjectsByType<CrownBuilding>(FindObjectsInactive.Include);
+            CrownBuilding[] buildings =
+                UnityEngine.Object.FindObjectsByType<CrownBuilding>(FindObjectsInactive.Include);
             for (int i = 0; i < buildings.Length; i++)
             {
                 CrownBuilding building = buildings[i];
-                if (building != null && building != reviewCore) building.gameObject.SetActive(false);
+                if (building != null && building != reviewCore)
+                {
+                    building.gameObject.SetActive(false);
+                }
             }
 
-            Transform[] transforms = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include);
+            CrownEngineGame game =
+                UnityEngine.Object.FindAnyObjectByType<CrownEngineGame>();
+            if (game == null) return;
+
+            Transform[] transforms = game.GetComponentsInChildren<Transform>(true);
             for (int i = 0; i < transforms.Length; i++)
             {
                 Transform current = transforms[i];
                 if (current == null) continue;
-                if (string.Equals(current.name, "Spinal Energy Channel", StringComparison.Ordinal) ||
-                    string.Equals(current.name, "Embedded Energy Seam", StringComparison.Ordinal))
+                if (current.name == "Spinal Energy Channel" ||
+                    current.name == "Embedded Energy Seam")
                 {
                     current.gameObject.SetActive(false);
                 }
