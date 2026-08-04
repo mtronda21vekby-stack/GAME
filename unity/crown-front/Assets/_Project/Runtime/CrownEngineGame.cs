@@ -249,7 +249,16 @@ namespace CrownFront.Cloud
 
         private void AddMaterial(string key, Color color, float metallic, float smoothness, Color? emission = null)
         {
-            Shader shader = Shader.Find("Standard") ?? Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Unlit/Color");
+            Shader shader =
+                Shader.Find("Standard") ??
+                Shader.Find("Universal Render Pipeline/Lit") ??
+                Shader.Find("Unlit/Color") ??
+                Shader.Find("Legacy Shaders/Diffuse") ??
+                Shader.Find("Hidden/Internal-Colored");
+            if (shader == null)
+            {
+                throw new InvalidOperationException("No WebGL-compatible presentation shader is available.");
+            }
             Material material = new Material(shader) { name = key };
             if (material.HasProperty("_Color")) material.SetColor("_Color", color);
             if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", color);
