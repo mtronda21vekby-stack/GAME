@@ -26,6 +26,7 @@ namespace CrownFront.Editor
             root.AddComponent<CrownArtRebootIteration2>();
             root.AddComponent<CrownAssetArtReboot>();
             root.AddComponent<CrownAssetArtDirectionPass>();
+            root.AddComponent<CrownQuaterniusArtReboot>();
 
             EditorSceneManager.MarkSceneDirty(scene);
             if (!EditorSceneManager.SaveScene(scene, ScenePath))
@@ -81,7 +82,7 @@ namespace CrownFront.Editor
                 $"totalTime={summary.totalTime}{Environment.NewLine}" +
                 $"warnings={summary.totalWarnings}{Environment.NewLine}" +
                 $"errors={summary.totalErrors}{Environment.NewLine}" +
-                $"artRebootSlice=quaternius-selection-review{Environment.NewLine}" +
+                $"artRebootSlice=quaternius-hero-frame-review{Environment.NewLine}" +
                 $"quaterniusGalleryCaptured={quaterniusGalleryCaptured}{Environment.NewLine}");
 
             if (summary.result != BuildResult.Succeeded)
@@ -91,7 +92,7 @@ namespace CrownFront.Editor
 
             CopyRequiredReviewFrames(outputPath);
             CopyOptionalQuaterniusGallery(outputPath, quaterniusGalleryCaptured);
-            Debug.Log($"CROWN//FRONT Quaternius selection review build succeeded: {outputPath} ({summary.totalSize} bytes)");
+            Debug.Log($"CROWN//FRONT Quaternius hero-frame review build succeeded: {outputPath} ({summary.totalSize} bytes)");
         }
 
         private static void CopyRequiredReviewFrames(string outputPath)
@@ -132,8 +133,8 @@ namespace CrownFront.Editor
         private static void ConfigurePlayer()
         {
             PlayerSettings.companyName = "BlackCrown";
-            PlayerSettings.productName = "CROWN//FRONT — QUATERNIUS SELECTION REVIEW";
-            PlayerSettings.bundleVersion = "0.4.0-quaternius-selection-review";
+            PlayerSettings.productName = "CROWN//FRONT — QUATERNIUS HERO FRAME";
+            PlayerSettings.bundleVersion = "0.4.0-quaternius-hero-frame-review";
             PlayerSettings.defaultScreenWidth = 1080;
             PlayerSettings.defaultScreenHeight = 1920;
             PlayerSettings.runInBackground = false;
