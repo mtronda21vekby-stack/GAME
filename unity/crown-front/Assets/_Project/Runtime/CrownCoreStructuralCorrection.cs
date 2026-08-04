@@ -47,6 +47,9 @@ namespace CrownFront.Cloud
             Transform finalCore = FindDeep(building.transform, "FINAL GRADE // CORE");
             if (finalCore == null) return false;
 
+            Transform legacyCore = FindDeep(building.transform, "[PRESENTATION] Crown Reactor");
+            if (legacyCore != null) legacyCore.gameObject.SetActive(false);
+
             Transform qCore = FindDeep(building.transform, "QUATERNIUS ART // CORE");
             if (qCore != null)
             {
