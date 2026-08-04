@@ -1,0 +1,61 @@
+name: Diagnose Kenney import
+
+on:
+  push:
+    branches:
+      - feature/crown-front-art-reboot-hero-frame
+    paths:
+      - .github/workflows/diagnose-kenney-import.yml
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/crown-front-art-reboot-hero-frame
+          fetch-depth: 0
+
+      - name: Find and inspect latest import run
+        shell: bash
+        run: |
+          set -euo pipefail
+          run_id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow 'Import Kenney Art Reboot assets' --branch feature/crown-front-art-reboot-hero-frame --limit 1 --json databaseId --jq '.[0].databaseId')"
+          if [[ -z "$run_id" || "$run_id" == "null" ]]; then
+            echo 'No import run found.' > /tmp/summary.txt
+          else
+            gh run view "$run_id" --repo "$GITHUB_REPOSITORY" --log-failed > /tmp/full.log || true
+            {
+              echo "Import run: $run_id"
+              echo
+              tail -n 160 /tmp/full.log
+            } > /tmp/summary.txt
+          fi
+
+      - name: Comment diagnostic
+        shell: bash
+        run: |
+          {
+            echo '## Kenney import diagnostic'
+            echo
+            echo '```text'
+            cat /tmp/summary.txt
+            echo '```'
+          } > /tmp/comment.md
+          gh pr comment 28 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
+
+      - name: Remove diagnostic workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/diagnose-kenney-import.yml
+          git commit -m "chore: remove Kenney import diagnostic"
+          git push origin HEAD:feature/crown-front-art-reboot-hero-frame
