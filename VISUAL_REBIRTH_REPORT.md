@@ -7,11 +7,14 @@
 - Branch: `feature/crown-front-visual-rebirth`
 - Pull request: `https://github.com/mtronda21vekby-stack/GAME/pull/24`
 - Source implementation commit: `cb173637397742c8e387133ab3b1cef452fe9e3e`
-- PR head after workflow configuration: `fbdcbddfaa97e4ed8e0971ff832be85270992922`
-- Merge commit: pending successful PR checks
-- GitHub Actions run: pending push
+- Final PR head: `c014f299f3d0edf25e4f16b7a4a5b6a711e1ebfc`
+- Merge commit: `2f750424e1bf86fce48f587f9ed8f4c5e0b1a6cc`
+- Production WebGL release commit: `aeb2d89f9797efd9824b8edad88653c04e0c0121`
+- PR review build run: `https://github.com/mtronda21vekby-stack/GAME/actions/runs/30876969683` — success
+- PR pinned-Unity build run: `https://github.com/mtronda21vekby-stack/GAME/actions/runs/30876969636` — success
+- Main production build run: `https://github.com/mtronda21vekby-stack/GAME/actions/runs/30877452710` — success
 - Production route: `https://blackcrown.work/games/crown-front/`
-- Cloudflare Pages: pending merge and production deployment
+- Cloudflare Pages: success for release commit; deployment `2ff1dbc1-0f7b-4f44-aa60-a34c1eea762a`
 
 ## Implemented visual direction
 
@@ -87,13 +90,21 @@ Unit gameplay roots, stats, energy costs, movement speeds, ranges, attack interv
 - EditMode tests: no test assemblies existed at audit time; no result is fabricated.
 - PlayMode tests: no test assemblies existed at audit time; deterministic runtime presentation smoke checks were added and passed.
 - WebGL build: `Succeeded`, IL2CPP, `BuildOptions.None`, errors `0`, warnings `0`.
-- Unity reported build payload: `5,096,486` bytes.
+- Local Unity reported build payload: `5,096,486` bytes.
+- Production GitHub Actions Unity payload: `5,098,068` bytes.
 - Review artifact directory on disk: approximately `5.8 MiB` including template/report files.
 - Installed public game route: approximately `4.9 MiB`.
 - Site production build: PASS (`npm run build:prod`).
 - Local HTTP: `/`, `/lobby/`, `/game/`, `/games/crown-front/`, loader, data, framework and wasm all returned `200`.
 - Local `.unityweb` MIME: `application/vnd.unity`; no incorrect `Content-Encoding` was present and Unity decompression fallback remains enabled.
 - Real Unity review frame: `VisualReview/CROWN_FRONT_0.3.0-alpha.3_match-start.png` at 540×960.
+- Production HTTP: `/`, `/lobby/`, `/game/`, `/games/crown-front/`, loader, data, framework and wasm returned `200` over HTTP/2.
+- Production MIME: loader `application/javascript`, data `application/octet-stream`, framework `application/javascript`, wasm `application/wasm`; no incorrect `Content-Encoding` header.
+- Production binary integrity: loader/data/framework/wasm all matched the published `SHA256SUMS.txt`.
+- Production shell: version `0.3.0-alpha.3`, references the newly generated `CloudWebGL.*` payload, and contains no legacy center-HUD tokens or CSS mask.
+- Cloudflare rewrites the served HTML by injecting its challenge script, so the served `index.html` hash intentionally differs from the source manifest; the unmodified Unity binaries and other shell files match exactly.
+
+The first pinned-Unity PR job built the player successfully but failed while writing its manifest because the Docker output directory was root-owned. The workflow was corrected to return ownership to the runner and exclude the manifest from its own input. The replacement run `30876969636` then passed build, manifest, and artifact upload. No gameplay or presentation code changed for this CI correction.
 
 ## Performance notes
 
