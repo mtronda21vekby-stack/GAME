@@ -23,7 +23,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  RELEASE_VERSION: 0.2.0-alpha.2
+  RELEASE_VERSION: 0.3.0-alpha.3
   UNITY_PROJECT_PATH: unity/crown-front
   UNITY_OUTPUT_PATH: unity/crown-front/Builds/CloudWebGL
   PUBLIC_GAME_PATH: apps/site/public/games/crown-front
@@ -94,7 +94,7 @@ jobs:
           import re
           import shutil
 
-          release = "0.2.0-alpha.2"
+          release = "0.3.0-alpha.3"
           source = Path("unity/crown-front/Builds/CloudWebGL")
           target = Path("apps/site/public/games/crown-front")
           build_source = source / "Build"
@@ -121,10 +121,10 @@ jobs:
           shutil.copytree(build_source, build_target)
 
           shell = re.sub(r'const BUILD_VERSION = "[^"]+";', f'const BUILD_VERSION = "{release}";', shell, count=1)
-          shell = re.sub(r'const loaderUrl = `\$\{buildUrl\}/[^`]+`;', f'const loaderUrl = buildUrl + "/{loader.name}";', shell, count=1)
-          shell = re.sub(r'dataUrl: `\$\{buildUrl\}/[^`]+`,', f'dataUrl: buildUrl + "/{data.name}",', shell, count=1)
-          shell = re.sub(r'frameworkUrl: `\$\{buildUrl\}/[^`]+`,', f'frameworkUrl: buildUrl + "/{framework.name}",', shell, count=1)
-          shell = re.sub(r'codeUrl: `\$\{buildUrl\}/[^`]+`,', f'codeUrl: buildUrl + "/{wasm.name}",', shell, count=1)
+          shell = re.sub(r'const loaderUrl = [^;]+;', f'const loaderUrl = buildUrl + "/{loader.name}";', shell, count=1)
+          shell = re.sub(r'dataUrl:\s*[^,\n]+,', f'dataUrl: buildUrl + "/{data.name}",', shell, count=1)
+          shell = re.sub(r'frameworkUrl:\s*[^,\n]+,', f'frameworkUrl: buildUrl + "/{framework.name}",', shell, count=1)
+          shell = re.sub(r'codeUrl:\s*[^,\n]+,', f'codeUrl: buildUrl + "/{wasm.name}",', shell, count=1)
           shell = shell.replace("0.1.0-alpha.1", release)
           shell_path.write_text(shell, encoding="utf-8")
 
