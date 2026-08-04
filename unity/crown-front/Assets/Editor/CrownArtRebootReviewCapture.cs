@@ -48,6 +48,10 @@ namespace CrownFront.Editor
             if (hybrid == null) throw new InvalidOperationException("Quaternius hybrid polish component is missing from the review root.");
             hybrid.ApplyNow();
 
+            CrownQuaterniusFinalGrade grade = game.GetComponent<CrownQuaterniusFinalGrade>();
+            if (grade == null) throw new InvalidOperationException("Quaternius final grade component is missing from the review root.");
+            grade.ApplyNow();
+
             Camera camera = Camera.main;
             if (camera == null) throw new InvalidOperationException("Art Reboot review camera is missing.");
 
@@ -61,6 +65,7 @@ namespace CrownFront.Editor
 
             AddClashUnits(game, spawn);
             quaternius.SendMessage("SkinUnits", SendMessageOptions.DontRequireReceiver);
+            grade.SendMessage("GradeUnits", SendMessageOptions.DontRequireReceiver);
             PositionClashUnits();
             Texture2D firstClash = Render(camera, Width, Height);
             Write(directory, "hero_first_clash.png", firstClash);
@@ -75,9 +80,11 @@ namespace CrownFront.Editor
             if (camera4 != null) camera4.enabled = false;
             CrownHybridHeroCamera camera5 = camera.GetComponent<CrownHybridHeroCamera>();
             if (camera5 != null) camera5.enabled = false;
-            camera.transform.position = new Vector3(0f, 13.8f, -20.2f);
-            camera.transform.LookAt(new Vector3(0f, 1.25f, -8.5f));
-            camera.fieldOfView = 30f;
+            CrownFinalGradeCamera camera6 = camera.GetComponent<CrownFinalGradeCamera>();
+            if (camera6 != null) camera6.enabled = false;
+            camera.transform.position = new Vector3(0f, 15.0f, -23.0f);
+            camera.transform.LookAt(new Vector3(0f, 1.15f, -8.4f));
+            camera.fieldOfView = 33f;
             Texture2D coreCloseup = Render(camera, Width, Height);
             Write(directory, "hero_core_closeup.png", coreCloseup);
 
@@ -85,7 +92,7 @@ namespace CrownFront.Editor
             UnityEngine.Object.DestroyImmediate(firstClash);
             UnityEngine.Object.DestroyImmediate(coreCloseup);
             AssetDatabase.Refresh();
-            Debug.Log($"CROWN//FRONT Quaternius hybrid-polish review package captured at {directory}");
+            Debug.Log($"CROWN//FRONT Quaternius final-grade review package captured at {directory}");
         }
 
         private static void AddClashUnits(CrownEngineGame game, MethodInfo spawn)
