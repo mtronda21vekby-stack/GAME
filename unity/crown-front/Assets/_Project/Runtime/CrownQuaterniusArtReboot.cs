@@ -593,13 +593,13 @@ namespace CrownFront.Cloud
             Vector3 localEuler,
             bool alignBottom)
         {
-            GameObject holderObject = new GameObject(name);
-            Transform holder = holderObject.transform;
-            holder.SetParent(parent, false);
-            holder.localPosition = localPosition;
-            holder.localEulerAngles = localEuler;
+            GameObject mountObject = new GameObject(name);
+            Transform mount = mountObject.transform;
+            mount.SetParent(parent, false);
+            mount.localPosition = localPosition;
+            mount.localEulerAngles = localEuler;
 
-            GameObject instance = Instantiate(_prefabs[resourcePath], holder, false);
+            GameObject instance = Instantiate(_prefabs[resourcePath], mount, false);
             instance.name = "Source // " + resourcePath.Substring(resourcePath.LastIndexOf('/') + 1);
             Renderer[] renderers = instance.GetComponentsInChildren<Renderer>(true);
             if (renderers.Length == 0) throw new InvalidOperationException($"Quaternius source model has no renderers: {resourcePath}");
@@ -620,7 +620,7 @@ namespace CrownFront.Cloud
             instance.transform.localScale *= factor;
 
             bounds = CombinedBounds(renderers);
-            Vector3 target = holder.position;
+            Vector3 target = mount.position;
             Vector3 delta = alignBottom
                 ? new Vector3(target.x - bounds.center.x, target.y - bounds.min.y, target.z - bounds.center.z)
                 : target - bounds.center;
@@ -628,7 +628,7 @@ namespace CrownFront.Cloud
 
             Collider[] colliders = instance.GetComponentsInChildren<Collider>(true);
             for (int i = 0; i < colliders.Length; i++) Destroy(colliders[i]);
-            return holder;
+            return mount;
         }
 
         private static Bounds CombinedBounds(IReadOnlyList<Renderer> renderers)
