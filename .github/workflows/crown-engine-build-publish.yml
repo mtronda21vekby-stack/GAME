@@ -120,13 +120,6 @@ jobs:
               shutil.rmtree(build_target)
           shutil.copytree(build_source, build_target)
 
-          template_source = source / "TemplateData"
-          template_target = target / "TemplateData"
-          if template_source.is_dir():
-              if template_target.exists():
-                  shutil.rmtree(template_target)
-              shutil.copytree(template_source, template_target)
-
           shell = re.sub(r'const BUILD_VERSION = "[^"]+";', f'const BUILD_VERSION = "{release}";', shell, count=1)
           shell = re.sub(r'const loaderUrl = `\$\{buildUrl\}/[^`]+`;', f'const loaderUrl = buildUrl + "/{loader.name}";', shell, count=1)
           shell = re.sub(r'dataUrl: `\$\{buildUrl\}/[^`]+`,', f'dataUrl: buildUrl + "/{data.name}",', shell, count=1)
