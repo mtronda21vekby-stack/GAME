@@ -22,6 +22,7 @@ namespace CrownFront.Editor
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             GameObject root = new GameObject("CrownEngineGame");
             root.AddComponent<CrownEngineGame>();
+            root.AddComponent<CrownArtRebootHeroFrame>();
 
             EditorSceneManager.MarkSceneDirty(scene);
             if (!EditorSceneManager.SaveScene(scene, ScenePath))
@@ -42,6 +43,8 @@ namespace CrownFront.Editor
         [MenuItem("CROWN FRONT/Cloud/Build WebGL")]
         public static void BuildWebGL()
         {
+            RebuildPrototypeScene();
+            CrownArtRebootReviewCapture.CaptureAll();
             RebuildPrototypeScene();
             ConfigurePlayer();
             CrownVisualRebirthValidation.ValidateForBuild();
@@ -78,7 +81,8 @@ namespace CrownFront.Editor
                 $"totalSize={summary.totalSize}{Environment.NewLine}" +
                 $"totalTime={summary.totalTime}{Environment.NewLine}" +
                 $"warnings={summary.totalWarnings}{Environment.NewLine}" +
-                $"errors={summary.totalErrors}{Environment.NewLine}");
+                $"errors={summary.totalErrors}{Environment.NewLine}" +
+                $"artRebootSlice=hero-frame{Environment.NewLine}");
 
             if (summary.result != BuildResult.Succeeded)
             {
@@ -86,14 +90,14 @@ namespace CrownFront.Editor
                     $"CROWN//FRONT WebGL build failed: {summary.result}; errors={summary.totalErrors}; warnings={summary.totalWarnings}");
             }
 
-            Debug.Log($"CROWN//FRONT WebGL build succeeded: {outputPath} ({summary.totalSize} bytes)");
+            Debug.Log($"CROWN//FRONT Art Reboot review WebGL build succeeded: {outputPath} ({summary.totalSize} bytes)");
         }
 
         private static void ConfigurePlayer()
         {
             PlayerSettings.companyName = "BlackCrown";
-            PlayerSettings.productName = "CROWN//FRONT — THE CROWN ENGINE";
-            PlayerSettings.bundleVersion = "0.3.0-alpha.3";
+            PlayerSettings.productName = "CROWN//FRONT — ART REBOOT HERO FRAME";
+            PlayerSettings.bundleVersion = "0.4.0-art-reboot-review";
             PlayerSettings.defaultScreenWidth = 1080;
             PlayerSettings.defaultScreenHeight = 1920;
             PlayerSettings.runInBackground = false;
