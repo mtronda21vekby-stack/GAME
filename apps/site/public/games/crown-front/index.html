@@ -17,7 +17,7 @@
       </button>
       <div id="game-id" aria-label="CROWN FRONT alpha version 0.1.0 alpha 1">
         <strong>CROWN<span>//</span>FRONT</strong>
-        <small>0.1.0-alpha.1</small>
+        <small>0.2.0-alpha.2</small>
       </div>
       <button id="fullscreen" class="chrome-button hidden" type="button" aria-label="Enter fullscreen">FULLSCREEN</button>
     </header>
@@ -30,7 +30,7 @@
         <div class="crown">CROWN<span>//</span>FRONT</div>
         <div id="loading-status">Checking browser…</div>
         <div class="track"><div id="progress"></div></div>
-        <div id="loading-detail">Alpha build 0.1.0-alpha.1</div>
+        <div id="loading-detail">Alpha build 0.2.0-alpha.2</div>
       </section>
 
       <section id="failure" class="panel hidden" role="alert">
@@ -54,7 +54,7 @@
       "use strict";
 
       const LOBBY_URL = "/";
-      const BUILD_VERSION = "0.1.0-alpha.1";
+      const BUILD_VERSION = "0.2.0-alpha.2";
       const shell = document.getElementById("shell");
       const surface = document.getElementById("game-surface");
       const canvas = document.getElementById("unity-canvas");
@@ -237,12 +237,12 @@
       }
 
       const buildUrl = "Build";
-      const loaderUrl = `${buildUrl}/CROWN-FRONT-${BUILD_VERSION}.loader.js`;
+      const loaderUrl = buildUrl + "/CloudWebGL.loader.js";
       const config = {
         arguments: [],
-        dataUrl: `${buildUrl}/CROWN-FRONT-${BUILD_VERSION}.data.unityweb`,
-        frameworkUrl: `${buildUrl}/CROWN-FRONT-${BUILD_VERSION}.framework.js.unityweb`,
-        codeUrl: `${buildUrl}/CROWN-FRONT-${BUILD_VERSION}.wasm.unityweb`,
+        dataUrl: buildUrl + "/CloudWebGL.data.unityweb",
+        frameworkUrl: buildUrl + "/CloudWebGL.framework.js.unityweb",
+        codeUrl: buildUrl + "/CloudWebGL.wasm.unityweb",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "Crown Front Prototype",
         productName: "CROWN__FRONT",
