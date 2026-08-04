@@ -40,6 +40,10 @@ namespace CrownFront.Editor
             if (direction == null) throw new InvalidOperationException("Asset Art Direction component is missing from the review root.");
             direction.ApplyNow();
 
+            CrownQuaterniusArtReboot quaternius = game.GetComponent<CrownQuaterniusArtReboot>();
+            if (quaternius == null) throw new InvalidOperationException("Quaternius Art Reboot component is missing from the review root.");
+            quaternius.ApplyNow();
+
             Camera camera = Camera.main;
             if (camera == null) throw new InvalidOperationException("Art Reboot review camera is missing.");
 
@@ -52,8 +56,7 @@ namespace CrownFront.Editor
             Write(directory, "hero_thumbnail.png", Resize(matchStart, 270, 480));
 
             AddClashUnits(game, spawn);
-            assetArt.SendMessage("SkinUnits", SendMessageOptions.DontRequireReceiver);
-            direction.SendMessage("RepaintUnits", SendMessageOptions.DontRequireReceiver);
+            quaternius.SendMessage("SkinUnits", SendMessageOptions.DontRequireReceiver);
             PositionClashUnits();
             Texture2D firstClash = Render(camera, Width, Height);
             Write(directory, "hero_first_clash.png", firstClash);
@@ -64,8 +67,10 @@ namespace CrownFront.Editor
             if (camera2 != null) camera2.enabled = false;
             CrownAssetHeroCamera camera3 = camera.GetComponent<CrownAssetHeroCamera>();
             if (camera3 != null) camera3.enabled = false;
-            camera.transform.position = new Vector3(0f, 14.5f, -18.8f);
-            camera.transform.LookAt(new Vector3(0f, 1.55f, -8.5f));
+            CrownQuaterniusHeroCamera camera4 = camera.GetComponent<CrownQuaterniusHeroCamera>();
+            if (camera4 != null) camera4.enabled = false;
+            camera.transform.position = new Vector3(0f, 14.2f, -18.4f);
+            camera.transform.LookAt(new Vector3(0f, 1.45f, -8.5f));
             camera.fieldOfView = 28f;
             Texture2D coreCloseup = Render(camera, Width, Height);
             Write(directory, "hero_core_closeup.png", coreCloseup);
@@ -74,7 +79,7 @@ namespace CrownFront.Editor
             UnityEngine.Object.DestroyImmediate(firstClash);
             UnityEngine.Object.DestroyImmediate(coreCloseup);
             AssetDatabase.Refresh();
-            Debug.Log($"CROWN//FRONT controlled asset Art Direction review package captured at {directory}");
+            Debug.Log($"CROWN//FRONT Quaternius hero-frame review package captured at {directory}");
         }
 
         private static void AddClashUnits(CrownEngineGame game, MethodInfo spawn)
@@ -117,12 +122,14 @@ namespace CrownFront.Editor
             RenderTexture previous = RenderTexture.active;
             RenderTexture previousTarget = camera.targetTexture;
             float previousAspect = camera.aspect;
+
             camera.targetTexture = target;
             camera.aspect = width / (float)height;
             camera.Render();
             RenderTexture.active = target;
             image.ReadPixels(new Rect(0, 0, width, height), 0, 0);
             image.Apply(false, false);
+
             camera.targetTexture = previousTarget;
             camera.aspect = previousAspect;
             RenderTexture.active = previous;
