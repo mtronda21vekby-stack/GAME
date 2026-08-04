@@ -25,7 +25,8 @@ Space Kit (2.0)
 	License: (Creative Commons Zero, CC0)
 	http://creativecommons.org/publicdomain/zero/1.0/
 
-	This content is free to use in personal, educational and commercial projects.
+	This content is free to use in personal, educational and commercial projects.
+
 	Support us by crediting Kenney or www.kenney.nl (this is not mandatory)
 
 			------------------------------
@@ -64,3 +65,10 @@ Factory Kit (3.0)
 	• BlueSky:	 kenney.bsky.social
 	• Instagram: instagram.com/kenney_nl
 ```
+
+## Quaternius CC0 review kit
+
+- Sci-Fi Essentials Kit: https://opengameart.org/content/sci-fi-essentials-kit
+- Ultimate Space Kit: https://opengameart.org/content/ultimate-space-kit-by-quaternius
+- License: CC0 1.0.
+- Usage in this branch: visual evaluation and CROWN//FRONT presentation prototyping.
