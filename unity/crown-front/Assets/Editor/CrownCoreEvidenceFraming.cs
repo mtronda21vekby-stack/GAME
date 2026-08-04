@@ -35,6 +35,13 @@ namespace CrownFront.Editor
             }
             if (!hasReviewCore) return;
 
+            // Match the evidence render to the runtime presentation. The correction is
+            // idempotent, so repeated editor pre-cull callbacks cannot duplicate geometry.
+            if (!CrownCoreStructuralCorrection.ApplyAll())
+            {
+                Debug.LogWarning("CROWN//FRONT Core structural correction was not ready before evidence render.");
+            }
+
             camera.transform.position = new Vector3(0f, 7.4f, -14.4f);
             camera.transform.LookAt(new Vector3(0f, 0.62f, -8.5f));
             camera.fieldOfView = 23.5f;
