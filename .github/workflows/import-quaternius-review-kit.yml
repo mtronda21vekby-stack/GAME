@@ -1,0 +1,264 @@
+name: Import focused Quaternius CC0 review kit
+
+on:
+  push:
+    branches:
+      - feature/crown-front-art-reboot-hero-frame
+    paths:
+      - .github/workflows/import-quaternius-review-kit.yml
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/crown-front-art-reboot-hero-frame
+          fetch-depth: 0
+
+      - name: Download CC0 source archives
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/quaternius
+          curl -fL --retry 5 --retry-delay 3 \
+            'https://opengameart.org/sites/default/files/sci-fi_essentials_kit_models.zip' \
+            -o /tmp/quaternius/scifi-models.zip
+          curl -fL --retry 5 --retry-delay 3 \
+            'https://opengameart.org/sites/default/files/ultimate_space_kit-glb.zip' \
+            -o /tmp/quaternius/space.zip
+
+      - name: Extract focused models and referenced textures
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          import re
+          import shutil
+          import zipfile
+
+          root = Path('unity/crown-front/Assets/Resources/CrownArt/Quaternius')
+          scifi_out = root / 'SciFiEssentials'
+          glb_out = Path('/tmp/quaternius/space-selected')
+          scifi_out.mkdir(parents=True, exist_ok=True)
+          glb_out.mkdir(parents=True, exist_ok=True)
+
+          scifi_stems = [
+              'Enemy_EyeDrone',
+              'Enemy_QuadShell',
+              'Enemy_Trilobite',
+              'Gun_Pistol',
+              'Gun_Revolver',
+              'Gun_Rifle',
+              'Gun_Sniper',
+              'Prop_Ammo',
+              'Prop_Chest',
+              'Prop_Crate_Large',
+              'Prop_HealthPack',
+              'Prop_Locker',
+              'Prop_Mine',
+              'Prop_SatelliteDish',
+          ]
+
+          imported = []
+          copied_textures = set()
+          with zipfile.ZipFile('/tmp/quaternius/scifi-models.zip') as zf:
+              names = set(zf.namelist())
+              for stem in scifi_stems:
+                  fbx_name = f'FBX (Unity)/{stem}.fbx'
+                  if fbx_name not in names:
+                      raise SystemExit(f'Missing required Quaternius FBX: {fbx_name}')
+                  target = scifi_out / f'{stem}.fbx'
+                  with zf.open(fbx_name) as src, target.open('wb') as dst:
+                      shutil.copyfileobj(src, dst)
+                  imported.append(str(target))
+
+                  gltf_name = f'glTF/{stem}.gltf'
+                  if gltf_name in names:
+                      document = json.loads(zf.read(gltf_name).decode('utf-8'))
+                      for image in document.get('images', []):
+                          uri = image.get('uri')
+                          if not uri or uri.startswith('data:'):
+                              continue
+                          archive_name = 'glTF/' + uri.replace('\\', '/')
+                          if archive_name not in names:
+                              raise SystemExit(f'Referenced texture is missing: {archive_name}')
+                          basename = Path(uri).name
+                          if basename in copied_textures:
+                              continue
+                          target = scifi_out / basename
+                          with zf.open(archive_name) as src, target.open('wb') as dst:
+                              shutil.copyfileobj(src, dst)
+                          copied_textures.add(basename)
+                          imported.append(str(target))
+
+              license_like = sorted(name for name in names if any(token in name.lower() for token in ('license', 'readme', 'credits')))
+              for index, name in enumerate(license_like[:10]):
+                  target = root / f'SciFiEssentials_Source_{index + 1}_{Path(name).name}'
+                  with zf.open(name) as src, target.open('wb') as dst:
+                      shutil.copyfileobj(src, dst)
+                  imported.append(str(target))
+
+          with zipfile.ZipFile('/tmp/quaternius/space.zip') as zf:
+              model_names = sorted(name for name in zf.namelist() if name.lower().endswith('.glb'))
+              selected = []
+              for name in model_names:
+                  stem = Path(name).stem
+                  if (
+                      stem.startswith('Mech') or
+                      stem.startswith('Enemy ') or
+                      stem.startswith('Astronaut') or
+                      stem.startswith('Spaceship') or
+                      stem in {
+                          'Base Large', 'Building L', 'Connector', 'Geodesic Dome',
+                          'Metal Support', 'House Long', 'House Open', 'House Pod',
+                          'House Single', 'Pickup Crate'
+                      }
+                  ):
+                      selected.append(name)
+
+              required_groups = ('Mech', 'Enemy ', 'Astronaut', 'Spaceship')
+              for group in required_groups:
+                  if not any(Path(name).stem.startswith(group) for name in selected):
+                      raise SystemExit(f'No Ultimate Space models selected for group: {group}')
+
+              mapping = []
+              used = set()
+              for name in selected:
+                  stem = Path(name).stem
+                  safe = re.sub(r'[^A-Za-z0-9]+', '_', stem).strip('_')
+                  candidate = safe
+                  suffix = 2
+                  while candidate in used:
+                      candidate = f'{safe}_{suffix}'
+                      suffix += 1
+                  used.add(candidate)
+                  target = glb_out / f'{candidate}.glb'
+                  with zf.open(name) as src, target.open('wb') as dst:
+                      shutil.copyfileobj(src, dst)
+                  mapping.append((name, candidate))
+
+          manifest = root / 'QUATERNIUS_REVIEW_KIT.md'
+          manifest.write_text(
+              '# Quaternius CC0 review kit\n\n'
+              '## Sources and license\n\n'
+              '- Sci-Fi Essentials Kit: https://opengameart.org/content/sci-fi-essentials-kit\n'
+              '- Ultimate Space Kit: https://opengameart.org/content/ultimate-space-kit-by-quaternius\n'
+              '- License: CC0 1.0, as published on the source pages.\n\n'
+              '## Sci-Fi Essentials files\n\n' +
+              '\n'.join(f'- `{path}`' for path in imported) +
+              '\n\n## Ultimate Space conversion map\n\n' +
+              '\n'.join(f'- `{source}` → `{target}.fbx`' for source, target in mapping) + '\n',
+              encoding='utf-8'
+          )
+
+          Path('/tmp/quaternius/conversion-map.json').write_text(
+              json.dumps(mapping, indent=2), encoding='utf-8')
+          print(f'Selected {len(scifi_stems)} Sci-Fi FBX models, {len(copied_textures)} referenced textures and {len(mapping)} Ultimate Space GLBs.')
+          PY
+
+      - name: Install Blender for GLB to FBX conversion
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends blender
+
+      - name: Convert selected Ultimate Space GLBs to Unity FBX
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/quaternius/convert_glb.py <<'PY'
+          import bpy
+          import sys
+          from pathlib import Path
+
+          args = sys.argv[sys.argv.index('--') + 1:]
+          source = Path(args[0])
+          destination = Path(args[1])
+
+          bpy.ops.wm.read_factory_settings(use_empty=True)
+          bpy.ops.import_scene.gltf(filepath=str(source))
+
+          for obj in bpy.context.scene.objects:
+              if obj.type == 'MESH':
+                  obj.select_set(True)
+
+          destination.parent.mkdir(parents=True, exist_ok=True)
+          bpy.ops.export_scene.fbx(
+              filepath=str(destination),
+              use_selection=False,
+              apply_unit_scale=True,
+              apply_scale_options='FBX_SCALE_ALL',
+              add_leaf_bones=False,
+              bake_anim=False,
+              path_mode='COPY',
+              embed_textures=True,
+          )
+          PY
+
+          output='unity/crown-front/Assets/Resources/CrownArt/Quaternius/UltimateSpace'
+          mkdir -p "$output"
+          for source in /tmp/quaternius/space-selected/*.glb; do
+            name="$(basename "$source" .glb)"
+            blender --background --python /tmp/quaternius/convert_glb.py -- "$source" "$output/$name.fbx"
+          done
+          find "$output" -maxdepth 1 -type f -name '*.fbx' -print | sort
+
+      - name: Update third-party notice and validate package
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path('unity/crown-front/Assets/Resources/CrownArt/Quaternius')
+          fbx = sorted(root.rglob('*.fbx'))
+          textures = sorted(path for path in root.rglob('*') if path.suffix.lower() in {'.png', '.jpg', '.jpeg', '.tga'})
+          if len(fbx) < 30:
+              raise SystemExit(f'Expected at least 30 Quaternius FBX files, found {len(fbx)}')
+          if not textures:
+              raise SystemExit('No referenced Sci-Fi Essentials textures were imported')
+
+          notice = Path('unity/crown-front/THIRD_PARTY_NOTICES.md')
+          existing = notice.read_text(encoding='utf-8') if notice.exists() else '# Third-party notices\n'
+          marker = '## Quaternius CC0 review kit'
+          if marker not in existing:
+              existing += (
+                  '\n## Quaternius CC0 review kit\n\n'
+                  '- Sci-Fi Essentials Kit: https://opengameart.org/content/sci-fi-essentials-kit\n'
+                  '- Ultimate Space Kit: https://opengameart.org/content/ultimate-space-kit-by-quaternius\n'
+                  '- License: CC0 1.0.\n'
+                  '- Usage in this branch: visual evaluation and CROWN//FRONT presentation prototyping.\n'
+              )
+              notice.write_text(existing, encoding='utf-8')
+
+          print(f'Validated {len(fbx)} FBX files and {len(textures)} textures.')
+          PY
+          git rm .github/workflows/import-quaternius-review-kit.yml
+
+      - name: Commit and push focused review kit
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='feature/crown-front-art-reboot-hero-frame'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add unity/crown-front/Assets/Resources/CrownArt/Quaternius unity/crown-front/THIRD_PARTY_NOTICES.md
+          git commit -m 'feat: import focused Quaternius CC0 review kit'
+
+          for attempt in 1 2 3 4; do
+            git fetch origin "$branch"
+            git rebase "origin/$branch"
+            if git push origin "HEAD:$branch"; then
+              exit 0
+            fi
+            sleep $((attempt * 3))
+          done
+          exit 1
