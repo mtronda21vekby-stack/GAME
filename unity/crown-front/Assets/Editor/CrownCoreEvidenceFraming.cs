@@ -63,11 +63,11 @@ namespace CrownFront.Editor
 
             Vector3 target = hasBounds
                 ? bounds.center
-                : reviewCore.transform.position + Vector3.up * 0.68f;
+                : reviewCore.transform.position + Vector3.up * 0.58f;
 
-            camera.transform.position = target + new Vector3(0f, 1.75f, -6.0f);
+            camera.transform.position = target + new Vector3(0f, 1.10f, -4.70f);
             camera.transform.LookAt(target + Vector3.up * 0.02f);
-            camera.fieldOfView = 30.5f;
+            camera.fieldOfView = 28.5f;
         }
 
         private static void HideCoreEvidenceNoise(CrownBuilding reviewCore)
