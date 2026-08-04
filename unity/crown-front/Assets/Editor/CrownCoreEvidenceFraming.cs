@@ -116,11 +116,40 @@ namespace CrownFront.Editor
                 Transform current = transforms[i];
                 if (current == null) continue;
                 if (current.name == "Spinal Energy Channel" ||
-                    current.name == "Embedded Energy Seam")
+                    current.name == "Embedded Energy Seam" ||
+                    current.name == "Embedded Route Energy" ||
+                    current.name == "Focused Reactor Core")
                 {
                     current.gameObject.SetActive(false);
                 }
             }
+
+            Renderer[] sceneRenderers = game.GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < sceneRenderers.Length; i++)
+            {
+                Renderer renderer = sceneRenderers[i];
+                if (renderer == null || !renderer.gameObject.activeInHierarchy) continue;
+                if (renderer.transform.IsChildOf(reviewCore.transform)) continue;
+                if (UsesExternalWhiteEnergy(renderer)) renderer.enabled = false;
+            }
+        }
+
+        private static bool UsesExternalWhiteEnergy(Renderer renderer)
+        {
+            Material[] materials = renderer.sharedMaterials;
+            for (int i = 0; i < materials.Length; i++)
+            {
+                Material material = materials[i];
+                if (material == null) continue;
+                string materialName = material.name;
+                if (materialName.Contains("Crown Energy") ||
+                    materialName.Contains("whiteHot") ||
+                    materialName.Contains("whiteEnergy"))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }
