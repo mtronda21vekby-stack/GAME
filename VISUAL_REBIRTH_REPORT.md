@@ -5,8 +5,9 @@
 - Version: `0.3.0-alpha.3`
 - Unity: `6000.5.3f1`
 - Branch: `feature/crown-front-visual-rebirth`
-- Pull request: pending creation after the verified source commit
-- Source commit: pending verified source commit
+- Pull request: `https://github.com/mtronda21vekby-stack/GAME/pull/24`
+- Source implementation commit: `cb173637397742c8e387133ab3b1cef452fe9e3e`
+- PR head after workflow configuration: `fbdcbddfaa97e4ed8e0971ff832be85270992922`
 - Merge commit: pending successful PR checks
 - GitHub Actions run: pending push
 - Production route: `https://blackcrown.work/games/crown-front/`
