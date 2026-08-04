@@ -73,7 +73,7 @@ namespace CrownFront.Editor
 
         private static void PositionClashUnits()
         {
-            CrownUnit[] units = UnityEngine.Object.FindObjectsByType<CrownUnit>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            CrownUnit[] units = UnityEngine.Object.FindObjectsByType<CrownUnit>(FindObjectsInactive.Exclude);
             int blueIndex = 0;
             int redIndex = 0;
             for (int i = 0; i < units.Length; i++)

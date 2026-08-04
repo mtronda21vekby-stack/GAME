@@ -9,8 +9,8 @@ namespace CrownFront.Cloud
     public sealed class CrownArtRebootHeroFrame : MonoBehaviour
     {
         private readonly Dictionary<string, Material> _materials = new Dictionary<string, Material>(12);
-        private readonly HashSet<int> _skinnedBuildings = new HashSet<int>();
-        private readonly HashSet<int> _skinnedUnits = new HashSet<int>();
+        private readonly HashSet<CrownBuilding> _skinnedBuildings = new HashSet<CrownBuilding>();
+        private readonly HashSet<CrownUnit> _skinnedUnits = new HashSet<CrownUnit>();
 
         private Mesh _plateMesh;
         private Mesh _hardPlateMesh;
@@ -232,15 +232,15 @@ namespace CrownFront.Cloud
 
         private void SkinBuildings()
         {
-            CrownBuilding[] buildings = FindObjectsByType<CrownBuilding>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            CrownBuilding[] buildings = FindObjectsByType<CrownBuilding>(FindObjectsInactive.Include);
             for (int i = 0; i < buildings.Length; i++)
             {
                 CrownBuilding building = buildings[i];
-                if (building == null || _skinnedBuildings.Contains(building.GetInstanceID())) continue;
+                if (building == null || _skinnedBuildings.Contains(building)) continue;
                 HideRenderers(building.transform);
                 if (building.IsCore) BuildCore(building);
                 else BuildTower(building);
-                _skinnedBuildings.Add(building.GetInstanceID());
+                _skinnedBuildings.Add(building);
             }
         }
 
@@ -293,14 +293,14 @@ namespace CrownFront.Cloud
 
         private void SkinUnits()
         {
-            CrownUnit[] units = FindObjectsByType<CrownUnit>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            CrownUnit[] units = FindObjectsByType<CrownUnit>(FindObjectsInactive.Include);
             for (int i = 0; i < units.Length; i++)
             {
                 CrownUnit unit = units[i];
-                if (unit == null || _skinnedUnits.Contains(unit.GetInstanceID())) continue;
+                if (unit == null || _skinnedUnits.Contains(unit)) continue;
                 HideRenderers(unit.transform);
                 BuildUnit(unit);
-                _skinnedUnits.Add(unit.GetInstanceID());
+                _skinnedUnits.Add(unit);
             }
         }
 
@@ -522,7 +522,7 @@ namespace CrownFront.Cloud
             _unit = unit; _body = body; _leftLeg = leftLeg; _rightLeg = rightLeg; _weapon = weapon;
             _lastPosition = unit.transform.position;
             _weaponBase = weapon.localPosition;
-            _seed = unit.GetInstanceID() * 0.017f;
+            _seed = ((int)unit.Team * 17 + (int)unit.Kind * 5 + unit.Lane) * 0.37f;
         }
 
         private void LateUpdate()
