@@ -92,7 +92,7 @@ namespace CrownFront.Editor
         {
             PlayerSettings.companyName = "BlackCrown";
             PlayerSettings.productName = "CROWN//FRONT — THE CROWN ENGINE";
-            PlayerSettings.bundleVersion = "0.2.0-cloud-prototype";
+            PlayerSettings.bundleVersion = "0.2.0-alpha.2";
             PlayerSettings.defaultScreenWidth = 1080;
             PlayerSettings.defaultScreenHeight = 1920;
             PlayerSettings.runInBackground = false;
