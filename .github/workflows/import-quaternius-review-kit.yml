@@ -144,6 +144,11 @@ jobs:
                       shutil.copyfileobj(src, dst)
                   mapping.append((name, candidate))
 
+          if len(scifi_stems) != 14:
+              raise SystemExit(f'Expected 14 Sci-Fi selections, found {len(scifi_stems)}')
+          if len(mapping) != 24:
+              raise SystemExit(f'Expected 24 Ultimate Space selections, found {len(mapping)}')
+
           manifest = root / 'QUATERNIUS_REVIEW_KIT.md'
           manifest.write_text(
               '# Quaternius CC0 review kit\n\n'
@@ -163,12 +168,13 @@ jobs:
           print(f'Selected {len(scifi_stems)} Sci-Fi FBX models, {len(copied_textures)} referenced textures and {len(mapping)} Ultimate Space GLBs.')
           PY
 
-      - name: Install Blender for GLB to FBX conversion
+      - name: Install Blender and GLTF Python dependency
         shell: bash
         run: |
           set -euo pipefail
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends blender
+          sudo apt-get install -y --no-install-recommends blender python3-numpy
+          blender --background --python-exit-code 1 --python-expr "import numpy; print('Blender numpy', numpy.__version__)"
 
       - name: Convert selected Ultimate Space GLBs to Unity FBX
         shell: bash
@@ -177,41 +183,57 @@ jobs:
           cat > /tmp/quaternius/convert_glb.py <<'PY'
           import bpy
           import sys
+          import traceback
           from pathlib import Path
 
-          args = sys.argv[sys.argv.index('--') + 1:]
-          source = Path(args[0])
-          destination = Path(args[1])
+          try:
+              args = sys.argv[sys.argv.index('--') + 1:]
+              source = Path(args[0])
+              destination = Path(args[1])
 
-          bpy.ops.wm.read_factory_settings(use_empty=True)
-          bpy.ops.import_scene.gltf(filepath=str(source))
+              bpy.ops.wm.read_factory_settings(use_empty=True)
+              bpy.ops.import_scene.gltf(filepath=str(source))
 
-          for obj in bpy.context.scene.objects:
-              if obj.type == 'MESH':
-                  obj.select_set(True)
+              meshes = [obj for obj in bpy.context.scene.objects if obj.type == 'MESH']
+              if not meshes:
+                  raise RuntimeError(f'No mesh objects imported from {source}')
 
-          destination.parent.mkdir(parents=True, exist_ok=True)
-          bpy.ops.export_scene.fbx(
-              filepath=str(destination),
-              use_selection=False,
-              apply_unit_scale=True,
-              apply_scale_options='FBX_SCALE_ALL',
-              add_leaf_bones=False,
-              bake_anim=False,
-              path_mode='COPY',
-              embed_textures=True,
-          )
+              destination.parent.mkdir(parents=True, exist_ok=True)
+              bpy.ops.export_scene.fbx(
+                  filepath=str(destination),
+                  use_selection=False,
+                  apply_unit_scale=True,
+                  apply_scale_options='FBX_SCALE_ALL',
+                  add_leaf_bones=False,
+                  bake_anim=False,
+                  path_mode='COPY',
+                  embed_textures=True,
+              )
+              if not destination.is_file() or destination.stat().st_size < 1024:
+                  raise RuntimeError(f'FBX export missing or too small: {destination}')
+              print(f'Converted {source.name} -> {destination.name} ({destination.stat().st_size} bytes)')
+          except Exception:
+              traceback.print_exc()
+              raise
           PY
 
           output='unity/crown-front/Assets/Resources/CrownArt/Quaternius/UltimateSpace'
+          rm -rf "$output"
           mkdir -p "$output"
+          converted=0
           for source in /tmp/quaternius/space-selected/*.glb; do
             name="$(basename "$source" .glb)"
-            blender --background --python /tmp/quaternius/convert_glb.py -- "$source" "$output/$name.fbx"
+            destination="$output/$name.fbx"
+            blender --background --python-exit-code 1 --python /tmp/quaternius/convert_glb.py -- "$source" "$destination"
+            test -s "$destination"
+            converted=$((converted + 1))
           done
+          test "$converted" -eq 24
+          actual="$(find "$output" -maxdepth 1 -type f -name '*.fbx' | wc -l | tr -d ' ')"
+          test "$actual" -eq 24
           find "$output" -maxdepth 1 -type f -name '*.fbx' -print | sort
 
-      - name: Update third-party notice and validate package
+      - name: Update third-party notice and validate exact package
         shell: bash
         run: |
           set -euo pipefail
@@ -219,12 +241,19 @@ jobs:
           from pathlib import Path
 
           root = Path('unity/crown-front/Assets/Resources/CrownArt/Quaternius')
-          fbx = sorted(root.rglob('*.fbx'))
-          textures = sorted(path for path in root.rglob('*') if path.suffix.lower() in {'.png', '.jpg', '.jpeg', '.tga'})
-          if len(fbx) < 30:
-              raise SystemExit(f'Expected at least 30 Quaternius FBX files, found {len(fbx)}')
-          if not textures:
-              raise SystemExit('No referenced Sci-Fi Essentials textures were imported')
+          scifi = sorted((root / 'SciFiEssentials').glob('*.fbx'))
+          ultimate = sorted((root / 'UltimateSpace').glob('*.fbx'))
+          textures = sorted(path for path in (root / 'SciFiEssentials').iterdir() if path.suffix.lower() in {'.png', '.jpg', '.jpeg', '.tga'})
+
+          if len(scifi) != 14:
+              raise SystemExit(f'Expected exactly 14 Sci-Fi Essentials FBX files, found {len(scifi)}')
+          if len(ultimate) != 24:
+              raise SystemExit(f'Expected exactly 24 converted Ultimate Space FBX files, found {len(ultimate)}')
+          if len(textures) < 2:
+              raise SystemExit(f'Expected at least 2 referenced Sci-Fi Essentials textures, found {len(textures)}')
+          for path in scifi + ultimate:
+              if path.stat().st_size < 1024:
+                  raise SystemExit(f'Imported FBX is unexpectedly small: {path} ({path.stat().st_size} bytes)')
 
           notice = Path('unity/crown-front/THIRD_PARTY_NOTICES.md')
           existing = notice.read_text(encoding='utf-8') if notice.exists() else '# Third-party notices\n'
@@ -239,7 +268,7 @@ jobs:
               )
               notice.write_text(existing, encoding='utf-8')
 
-          print(f'Validated {len(fbx)} FBX files and {len(textures)} textures.')
+          print(f'Validated exact kit: {len(scifi)} Sci-Fi FBX + {len(ultimate)} Ultimate Space FBX + {len(textures)} textures.')
           PY
           git rm .github/workflows/import-quaternius-review-kit.yml
 
