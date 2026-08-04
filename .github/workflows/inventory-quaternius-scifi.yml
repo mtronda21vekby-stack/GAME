@@ -1,0 +1,64 @@
+name: Inventory Quaternius CC0 sci-fi assets
+
+on:
+  push:
+    branches:
+      - feature/crown-front-art-reboot-hero-frame
+    paths:
+      - .github/workflows/inventory-quaternius-scifi.yml
+
+permissions:
+  contents: write
+
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/crown-front-art-reboot-hero-frame
+          fetch-depth: 0
+
+      - name: Download public CC0 archives and inventory filenames
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/quaternius unity/crown-front/AssetResearch
+          curl -fL --retry 4 --retry-delay 2 'https://opengameart.org/sites/default/files/sci-fi_essentials_kit_models.zip' -o /tmp/quaternius/models.zip
+          curl -fL --retry 4 --retry-delay 2 'https://opengameart.org/sites/default/files/sci-fi_essentials_kit_textures.zip' -o /tmp/quaternius/textures.zip
+          curl -fL --retry 4 --retry-delay 2 'https://opengameart.org/sites/default/files/ultimate_space_kit-glb.zip' -o /tmp/quaternius/space.zip
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile
+
+          archives=[
+              ('Sci-Fi Essentials Models',Path('/tmp/quaternius/models.zip'),'https://opengameart.org/content/sci-fi-essentials-kit'),
+              ('Sci-Fi Essentials Textures',Path('/tmp/quaternius/textures.zip'),'https://opengameart.org/content/sci-fi-essentials-kit'),
+              ('Ultimate Space Kit GLB',Path('/tmp/quaternius/space.zip'),'https://opengameart.org/content/ultimate-space-kit-by-quaternius'),
+          ]
+          terms=('robot','mech','enemy','turret','gun','rifle','weapon','platform','floor','wall','door','column','crate','screen','generator','reactor','console','hologram','ship','drone','armor','tank')
+          lines=['# Quaternius CC0 sci-fi inventory','',
+                 'Generated from public OpenGameArt CC0 archives. This is an inventory only; archives are not committed.','']
+          for title,path,url in archives:
+              with zipfile.ZipFile(path) as zf:
+                  names=sorted(n for n in zf.namelist() if not n.endswith('/'))
+                  candidates=[n for n in names if any(t in n.lower() for t in terms)]
+                  models=[n for n in names if n.lower().endswith(('.fbx','.obj','.glb','.gltf','.blend'))]
+                  textures=[n for n in names if n.lower().endswith(('.png','.jpg','.jpeg','.tga'))]
+                  lines += ['',f'## {title}','',f'- Source: {url}',f'- Archive bytes: {path.stat().st_size}',f'- Models: {len(models)}',f'- Textures: {len(textures)}','', '### Candidate files','']
+                  for n in candidates[:500]: lines.append(f'- `{n}`')
+                  lines += ['', '### All model files','']
+                  for n in models[:500]: lines.append(f'- `{n}`')
+          Path('unity/crown-front/AssetResearch/QUATERNIUS_CC0_INVENTORY.md').write_text('\n'.join(lines)+'\n',encoding='utf-8')
+          PY
+          git rm .github/workflows/inventory-quaternius-scifi.yml
+
+      - name: Commit inventory only
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add unity/crown-front/AssetResearch/QUATERNIUS_CC0_INVENTORY.md
+          git commit -m "docs: inventory Quaternius CC0 sci-fi assets"
+          git push origin HEAD:feature/crown-front-art-reboot-hero-frame
