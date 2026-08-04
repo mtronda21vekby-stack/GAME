@@ -35,8 +35,6 @@ namespace CrownFront.Editor
             }
             if (reviewCore == null) return;
 
-            // Match evidence to the runtime presentation before calculating framing.
-            // ApplyAll is idempotent and cannot duplicate the correction geometry.
             if (!CrownCoreStructuralCorrection.ApplyAll())
             {
                 Debug.LogWarning("CROWN//FRONT Core structural correction was not ready before evidence render.");
@@ -63,11 +61,11 @@ namespace CrownFront.Editor
 
             Vector3 target = hasBounds
                 ? bounds.center
-                : reviewCore.transform.position + Vector3.up * 0.82f;
+                : reviewCore.transform.position + Vector3.up * 0.68f;
 
-            camera.transform.position = target + new Vector3(0f, 3.2f, -8.2f);
-            camera.transform.LookAt(target + Vector3.up * 0.03f);
-            camera.fieldOfView = 29.5f;
+            camera.transform.position = target + new Vector3(0f, 1.75f, -6.0f);
+            camera.transform.LookAt(target + Vector3.up * 0.02f);
+            camera.fieldOfView = 30.5f;
         }
     }
 }
