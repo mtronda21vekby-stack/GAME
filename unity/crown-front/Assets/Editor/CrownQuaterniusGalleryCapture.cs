@@ -69,6 +69,30 @@ namespace CrownFront.Editor
             "CrownArt/Quaternius/SciFiEssentials/Prop_HealthPack",
         };
 
+        public static bool CaptureIfAvailable()
+        {
+            string missing = FindMissingResource(UnitModels) ??
+                             FindMissingResource(StructureModels) ??
+                             FindMissingResource(WeaponAndShipModels);
+            if (!string.IsNullOrEmpty(missing))
+            {
+                Debug.LogWarning($"Quaternius gallery skipped because the review kit is not imported yet: Resources/{missing}");
+                return false;
+            }
+
+            CaptureAll();
+            return true;
+        }
+
+        private static string FindMissingResource(IReadOnlyList<string> resources)
+        {
+            for (int i = 0; i < resources.Count; i++)
+            {
+                if (Resources.Load<GameObject>(resources[i]) == null) return resources[i];
+            }
+            return null;
+        }
+
         [MenuItem("CROWN FRONT/Art Reboot/Capture Quaternius Gallery")]
         public static void CaptureAll()
         {
