@@ -46,6 +46,7 @@ namespace CrownFront.Editor
         [MenuItem("CROWN FRONT/Cloud/Build WebGL")]
         public static void BuildWebGL()
         {
+            bool quaterniusGalleryCaptured = CrownQuaterniusGalleryCapture.CaptureIfAvailable();
             RebuildPrototypeScene();
             CrownArtRebootReviewCapture.CaptureAll();
             RebuildPrototypeScene();
@@ -80,18 +81,20 @@ namespace CrownFront.Editor
                 $"totalTime={summary.totalTime}{Environment.NewLine}" +
                 $"warnings={summary.totalWarnings}{Environment.NewLine}" +
                 $"errors={summary.totalErrors}{Environment.NewLine}" +
-                $"artRebootSlice=cc0-asset-art-direction-review{Environment.NewLine}");
+                $"artRebootSlice=quaternius-selection-review{Environment.NewLine}" +
+                $"quaterniusGalleryCaptured={quaterniusGalleryCaptured}{Environment.NewLine}");
 
             if (summary.result != BuildResult.Succeeded)
             {
                 throw new InvalidOperationException($"CROWN//FRONT WebGL build failed: {summary.result}; errors={summary.totalErrors}; warnings={summary.totalWarnings}");
             }
 
-            CopyReviewFrames(outputPath);
-            Debug.Log($"CROWN//FRONT final asset Art Direction review build succeeded: {outputPath} ({summary.totalSize} bytes)");
+            CopyRequiredReviewFrames(outputPath);
+            CopyOptionalQuaterniusGallery(outputPath, quaterniusGalleryCaptured);
+            Debug.Log($"CROWN//FRONT Quaternius selection review build succeeded: {outputPath} ({summary.totalSize} bytes)");
         }
 
-        private static void CopyReviewFrames(string outputPath)
+        private static void CopyRequiredReviewFrames(string outputPath)
         {
             string source = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", "..", "VisualReview", "ArtRebootSlice1"));
             string destination = Path.Combine(outputPath, "ReviewFrames");
@@ -102,11 +105,35 @@ namespace CrownFront.Editor
             for (int i = 0; i < files.Length; i++) File.Copy(files[i], Path.Combine(destination, Path.GetFileName(files[i])), true);
         }
 
+        private static void CopyOptionalQuaterniusGallery(string outputPath, bool captured)
+        {
+            if (!captured) return;
+            string source = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", "..", "VisualReview", "QuaterniusGallery"));
+            if (!Directory.Exists(source)) throw new DirectoryNotFoundException($"Quaternius gallery was reported as captured but is missing: {source}");
+
+            string destination = Path.Combine(outputPath, "ReviewFrames", "QuaterniusGallery");
+            Directory.CreateDirectory(destination);
+            string[] files = Directory.GetFiles(source, "*", SearchOption.TopDirectoryOnly);
+            int pngCount = 0;
+            for (int i = 0; i < files.Length; i++)
+            {
+                string extension = Path.GetExtension(files[i]);
+                if (!string.Equals(extension, ".png", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(extension, ".txt", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+                if (string.Equals(extension, ".png", StringComparison.OrdinalIgnoreCase)) pngCount++;
+                File.Copy(files[i], Path.Combine(destination, Path.GetFileName(files[i])), true);
+            }
+            if (pngCount < 5) throw new InvalidOperationException($"Quaternius gallery is incomplete: expected at least five pages, found {pngCount}.");
+        }
+
         private static void ConfigurePlayer()
         {
             PlayerSettings.companyName = "BlackCrown";
-            PlayerSettings.productName = "CROWN//FRONT — ART REBOOT ASSET REVIEW";
-            PlayerSettings.bundleVersion = "0.4.0-asset-art-direction-review";
+            PlayerSettings.productName = "CROWN//FRONT — QUATERNIUS SELECTION REVIEW";
+            PlayerSettings.bundleVersion = "0.4.0-quaternius-selection-review";
             PlayerSettings.defaultScreenWidth = 1080;
             PlayerSettings.defaultScreenHeight = 1920;
             PlayerSettings.runInBackground = false;
