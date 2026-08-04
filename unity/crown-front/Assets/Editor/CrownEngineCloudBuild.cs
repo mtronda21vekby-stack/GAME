@@ -24,6 +24,7 @@ namespace CrownFront.Editor
             root.AddComponent<CrownEngineGame>();
             root.AddComponent<CrownArtRebootHeroFrame>();
             root.AddComponent<CrownArtRebootIteration2>();
+            root.AddComponent<CrownAssetArtReboot>();
 
             EditorSceneManager.MarkSceneDirty(scene);
             if (!EditorSceneManager.SaveScene(scene, ScenePath))
@@ -83,7 +84,7 @@ namespace CrownFront.Editor
                 $"totalTime={summary.totalTime}{Environment.NewLine}" +
                 $"warnings={summary.totalWarnings}{Environment.NewLine}" +
                 $"errors={summary.totalErrors}{Environment.NewLine}" +
-                $"artRebootSlice=hero-frame-iteration2{Environment.NewLine}");
+                $"artRebootSlice=cc0-asset-review{Environment.NewLine}");
 
             if (summary.result != BuildResult.Succeeded)
             {
@@ -92,7 +93,7 @@ namespace CrownFront.Editor
             }
 
             CopyReviewFrames(outputPath);
-            Debug.Log($"CROWN//FRONT Art Reboot review WebGL build succeeded: {outputPath} ({summary.totalSize} bytes)");
+            Debug.Log($"CROWN//FRONT CC0 asset review WebGL build succeeded: {outputPath} ({summary.totalSize} bytes)");
         }
 
         private static void CopyReviewFrames(string outputPath)
@@ -127,8 +128,8 @@ namespace CrownFront.Editor
         private static void ConfigurePlayer()
         {
             PlayerSettings.companyName = "BlackCrown";
-            PlayerSettings.productName = "CROWN//FRONT — ART REBOOT HERO FRAME";
-            PlayerSettings.bundleVersion = "0.4.0-art-reboot-review";
+            PlayerSettings.productName = "CROWN//FRONT — ART REBOOT ASSET REVIEW";
+            PlayerSettings.bundleVersion = "0.4.0-asset-review";
             PlayerSettings.defaultScreenWidth = 1080;
             PlayerSettings.defaultScreenHeight = 1920;
             PlayerSettings.runInBackground = false;
