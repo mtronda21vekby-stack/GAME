@@ -25,6 +25,7 @@ namespace CrownFront.Editor
             root.AddComponent<CrownArtRebootHeroFrame>();
             root.AddComponent<CrownArtRebootIteration2>();
             root.AddComponent<CrownAssetArtReboot>();
+            root.AddComponent<CrownAssetArtDirectionPass>();
 
             EditorSceneManager.MarkSceneDirty(scene);
             if (!EditorSceneManager.SaveScene(scene, ScenePath))
@@ -57,11 +58,7 @@ namespace CrownFront.Editor
                 "Builds/CloudWebGL";
 
             outputPath = Path.GetFullPath(outputPath);
-            if (Directory.Exists(outputPath))
-            {
-                Directory.Delete(outputPath, true);
-            }
-
+            if (Directory.Exists(outputPath)) Directory.Delete(outputPath, true);
             Directory.CreateDirectory(outputPath);
 
             BuildPlayerOptions options = new BuildPlayerOptions
@@ -74,7 +71,6 @@ namespace CrownFront.Editor
 
             BuildReport report = BuildPipeline.BuildPlayer(options);
             BuildSummary summary = report.summary;
-
             string reportPath = Path.Combine(outputPath, "CROWN_ENGINE_BUILD_REPORT.txt");
             File.WriteAllText(
                 reportPath,
@@ -84,68 +80,46 @@ namespace CrownFront.Editor
                 $"totalTime={summary.totalTime}{Environment.NewLine}" +
                 $"warnings={summary.totalWarnings}{Environment.NewLine}" +
                 $"errors={summary.totalErrors}{Environment.NewLine}" +
-                $"artRebootSlice=cc0-asset-review{Environment.NewLine}");
+                $"artRebootSlice=cc0-asset-art-direction-review{Environment.NewLine}");
 
             if (summary.result != BuildResult.Succeeded)
             {
-                throw new InvalidOperationException(
-                    $"CROWN//FRONT WebGL build failed: {summary.result}; errors={summary.totalErrors}; warnings={summary.totalWarnings}");
+                throw new InvalidOperationException($"CROWN//FRONT WebGL build failed: {summary.result}; errors={summary.totalErrors}; warnings={summary.totalWarnings}");
             }
 
             CopyReviewFrames(outputPath);
-            Debug.Log($"CROWN//FRONT CC0 asset review WebGL build succeeded: {outputPath} ({summary.totalSize} bytes)");
+            Debug.Log($"CROWN//FRONT final asset Art Direction review build succeeded: {outputPath} ({summary.totalSize} bytes)");
         }
 
         private static void CopyReviewFrames(string outputPath)
         {
-            string source = Path.GetFullPath(Path.Combine(
-                Application.dataPath,
-                "..",
-                "..",
-                "..",
-                "VisualReview",
-                "ArtRebootSlice1"));
+            string source = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", "..", "VisualReview", "ArtRebootSlice1"));
             string destination = Path.Combine(outputPath, "ReviewFrames");
-
-            if (!Directory.Exists(source))
-            {
-                throw new DirectoryNotFoundException($"Art Reboot review frame directory is missing: {source}");
-            }
-
+            if (!Directory.Exists(source)) throw new DirectoryNotFoundException($"Art Reboot review frame directory is missing: {source}");
             string[] files = Directory.GetFiles(source, "*.png", SearchOption.TopDirectoryOnly);
-            if (files.Length < 5)
-            {
-                throw new InvalidOperationException($"Expected at least five real Unity review frames, found {files.Length}.");
-            }
-
+            if (files.Length < 5) throw new InvalidOperationException($"Expected at least five real Unity review frames, found {files.Length}.");
             Directory.CreateDirectory(destination);
-            for (int i = 0; i < files.Length; i++)
-            {
-                File.Copy(files[i], Path.Combine(destination, Path.GetFileName(files[i])), true);
-            }
+            for (int i = 0; i < files.Length; i++) File.Copy(files[i], Path.Combine(destination, Path.GetFileName(files[i])), true);
         }
 
         private static void ConfigurePlayer()
         {
             PlayerSettings.companyName = "BlackCrown";
             PlayerSettings.productName = "CROWN//FRONT — ART REBOOT ASSET REVIEW";
-            PlayerSettings.bundleVersion = "0.4.0-asset-review";
+            PlayerSettings.bundleVersion = "0.4.0-asset-art-direction-review";
             PlayerSettings.defaultScreenWidth = 1080;
             PlayerSettings.defaultScreenHeight = 1920;
             PlayerSettings.runInBackground = false;
             PlayerSettings.resizableWindow = true;
             PlayerSettings.stripEngineCode = true;
             PlayerSettings.colorSpace = ColorSpace.Linear;
-
 #pragma warning disable CS0618
             PlayerSettings.SetScriptingBackend(BuildTargetGroup.WebGL, ScriptingImplementation.IL2CPP);
 #pragma warning restore CS0618
-
             PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Brotli;
             PlayerSettings.WebGL.decompressionFallback = true;
             PlayerSettings.WebGL.exceptionSupport = WebGLExceptionSupport.None;
             PlayerSettings.WebGL.dataCaching = true;
-
             EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.WebGL, BuildTarget.WebGL);
         }
 
@@ -154,12 +128,8 @@ namespace CrownFront.Editor
             string[] args = Environment.GetCommandLineArgs();
             for (int i = 0; i < args.Length - 1; i++)
             {
-                if (string.Equals(args[i], name, StringComparison.OrdinalIgnoreCase))
-                {
-                    return args[i + 1];
-                }
+                if (string.Equals(args[i], name, StringComparison.OrdinalIgnoreCase)) return args[i + 1];
             }
-
             return null;
         }
     }
