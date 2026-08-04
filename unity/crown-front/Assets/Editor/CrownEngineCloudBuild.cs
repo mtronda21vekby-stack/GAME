@@ -90,7 +90,37 @@ namespace CrownFront.Editor
                     $"CROWN//FRONT WebGL build failed: {summary.result}; errors={summary.totalErrors}; warnings={summary.totalWarnings}");
             }
 
+            CopyReviewFrames(outputPath);
             Debug.Log($"CROWN//FRONT Art Reboot review WebGL build succeeded: {outputPath} ({summary.totalSize} bytes)");
+        }
+
+        private static void CopyReviewFrames(string outputPath)
+        {
+            string source = Path.GetFullPath(Path.Combine(
+                Application.dataPath,
+                "..",
+                "..",
+                "..",
+                "VisualReview",
+                "ArtRebootSlice1"));
+            string destination = Path.Combine(outputPath, "ReviewFrames");
+
+            if (!Directory.Exists(source))
+            {
+                throw new DirectoryNotFoundException($"Art Reboot review frame directory is missing: {source}");
+            }
+
+            string[] files = Directory.GetFiles(source, "*.png", SearchOption.TopDirectoryOnly);
+            if (files.Length < 5)
+            {
+                throw new InvalidOperationException($"Expected at least five real Unity review frames, found {files.Length}.");
+            }
+
+            Directory.CreateDirectory(destination);
+            for (int i = 0; i < files.Length; i++)
+            {
+                File.Copy(files[i], Path.Combine(destination, Path.GetFileName(files[i])), true);
+            }
         }
 
         private static void ConfigurePlayer()
