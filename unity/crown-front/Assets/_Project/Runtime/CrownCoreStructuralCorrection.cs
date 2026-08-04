@@ -53,14 +53,32 @@ namespace CrownFront.Cloud
                 SetActiveNamed(qCore, "Embedded Reactor Base", false);
                 SetActiveNamed(qCore, "Reactor Containment Dome", false);
                 SetActiveNamed(qCore, "Reactor Stabilizers", false);
+
+                Transform lens = FindDeep(qCore, "Living Crown Lens");
+                if (lens != null)
+                {
+                    lens.localScale = Vector3.one * 0.075f;
+                    lens.localPosition = new Vector3(0f, 0.78f, 0f);
+                }
             }
 
             Transform corePolish = FindDeep(building.transform, "HYBRID POLISH // CORE");
             if (corePolish != null)
             {
                 Transform outer = FindDeep(corePolish, "Outer Magnetic Ring");
-                if (outer != null) outer.localScale = Vector3.one * 0.62f;
+                if (outer != null)
+                {
+                    outer.localScale = Vector3.one * 0.44f;
+                    outer.localPosition = new Vector3(0f, 0.78f, 0f);
+                }
                 SetActiveNamed(corePolish, "Inner Magnetic Ring", false);
+
+                Transform focused = FindDeep(corePolish, "Focused Reactor Core");
+                if (focused != null)
+                {
+                    focused.localScale = new Vector3(0.12f, 0.28f, 0.12f);
+                    focused.localPosition = new Vector3(0f, 0.72f, 0f);
+                }
             }
 
             if (FindDeep(building.transform, "CORE STRUCTURAL CORRECTION") != null) return true;
@@ -74,16 +92,16 @@ namespace CrownFront.Cloud
             Mesh plate = CrownAuthoredMeshFactory.CreateTaperedBox("CoreCorrection_Plate", 0.68f, 0.78f, 0.86f);
             Mesh blade = CrownAuthoredMeshFactory.CreateBlade("CoreCorrection_Blade");
             Transform correction = Group("CORE STRUCTURAL CORRECTION", building.transform);
-            Part("Reactor Pedestal", correction, plate, new Vector3(0f, 0.30f, 0f), new Vector3(0.62f, 0.42f, 0.62f), steel);
-            Part("Reactor Pedestal Shadow", correction, plate, new Vector3(0f, 0.075f, 0f), new Vector3(1.12f, 0.10f, 1.12f), graphite);
-            Part("Reactor Crown Cap", correction, blade, new Vector3(0f, 0.76f, 0f), new Vector3(0.18f, 0.42f, 0.18f), white);
+            Part("Reactor Pedestal", correction, plate, new Vector3(0f, 0.25f, 0f), new Vector3(0.68f, 0.34f, 0.68f), steel);
+            Part("Reactor Pedestal Shadow", correction, plate, new Vector3(0f, 0.065f, 0f), new Vector3(1.05f, 0.09f, 1.05f), graphite);
+            Part("Reactor Crown Cap", correction, blade, new Vector3(0f, 0.62f, 0f), new Vector3(0.15f, 0.24f, 0.15f), white);
 
             for (int i = 0; i < 3; i++)
             {
                 float angle = i * 120f;
                 float radians = angle * Mathf.Deg2Rad;
-                Vector3 position = new Vector3(Mathf.Sin(radians) * 0.82f, 0.42f, Mathf.Cos(radians) * 0.82f);
-                Part("Pedestal Energy Brace", correction, blade, position, new Vector3(0.055f, 0.22f, 0.075f), energy, new Vector3(0f, angle, 0f));
+                Vector3 position = new Vector3(Mathf.Sin(radians) * 0.76f, 0.34f, Mathf.Cos(radians) * 0.76f);
+                Part("Pedestal Energy Brace", correction, blade, position, new Vector3(0.05f, 0.18f, 0.065f), energy, new Vector3(0f, angle, 0f));
             }
             return true;
         }
