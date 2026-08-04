@@ -128,10 +128,10 @@ jobs:
               shutil.copytree(template_source, template_target)
 
           shell = re.sub(r'const BUILD_VERSION = "[^"]+";', f'const BUILD_VERSION = "{release}";', shell, count=1)
-          shell = re.sub(r'const loaderUrl = `\$\{buildUrl\}/[^`]+`;', f'const loaderUrl = `${{buildUrl}}/{loader.name}`;', shell, count=1)
-          shell = re.sub(r'dataUrl: `\$\{buildUrl\}/[^`]+`,', f'dataUrl: `${{buildUrl}}/{data.name}`,', shell, count=1)
-          shell = re.sub(r'frameworkUrl: `\$\{buildUrl\}/[^`]+`,', f'frameworkUrl: `${{buildUrl}}/{framework.name}`,', shell, count=1)
-          shell = re.sub(r'codeUrl: `\$\{buildUrl\}/[^`]+`,', f'codeUrl: `${{buildUrl}}/{wasm.name}`,', shell, count=1)
+          shell = re.sub(r'const loaderUrl = `\$\{buildUrl\}/[^`]+`;', f'const loaderUrl = buildUrl + "/{loader.name}";', shell, count=1)
+          shell = re.sub(r'dataUrl: `\$\{buildUrl\}/[^`]+`,', f'dataUrl: buildUrl + "/{data.name}",', shell, count=1)
+          shell = re.sub(r'frameworkUrl: `\$\{buildUrl\}/[^`]+`,', f'frameworkUrl: buildUrl + "/{framework.name}",', shell, count=1)
+          shell = re.sub(r'codeUrl: `\$\{buildUrl\}/[^`]+`,', f'codeUrl: buildUrl + "/{wasm.name}",', shell, count=1)
           shell = shell.replace("0.1.0-alpha.1", release)
           shell_path.write_text(shell, encoding="utf-8")
 
