@@ -1,0 +1,77 @@
+name: Wire Art Reboot Iteration 2
+
+on:
+  push:
+    branches:
+      - feature/crown-front-art-reboot-hero-frame
+    paths:
+      - .github/workflows/wire-art-reboot-iteration2.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/crown-front-art-reboot-hero-frame
+          fetch-depth: 0
+
+      - name: Wire iteration 2 into generated scene and captures
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          build = Path('unity/crown-front/Assets/Editor/CrownEngineCloudBuild.cs')
+          text = build.read_text(encoding='utf-8')
+          old = '            root.AddComponent<CrownArtRebootHeroFrame>();\n'
+          new = old + '            root.AddComponent<CrownArtRebootIteration2>();\n'
+          if old not in text or 'root.AddComponent<CrownArtRebootIteration2>();' in text:
+              raise SystemExit('Unexpected build scene wiring state')
+          build.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          capture = Path('unity/crown-front/Assets/Editor/CrownArtRebootReviewCapture.cs')
+          text = capture.read_text(encoding='utf-8')
+          old = '''            CrownArtRebootHeroFrame art = game.GetComponent<CrownArtRebootHeroFrame>();
+            if (art == null) throw new InvalidOperationException("Art Reboot presentation component is missing from the shipping root.");
+            art.ApplyNow();
+'''
+          new = old + '''            CrownArtRebootIteration2 artIteration2 = game.GetComponent<CrownArtRebootIteration2>();
+            if (artIteration2 == null) throw new InvalidOperationException("Art Reboot Iteration 2 component is missing from the review root.");
+            artIteration2.ApplyNow();
+'''
+          if old not in text or 'artIteration2.ApplyNow();' in text:
+              raise SystemExit('Unexpected capture initialization state')
+          text = text.replace(old, new, 1)
+
+          old = '            art.SendMessage("SkinUnits", SendMessageOptions.DontRequireReceiver);\n'
+          new = old + '            artIteration2.SendMessage("SkinUnits", SendMessageOptions.DontRequireReceiver);\n'
+          if old not in text:
+              raise SystemExit('Capture unit skin hook not found')
+          text = text.replace(old, new, 1)
+
+          old = '''            CrownAuthoredHeroCamera cameraRig = camera.GetComponent<CrownAuthoredHeroCamera>();
+            if (cameraRig != null) cameraRig.enabled = false;
+'''
+          new = old + '''            CrownIteration2Camera iteration2Camera = camera.GetComponent<CrownIteration2Camera>();
+            if (iteration2Camera != null) iteration2Camera.enabled = false;
+'''
+          if old not in text:
+              raise SystemExit('Capture camera hook not found')
+          text = text.replace(old, new, 1)
+          capture.write_text(text, encoding='utf-8')
+          PY
+          git rm .github/workflows/wire-art-reboot-iteration2.yml
+
+      - name: Commit iteration 2 wiring
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add unity/crown-front/Assets/Editor/CrownEngineCloudBuild.cs unity/crown-front/Assets/Editor/CrownArtRebootReviewCapture.cs
+          git diff --cached --check
+          git commit -m "feat: enable Art Reboot iteration 2 review build"
+          git push origin HEAD:feature/crown-front-art-reboot-hero-frame
