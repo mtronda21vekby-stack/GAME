@@ -1,0 +1,65 @@
+name: Fix Art Reboot Unity 6 compile compatibility
+
+on:
+  push:
+    branches:
+      - feature/crown-front-art-reboot-hero-frame
+    paths:
+      - .github/workflows/fix-art-reboot-compile.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/crown-front-art-reboot-hero-frame
+          fetch-depth: 0
+
+      - name: Patch Unity 6 FindObjectsByType overloads
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          files = [
+              Path('unity/crown-front/Assets/_Project/Runtime/CrownArtRebootHeroFrame.cs'),
+              Path('unity/crown-front/Assets/Editor/CrownArtRebootReviewCapture.cs'),
+          ]
+          replacements = {
+              'FindObjectsByType<CrownBuilding>(FindObjectsInactive.Include)':
+                  'FindObjectsByType<CrownBuilding>(FindObjectsInactive.Include, FindObjectsSortMode.None)',
+              'FindObjectsByType<CrownUnit>(FindObjectsInactive.Include)':
+                  'FindObjectsByType<CrownUnit>(FindObjectsInactive.Include, FindObjectsSortMode.None)',
+              'FindObjectsByType<CrownUnit>(FindObjectsInactive.Exclude)':
+                  'FindObjectsByType<CrownUnit>(FindObjectsInactive.Exclude, FindObjectsSortMode.None)',
+          }
+
+          changed = 0
+          for path in files:
+              text = path.read_text(encoding='utf-8')
+              original = text
+              for old, new in replacements.items():
+                  text = text.replace(old, new)
+              if text != original:
+                  path.write_text(text, encoding='utf-8')
+                  changed += 1
+
+          if changed != 2:
+              raise SystemExit(f'Expected to patch 2 files, patched {changed}')
+          PY
+          git rm .github/workflows/fix-art-reboot-compile.yml
+
+      - name: Commit compatibility fix
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add unity/crown-front/Assets/_Project/Runtime/CrownArtRebootHeroFrame.cs unity/crown-front/Assets/Editor/CrownArtRebootReviewCapture.cs
+          git diff --cached --check
+          git commit -m "fix: use Unity 6 object search overloads"
+          git push origin HEAD:feature/crown-front-art-reboot-hero-frame
