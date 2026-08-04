@@ -171,7 +171,9 @@ namespace CrownFront.Cloud
         private void GradeCore(CrownBuilding building)
         {
             bool blue = building.Team == CrownTeam.Blue;
+            Material trim = blue ? _blueTrim : _redTrim;
             Material energy = blue ? _blueEnergy : _redEnergy;
+            Color lightColor = blue ? new Color(0.02f, 0.55f, 1f) : new Color(1f, 0.13f, 0.02f);
 
             Transform qCore = FindDeep(building.transform, "QUATERNIUS ART // CORE");
             if (qCore != null)
@@ -179,60 +181,55 @@ namespace CrownFront.Cloud
                 Transform baseModel = FindDeep(qCore, "Embedded Reactor Base");
                 if (baseModel != null)
                 {
-                    baseModel.localScale = new Vector3(0.70f, 0.58f, 0.70f);
-                    ApplyToRenderers(baseModel, _graphite);
+                    baseModel.localScale = new Vector3(0.66f, 0.54f, 0.66f);
+                    ApplyToRenderers(baseModel, _steel);
                 }
                 SetActiveNamed(qCore, "Reactor Containment Dome", false);
                 SetActiveNamed(qCore, "Reactor Stabilizers", false);
                 Transform lens = FindDeep(qCore, "Living Crown Lens");
                 if (lens != null)
                 {
-                    lens.localScale = Vector3.one * 0.18f;
-                    lens.localPosition = new Vector3(0f, 1.00f, 0f);
+                    lens.localScale = Vector3.one * 0.16f;
+                    lens.localPosition = new Vector3(0f, 0.98f, 0f);
                     ApplyToRenderers(lens, energy);
                 }
             }
 
             Transform corePolish = FindDeep(building.transform, "HYBRID POLISH // CORE");
-            if (corePolish == null) return;
-
-            Transform outer = FindDeep(corePolish, "Outer Magnetic Ring");
-            if (outer != null)
+            if (corePolish != null)
             {
-                outer.localScale = Vector3.one * 0.78f;
-                outer.localPosition = new Vector3(0f, 1.00f, 0f);
-                ApplyToRenderers(outer, _steel);
-            }
-            SetActiveNamed(corePolish, "Inner Magnetic Ring", false);
-
-            Transform focused = FindDeep(corePolish, "Focused Reactor Core");
-            if (focused != null)
-            {
-                focused.localScale = new Vector3(0.22f, 0.68f, 0.22f);
-                focused.localPosition = new Vector3(0f, 1.00f, 0f);
-                ApplyToRenderers(focused, _whiteEnergy);
-            }
-
-            Transform[] parts = corePolish.GetComponentsInChildren<Transform>(true);
-            for (int i = 0; i < parts.Length; i++)
-            {
-                Transform current = parts[i];
-                Vector3 radial = new Vector3(current.localPosition.x, 0f, current.localPosition.z);
-                if (radial.sqrMagnitude < 0.001f) radial = Vector3.forward;
-                radial.Normalize();
-                if (string.Equals(current.name, "Reactor Armor Fin", StringComparison.Ordinal))
+                Transform outer = FindDeep(corePolish, "Outer Magnetic Ring");
+                if (outer != null)
                 {
-                    current.localPosition = radial * 1.16f + Vector3.up * 0.52f;
-                    current.localScale = new Vector3(0.30f, 0.52f, 0.36f);
-                    ApplyToRenderers(current, _graphite);
+                    outer.localScale = Vector3.one * 0.68f;
+                    outer.localPosition = new Vector3(0f, 0.98f, 0f);
+                    ApplyToRenderers(outer, _steel);
                 }
-                else if (string.Equals(current.name, "Reactor Fin Energy", StringComparison.Ordinal))
+                SetActiveNamed(corePolish, "Inner Magnetic Ring", false);
+                SetActiveNamed(corePolish, "Reactor Armor Fin", false);
+                SetActiveNamed(corePolish, "Reactor Fin Energy", false);
+
+                Transform focused = FindDeep(corePolish, "Focused Reactor Core");
+                if (focused != null)
                 {
-                    current.localPosition = radial * 1.16f + Vector3.up * 0.66f;
-                    current.localScale = new Vector3(0.07f, 0.26f, 0.09f);
-                    ApplyToRenderers(current, energy);
+                    focused.localScale = new Vector3(0.20f, 0.62f, 0.20f);
+                    focused.localPosition = new Vector3(0f, 0.98f, 0f);
+                    ApplyToRenderers(focused, _whiteEnergy);
                 }
             }
+
+            if (FindDeep(building.transform, "FINAL GRADE // CORE") != null) return;
+            Transform finalCore = Group("FINAL GRADE // CORE", building.transform);
+            Part("Embedded Core Socket", finalCore, _plate, new Vector3(0f, 0.10f, 0f), new Vector3(1.34f, 0.13f, 1.34f), _graphite);
+            for (int i = 0; i < 3; i++)
+            {
+                float angle = i * 120f;
+                float radians = angle * Mathf.Deg2Rad;
+                Vector3 position = new Vector3(Mathf.Sin(radians) * 0.94f, 0.48f, Mathf.Cos(radians) * 0.94f);
+                Part("Core Stabilizer", finalCore, _blade, position, new Vector3(0.24f, 0.52f, 0.28f), trim, new Vector3(0f, angle, 0f));
+                Part("Core Stabilizer Energy", finalCore, _blade, position + Vector3.up * 0.08f, new Vector3(0.055f, 0.24f, 0.07f), energy, new Vector3(0f, angle, 0f));
+            }
+            CreateLocalLight(finalCore, "Core Local Light", new Vector3(0f, 1.00f, 0f), 1.8f, 3.8f, lightColor);
         }
 
         private void GradeTower(CrownBuilding building)
@@ -254,7 +251,7 @@ namespace CrownFront.Cloud
                 Transform head = FindDeep(qTower, "QuadShell Weapon Head");
                 if (head != null)
                 {
-                    head.localScale = Vector3.one * 0.58f;
+                    head.localScale = Vector3.one * 0.54f;
                     ApplyToRenderers(head, trim);
                 }
                 ApplyToNamedParts(qTower, "Left Tower Rail", _steel);
@@ -298,7 +295,7 @@ namespace CrownFront.Cloud
         private void GradeUnit(CrownUnit unit)
         {
             bool blue = unit.Team == CrownTeam.Blue;
-            Color tint = blue ? new Color(0.17f, 0.28f, 0.43f) : new Color(0.43f, 0.18f, 0.12f);
+            Color tint = blue ? new Color(0.15f, 0.24f, 0.36f) : new Color(0.36f, 0.15f, 0.10f);
             Material trim = blue ? _blueTrim : _redTrim;
             Material energy = blue ? _blueEnergy : _redEnergy;
 
@@ -313,18 +310,18 @@ namespace CrownFront.Cloud
             {
                 if (unit.Kind == CrownUnitKind.Tank)
                 {
-                    body.localScale = new Vector3(0.72f, 0.48f, 0.72f);
-                    body.localPosition = new Vector3(0f, 0.50f, 0f);
+                    body.localScale = new Vector3(0.54f, 0.34f, 0.54f);
+                    body.localPosition = new Vector3(0f, 0.62f, 0f);
                 }
                 else if (unit.Kind == CrownUnitKind.Raider)
                 {
-                    body.localScale = Vector3.one * 0.36f;
-                    body.localPosition = new Vector3(0f, 0.72f, 0f);
+                    body.localScale = Vector3.one * 0.27f;
+                    body.localPosition = new Vector3(0f, 0.82f, 0f);
                 }
                 else
                 {
-                    body.localScale = new Vector3(0.52f, 0.40f, 0.52f);
-                    body.localPosition = new Vector3(0f, 0.68f, 0f);
+                    body.localScale = new Vector3(0.34f, 0.26f, 0.34f);
+                    body.localPosition = new Vector3(0f, 0.82f, 0f);
                 }
             }
 
@@ -335,7 +332,7 @@ namespace CrownFront.Cloud
                 Transform vertical = FindDeep(hybrid, "Unit Vertical Signature");
                 if (vertical != null)
                 {
-                    vertical.localScale = new Vector3(0.07f, 0.24f, 0.06f);
+                    vertical.localScale = new Vector3(0.06f, 0.20f, 0.05f);
                     ApplyToRenderers(vertical, energy);
                 }
             }
@@ -344,30 +341,30 @@ namespace CrownFront.Cloud
             Transform finalUnit = Group("FINAL GRADE // UNIT", unit.transform);
             if (unit.Kind == CrownUnitKind.Tank)
             {
-                Part("Heavy Armored Chassis", finalUnit, _plate, new Vector3(0f, 0.54f, 0f), new Vector3(0.90f, 0.54f, 0.82f), _graphite);
-                Part("Heavy Faction Face", finalUnit, _blade, new Vector3(0f, 0.68f, 0.46f), new Vector3(0.22f, 0.18f, 0.12f), energy);
+                Part("Heavy Armored Chassis", finalUnit, _plate, new Vector3(0f, 0.62f, 0f), new Vector3(1.00f, 0.66f, 0.90f), _graphite);
+                Part("Heavy Faction Face", finalUnit, _blade, new Vector3(0f, 0.78f, 0.50f), new Vector3(0.24f, 0.20f, 0.12f), energy);
             }
             else if (unit.Kind == CrownUnitKind.Raider)
             {
-                Part("Raider Blade Chassis", finalUnit, _blade, new Vector3(0f, 0.68f, 0f), new Vector3(0.38f, 0.78f, 0.30f), _graphite);
-                Part("Raider Faction Face", finalUnit, _blade, new Vector3(0f, 0.82f, 0.28f), new Vector3(0.13f, 0.22f, 0.08f), energy);
+                Part("Raider Blade Chassis", finalUnit, _blade, new Vector3(0f, 0.72f, 0f), new Vector3(0.42f, 0.90f, 0.32f), _graphite);
+                Part("Raider Faction Face", finalUnit, _blade, new Vector3(0f, 0.92f, 0.30f), new Vector3(0.14f, 0.24f, 0.08f), energy);
             }
             else
             {
-                Part("Assault Tapered Chassis", finalUnit, _plate, new Vector3(0f, 0.66f, 0f), new Vector3(0.54f, 0.88f, 0.46f), _graphite);
-                Part("Assault Shoulder Trim", finalUnit, _blade, new Vector3(0f, 0.84f, 0.30f), new Vector3(0.34f, 0.18f, 0.10f), trim);
-                Part("Assault Faction Face", finalUnit, _blade, new Vector3(0f, 0.92f, 0.40f), new Vector3(0.15f, 0.20f, 0.08f), energy);
+                Part("Assault Tapered Chassis", finalUnit, _plate, new Vector3(0f, 0.72f, 0f), new Vector3(0.64f, 1.08f, 0.52f), _graphite);
+                Part("Assault Shoulder Trim", finalUnit, _blade, new Vector3(0f, 0.94f, 0.34f), new Vector3(0.38f, 0.20f, 0.10f), trim);
+                Part("Assault Faction Face", finalUnit, _blade, new Vector3(0f, 1.04f, 0.44f), new Vector3(0.16f, 0.22f, 0.08f), energy);
             }
-            Part("Dark Contact Plate", finalUnit, _plate, new Vector3(0f, 0.035f, 0f), unit.Kind == CrownUnitKind.Tank ? new Vector3(0.72f, 0.05f, 0.78f) : new Vector3(0.46f, 0.04f, 0.54f), _graphite);
+            Part("Dark Contact Plate", finalUnit, _plate, new Vector3(0f, 0.035f, 0f), unit.Kind == CrownUnitKind.Tank ? new Vector3(0.76f, 0.05f, 0.82f) : new Vector3(0.48f, 0.04f, 0.56f), _graphite);
         }
 
         private void GradeLighting()
         {
             RenderSettings.fogColor = new Color(0.011f, 0.020f, 0.036f);
             RenderSettings.fogDensity = 0.0017f;
-            RenderSettings.ambientSkyColor = new Color(0.25f, 0.32f, 0.42f);
-            RenderSettings.ambientEquatorColor = new Color(0.085f, 0.12f, 0.18f);
-            RenderSettings.ambientGroundColor = new Color(0.018f, 0.028f, 0.048f);
+            RenderSettings.ambientSkyColor = new Color(0.27f, 0.34f, 0.44f);
+            RenderSettings.ambientEquatorColor = new Color(0.095f, 0.13f, 0.19f);
+            RenderSettings.ambientGroundColor = new Color(0.020f, 0.030f, 0.050f);
 
             Light[] lights = FindObjectsByType<Light>(FindObjectsInactive.Exclude);
             for (int i = 0; i < lights.Length; i++)
@@ -375,12 +372,12 @@ namespace CrownFront.Cloud
                 Light light = lights[i];
                 if (light.type == LightType.Directional)
                 {
-                    light.intensity = 1.22f;
-                    light.color = new Color(0.78f, 0.87f, 1f);
+                    light.intensity = 1.28f;
+                    light.color = new Color(0.80f, 0.88f, 1f);
                 }
                 else if (string.Equals(light.name, "Vanguard Rim", StringComparison.Ordinal)) light.intensity = 3.4f;
                 else if (string.Equals(light.name, "Hostile Rim", StringComparison.Ordinal)) light.intensity = 3.6f;
-                else if (string.Equals(light.name, "Crown Key", StringComparison.Ordinal)) light.intensity = 3.2f;
+                else if (string.Equals(light.name, "Crown Key", StringComparison.Ordinal)) light.intensity = 3.3f;
             }
         }
 
@@ -396,6 +393,25 @@ namespace CrownFront.Cloud
             CrownFinalGradeCamera rig = camera.GetComponent<CrownFinalGradeCamera>();
             if (rig == null) rig = camera.gameObject.AddComponent<CrownFinalGradeCamera>();
             rig.Configure(new Vector3(0f, 25.8f, -36.2f), new Vector3(0f, 2.50f, 2.0f));
+#if UNITY_EDITOR
+            if (camera.GetComponent<CrownCoreEvidenceCameraOverride>() == null)
+            {
+                camera.gameObject.AddComponent<CrownCoreEvidenceCameraOverride>();
+            }
+#endif
+        }
+
+        private static void CreateLocalLight(Transform parent, string name, Vector3 position, float intensity, float range, Color color)
+        {
+            GameObject lightObject = new GameObject(name);
+            lightObject.transform.SetParent(parent, false);
+            lightObject.transform.localPosition = position;
+            Light light = lightObject.AddComponent<Light>();
+            light.type = LightType.Point;
+            light.intensity = intensity;
+            light.range = range;
+            light.color = color;
+            light.shadows = LightShadows.None;
         }
 
         private static void SetActiveNamed(Transform root, string name, bool active)
@@ -506,4 +522,24 @@ namespace CrownFront.Cloud
             transform.LookAt(_target + movement * 0.18f);
         }
     }
+
+#if UNITY_EDITOR
+    public sealed class CrownCoreEvidenceCameraOverride : MonoBehaviour
+    {
+        private Camera _camera;
+
+        private void OnPreCull()
+        {
+            if (_camera == null) _camera = GetComponent<Camera>();
+            if (_camera == null) return;
+
+            CrownFinalGradeCamera rig = GetComponent<CrownFinalGradeCamera>();
+            if (rig == null || rig.enabled) return;
+
+            _camera.transform.position = new Vector3(0f, 8.8f, -16.2f);
+            _camera.transform.LookAt(new Vector3(0f, 0.72f, -8.5f));
+            _camera.fieldOfView = 25f;
+        }
+    }
+#endif
 }
