@@ -1,0 +1,1 @@
+Trigger licensed GitHub Actions build for CROWN//FRONT 0.2.0-alpha.2 after Unity repository secrets were configured.
