@@ -36,6 +36,10 @@ namespace CrownFront.Editor
             if (assetArt == null) throw new InvalidOperationException("CC0 asset Art Reboot component is missing from the review root.");
             assetArt.ApplyNow();
 
+            CrownAssetArtDirectionPass direction = game.GetComponent<CrownAssetArtDirectionPass>();
+            if (direction == null) throw new InvalidOperationException("Asset Art Direction component is missing from the review root.");
+            direction.ApplyNow();
+
             Camera camera = Camera.main;
             if (camera == null) throw new InvalidOperationException("Art Reboot review camera is missing.");
 
@@ -49,6 +53,7 @@ namespace CrownFront.Editor
 
             AddClashUnits(game, spawn);
             assetArt.SendMessage("SkinUnits", SendMessageOptions.DontRequireReceiver);
+            direction.SendMessage("RepaintUnits", SendMessageOptions.DontRequireReceiver);
             PositionClashUnits();
             Texture2D firstClash = Render(camera, Width, Height);
             Write(directory, "hero_first_clash.png", firstClash);
@@ -69,7 +74,7 @@ namespace CrownFront.Editor
             UnityEngine.Object.DestroyImmediate(firstClash);
             UnityEngine.Object.DestroyImmediate(coreCloseup);
             AssetDatabase.Refresh();
-            Debug.Log($"CROWN//FRONT real asset Art Reboot review package captured at {directory}");
+            Debug.Log($"CROWN//FRONT controlled asset Art Direction review package captured at {directory}");
         }
 
         private static void AddClashUnits(CrownEngineGame game, MethodInfo spawn)
@@ -112,14 +117,12 @@ namespace CrownFront.Editor
             RenderTexture previous = RenderTexture.active;
             RenderTexture previousTarget = camera.targetTexture;
             float previousAspect = camera.aspect;
-
             camera.targetTexture = target;
             camera.aspect = width / (float)height;
             camera.Render();
             RenderTexture.active = target;
             image.ReadPixels(new Rect(0, 0, width, height), 0, 0);
             image.Apply(false, false);
-
             camera.targetTexture = previousTarget;
             camera.aspect = previousAspect;
             RenderTexture.active = previous;
