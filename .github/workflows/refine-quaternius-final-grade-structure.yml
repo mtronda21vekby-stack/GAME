@@ -1,0 +1,315 @@
+name: Refine Quaternius final-grade structure
+
+on:
+  push:
+    branches:
+      - feature/crown-front-art-reboot-hero-frame
+    paths:
+      - .github/workflows/refine-quaternius-final-grade-structure.yml
+
+permissions:
+  contents: write
+
+jobs:
+  refine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/crown-front-art-reboot-hero-frame
+          fetch-depth: 0
+
+      - name: Apply structural final-grade pass
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('unity/crown-front/Assets/_Project/Runtime/CrownQuaterniusFinalGrade.cs')
+          text = path.read_text(encoding='utf-8')
+
+          def exact(old: str, new: str, label: str) -> None:
+              global text
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one match, found {count}')
+              text = text.replace(old, new, 1)
+
+          def regex(pattern: str, replacement: str, label: str) -> None:
+              global text
+              text, count = re.subn(pattern, replacement, text, count=1, flags=re.S)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one regex match, found {count}')
+
+          exact(
+              '        private Material _brass;\n        private bool _applied;',
+              '        private Material _brass;\n        private Mesh _plate;\n        private Mesh _blade;\n        private bool _applied;',
+              'mesh fields')
+          exact(
+              '            CreateMaterials();\n            GradeKingFoundation();',
+              '            CreateMeshes();\n            CreateMaterials();\n            GradeKingFoundation();',
+              'mesh initialization')
+          exact(
+              '        private void CreateMaterials()\n',
+              '        private void CreateMeshes()\n        {\n            _plate = CrownAuthoredMeshFactory.CreateTaperedBox("FinalGrade_Plate", 0.72f, 0.80f, 0.86f);\n            _blade = CrownAuthoredMeshFactory.CreateBlade("FinalGrade_Blade");\n        }\n\n        private void CreateMaterials()\n',
+              'create meshes method')
+
+          exact('            ApplyToNamedParts(root, "Shield Rib", _blueTrim);', '            ApplyToNamedParts(root, "Shield Rib", _steel);', 'neutral shield route')
+          exact('            ApplyToNamedParts(root, "Blade Plate", _redTrim);', '            ApplyToNamedParts(root, "Blade Plate", _graphite);', 'neutral blade route')
+
+          exact(
+              '            if (root == null) return;\n\n            ApplyToNamedParts(root, "Central Sternum Hull", _graphite);',
+              '            if (root == null) return;\n\n            Transform weakDeck = FindDeep(root, "Anatomical Combat Deck");\n            if (weakDeck != null) weakDeck.gameObject.SetActive(false);\n\n            ApplyToNamedParts(root, "Central Sternum Hull", _graphite);',
+              'disable weak deck')
+          exact('            ApplyToNamedParts(root, "Left Shoulder Fortress", _blueTrim);', '            ApplyToNamedParts(root, "Left Shoulder Fortress", _steel);', 'neutral left shoulder')
+          exact('            ApplyToNamedParts(root, "Right Shoulder Fortress", _redTrim);', '            ApplyToNamedParts(root, "Right Shoulder Fortress", _steel);', 'neutral right shoulder')
+
+          buildings = '''        private void GradeBuildings()
+        {
+            CrownBuilding[] buildings = FindObjectsByType<CrownBuilding>(FindObjectsInactive.Include);
+            for (int i = 0; i < buildings.Length; i++)
+            {
+                CrownBuilding building = buildings[i];
+                if (building == null) continue;
+                bool blue = building.Team == CrownTeam.Blue;
+                Material trim = blue ? _blueTrim : _redTrim;
+                Material energy = blue ? _blueEnergy : _redEnergy;
+
+                if (building.IsCore)
+                {
+                    Transform qCore = FindDeep(building.transform, "QUATERNIUS ART // CORE");
+                    if (qCore != null)
+                    {
+                        Transform baseModel = FindDeep(qCore, "Embedded Reactor Base");
+                        if (baseModel != null)
+                        {
+                            baseModel.localScale = new Vector3(0.70f, 0.58f, 0.70f);
+                            ApplyToRenderers(baseModel, _graphite);
+                        }
+                        SetActiveNamed(qCore, "Reactor Containment Dome", false);
+                        SetActiveNamed(qCore, "Reactor Stabilizers", false);
+                        Transform lens = FindDeep(qCore, "Living Crown Lens");
+                        if (lens != null)
+                        {
+                            lens.localScale = Vector3.one * 0.18f;
+                            lens.localPosition = new Vector3(0f, 1.00f, 0f);
+                            ApplyToRenderers(lens, energy);
+                        }
+                    }
+
+                    Transform corePolish = FindDeep(building.transform, "HYBRID POLISH // CORE");
+                    if (corePolish != null)
+                    {
+                        Transform outer = FindDeep(corePolish, "Outer Magnetic Ring");
+                        if (outer != null)
+                        {
+                            outer.localScale = Vector3.one * 0.78f;
+                            outer.localPosition = new Vector3(0f, 1.00f, 0f);
+                            ApplyToRenderers(outer, _steel);
+                        }
+                        SetActiveNamed(corePolish, "Inner Magnetic Ring", false);
+                        Transform focused = FindDeep(corePolish, "Focused Reactor Core");
+                        if (focused != null)
+                        {
+                            focused.localScale = new Vector3(0.22f, 0.68f, 0.22f);
+                            focused.localPosition = new Vector3(0f, 1.00f, 0f);
+                        }
+
+                        Transform[] parts = corePolish.GetComponentsInChildren<Transform>(true);
+                        for (int partIndex = 0; partIndex < parts.Length; partIndex++)
+                        {
+                            Transform current = parts[partIndex];
+                            Vector3 radial = new Vector3(current.localPosition.x, 0f, current.localPosition.z);
+                            if (radial.sqrMagnitude < 0.001f) radial = Vector3.forward;
+                            radial.Normalize();
+                            if (string.Equals(current.name, "Reactor Armor Fin", StringComparison.Ordinal))
+                            {
+                                current.localPosition = radial * 1.16f + Vector3.up * 0.52f;
+                                current.localScale = new Vector3(0.30f, 0.52f, 0.36f);
+                                ApplyToRenderers(current, _graphite);
+                            }
+                            else if (string.Equals(current.name, "Reactor Fin Energy", StringComparison.Ordinal))
+                            {
+                                current.localPosition = radial * 1.16f + Vector3.up * 0.66f;
+                                current.localScale = new Vector3(0.07f, 0.26f, 0.09f);
+                                ApplyToRenderers(current, energy);
+                            }
+                        }
+                    }
+                    continue;
+                }
+
+                Transform qTower = FindDeep(building.transform, "QUATERNIUS ART // TOWER");
+                if (qTower != null)
+                {
+                    Transform socket = FindDeep(qTower, "Tower Armored Socket");
+                    if (socket != null)
+                    {
+                        socket.localScale = new Vector3(0.55f, 0.50f, 0.55f);
+                        ApplyToRenderers(socket, _graphite);
+                    }
+                    Transform head = FindDeep(qTower, "QuadShell Weapon Head");
+                    if (head != null)
+                    {
+                        head.localScale = Vector3.one * 0.58f;
+                        ApplyToRenderers(head, trim);
+                    }
+                    ApplyToNamedParts(qTower, "Left Tower Rail", _steel);
+                    ApplyToNamedParts(qTower, "Right Tower Rail", _steel);
+                    ApplyToNamedParts(qTower, "Tower Team Aperture", energy);
+                }
+
+                Transform towerPolish = FindDeep(building.transform, "HYBRID POLISH // TOWER");
+                if (towerPolish != null)
+                {
+                    SetActiveNamed(towerPolish, "Tower Armor Collar", false);
+                    SetActiveNamed(towerPolish, "Tower Floor Aperture", false);
+                    Transform spine = FindDeep(towerPolish, "Tower Energy Spine");
+                    if (spine != null)
+                    {
+                        spine.localScale = new Vector3(0.08f, 0.34f, 0.08f);
+                        ApplyToRenderers(spine, energy);
+                    }
+                }
+
+                if (FindDeep(building.transform, "FINAL GRADE // TOWER") == null)
+                {
+                    float forward = blue ? 1f : -1f;
+                    Transform finalTower = Group("FINAL GRADE // TOWER", building.transform);
+                    Part("Armored Deck Socket", finalTower, _plate, new Vector3(0f, 0.09f, 0f), new Vector3(1.28f, 0.12f, 1.38f), _graphite);
+                    Part("Faction Yaw Plate", finalTower, _plate, new Vector3(0f, 0.48f, 0f), new Vector3(0.88f, 0.16f, 0.86f), trim);
+                    Part("Left Rail Silhouette", finalTower, _blade, new Vector3(-0.27f, 0.78f, forward * 0.54f), new Vector3(0.12f, 0.13f, 0.82f), _steel, new Vector3(0f, blue ? 0f : 180f, 0f));
+                    Part("Right Rail Silhouette", finalTower, _blade, new Vector3(0.27f, 0.78f, forward * 0.54f), new Vector3(0.12f, 0.13f, 0.82f), _steel, new Vector3(0f, blue ? 0f : 180f, 0f));
+                    Part("Faction Aperture", finalTower, _blade, new Vector3(0f, 0.55f, forward * 0.52f), new Vector3(0.08f, 0.18f, 0.11f), energy, new Vector3(0f, blue ? 0f : 180f, 0f));
+                }
+            }
+        }
+
+        private void GradeUnits()'''
+          regex(r'        private void GradeBuildings\(\)\n        \{.*?\n        \}\n\n        private void GradeUnits\(\)', buildings, 'replace building grade')
+
+          units = '''        private void GradeUnits()
+        {
+            CrownUnit[] units = FindObjectsByType<CrownUnit>(FindObjectsInactive.Include);
+            for (int i = 0; i < units.Length; i++)
+            {
+                CrownUnit unit = units[i];
+                if (unit == null) continue;
+                bool blue = unit.Team == CrownTeam.Blue;
+                Color tint = blue ? new Color(0.17f, 0.28f, 0.43f) : new Color(0.43f, 0.18f, 0.12f);
+                Material trim = blue ? _blueTrim : _redTrim;
+                Material energy = blue ? _blueEnergy : _redEnergy;
+
+                Transform qRoot = FindDeep(unit.transform, "QUATERNIUS ART // UNIT");
+                if (qRoot == null) continue;
+                TintRenderers(qRoot, tint);
+                ApplyToNamedParts(qRoot, "Class Weapon", _steel);
+                ApplyToNamedParts(qRoot, "Faction Energy Signature", energy);
+
+                Transform body = FindDeep(qRoot, "Faction Combat Drone");
+                if (body != null)
+                {
+                    if (unit.Kind == CrownUnitKind.Tank) body.localScale = new Vector3(0.72f, 0.48f, 0.72f);
+                    else if (unit.Kind == CrownUnitKind.Raider) body.localScale = Vector3.one * 0.36f;
+                    else body.localScale = new Vector3(0.52f, 0.40f, 0.52f);
+                }
+
+                Transform hybrid = FindDeep(unit.transform, "HYBRID POLISH // UNIT");
+                if (hybrid != null)
+                {
+                    SetActiveNamed(hybrid, "Unit Ground Signature", false);
+                    Transform vertical = FindDeep(hybrid, "Unit Vertical Signature");
+                    if (vertical != null)
+                    {
+                        vertical.localScale = new Vector3(0.07f, 0.24f, 0.06f);
+                        ApplyToRenderers(vertical, energy);
+                    }
+                }
+
+                if (FindDeep(unit.transform, "FINAL GRADE // UNIT") != null) continue;
+                Transform finalUnit = Group("FINAL GRADE // UNIT", unit.transform);
+                if (unit.Kind == CrownUnitKind.Tank)
+                {
+                    Part("Heavy Armored Chassis", finalUnit, _plate, new Vector3(0f, 0.54f, 0f), new Vector3(0.90f, 0.54f, 0.82f), _graphite);
+                    Part("Heavy Faction Face", finalUnit, _blade, new Vector3(0f, 0.68f, 0.46f), new Vector3(0.22f, 0.18f, 0.12f), energy);
+                }
+                else if (unit.Kind == CrownUnitKind.Raider)
+                {
+                    Part("Raider Blade Chassis", finalUnit, _blade, new Vector3(0f, 0.68f, 0f), new Vector3(0.38f, 0.78f, 0.30f), _graphite);
+                    Part("Raider Faction Face", finalUnit, _blade, new Vector3(0f, 0.82f, 0.28f), new Vector3(0.13f, 0.22f, 0.08f), energy);
+                }
+                else
+                {
+                    Part("Assault Tapered Chassis", finalUnit, _plate, new Vector3(0f, 0.66f, 0f), new Vector3(0.54f, 0.88f, 0.46f), _graphite);
+                    Part("Assault Shoulder Trim", finalUnit, _blade, new Vector3(0f, 0.84f, 0.30f), new Vector3(0.34f, 0.18f, 0.10f), trim);
+                    Part("Assault Faction Face", finalUnit, _blade, new Vector3(0f, 0.92f, 0.40f), new Vector3(0.15f, 0.20f, 0.08f), energy);
+                }
+                Part("Dark Contact Plate", finalUnit, _plate, new Vector3(0f, 0.035f, 0f), unit.Kind == CrownUnitKind.Tank ? new Vector3(0.72f, 0.05f, 0.78f) : new Vector3(0.46f, 0.04f, 0.54f), _graphite);
+            }
+        }
+
+        private void GradeLighting()'''
+          regex(r'        private void GradeUnits\(\)\n        \{.*?\n        \}\n\n        private void GradeLighting\(\)', units, 'replace unit grade')
+
+          helpers = '''        private static void SetActiveNamed(Transform root, string name, bool active)
+        {
+            Transform[] transforms = root.GetComponentsInChildren<Transform>(true);
+            for (int i = 0; i < transforms.Length; i++)
+            {
+                if (string.Equals(transforms[i].name, name, StringComparison.Ordinal)) transforms[i].gameObject.SetActive(active);
+            }
+        }
+
+        private static Transform Group(string name, Transform parent)
+        {
+            GameObject group = new GameObject(name);
+            group.transform.SetParent(parent, false);
+            return group.transform;
+        }
+
+        private static GameObject Part(string name, Transform parent, Mesh mesh, Vector3 position, Vector3 scale, Material material, Vector3? euler = null)
+        {
+            GameObject part = new GameObject(name);
+            part.transform.SetParent(parent, false);
+            part.transform.localPosition = position;
+            part.transform.localScale = scale;
+            part.transform.localEulerAngles = euler ?? Vector3.zero;
+            MeshFilter filter = part.AddComponent<MeshFilter>();
+            filter.sharedMesh = mesh;
+            MeshRenderer renderer = part.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = material;
+            renderer.shadowCastingMode = ShadowCastingMode.On;
+            renderer.receiveShadows = true;
+            return part;
+        }
+
+'''
+          exact('        private static void ApplyToNamedParts(Transform root, string name, Material material)\n', helpers + '        private static void ApplyToNamedParts(Transform root, string name, Material material)\n', 'insert geometry helpers')
+
+          path.write_text(text, encoding='utf-8')
+          print('Final-grade structural pass applied.')
+          PY
+
+          git rm .github/workflows/refine-quaternius-final-grade-structure.yml
+
+      - name: Commit and push structural pass
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='feature/crown-front-art-reboot-hero-frame'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add unity/crown-front/Assets/_Project/Runtime/CrownQuaterniusFinalGrade.cs
+          git add -u .github/workflows
+          git diff --cached --check
+          git commit -m 'feat: replace circular silhouettes with armored forms'
+
+          for attempt in 1 2 3 4; do
+            git fetch origin "$branch"
+            git rebase "origin/$branch"
+            if git push origin "HEAD:$branch"; then exit 0; fi
+            sleep $((attempt * 2))
+          done
+          exit 1
