@@ -714,8 +714,8 @@ namespace CrownFront.Cloud
         {
             if (_building == null) return;
             float damage = Mathf.InverseLerp(3200f, 0f, _building.Health);
-            if (_lens != null) _lens.Rotate(Vector3.up, (18f + damage * 34f) * Time.deltaTime, Space.Self);
-            if (_stabilizers != null) _stabilizers.Rotate(Vector3.up, (-10f - damage * 22f) * Time.deltaTime, Space.Self);
+            if (_lens != null) _lens.Rotate(Vector3.up, (18f + damage * 34f) * Time.deltaTime, UnityEngine.Space.Self);
+            if (_stabilizers != null) _stabilizers.Rotate(Vector3.up, (-10f - damage * 22f) * Time.deltaTime, UnityEngine.Space.Self);
             transform.localScale = Vector3.one * (1f + Mathf.Sin(Time.time * (2.0f + damage * 2.5f)) * (0.010f + damage * 0.025f));
         }
     }
