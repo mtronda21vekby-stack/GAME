@@ -27,6 +27,7 @@ namespace CrownFront.Editor
             root.AddComponent<CrownAssetArtReboot>();
             root.AddComponent<CrownAssetArtDirectionPass>();
             root.AddComponent<CrownQuaterniusArtReboot>();
+            root.AddComponent<CrownQuaterniusHybridPolish>();
 
             EditorSceneManager.MarkSceneDirty(scene);
             if (!EditorSceneManager.SaveScene(scene, ScenePath))
@@ -82,7 +83,7 @@ namespace CrownFront.Editor
                 $"totalTime={summary.totalTime}{Environment.NewLine}" +
                 $"warnings={summary.totalWarnings}{Environment.NewLine}" +
                 $"errors={summary.totalErrors}{Environment.NewLine}" +
-                $"artRebootSlice=quaternius-hero-frame-review{Environment.NewLine}" +
+                $"artRebootSlice=quaternius-hybrid-polish-review{Environment.NewLine}" +
                 $"quaterniusGalleryCaptured={quaterniusGalleryCaptured}{Environment.NewLine}");
 
             if (summary.result != BuildResult.Succeeded)
@@ -92,7 +93,7 @@ namespace CrownFront.Editor
 
             CopyRequiredReviewFrames(outputPath);
             CopyOptionalQuaterniusGallery(outputPath, quaterniusGalleryCaptured);
-            Debug.Log($"CROWN//FRONT Quaternius hero-frame review build succeeded: {outputPath} ({summary.totalSize} bytes)");
+            Debug.Log($"CROWN//FRONT Quaternius hybrid-polish review build succeeded: {outputPath} ({summary.totalSize} bytes)");
         }
 
         private static void CopyRequiredReviewFrames(string outputPath)
@@ -133,8 +134,8 @@ namespace CrownFront.Editor
         private static void ConfigurePlayer()
         {
             PlayerSettings.companyName = "BlackCrown";
-            PlayerSettings.productName = "CROWN//FRONT — QUATERNIUS HERO FRAME";
-            PlayerSettings.bundleVersion = "0.4.0-quaternius-hero-frame-review";
+            PlayerSettings.productName = "CROWN//FRONT — QUATERNIUS HYBRID POLISH";
+            PlayerSettings.bundleVersion = "0.4.0-quaternius-hybrid-polish-review";
             PlayerSettings.defaultScreenWidth = 1080;
             PlayerSettings.defaultScreenHeight = 1920;
             PlayerSettings.runInBackground = false;
