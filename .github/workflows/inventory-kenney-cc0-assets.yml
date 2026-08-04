@@ -1,0 +1,90 @@
+name: Inventory Kenney CC0 assets
+
+on:
+  push:
+    branches:
+      - feature/crown-front-art-reboot-hero-frame
+    paths:
+      - .github/workflows/inventory-kenney-cc0-assets.yml
+
+permissions:
+  contents: write
+
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout review branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/crown-front-art-reboot-hero-frame
+          fetch-depth: 0
+
+      - name: Download official Kenney packs and create inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/kenney unity/crown-front/AssetResearch
+
+          curl -fL --retry 4 --retry-delay 2 \
+            'https://www.kenney.nl/media/pages/assets/space-kit/20874c75ac-1677698978/kenney_space-kit.zip' \
+            -o /tmp/kenney/space.zip
+          curl -fL --retry 4 --retry-delay 2 \
+            'https://kenney.nl/media/pages/assets/blaster-kit/261d80a716-1753959510/kenney_blaster-kit_2.1.zip' \
+            -o /tmp/kenney/blaster.zip
+          curl -fL --retry 4 --retry-delay 2 \
+            'https://kenney.nl/media/pages/assets/factory-kit/edaac9d4f6-1777639602/kenney_factory-kit_3.0.zip' \
+            -o /tmp/kenney/factory.zip
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile
+
+          archives = [
+              ('Space Kit', Path('/tmp/kenney/space.zip'), 'https://www.kenney.nl/assets/space-kit'),
+              ('Blaster Kit', Path('/tmp/kenney/blaster.zip'), 'https://kenney.nl/assets/blaster-kit'),
+              ('Factory Kit', Path('/tmp/kenney/factory.zip'), 'https://kenney.nl/assets/factory-kit'),
+          ]
+
+          lines = [
+              '# Kenney CC0 asset inventory',
+              '',
+              'Generated from official Kenney downloads for CROWN//FRONT Art Reboot review only.',
+              '',
+              'License policy: Kenney asset packs are CC0. Keep source URLs and license files with imported assets.',
+          ]
+
+          useful_terms = ('turret', 'gun', 'barrel', 'robot', 'character', 'astronaut', 'platform', 'wall', 'panel', 'pipe', 'machine', 'generator', 'antenna', 'satellite', 'tower', 'weapon', 'crate', 'tank', 'ship')
+          for title, archive, url in archives:
+              with zipfile.ZipFile(archive) as zf:
+                  names = sorted(zf.namelist())
+                  models = [n for n in names if n.lower().endswith(('.fbx', '.obj', '.glb', '.gltf'))]
+                  licenses = [n for n in names if 'license' in n.lower() or 'cc0' in n.lower()]
+                  useful = [n for n in models if any(term in n.lower() for term in useful_terms)]
+                  lines.extend([
+                      '', f'## {title}', '', f'- Source: {url}',
+                      f'- Archive bytes: {archive.stat().st_size}',
+                      f'- Model files: {len(models)}',
+                      f'- License-like files: {len(licenses)}', '',
+                      '### Candidate models', ''
+                  ])
+                  for name in useful[:180]:
+                      lines.append(f'- `{name}`')
+                  lines.extend(['', '### License files', ''])
+                  for name in licenses[:30]:
+                      lines.append(f'- `{name}`')
+
+          Path('unity/crown-front/AssetResearch/KENNEY_CC0_INVENTORY.md').write_text('\n'.join(lines) + '\n', encoding='utf-8')
+          PY
+
+          git rm .github/workflows/inventory-kenney-cc0-assets.yml
+
+      - name: Commit inventory
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add unity/crown-front/AssetResearch/KENNEY_CC0_INVENTORY.md
+          git diff --cached --check
+          git commit -m "docs: inventory official Kenney CC0 model packs"
+          git push origin HEAD:feature/crown-front-art-reboot-hero-frame
