@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using System;
 using CrownFront.Cloud;
 using UnityEditor;
 using UnityEngine;
@@ -95,6 +96,18 @@ namespace CrownFront.Editor
             {
                 CrownBuilding building = buildings[i];
                 if (building != null && building != reviewCore) building.gameObject.SetActive(false);
+            }
+
+            Transform[] transforms = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include);
+            for (int i = 0; i < transforms.Length; i++)
+            {
+                Transform current = transforms[i];
+                if (current == null) continue;
+                if (string.Equals(current.name, "Spinal Energy Channel", StringComparison.Ordinal) ||
+                    string.Equals(current.name, "Embedded Energy Seam", StringComparison.Ordinal))
+                {
+                    current.gameObject.SetActive(false);
+                }
             }
         }
     }
