@@ -39,37 +39,35 @@ export function Button(props: {
     letterSpacing: "-0.01em",
     transition: "transform 140ms ease, opacity 140ms ease, background 140ms ease",
     willChange: "transform, opacity",
-    opacity: props.disabled ? 0.55 : 1,
+    opacity: props.disabled ? 0.55 : 1
   };
 
   const styles: Record<Variant, React.CSSProperties> = {
     primary: {
       background: "linear-gradient(180deg, rgba(140,180,255,0.92), rgba(110,150,255,0.68))",
       color: "rgba(10,12,18,0.92)",
-      borderColor: "rgba(255,255,255,0.18)",
+      borderColor: "rgba(255,255,255,0.18)"
     },
     secondary: {
       background: "rgba(255,255,255,0.08)",
-      color: "var(--text)",
+      color: "var(--text)"
     },
     ghost: {
       background: "transparent",
-      color: "var(--text)",
-    },
+      color: "var(--text)"
+    }
   };
 
   return (
     <button
       type={props.type ?? "button"}
-      className={`bcBtn bcBtn--${v} bcBtn--${size} bc-focus bc-motion ${props.className ?? ""}`.trim()}
-      data-variant={v}
-      data-size={size}
+      className={`bc-focus bc-motion ${props.className ?? ""}`}
       aria-label={props.ariaLabel}
       disabled={props.disabled}
       onClick={props.disabled ? undefined : props.onClick}
       style={{
         ...base,
-        ...styles[v],
+        ...styles[v]
       }}
       onMouseDown={(e) => {
         if (props.disabled) return;
