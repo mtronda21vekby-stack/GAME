@@ -6,6 +6,7 @@ import "./app.css";
 import "./styles/site.css";
 import "./styles/premium-shell.css";
 import "./styles/visual-overhaul.css";
+import "./styles/experience-layer.css";
 import { App } from "./App";
 import { registerSW } from "./pwa/registerSW";
 import { ErrorBoundary } from "./ErrorBoundary";
