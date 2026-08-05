@@ -1,33 +1,22 @@
 import React from "react";
-import { Icons } from "@blackcrown/assets";
+import MatrixBackground from "./MatrixBackground";
 
 /**
- * Lightweight cinematic background for the BlackCrown shell.
- * The scene is CSS-driven so it remains responsive and inexpensive on mobile.
+ * Keeps the original BlackCrown Matrix identity while adding a lightweight
+ * premium lighting/depth pass around the existing canvas animation.
  */
 export function CrownAtmosphere() {
   return (
-    <div className="bcAtmosphere" aria-hidden="true">
-      <div className="bcAtmosphere__base" />
-      <div className="bcAtmosphere__cursor" />
+    <div className="bcMatrixLayer bcMatrixRebirth" aria-hidden="true">
+      <MatrixBackground className="bcMatrixRebirth__canvas" intensity={1.06} />
 
-      <div className="bcAtmosphere__beam bcAtmosphere__beam--one" />
-      <div className="bcAtmosphere__beam bcAtmosphere__beam--two" />
-      <div className="bcAtmosphere__grid" />
-
-      <div className="bcAtmosphere__orbit bcAtmosphere__orbit--one" />
-      <div className="bcAtmosphere__orbit bcAtmosphere__orbit--two" />
-      <div className="bcAtmosphere__orbit bcAtmosphere__orbit--three" />
-
-      <div className="bcAtmosphere__sigil">
-        <span className="bcAtmosphere__sigilHalo" />
-        <span className="bcAtmosphere__sigilRing" />
-        <img src={Icons.crown} width="96" height="96" alt="" />
-      </div>
-
-      <div className="bcAtmosphere__scan" />
-      <div className="bcAtmosphere__grain" />
-      <div className="bcAtmosphere__vignette" />
+      <div className="bcMatrixRebirth__depth" />
+      <div className="bcMatrixRebirth__cursor" />
+      <div className="bcMatrixRebirth__beam bcMatrixRebirth__beam--top" />
+      <div className="bcMatrixRebirth__beam bcMatrixRebirth__beam--bottom" />
+      <div className="bcMatrixRebirth__scan" />
+      <div className="bcMatrixRebirth__grain" />
+      <div className="bcMatrixRebirth__vignette" />
     </div>
   );
 }
