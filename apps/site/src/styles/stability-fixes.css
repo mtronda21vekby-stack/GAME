@@ -3,6 +3,7 @@
 /* Route transitions must not leave a stacking context that traps fixed dialogs. */
 .bcRouteView {
   z-index: auto !important;
+  animation-fill-mode: none !important;
 }
 
 .bcRouteView::after {
