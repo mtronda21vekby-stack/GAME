@@ -1,0 +1,50 @@
+/* Review-driven shell safety fixes. Loaded last by the site entrypoint. */
+
+/* Keep fixed navigation below shared Drawer (40), Modal (50) and ToastViewport (60). */
+.bcTop {
+  z-index: 30 !important;
+  left: max(14px, env(safe-area-inset-left, 0px)) !important;
+  right: max(14px, env(safe-area-inset-right, 0px)) !important;
+  width: auto !important;
+  max-width: 1240px !important;
+  margin-inline: auto !important;
+  transform: none !important;
+}
+
+.bcScrollProgress {
+  z-index: 35 !important;
+}
+
+.bcCursor {
+  z-index: 25 !important;
+}
+
+@media (max-width: 760px) {
+  .bcTop {
+    left: max(10px, env(safe-area-inset-left, 0px)) !important;
+    right: max(10px, env(safe-area-inset-right, 0px)) !important;
+    width: auto !important;
+  }
+
+  .bcMobileDock {
+    z-index: 30 !important;
+    left: max(10px, env(safe-area-inset-left, 0px)) !important;
+    right: max(10px, env(safe-area-inset-right, 0px)) !important;
+    width: auto !important;
+    max-width: 430px;
+    margin-inline: auto;
+    transform: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bcAtmosphere__sigil {
+    transform: translate3d(-50%, -50%, 0) !important;
+    transition: none !important;
+  }
+
+  .bcHeroCopy::before {
+    transform: none !important;
+    transition: none !important;
+  }
+}
