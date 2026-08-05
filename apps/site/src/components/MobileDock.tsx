@@ -1,5 +1,5 @@
 import React from "react";
-import { Icons } from "@blackcrown/assets";
+import { SiteIcons } from "./siteIcons";
 
 type DockItem = {
   href: string;
@@ -13,26 +13,26 @@ const items: DockItem[] = [
   {
     href: "/",
     label: "Главная",
-    icon: Icons.home,
+    icon: SiteIcons.home,
     active: (path) => path === "/",
   },
   {
     href: "/game/",
     label: "Играть",
-    icon: Icons.games,
+    icon: SiteIcons.games,
     active: () => false,
     emphasis: true,
   },
   {
     href: "/store",
     label: "Store",
-    icon: Icons.cart,
+    icon: SiteIcons.cart,
     active: (path) => path === "/store",
   },
   {
     href: "/account",
     label: "Профиль",
-    icon: Icons.user,
+    icon: SiteIcons.user,
     active: (path) => path === "/account",
   },
 ];
