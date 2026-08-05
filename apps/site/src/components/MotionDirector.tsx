@@ -8,7 +8,11 @@ const REVEAL_SELECTOR = [
   ".bcSection .glassStrong",
 ].join(",");
 
-const TILT_SELECTOR = ".bcHotCard, .bcHeroPanel";
+const TILT_SELECTOR = [
+  ".bcHotCard",
+  ".bcHeroPanel",
+  '.bcRouteView[data-route="/store"] [role="button"].glassStrong',
+].join(",");
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -19,6 +23,7 @@ function clamp(value: number, min: number, max: number) {
  * - reveal-on-scroll through IntersectionObserver
  * - subtle pointer tilt on fine pointers only
  * - a CSS-driven page progress indicator
+ * - a decorative desktop pointer aura
  *
  * The page remains fully usable when JavaScript, observers, or motion are unavailable.
  */
@@ -170,9 +175,16 @@ export function MotionDirector() {
   }, []);
 
   return (
-    <div className="bcScrollProgress" aria-hidden="true">
-      <span />
-    </div>
+    <>
+      <div className="bcScrollProgress" aria-hidden="true">
+        <span />
+      </div>
+
+      <div className="bcCursor" aria-hidden="true">
+        <span className="bcCursor__ring" />
+        <span className="bcCursor__dot" />
+      </div>
+    </>
   );
 }
 
