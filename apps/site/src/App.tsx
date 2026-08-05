@@ -1,5 +1,6 @@
 import React from "react";
-import MatrixBackground from "./components/MatrixBackground";
+import CrownAtmosphere from "./components/CrownAtmosphere";
+import MotionDirector from "./components/MotionDirector";
 import { Router } from "./routes/Router";
 
 function syncAppVh() {
@@ -72,9 +73,8 @@ export function App() {
 
   return (
     <div className="bcAppShell">
-      <div className="bcMatrixLayer" aria-hidden="true">
-        <MatrixBackground />
-      </div>
+      <CrownAtmosphere />
+      <MotionDirector />
 
       <div className="bcAppContent">
         <Router />
