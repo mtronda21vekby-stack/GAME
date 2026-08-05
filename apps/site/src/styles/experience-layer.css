@@ -1,0 +1,502 @@
+/* Global experience layer: route transitions, footer, mobile navigation and desktop cursor. */
+
+.bcRouteView {
+  position: relative;
+  z-index: 1;
+  min-height: var(--app-vh, 100vh);
+  animation: bcRouteArrival 680ms var(--bc-ease-out, cubic-bezier(0.16, 1, 0.3, 1)) both;
+}
+
+.bcRouteView::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  bottom: -1px;
+  width: min(1240px, calc(100% - 32px));
+  height: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.08) 20%,
+    rgba(var(--bc-gold-rgb, 216, 170, 86), 0.3) 50%,
+    rgba(255, 255, 255, 0.08) 80%,
+    transparent
+  );
+}
+
+@keyframes bcRouteArrival {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0) scale(0.995);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+
+/* ---------- desktop pointer aura ---------- */
+
+.bcCursor {
+  display: none;
+  position: fixed;
+  z-index: 500;
+  left: var(--bc-cx, 50vw);
+  top: var(--bc-cy, 35vh);
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+  transform: translate3d(-50%, -50%, 0);
+}
+
+.bcCursor__ring,
+.bcCursor__dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.bcCursor__ring {
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(var(--bc-gold-rgb, 216, 170, 86), 0.42);
+  background: radial-gradient(circle, rgba(var(--bc-gold-rgb, 216, 170, 86), 0.06), transparent 68%);
+  box-shadow:
+    0 0 28px rgba(var(--bc-gold-rgb, 216, 170, 86), 0.08),
+    inset 0 0 18px rgba(var(--bc-gold-rgb, 216, 170, 86), 0.035);
+  transition:
+    width 180ms var(--bc-ease-out, ease),
+    height 180ms var(--bc-ease-out, ease),
+    border-color 180ms ease,
+    background 180ms ease;
+}
+
+.bcCursor__dot {
+  width: 4px;
+  height: 4px;
+  background: var(--bc-gold-bright, #f1d49a);
+  box-shadow: 0 0 14px rgba(var(--bc-gold-rgb, 216, 170, 86), 0.9);
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .bcCursor {
+    display: block;
+  }
+
+  body:has(a:hover, button:hover, [role="button"]:hover) .bcCursor__ring {
+    width: 48px;
+    height: 48px;
+    border-color: rgba(var(--bc-gold-rgb, 216, 170, 86), 0.68);
+    background: radial-gradient(circle, rgba(var(--bc-gold-rgb, 216, 170, 86), 0.12), transparent 70%);
+  }
+}
+
+/* ---------- store presentation ---------- */
+
+.bcRouteView[data-route="/store"] [role="button"].glassStrong {
+  position: relative;
+  isolation: isolate;
+  border-radius: 26px !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  background:
+    radial-gradient(circle at var(--bc-glow-x, 82%) var(--bc-glow-y, 12%), rgba(var(--bc-gold-rgb, 216, 170, 86), 0.1), transparent 38%),
+    linear-gradient(150deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012)),
+    rgba(9, 9, 8, 0.86) !important;
+  box-shadow:
+    0 34px 100px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+  transform:
+    perspective(1100px)
+    rotateX(var(--bc-tilt-x, 0deg))
+    rotateY(var(--bc-tilt-y, 0deg));
+  transform-style: preserve-3d;
+  transition:
+    transform 260ms var(--bc-ease-out, ease),
+    border-color 220ms ease,
+    box-shadow 260ms var(--bc-ease-out, ease) !important;
+}
+
+.bcRouteView[data-route="/store"] [role="button"].glassStrong > div:first-child {
+  min-height: 190px;
+  transform: translateZ(18px);
+}
+
+.bcRouteView[data-route="/store"] [role="button"].glassStrong > div:last-child {
+  transform: translateZ(24px);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .bcRouteView[data-route="/store"] [role="button"].glassStrong:hover {
+    border-color: rgba(var(--bc-gold-rgb, 216, 170, 86), 0.28) !important;
+    box-shadow:
+      0 48px 130px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(var(--bc-gold-rgb, 216, 170, 86), 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
+  }
+}
+
+/* ---------- footer ---------- */
+
+.bcFooter {
+  position: relative;
+  z-index: 3;
+  padding: clamp(28px, 5vw, 72px) clamp(16px, 4.2vw, 54px) 28px;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(var(--bc-gold-rgb, 216, 170, 86), 0.07), transparent 30%),
+    linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.48) 24%, #010101 100%);
+}
+
+.bcFooter__frame {
+  width: min(1240px, 100%);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.45fr);
+  gap: clamp(36px, 7vw, 104px);
+  padding: clamp(28px, 4vw, 54px);
+  border: 1px solid rgba(255, 255, 255, 0.095);
+  border-radius: 32px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.042), rgba(255, 255, 255, 0.008) 58%),
+    rgba(7, 7, 6, 0.78);
+  box-shadow:
+    0 44px 140px rgba(0, 0, 0, 0.48),
+    inset 0 1px 0 rgba(255, 255, 255, 0.045);
+  backdrop-filter: blur(18px) saturate(1.06);
+  -webkit-backdrop-filter: blur(18px) saturate(1.06);
+  overflow: hidden;
+}
+
+.bcFooter__brand {
+  min-width: 0;
+}
+
+.bcFooter__mark {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 13px;
+  color: rgba(255, 255, 255, 0.96);
+  text-decoration: none;
+}
+
+.bcFooter__logo {
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(var(--bc-gold-rgb, 216, 170, 86), 0.24);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 35% 25%, rgba(var(--bc-gold-rgb, 216, 170, 86), 0.18), transparent 55%),
+    rgba(var(--bc-gold-rgb, 216, 170, 86), 0.055);
+  box-shadow:
+    0 16px 44px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.bcFooter__logo img {
+  filter: drop-shadow(0 0 15px rgba(var(--bc-gold-rgb, 216, 170, 86), 0.32));
+}
+
+.bcFooter__mark strong,
+.bcFooter__mark small {
+  display: block;
+}
+
+.bcFooter__mark strong {
+  font-size: 18px;
+  font-weight: 820;
+  letter-spacing: -0.04em;
+}
+
+.bcFooter__mark small {
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.38);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.bcFooter__brand p {
+  max-width: 43ch;
+  margin: 22px 0 0;
+  color: rgba(255, 255, 255, 0.54);
+  font-size: 13px;
+  line-height: 1.68;
+}
+
+.bcFooter__signal {
+  width: fit-content;
+  margin-top: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.025);
+  color: rgba(255, 255, 255, 0.42);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.bcFooter__signal > span:first-child {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #7be4a8;
+  box-shadow: 0 0 14px rgba(123, 228, 168, 0.72);
+  animation: bcFooterSignal 2.8s ease-in-out infinite;
+}
+
+.bcFooter__links {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(22px, 4vw, 50px);
+}
+
+.bcFooter__label {
+  margin-bottom: 16px;
+  color: rgba(var(--bc-gold-rgb, 216, 170, 86), 0.78);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.bcFooter__group nav {
+  display: grid;
+  gap: 5px;
+}
+
+.bcFooter__group a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  color: rgba(255, 255, 255, 0.56);
+  font-size: 12px;
+  font-weight: 620;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.055);
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    padding 220ms var(--bc-ease-out, ease);
+}
+
+.bcFooter__group a span:last-child {
+  color: rgba(255, 255, 255, 0.22);
+  transition: color 180ms ease, transform 220ms var(--bc-ease-out, ease);
+}
+
+.bcFooter__group a:hover {
+  padding-left: 5px;
+  color: var(--bc-gold-bright, #f1d49a);
+  border-color: rgba(var(--bc-gold-rgb, 216, 170, 86), 0.22);
+}
+
+.bcFooter__group a:hover span:last-child {
+  color: var(--bc-gold-bright, #f1d49a);
+  transform: translate(2px, -2px);
+}
+
+.bcFooter__bottom {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 25px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.28);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+}
+
+@keyframes bcFooterSignal {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.86);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+/* ---------- mobile dock ---------- */
+
+.bcMobileDock {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .bcRouteView:not([data-route="/admin"]) {
+    padding-bottom: 86px;
+  }
+
+  .bcMobileDock {
+    position: fixed;
+    z-index: 260;
+    left: 50%;
+    bottom: max(9px, env(safe-area-inset-bottom, 0px));
+    width: min(430px, calc(100% - 20px));
+    display: block;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+
+  .bcMobileDock__frame {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    padding: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 21px;
+    background: rgba(7, 7, 7, 0.84);
+    box-shadow:
+      0 24px 70px rgba(0, 0, 0, 0.58),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(20px) saturate(1.1);
+    -webkit-backdrop-filter: blur(20px) saturate(1.1);
+    pointer-events: auto;
+  }
+
+  .bcMobileDock__item {
+    min-width: 0;
+    min-height: 54px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 6px 4px;
+    border: 1px solid transparent;
+    border-radius: 15px;
+    color: rgba(255, 255, 255, 0.43);
+    font-size: 9px;
+    font-weight: 720;
+    text-decoration: none;
+    transition:
+      color 180ms ease,
+      border-color 180ms ease,
+      background 180ms ease,
+      transform 180ms var(--bc-ease-out, ease);
+  }
+
+  .bcMobileDock__icon {
+    width: 26px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+  }
+
+  .bcMobileDock__icon img {
+    opacity: 0.52;
+    transition: opacity 180ms ease, filter 180ms ease;
+  }
+
+  .bcMobileDock__item.is-active {
+    color: var(--bc-gold-bright, #f1d49a);
+    border-color: rgba(var(--bc-gold-rgb, 216, 170, 86), 0.2);
+    background: rgba(var(--bc-gold-rgb, 216, 170, 86), 0.07);
+  }
+
+  .bcMobileDock__item.is-active .bcMobileDock__icon img {
+    opacity: 1;
+    filter:
+      sepia(1)
+      saturate(0.8)
+      brightness(1.18)
+      drop-shadow(0 0 10px rgba(var(--bc-gold-rgb, 216, 170, 86), 0.44));
+  }
+
+  .bcMobileDock__item.is-emphasis {
+    color: #140e05;
+    border-color: rgba(255, 241, 205, 0.45);
+    background: linear-gradient(180deg, #f0d18f, #be8833);
+    box-shadow:
+      0 12px 30px rgba(var(--bc-gold-rgb, 216, 170, 86), 0.24),
+      inset 0 1px 0 rgba(255, 255, 255, 0.52);
+    transform: translateY(-8px);
+  }
+
+  .bcMobileDock__item.is-emphasis .bcMobileDock__icon img {
+    opacity: 0.88;
+    filter: brightness(0.16);
+  }
+
+  .bcFooter {
+    padding: 24px 12px 108px;
+  }
+
+  .bcFooter__frame {
+    grid-template-columns: 1fr;
+    gap: 34px;
+    padding: 26px 22px;
+    border-radius: 25px;
+  }
+
+  .bcFooter__links {
+    grid-template-columns: 1fr 1fr;
+    gap: 28px 24px;
+  }
+
+  .bcFooter__group:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .bcFooter__bottom {
+    align-items: flex-start;
+    flex-direction: column;
+    line-height: 1.6;
+  }
+
+  /* Keep the mobile scene cinematic but avoid continuously animating large layers. */
+  .bcAtmosphere__base,
+  .bcAtmosphere__beam,
+  .bcAtmosphere__grid,
+  .bcAtmosphere__orbit,
+  .bcAtmosphere__sigilHalo {
+    animation: none !important;
+  }
+
+  .bcRouteView[data-route="/store"] [role="button"].glassStrong {
+    transform: none !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .bcFooter__links {
+    grid-template-columns: 1fr;
+  }
+
+  .bcFooter__group:last-child {
+    grid-column: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bcRouteView {
+    animation: none;
+  }
+
+  .bcFooter__signal > span:first-child {
+    animation: none;
+  }
+}
