@@ -14,6 +14,8 @@ const TILT_SELECTOR = [
   '.bcRouteView[data-route="/store"] [role="button"].glassStrong',
 ].join(",");
 
+const BUTTON_SELECTOR = ".bcSiteRoot button.bc-focus.bc-motion";
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
@@ -22,6 +24,7 @@ function clamp(value: number, min: number, max: number) {
  * Progressive-enhancement motion layer.
  * - reveal-on-scroll through IntersectionObserver
  * - subtle pointer tilt on fine pointers only
+ * - site-local button presentation classes
  * - a CSS-driven page progress indicator
  * - a decorative desktop pointer aura
  *
@@ -36,6 +39,7 @@ export function MotionDirector() {
     root.classList.add("bcMotionReady");
 
     const registered = new WeakSet<Element>();
+    const registeredButtons = new WeakSet<HTMLButtonElement>();
     let revealObserver: IntersectionObserver | null = null;
 
     if (!reducedMotion.matches && "IntersectionObserver" in window) {
@@ -79,12 +83,44 @@ export function MotionDirector() {
       });
     };
 
-    registerRevealNodes(document);
+    const registerButtonNodes = (scope: ParentNode) => {
+      const buttons: HTMLButtonElement[] = [];
+
+      if (scope instanceof HTMLButtonElement && scope.matches(BUTTON_SELECTOR)) {
+        buttons.push(scope);
+      }
+
+      buttons.push(...Array.from(scope.querySelectorAll<HTMLButtonElement>(BUTTON_SELECTOR)));
+
+      for (const button of buttons) {
+        if (registeredButtons.has(button)) continue;
+        registeredButtons.add(button);
+
+        const background = button.style.background.toLowerCase();
+        const variant = background.includes("linear-gradient")
+          ? "primary"
+          : background.includes("transparent")
+            ? "ghost"
+            : "secondary";
+        const size = button.style.fontSize === "15.5px" ? "lg" : "md";
+
+        button.classList.add("bcBtn", `bcBtn--${variant}`, `bcBtn--${size}`);
+        button.dataset.variant = variant;
+        button.dataset.size = size;
+      }
+    };
+
+    const registerScope = (scope: ParentNode) => {
+      registerRevealNodes(scope);
+      registerButtonNodes(scope);
+    };
+
+    registerScope(document);
 
     const mutationObserver = new MutationObserver((records) => {
       for (const record of records) {
         for (const addedNode of Array.from(record.addedNodes)) {
-          if (addedNode instanceof HTMLElement) registerRevealNodes(addedNode);
+          if (addedNode instanceof HTMLElement) registerScope(addedNode);
         }
       }
     });
