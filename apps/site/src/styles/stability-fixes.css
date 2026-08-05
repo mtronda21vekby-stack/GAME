@@ -1,5 +1,28 @@
 /* Review-driven shell safety fixes. Loaded last by the site entrypoint. */
 
+/* Route transitions must not leave a stacking context that traps fixed dialogs. */
+.bcRouteView {
+  z-index: auto !important;
+}
+
+.bcRouteView::after {
+  z-index: auto !important;
+  pointer-events: none;
+}
+
+@keyframes bcRouteArrival {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0) scale(0.995);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
 /* Keep fixed navigation below shared Drawer (40), Modal (50) and ToastViewport (60). */
 .bcTop {
   z-index: 30 !important;
