@@ -15,6 +15,8 @@ const TILT_SELECTOR = [
 ].join(",");
 
 const BUTTON_SELECTOR = ".bcSiteRoot button.bc-focus.bc-motion";
+const BUTTON_VARIANT_CLASSES = ["bcBtn--primary", "bcBtn--secondary", "bcBtn--ghost"];
+const BUTTON_SIZE_CLASSES = ["bcBtn--md", "bcBtn--lg"];
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -39,7 +41,6 @@ export function MotionDirector() {
     root.classList.add("bcMotionReady");
 
     const registered = new WeakSet<Element>();
-    const registeredButtons = new WeakSet<HTMLButtonElement>();
     let revealObserver: IntersectionObserver | null = null;
 
     if (!reducedMotion.matches && "IntersectionObserver" in window) {
@@ -83,6 +84,21 @@ export function MotionDirector() {
       });
     };
 
+    const classifyButton = (button: HTMLButtonElement) => {
+      const background = button.style.background.toLowerCase();
+      const variant = background.includes("linear-gradient")
+        ? "primary"
+        : background.includes("transparent")
+          ? "ghost"
+          : "secondary";
+      const size = button.style.fontSize === "15.5px" ? "lg" : "md";
+
+      button.classList.remove(...BUTTON_VARIANT_CLASSES, ...BUTTON_SIZE_CLASSES);
+      button.classList.add("bcBtn", `bcBtn--${variant}`, `bcBtn--${size}`);
+      button.dataset.variant = variant;
+      button.dataset.size = size;
+    };
+
     const registerButtonNodes = (scope: ParentNode) => {
       const buttons: HTMLButtonElement[] = [];
 
@@ -92,22 +108,7 @@ export function MotionDirector() {
 
       buttons.push(...Array.from(scope.querySelectorAll<HTMLButtonElement>(BUTTON_SELECTOR)));
 
-      for (const button of buttons) {
-        if (registeredButtons.has(button)) continue;
-        registeredButtons.add(button);
-
-        const background = button.style.background.toLowerCase();
-        const variant = background.includes("linear-gradient")
-          ? "primary"
-          : background.includes("transparent")
-            ? "ghost"
-            : "secondary";
-        const size = button.style.fontSize === "15.5px" ? "lg" : "md";
-
-        button.classList.add("bcBtn", `bcBtn--${variant}`, `bcBtn--${size}`);
-        button.dataset.variant = variant;
-        button.dataset.size = size;
-      }
+      for (const button of buttons) classifyButton(button);
     };
 
     const registerScope = (scope: ParentNode) => {
@@ -119,13 +120,27 @@ export function MotionDirector() {
 
     const mutationObserver = new MutationObserver((records) => {
       for (const record of records) {
+        if (
+          record.type === "attributes" &&
+          record.target instanceof HTMLButtonElement &&
+          record.target.matches(BUTTON_SELECTOR)
+        ) {
+          classifyButton(record.target);
+          continue;
+        }
+
         for (const addedNode of Array.from(record.addedNodes)) {
           if (addedNode instanceof HTMLElement) registerScope(addedNode);
         }
       }
     });
 
-    mutationObserver.observe(document.body, { childList: true, subtree: true });
+    mutationObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["style"],
+    });
 
     let activeTilt: HTMLElement | null = null;
 
