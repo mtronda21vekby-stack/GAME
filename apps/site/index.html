@@ -2,29 +2,31 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <!-- viewport-fit=cover обязателен для edge-to-edge на iOS -->
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
-    <!-- Safari/ iOS: держим тёмную схему, без навязчивой раскраски UI -->
     <meta name="color-scheme" content="dark" />
+    <meta name="description" content="BlackCrown — игровая платформа с EvoFish, CROWN//FRONT, лобби, магазином и AI-Coach для игроков." />
+    <meta name="application-name" content="BlackCrown" />
+    <meta name="format-detection" content="telephone=no" />
 
-    <!-- iOS PWA / fullscreen -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="BlackCrown — Interactive Worlds" />
+    <meta property="og:description" content="Игры и сервисы BlackCrown в одной премиальной веб-платформе." />
+    <meta property="og:site_name" content="BlackCrown" />
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="BlackCrown — Interactive Worlds" />
+    <meta name="twitter:description" content="Игры и сервисы BlackCrown в одной премиальной веб-платформе." />
+
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="BlackCrown" />
 
-    <!-- ВАЖНО:
-         theme-color не ставим, чтобы Safari не рисовал “поля”.
-         (Если когда-то понадобится — ставим через manifest для PWA отдельно.)
-    -->
-
-    <!-- Icons -->
     <link rel="icon" href="/Icons/favicon.png" type="image/png" sizes="64x64" />
     <link rel="apple-touch-icon" sizes="180x180" href="/pwa/icons/apple-touch-icon.png" />
-
-    <!-- PWA -->
     <link rel="manifest" href="/manifest.webmanifest" />
 
-    <title>BlackCrown</title>
+    <title>BlackCrown — Interactive Worlds</title>
   </head>
   <body>
     <div id="root"></div>
