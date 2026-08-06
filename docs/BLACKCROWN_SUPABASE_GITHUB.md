@@ -19,11 +19,13 @@ Database schema changes are stored in:
 supabase/migrations/
 ```
 
-The current production schema starts with:
+The current production schema starts with the migration version already recorded by the dedicated BlackCrown project:
 
 ```text
-supabase/migrations/20260806190500_create_blackcrown_world_status.sql
+supabase/migrations/20260806205714_create_blackcrown_world_status.sql
 ```
+
+The local filename intentionally matches `supabase_migrations.schema_migrations` in the remote project, preventing the initial schema from being replayed as a second migration.
 
 Do not edit production tables manually unless the same change is also represented by a versioned migration.
 
