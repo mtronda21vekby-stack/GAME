@@ -2,32 +2,229 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <!-- viewport-fit=cover обязателен для edge-to-edge на iOS -->
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-
-    <!-- Safari/ iOS: держим тёмную схему, без навязчивой раскраски UI -->
     <meta name="color-scheme" content="dark" />
-
-    <!-- iOS PWA / fullscreen -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
-    <!-- ВАЖНО:
-         theme-color не ставим, чтобы Safari не рисовал “поля”.
-         (Если когда-то понадобится — ставим через manifest для PWA отдельно.)
-    -->
-
-    <!-- Icons -->
     <link rel="icon" href="/Icons/favicon.png" type="image/png" sizes="64x64" />
     <link rel="apple-touch-icon" sizes="180x180" href="/pwa/icons/apple-touch-icon.png" />
-
-    <!-- PWA -->
     <link rel="manifest" href="/manifest.webmanifest" />
 
     <title>BlackCrown</title>
+
+    <style>
+      html,
+      body {
+        min-height: 100%;
+        margin: 0;
+        background: #000;
+        color: #effbff;
+      }
+
+      #bc-boot {
+        min-height: 100svh;
+        display: grid;
+        place-items: center;
+        box-sizing: border-box;
+        padding: max(24px, env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px))
+          max(24px, env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px));
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+        text-align: center;
+      }
+
+      #bc-boot-card {
+        width: min(460px, 100%);
+        padding: 28px;
+        box-sizing: border-box;
+        border: 1px solid rgba(91, 226, 255, 0.22);
+        border-radius: 22px;
+        background: linear-gradient(145deg, rgba(9, 24, 34, 0.86), rgba(1, 4, 8, 0.96));
+        box-shadow: 0 30px 100px rgba(0, 0, 0, 0.72), 0 0 42px rgba(0, 211, 255, 0.08);
+      }
+
+      #bc-boot-mark {
+        width: 54px;
+        height: 54px;
+        display: grid;
+        place-items: center;
+        margin: 0 auto 18px;
+        border: 1px solid rgba(0, 217, 255, 0.42);
+        border-radius: 17px;
+        color: #a8f8ff;
+        font-size: 24px;
+        box-shadow: inset 0 0 22px rgba(0, 217, 255, 0.08), 0 0 24px rgba(0, 217, 255, 0.1);
+      }
+
+      #bc-boot-title {
+        font-size: clamp(28px, 8vw, 42px);
+        font-weight: 850;
+        letter-spacing: -0.06em;
+      }
+
+      #bc-boot-status {
+        margin-top: 10px;
+        color: rgba(213, 238, 250, 0.62);
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      #bc-boot-action {
+        display: none;
+        min-height: 46px;
+        margin: 20px auto 0;
+        padding: 0 18px;
+        border: 1px solid rgba(0, 217, 255, 0.5);
+        border-radius: 14px;
+        background: linear-gradient(135deg, rgba(0, 43, 57, 0.98), rgba(0, 105, 129, 0.92));
+        color: #effeff;
+        font: inherit;
+        font-weight: 800;
+      }
+
+      #bc-boot[data-failed="true"] #bc-boot-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      #bc-boot-pulse {
+        width: 8px;
+        height: 8px;
+        margin: 18px auto 0;
+        border-radius: 50%;
+        background: #66ffc7;
+        box-shadow: 0 0 18px rgba(102, 255, 199, 0.82);
+        animation: bc-boot-pulse 1.4s ease-in-out infinite alternate;
+      }
+
+      #bc-boot[data-failed="true"] #bc-boot-pulse {
+        background: #ff8c66;
+        box-shadow: 0 0 18px rgba(255, 116, 74, 0.72);
+        animation: none;
+      }
+
+      @keyframes bc-boot-pulse {
+        from {
+          opacity: 0.42;
+          transform: scale(0.76);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1.08);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        #bc-boot-pulse {
+          animation: none;
+        }
+      }
+    </style>
+
+    <script>
+      (() => {
+        const RECOVERY_KEY = "bc.boot-recovery.v3";
+        let recoveryStarted = false;
+
+        const getBoot = () => document.getElementById("bc-boot");
+        const getStatus = () => document.getElementById("bc-boot-status");
+
+        const showFailure = () => {
+          const boot = getBoot();
+          const status = getStatus();
+          if (boot) boot.dataset.failed = "true";
+          if (status) {
+            status.textContent =
+              "Интерфейс не загрузился. Нажми кнопку ниже — сайт очистит старый кэш и перезапустится.";
+          }
+        };
+
+        const clearAndReload = async () => {
+          if (recoveryStarted) return;
+          recoveryStarted = true;
+
+          let alreadyRecovered = false;
+          try {
+            alreadyRecovered = sessionStorage.getItem(RECOVERY_KEY) === "1";
+          } catch {
+            // Private browsing can restrict session storage.
+          }
+
+          if (alreadyRecovered) {
+            showFailure();
+            return;
+          }
+
+          try {
+            sessionStorage.setItem(RECOVERY_KEY, "1");
+          } catch {
+            // Continue with cache cleanup even without session storage.
+          }
+
+          const status = getStatus();
+          if (status) status.textContent = "Очищаем устаревший кэш BlackCrown…";
+
+          try {
+            if ("serviceWorker" in navigator) {
+              const registrations = await navigator.serviceWorker.getRegistrations();
+              await Promise.all(registrations.map((registration) => registration.unregister()));
+            }
+          } catch {
+            // Recovery continues even when unregister is unavailable.
+          }
+
+          try {
+            if ("caches" in window) {
+              const keys = await caches.keys();
+              await Promise.all(keys.filter((key) => key.startsWith("bc-site-")).map((key) => caches.delete(key)));
+            }
+          } catch {
+            // Recovery continues even when Cache Storage is unavailable.
+          }
+
+          const separator = location.search ? "&" : "?";
+          location.replace(`${location.pathname}${location.search}${separator}bc-recover=${Date.now()}${location.hash}`);
+        };
+
+        window.__bcRecover = clearAndReload;
+
+        window.addEventListener(
+          "error",
+          (event) => {
+            const target = event.target;
+            const message = String(event.message || "");
+            const scriptFailed = target instanceof HTMLScriptElement;
+            const moduleFailed = /module|script|loading chunk|failed to fetch|mime type/i.test(message);
+            if (scriptFailed || moduleFailed) void clearAndReload();
+          },
+          true
+        );
+
+        window.addEventListener("unhandledrejection", (event) => {
+          const message = String(event.reason?.message || event.reason || "");
+          if (/module|loading chunk|failed to fetch|mime type/i.test(message)) void clearAndReload();
+        });
+
+        window.setTimeout(() => {
+          const boot = getBoot();
+          if (boot && document.getElementById("root")?.contains(boot)) void clearAndReload();
+        }, 9000);
+      })();
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="bc-boot" role="status" aria-live="polite">
+        <div id="bc-boot-card">
+          <div id="bc-boot-mark" aria-hidden="true">♛</div>
+          <div id="bc-boot-title">BLACKCROWN</div>
+          <div id="bc-boot-status">Подключаем игровую платформу…</div>
+          <div id="bc-boot-pulse" aria-hidden="true"></div>
+          <button id="bc-boot-action" type="button" onclick="window.__bcRecover?.()">Восстановить сайт</button>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
