@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+<title id="title">BlackCrown AI Coach artwork</title><desc id="desc">A cyan and violet neural crown with connected strategy nodes.</desc>
+<defs>
+<linearGradient id="bg" x2="1" y2="1"><stop stop-color="#020307"/><stop offset=".55" stop-color="#090b1b"/><stop offset="1" stop-color="#020205"/></linearGradient>
+<radialGradient id="halo" cx="69%" cy="45%" r="55%"><stop stop-color="#8b5cff" stop-opacity=".23"/><stop offset=".42" stop-color="#00e5ff" stop-opacity=".11"/><stop offset="1" stop-opacity="0"/></radialGradient>
+<linearGradient id="line" x2="1" y2="1"><stop stop-color="#d8fdff"/><stop offset=".45" stop-color="#00e5ff"/><stop offset="1" stop-color="#9b6dff"/></linearGradient>
+<filter id="glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="10" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<pattern id="dots" width="38" height="38" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.5" fill="#9beeff" fill-opacity=".05"/></pattern>
+</defs>
+<rect width="1200" height="720" rx="48" fill="url(#bg)"/><rect width="1200" height="720" rx="48" fill="url(#dots)"/><rect width="1200" height="720" rx="48" fill="url(#halo)"/>
+<g transform="translate(520 160)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<g stroke="#67eaff" stroke-opacity=".24"><path d="M120 230 22 120M120 230 14 324M120 230 230 88M120 230 294 224M120 230 226 360"/><path d="M22 120 230 88 294 224 226 360 14 324Z" stroke-opacity=".10"/></g>
+<g filter="url(#glow)"><path d="M-8 238 47 146l76 72 75-111 65 111 75-72 56 92-30 94H22Z" fill="#06111e" fill-opacity=".82" stroke="url(#line)" stroke-width="6"/><path d="M38 283h310" stroke="#bffbff" stroke-opacity=".55" stroke-width="4"/><circle cx="120" cy="230" r="54" fill="#061521" stroke="#00e5ff" stroke-width="4"/><path d="M94 231c13-24 39-30 58-11M94 252c18 17 45 16 61-3" stroke="#d9feff" stroke-width="5"/></g>
+<g fill="#d9feff" stroke="none"><circle cx="22" cy="120" r="9"/><circle cx="14" cy="324" r="9"/><circle cx="230" cy="88" r="9"/><circle cx="294" cy="224" r="9"/><circle cx="226" cy="360" r="9"/></g>
+</g>
+<g fill="#c8fbff" font-family="ui-monospace,monospace"><text x="72" y="92" font-size="19" letter-spacing="7" opacity=".72">BLACKCROWN / PLAYER INTELLIGENCE</text><text x="72" y="154" font-size="54" font-weight="700">AI-COACH</text><text x="74" y="195" font-size="17" letter-spacing="4" opacity=".48">STRATEGY · PROGRESS · CONTEXT</text></g>
+<g transform="translate(72 628)"><circle r="6" fill="#00e5ff" filter="url(#glow)"/><text x="19" y="6" fill="#9fb0c7" font-size="14" font-family="ui-monospace,monospace" letter-spacing="3">TELEGRAM LINK ACTIVE</text></g>
+</svg>
