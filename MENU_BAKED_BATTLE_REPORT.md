@@ -3,8 +3,8 @@
 ## Release identity
 
 - Branch: `feature/crown-front-menu-and-baked-battle`
-- Draft pull request: created after the local review gate; production merge is explicitly prohibited for this stage.
-- Source implementation commit: recorded in the Draft PR and final handoff.
+- Draft pull request: [#32](https://github.com/mtronda21vekby-stack/GAME/pull/32); production merge is explicitly prohibited for this stage.
+- Source implementation commit: `6e22637d885abac741ac4832a14066c8566c1620` (remote review commit; tree SHA `12edaa3ea6a1049237b0d4b2880611d438d2839b` exactly matches the validated local commit tree).
 - Unity: `6000.5.3f1`
 - Review version: `0.4.0-menu-baked-review`
 
@@ -73,6 +73,10 @@ No files under `apps/game/`, `apps/lobby/` or the public CROWN//FRONT payload we
 - SHA-256 manifest: present.
 - Local HTTP: index/loader/data/framework/wasm all returned 200.
 - MIME: loader `text/javascript`; fallback `.unityweb` payload `application/vnd.unity` with no incorrect `Content-Encoding`.
+- GitHub Actions [Build and publish WebGL run 118](https://github.com/mtronda21vekby-stack/GAME/actions/runs/31059320444): PASS; licensing, Unity build, output validation, route assembly and artifact upload passed; `Commit published WebGL` was skipped for the pull request.
+- CI review artifact: `crown-front-0.4.0-menu-baked-review-809951db4c746b627d9703c0aaf5c2e6f4dc6746`, 6,941,938-byte ZIP, SHA-256 digest `86f514f803aba1267603133cb580c6e7acc87c66453ebc8d7cfce21ad09b5c8d`.
+- GitHub Actions [Unity WebGL cloud build run 129](https://github.com/mtronda21vekby-stack/GAME/actions/runs/31059320617): PASS; licensing, Unity build, SHA-256 generation and artifact upload passed.
+- Independent cloud artifact: `crown-engine-webgl-809951db4c746b627d9703c0aaf5c2e6f4dc6746`, 6,951,008-byte ZIP, SHA-256 digest `3017ef225dd910b8c9a8917f484d61c031ff8c1b757f9853b447b17f58daf2ea`.
 
 ## Performance scope
 
