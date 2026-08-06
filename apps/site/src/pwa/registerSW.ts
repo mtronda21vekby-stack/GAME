@@ -1,101 +1,76 @@
-const CONTROLLER_RELOAD_KEY = "bc.sw.controller-reload.v4";
-const CSS_RECOVERY_KEY = "bc.css-recovery.v1";
+const CONTROLLER_RELOAD_KEY = "bc.sw.controller-reload.v5";
+const CSS_RECOVERY_KEY = "bc.css-recovery.v2";
 const SITE_CACHE_PREFIX = "bc-site-";
 
+function ensureCriticalStyles() {
+  if (document.getElementById("bc-critical-runtime-styles")) return;
+
+  const style = document.createElement("style");
+  style.id = "bc-critical-runtime-styles";
+  style.textContent = `
+    :root{--bc-site-css-ready:1;--app-vh:100vh;--text:rgba(255,255,255,.94);--radius:22px;color-scheme:dark}
+    *{box-sizing:border-box}
+    html,body,#root{width:100%;min-width:0;min-height:100%;margin:0;padding:0;background:#000;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;-webkit-text-size-adjust:100%}
+    body{overflow-x:hidden}
+    img{max-width:100%;display:block}
+    button,a{font:inherit}
+    .bcAppShell,.bcAppContent,.bcSiteRoot{position:relative;width:100%;min-height:100%}
+    .bcMatrixLayer{position:fixed;inset:0;z-index:0;pointer-events:none;background:#000;overflow:hidden}
+    .bcMatrixBg{width:100vw!important;height:100%!important}
+    .bcAppContent{z-index:1}
+    .bcHero{position:relative;width:100%;min-height:var(--app-vh,100vh);padding:max(14px,env(safe-area-inset-top)) 14px 24px;overflow:hidden}
+    .bcHeroBg{position:absolute;inset:0;pointer-events:none}
+    .bcHeroAurora,.bcHeroNoise{display:none!important}
+    .bcHeroVignette{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.8))}
+    .bcTop{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:8px;border:1px solid rgba(255,255,255,.12);border-radius:22px;background:rgba(8,12,20,.88)}
+    .bcBrand,.bcRight{display:flex;align-items:center;gap:8px;min-width:0}
+    .bcBrand,.bcAccountPill{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;border-radius:999px;min-height:40px;padding:0 12px}
+    .bcBrand{border:0;background:transparent}
+    .bcAccountPill{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .bcNav{display:none}
+    .bcHeroGrid{position:relative;z-index:2;display:grid;grid-template-columns:minmax(0,1fr);gap:14px;width:100%;margin-top:14px}
+    .glassStrong{width:100%;min-width:0;border:1px solid rgba(255,255,255,.11);border-radius:var(--radius);background:rgba(8,14,24,.88);box-shadow:0 24px 80px rgba(0,0,0,.45)}
+    .bcHeroCopy,.bcHeroPanel{padding:18px}
+    .bcKicker{display:inline-flex;padding:8px 12px;border:1px solid rgba(255,255,255,.1);border-radius:999px;background:rgba(255,255,255,.05);font-size:12px;font-weight:800}
+    .bcH1{margin:14px 0 10px;font-size:clamp(34px,10vw,48px);line-height:1;letter-spacing:-.04em;font-weight:900}
+    .bcLead{margin:0;color:rgba(255,255,255,.78);font-size:15px;line-height:1.55}
+    .bcCtas,.bcBadges{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
+    .bcSiteRoot button,.bcBtn{min-height:42px;max-width:100%;padding:0 14px;border-radius:13px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);color:#fff;font-weight:800}
+    .bcPanelTitle{margin-bottom:10px;font-weight:900}
+    .bcPanelRow{display:flex;gap:12px;padding:12px;border:1px solid rgba(255,255,255,.09);border-radius:16px;background:rgba(255,255,255,.04)}
+    .bcPanelRow+.bcPanelRow{margin-top:9px}
+    .bcDot{flex:0 0 10px;width:10px;height:10px;margin-top:5px;border-radius:50%;background:#69dfff}
+    .bcPanelH{font-weight:900}.bcPanelP{margin-top:3px;color:rgba(255,255,255,.7);line-height:1.4}
+    .bcSection{position:relative;width:100%;padding:18px 14px 28px}
+    .bcSectionHead,.bcCards{width:100%;max-width:980px;margin-left:auto;margin-right:auto}
+    .bcSectionHead{margin-bottom:12px}.bcSectionTitle{font-size:20px;font-weight:900}.bcSectionSub{margin-top:6px;color:rgba(255,255,255,.7);line-height:1.45}
+    .bcCards{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+    .bcCards>*,.bcHotCard{width:100%;min-width:0}
+    @media(min-width:820px){.bcNav{display:flex}.bcAccountPill{max-width:none}}
+    @media(min-width:980px){.bcHeroGrid{grid-template-columns:1.2fr .8fr}.bcCards{grid-template-columns:repeat(3,minmax(0,1fr))}.bcH1{font-size:54px}}
+  `;
+  document.head.appendChild(style);
+}
+
 function readSessionFlag(key: string) {
-  try {
-    return sessionStorage.getItem(key) === "1";
-  } catch {
-    return false;
-  }
+  try { return sessionStorage.getItem(key) === "1"; } catch { return false; }
 }
 
 function writeSessionFlag(key: string) {
-  try {
-    sessionStorage.setItem(key, "1");
-  } catch {
-    // Private browsing can restrict session storage.
-  }
+  try { sessionStorage.setItem(key, "1"); } catch { /* ignored */ }
 }
 
 function clearSessionFlag(key: string) {
-  try {
-    sessionStorage.removeItem(key);
-  } catch {
-    // Ignore storage restrictions.
-  }
+  try { sessionStorage.removeItem(key); } catch { /* ignored */ }
 }
 
 function isSiteCssReady() {
-  const marker = window
-    .getComputedStyle(document.documentElement)
-    .getPropertyValue("--bc-site-css-ready")
-    .trim();
-
-  return marker === "1";
-}
-
-function showCssRecoveryFailure() {
-  if (document.getElementById("bc-css-recovery-alert")) return;
-
-  const panel = document.createElement("section");
-  panel.id = "bc-css-recovery-alert";
-  panel.setAttribute("role", "alert");
-  Object.assign(panel.style, {
-    position: "fixed",
-    inset: "max(18px, env(safe-area-inset-top, 0px)) 18px auto",
-    zIndex: "2147483647",
-    boxSizing: "border-box",
-    maxWidth: "520px",
-    margin: "0 auto",
-    padding: "20px",
-    border: "1px solid rgba(91, 226, 255, 0.38)",
-    borderRadius: "18px",
-    background: "rgba(2, 8, 14, 0.97)",
-    color: "#effbff",
-    boxShadow: "0 24px 90px rgba(0, 0, 0, 0.78)",
-    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif',
-    lineHeight: "1.45",
-  });
-
-  const title = document.createElement("strong");
-  title.textContent = "BlackCrown не загрузил стили";
-  Object.assign(title.style, { display: "block", fontSize: "18px", marginBottom: "8px" });
-
-  const copy = document.createElement("div");
-  copy.textContent = "Старый кэш Safari всё ещё отдаёт неполную версию сайта. Повтори очистку и загрузку.";
-  Object.assign(copy.style, { color: "rgba(231, 246, 255, 0.72)", fontSize: "14px" });
-
-  const button = document.createElement("button");
-  button.type = "button";
-  button.textContent = "Очистить кэш и перезапустить";
-  Object.assign(button.style, {
-    minHeight: "46px",
-    marginTop: "16px",
-    padding: "0 16px",
-    border: "1px solid rgba(0, 217, 255, 0.52)",
-    borderRadius: "13px",
-    background: "linear-gradient(135deg, rgba(0, 55, 72, 0.98), rgba(0, 110, 134, 0.94))",
-    color: "#effeff",
-    font: "inherit",
-    fontWeight: "800",
-  });
-
-  button.addEventListener("click", () => {
-    clearSessionFlag(CSS_RECOVERY_KEY);
-    void recoverFromMissingCss();
-  });
-
-  panel.append(title, copy, button);
-  document.body.appendChild(panel);
+  return window.getComputedStyle(document.documentElement).getPropertyValue("--bc-site-css-ready").trim() === "1";
 }
 
 async function recoverFromMissingCss() {
-  if (readSessionFlag(CSS_RECOVERY_KEY)) {
-    showCssRecoveryFailure();
-    return;
-  }
-
+  ensureCriticalStyles();
+  if (readSessionFlag(CSS_RECOVERY_KEY)) return;
   writeSessionFlag(CSS_RECOVERY_KEY);
 
   try {
@@ -103,50 +78,37 @@ async function recoverFromMissingCss() {
       const registrations = await navigator.serviceWorker.getRegistrations();
       await Promise.all(registrations.map((registration) => registration.unregister()));
     }
-  } catch {
-    // Continue even when service-worker cleanup is unavailable.
-  }
+  } catch { /* continue */ }
 
   try {
     if ("caches" in window) {
       const keys = await caches.keys();
       await Promise.all(keys.filter((key) => key.startsWith(SITE_CACHE_PREFIX)).map((key) => caches.delete(key)));
     }
-  } catch {
-    // Continue even when Cache Storage is unavailable.
-  }
-
-  const url = new URL(window.location.href);
-  url.searchParams.set("bc-css-recover", Date.now().toString());
-  window.location.replace(`${url.pathname}${url.search}${url.hash}`);
+  } catch { /* continue */ }
 }
 
 function scheduleSiteCssHealthCheck() {
-  const check = () => {
-    window.setTimeout(() => {
-      if (isSiteCssReady()) {
-        clearSessionFlag(CSS_RECOVERY_KEY);
-        clearSessionFlag(CONTROLLER_RELOAD_KEY);
-        return;
-      }
-
-      void recoverFromMissingCss();
-    }, 350);
-  };
+  const check = () => window.setTimeout(() => {
+    if (isSiteCssReady()) {
+      clearSessionFlag(CSS_RECOVERY_KEY);
+      clearSessionFlag(CONTROLLER_RELOAD_KEY);
+      return;
+    }
+    ensureCriticalStyles();
+    void recoverFromMissingCss();
+  }, 250);
 
   if (document.readyState === "complete") check();
   else window.addEventListener("load", check, { once: true });
 
-  window.addEventListener(
-    "error",
-    (event) => {
-      const target = event.target;
-      if (target instanceof HTMLLinkElement && target.relList.contains("stylesheet")) {
-        void recoverFromMissingCss();
-      }
-    },
-    true
-  );
+  window.addEventListener("error", (event) => {
+    const target = event.target;
+    if (target instanceof HTMLLinkElement && target.relList.contains("stylesheet")) {
+      ensureCriticalStyles();
+      void recoverFromMissingCss();
+    }
+  }, true);
 }
 
 function reloadOnceAfterControllerChange() {
@@ -154,35 +116,22 @@ function reloadOnceAfterControllerChange() {
     if (sessionStorage.getItem(CONTROLLER_RELOAD_KEY) === "1") return;
     sessionStorage.setItem(CONTROLLER_RELOAD_KEY, "1");
     window.location.reload();
-  } catch {
-    window.location.reload();
-  }
+  } catch { window.location.reload(); }
 }
 
 export function registerSW() {
+  ensureCriticalStyles();
   scheduleSiteCssHealthCheck();
-
   if (!("serviceWorker" in navigator)) return;
 
   const register = () => {
     void (async () => {
       try {
-        const registration = await navigator.serviceWorker.register("/sw.js", {
-          updateViaCache: "none",
-        });
-
-        navigator.serviceWorker.addEventListener("controllerchange", reloadOnceAfterControllerChange, {
-          once: true,
-        });
-
+        const registration = await navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
+        navigator.serviceWorker.addEventListener("controllerchange", reloadOnceAfterControllerChange, { once: true });
         await registration.update();
-
-        if (registration.waiting) {
-          registration.waiting.postMessage({ type: "SKIP_WAITING" });
-        }
-      } catch {
-        // The website must remain usable even when service workers are unavailable.
-      }
+        if (registration.waiting) registration.waiting.postMessage({ type: "SKIP_WAITING" });
+      } catch { /* site remains usable */ }
     })();
   };
 
