@@ -1,5 +1,6 @@
 import React from "react";
 import MatrixBackground from "./MatrixBackground";
+import "../styles/matrix-depth-engine.css";
 
 export type MatrixDepthQuality = "auto" | "low" | "high";
 
