@@ -1,7 +1,7 @@
 import React from "react";
 import { Button } from "@blackcrown/ui";
 import { Icons } from "@blackcrown/assets";
-import BrandCore from "./BrandCore";
+import DigitalCrownCore from "./DigitalCrownCore";
 
 export type HeroStatusTone = "cyan" | "orange" | "green";
 
@@ -149,7 +149,7 @@ export default function HeroScene({
         </div>
 
         <div className="bcNexusHero__core bcV3Hero__core">
-          <BrandCore />
+          <DigitalCrownCore size="default" intensity={1.12} />
           <div className="bcV3Hero__reactorFloor" aria-hidden="true" />
         </div>
       </div>
