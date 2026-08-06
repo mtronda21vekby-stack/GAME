@@ -1,6 +1,7 @@
 import React from "react";
 import { Button } from "@blackcrown/ui";
 import { Icons } from "@blackcrown/assets";
+import ReactorFX from "./ReactorFX";
 import "../styles/world-stage-v2.css";
 
 export type WorldStageV2Tone = "ocean" | "reactor";
@@ -36,6 +37,8 @@ export function WorldStageV2({
   secondaryLabel,
   onSecondary,
 }: WorldStageV2Props) {
+  const reactorTone = tone === "reactor" ? "orange" : "cyan";
+
   return (
     <article
       className="bcWorldStageV2"
@@ -67,6 +70,12 @@ export function WorldStageV2({
       </div>
 
       <div className="bcWorldStageV2__visual">
+        <ReactorFX
+          className="bcWorldStageV2__reactorFX"
+          tone={reactorTone}
+          size="large"
+          intensity={tone === "reactor" ? 1.22 : 0.92}
+        />
         <div className="bcWorldStageV2__reactor" aria-hidden="true" />
         <div className="bcWorldStageV2__scan" aria-hidden="true" />
         <div className="bcWorldStageV2__particles" aria-hidden="true" />
