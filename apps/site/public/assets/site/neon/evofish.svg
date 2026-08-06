@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">EvoFish neon ocean artwork</title>
+  <desc id="desc">A cyan neon fish moving through a dark digital ocean.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#02060b"/>
+      <stop offset="0.55" stop-color="#041323"/>
+      <stop offset="1" stop-color="#010205"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="58%" cy="48%" r="52%">
+      <stop offset="0" stop-color="#00e5ff" stop-opacity=".27"/>
+      <stop offset=".46" stop-color="#087cff" stop-opacity=".10"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="fish" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#bdfaff"/>
+      <stop offset=".38" stop-color="#00e5ff"/>
+      <stop offset="1" stop-color="#2d6cff"/>
+    </linearGradient>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="12" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="grid" width="72" height="72" patternUnits="userSpaceOnUse">
+      <path d="M72 0H0V72" fill="none" stroke="#52dfff" stroke-opacity=".055"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="720" rx="48" fill="url(#bg)"/>
+  <rect width="1200" height="720" rx="48" fill="url(#grid)"/>
+  <rect width="1200" height="720" rx="48" fill="url(#halo)"/>
+  <g fill="none" stroke-linecap="round">
+    <path d="M-40 510C166 430 290 570 483 486S810 368 1248 465" stroke="#00e5ff" stroke-opacity=".15" stroke-width="2"/>
+    <path d="M-38 553C170 470 311 613 500 522s320-108 740-28" stroke="#3a78ff" stroke-opacity=".11" stroke-width="2"/>
+    <path d="M-60 606C148 520 330 650 522 570s360-98 758-5" stroke="#8b5cff" stroke-opacity=".07" stroke-width="2"/>
+  </g>
+  <g filter="url(#glow)">
+    <path d="M814 351c-91-90-216-116-345-54-71 34-126 87-166 142 54 58 123 101 205 116 115 20 230-22 306-111l104 64-31-111 67-90-120 44Z" fill="url(#fish)" fill-opacity=".18" stroke="url(#fish)" stroke-width="7"/>
+    <path d="M438 371c70-39 151-39 229-10-55 8-103 34-139 74-36 39-54 80-55 122-55-17-103-50-144-94 29-39 65-70 109-92Z" fill="#071b2b" fill-opacity=".72" stroke="#62f4ff" stroke-opacity=".42" stroke-width="3"/>
+    <circle cx="746" cy="372" r="10" fill="#efffff"/>
+    <circle cx="746" cy="372" r="28" fill="none" stroke="#00e5ff" stroke-opacity=".42" stroke-width="3"/>
+  </g>
+  <g fill="#baf9ff" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">
+    <text x="72" y="92" font-size="19" letter-spacing="7" opacity=".72">BLACKCROWN / WORLD 01</text>
+    <text x="72" y="154" font-size="54" font-weight="700" letter-spacing="-2">EVOFISH</text>
+    <text x="74" y="195" font-size="17" letter-spacing="4" opacity=".48">EVOLVE · SURVIVE · RULE THE DEEP</text>
+  </g>
+  <g transform="translate(72 628)">
+    <circle r="6" fill="#66ffc7" filter="url(#glow)"/>
+    <text x="19" y="6" fill="#a8bacd" font-size="14" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" letter-spacing="3">LIVE BUILD</text>
+  </g>
+</svg>
