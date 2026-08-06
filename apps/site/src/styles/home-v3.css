@@ -65,6 +65,16 @@
     min-height:auto;
     padding-bottom:24px;
   }
+  .bcHomeV3>.bcV3Hero .bcV3Hero__top{
+    position:absolute!important;
+    top:max(8px,env(safe-area-inset-top,0px))!important;
+    left:max(10px,env(safe-area-inset-left,0px))!important;
+    right:max(10px,env(safe-area-inset-right,0px))!important;
+    width:auto!important;
+    transform:none!important;
+    margin:0!important;
+    z-index:8!important;
+  }
   .bcHomeV3>.bcV3Hero .bcV3Hero__layout{
     display:flex;
     flex-direction:column;
