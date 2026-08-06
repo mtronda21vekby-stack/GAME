@@ -1,0 +1,21 @@
+/* V3 service integration: replace retained Nexus service sections without duplicating them. */
+.bcHomeV3__journey > .bcNexusHome > .bcNexusPlatform,
+.bcHomeV3__journey > .bcNexusHome > .bcNexusCoach {
+  display: none !important;
+}
+
+.bcPlatformV3,
+.bcCoachV3 {
+  position: relative;
+  z-index: 2;
+}
+
+.bcCoachV3 {
+  padding-bottom: clamp(70px, 10vw, 130px);
+}
+
+@media (max-width: 820px) {
+  .bcCoachV3 {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  }
+}

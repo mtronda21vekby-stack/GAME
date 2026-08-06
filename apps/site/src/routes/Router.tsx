@@ -1,7 +1,7 @@
 import React from "react";
-import { MobileDock } from "../components/MobileDock";
+import { DockV2 } from "../components/DockV2";
 import { SiteFooter } from "../components/SiteFooter";
-import { Home } from "./Home";
+import { HomeV3 } from "./HomeV3";
 import { About } from "./pages/About";
 import { Support } from "./pages/Support";
 import { Privacy } from "./pages/Privacy";
@@ -58,7 +58,7 @@ const routeTitles: Record<string, string> = {
 function renderRoute(path: string) {
   switch (path) {
     case "/":
-      return <Home />;
+      return <HomeV3 />;
     case "/about":
       return <About />;
     case "/support":
@@ -74,7 +74,7 @@ function renderRoute(path: string) {
     case "/admin":
       return <Admin />;
     default:
-      return <Home />;
+      return <HomeV3 />;
   }
 }
 
@@ -150,7 +150,7 @@ export function Router() {
       </div>
 
       {showGlobalNavigation ? <SiteFooter /> : null}
-      {showGlobalNavigation ? <MobileDock activePath={routePath} /> : null}
+      {showGlobalNavigation ? <DockV2 activePath={routePath} /> : null}
     </>
   );
 }

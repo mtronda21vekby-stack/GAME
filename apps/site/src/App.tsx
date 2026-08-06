@@ -1,6 +1,7 @@
 import React from "react";
-import CrownAtmosphere from "./components/CrownAtmosphere";
+import MatrixDepthEngine from "./components/MatrixDepthEngine";
 import MotionDirector from "./components/MotionDirector";
+import MotionRevealV3 from "./components/MotionRevealV3";
 import { Router } from "./routes/Router";
 
 function syncAppVh() {
@@ -67,14 +68,14 @@ export function App() {
   }, []);
 
   React.useEffect(() => {
-    // user bootstrap (guest)
     ensureGuestUser();
   }, []);
 
   return (
     <div className="bcAppShell">
-      <CrownAtmosphere />
+      <MatrixDepthEngine quality="auto" intensity={1} />
       <MotionDirector />
+      <MotionRevealV3 />
 
       <div className="bcAppContent">
         <Router />
