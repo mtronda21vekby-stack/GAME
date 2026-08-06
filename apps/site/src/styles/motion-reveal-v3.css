@@ -1,0 +1,77 @@
+:root {
+  --bc-ambient-rgb: 0, 229, 255;
+}
+
+:root[data-bc-ambient="ocean"] { --bc-ambient-rgb: 42, 164, 255; }
+:root[data-bc-ambient="reactor"] { --bc-ambient-rgb: 255, 105, 45; }
+:root[data-bc-ambient="violet"] { --bc-ambient-rgb: 126, 92, 255; }
+:root[data-bc-ambient="neutral"] { --bc-ambient-rgb: 184, 205, 224; }
+
+.bcAmbientV3 {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 52% 44%, rgba(var(--bc-ambient-rgb), .075), transparent 38%),
+    linear-gradient(180deg, transparent 0 58%, rgba(var(--bc-ambient-rgb), .025));
+  transition: background 900ms cubic-bezier(.16, 1, .3, 1), opacity 500ms ease;
+}
+
+.bcMotionV3Ready .bcRevealV3 {
+  opacity: 0;
+  transform: translate3d(0, 30px, 0) scale(.985);
+  filter: blur(6px);
+  transition:
+    opacity 720ms cubic-bezier(.16, 1, .3, 1) var(--bc-reveal-delay, 0ms),
+    transform 820ms cubic-bezier(.16, 1, .3, 1) var(--bc-reveal-delay, 0ms),
+    filter 720ms ease var(--bc-reveal-delay, 0ms);
+  will-change: opacity, transform, filter;
+}
+
+.bcMotionV3Ready .bcRevealV3.is-revealed {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  filter: blur(0);
+  will-change: auto;
+}
+
+.bcMotionV3Ready .bcWorldStageV2[data-reverse="true"].bcRevealV3 {
+  transform: translate3d(28px, 24px, 0) scale(.988);
+}
+
+.bcMotionV3Ready .bcWorldStageV2[data-reverse="true"].bcRevealV3.is-revealed {
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+.bcMotionV3Ready .bcV3Hero__core.bcRevealV3 {
+  transform: translate3d(0, 18px, 0) scale(.94);
+}
+
+.bcMotionV3Ready .bcV3Hero__core.bcRevealV3.is-revealed {
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+@media (max-width: 760px) {
+  .bcMotionV3Ready .bcRevealV3 {
+    transform: translate3d(0, 20px, 0) scale(.992);
+    filter: blur(3px);
+    transition-duration: 620ms, 680ms, 520ms;
+  }
+
+  .bcAmbientV3 {
+    background: radial-gradient(circle at 50% 36%, rgba(var(--bc-ambient-rgb), .06), transparent 46%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bcAmbientV3 { transition: none !important; }
+
+  .bcMotionV3Ready .bcRevealV3,
+  .bcMotionV3Ready .bcRevealV3.is-revealed {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+  }
+}
