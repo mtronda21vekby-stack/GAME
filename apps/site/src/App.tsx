@@ -1,6 +1,8 @@
 import React from "react";
 import MatrixDepthEngine from "./components/MatrixDepthEngine";
 import MotionDirector from "./components/MotionDirector";
+import RevealSystemV3 from "./components/RevealSystemV3";
+import "./styles/reveal-system-v3.css";
 import { Router } from "./routes/Router";
 
 function syncAppVh() {
@@ -74,6 +76,7 @@ export function App() {
     <div className="bcAppShell">
       <MatrixDepthEngine quality="auto" intensity={1} />
       <MotionDirector />
+      <RevealSystemV3 />
 
       <div className="bcAppContent">
         <Router />
