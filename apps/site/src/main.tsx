@@ -14,7 +14,6 @@ import "./styles/brand-nexus.css";
 import "./styles/v3-mobile-art-pass.css";
 import "./styles/dock-v2.css";
 import "./styles/home-v3.css";
-import "./styles/v3-1-visual-impact.css";
 import { App } from "./App";
 import { registerSW } from "./pwa/registerSW";
 import { ErrorBoundary } from "./ErrorBoundary";
