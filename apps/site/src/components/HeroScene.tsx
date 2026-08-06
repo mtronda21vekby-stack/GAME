@@ -2,6 +2,7 @@ import React from "react";
 import { Button } from "@blackcrown/ui";
 import { Icons } from "@blackcrown/assets";
 import DigitalCrownCore from "./DigitalCrownCore";
+import ReactorFX from "./ReactorFX";
 
 export type HeroStatusTone = "cyan" | "orange" | "green";
 
@@ -69,95 +70,48 @@ export default function HeroScene({
       </div>
 
       <header className="bcTop bcNexusTop bcV3Hero__top">
-        <button
-          type="button"
-          className="bcBrand bcHot"
-          onClick={() => onNavigate("/")}
-          aria-label="BlackCrown — главная"
-        >
-          <span className="bcBrand__mark">
-            <img alt="" src={Icons.crown} width="22" height="22" />
-          </span>
-          <span className="bcBrand__copy">
-            <strong>BlackCrown</strong>
-            <small>INTERACTIVE WORLDS</small>
-          </span>
+        <button type="button" className="bcBrand bcHot" onClick={() => onNavigate("/")} aria-label="BlackCrown — главная">
+          <span className="bcBrand__mark"><img alt="" src={Icons.crown} width="22" height="22" /></span>
+          <span className="bcBrand__copy"><strong>BlackCrown</strong><small>INTERACTIVE WORLDS</small></span>
         </button>
 
         <nav className="bcNav" aria-label="Основная навигация">
-          <button type="button" className="bcLink bcHotLink" onClick={onExploreWorlds}>
-            Миры
-          </button>
-          <HeroNavLink href="/about" onNavigate={onNavigate}>
-            Платформа
-          </HeroNavLink>
-          <HeroNavLink href="/store" onNavigate={onNavigate}>
-            Store
-          </HeroNavLink>
-          <HeroNavLink href="/support" onNavigate={onNavigate}>
-            Поддержка
-          </HeroNavLink>
+          <button type="button" className="bcLink bcHotLink" onClick={onExploreWorlds}>Миры</button>
+          <HeroNavLink href="/about" onNavigate={onNavigate}>Платформа</HeroNavLink>
+          <HeroNavLink href="/store" onNavigate={onNavigate}>Store</HeroNavLink>
+          <HeroNavLink href="/support" onNavigate={onNavigate}>Поддержка</HeroNavLink>
         </nav>
 
         <div className="bcRight">
-          <button
-            type="button"
-            className="bcAccountPill bcHot"
-            onClick={() => onNavigate("/account")}
-            aria-label="Открыть аккаунт"
-          >
-            <span className="bcAccountPill__dot" aria-hidden="true" />
-            <span>{playerName}</span>
+          <button type="button" className="bcAccountPill bcHot" onClick={() => onNavigate("/account")} aria-label="Открыть аккаунт">
+            <span className="bcAccountPill__dot" aria-hidden="true" /><span>{playerName}</span>
           </button>
-          <Button variant="primary" leftIconSrc={Icons.play} onClick={onPlay}>
-            Играть
-          </Button>
+          <Button variant="primary" leftIconSrc={Icons.play} onClick={onPlay}>Играть</Button>
         </div>
       </header>
 
       <div className="bcNexusHero__layout bcV3Hero__layout">
         <div className="bcNexusHero__copy bcV3Hero__copy">
-          <div className="bcNexusHero__eyebrow">
-            <span aria-hidden="true" />
-            <strong>BLACKCROWN NETWORK</strong>
-            <small>ONLINE</small>
-          </div>
-
-          <h1 id="bc-v3-hero-title" className="bcNexusHero__title bcV3Hero__title">
-            <span>BLACK</span>
-            <span>CROWN</span>
-          </h1>
-
+          <div className="bcNexusHero__eyebrow"><span aria-hidden="true" /><strong>BLACKCROWN NETWORK</strong><small>ONLINE</small></div>
+          <h1 id="bc-v3-hero-title" className="bcNexusHero__title bcV3Hero__title"><span>BLACK</span><span>CROWN</span></h1>
           <p className="bcNexusHero__tagline bcV3Hero__tagline">Одна корона. Несколько миров.</p>
-          <p className="bcNexusHero__lead bcV3Hero__lead">
-            Единая игровая экосистема для профиля, прогресса, коллекции и новых миров BlackCrown.
-          </p>
-
+          <p className="bcNexusHero__lead bcV3Hero__lead">Единая игровая экосистема для профиля, прогресса, коллекции и новых миров BlackCrown.</p>
           <div className="bcNexusHero__actions bcV3Hero__actions">
-            <Button variant="primary" onClick={() => onNavigate("/account")}>
-              Войти в BlackCrown
-            </Button>
-            <Button variant="secondary" onClick={onExploreWorlds}>
-              Исследовать миры
-            </Button>
+            <Button variant="primary" onClick={() => onNavigate("/account")}>Войти в BlackCrown</Button>
+            <Button variant="secondary" onClick={onExploreWorlds}>Исследовать миры</Button>
           </div>
-
-          <div className="bcNexusHero__signature">
-            <span>BC // V3 EXPERIENCE</span>
-            <span>WEBGL · MOBILE · DESKTOP</span>
-          </div>
+          <div className="bcNexusHero__signature"><span>BC // V3 EXPERIENCE</span><span>WEBGL · MOBILE · DESKTOP</span></div>
         </div>
 
         <div className="bcNexusHero__core bcV3Hero__core">
+          <ReactorFX className="bcV3Hero__coreReactor" tone="cyan" size="large" intensity={1.08} />
           <DigitalCrownCore size="default" intensity={1.12} />
           <div className="bcV3Hero__reactorFloor" aria-hidden="true" />
         </div>
       </div>
 
       <div className="bcNexusStatus bcV3Hero__status" aria-label="Статус экосистемы">
-        {statuses.map((status) => (
-          <HeroStatusItem key={`${status.label}-${status.value}`} {...status} />
-        ))}
+        {statuses.map((status) => <HeroStatusItem key={`${status.label}-${status.value}`} {...status} />)}
       </div>
     </section>
   );
