@@ -13,6 +13,7 @@ import "./styles/customer-stability.css";
 import "./styles/brand-nexus.css";
 import "./styles/v3-mobile-art-pass.css";
 import "./styles/dock-v2.css";
+import "./styles/home-v3.css";
 import { App } from "./App";
 import { registerSW } from "./pwa/registerSW";
 import { ErrorBoundary } from "./ErrorBoundary";
