@@ -3,12 +3,13 @@ import { userStorage } from "@blackcrown/core";
 import AICoachV3 from "../components/AICoachV3";
 import GlassSurface from "../components/GlassSurface";
 import HeroScene from "../components/HeroScene";
+import LiveFeedV3 from "../components/LiveFeedV3";
 import PlatformV3 from "../components/PlatformV3";
+import StoreV3 from "../components/StoreV3";
 import WorldStageV2 from "../components/WorldStageV2";
 import { openTelegramBot } from "../lib/telegram";
 import "../styles/services-v3.css";
 import "../styles/home-v3-services.css";
-import { Home as NexusHome } from "./Home";
 
 const WORLD_ART = {
   evofish: "/assets/site/neon/evofish.svg",
@@ -41,7 +42,7 @@ export function HomeV3() {
   const playerName = getPlayerName();
 
   return (
-    <div className="bcHomeV3" data-experience="blackcrown-v3">
+    <main className="bcHomeV3" data-experience="blackcrown-v3">
       <HeroScene
         playerName={playerName}
         onNavigate={navigateSite}
@@ -55,7 +56,7 @@ export function HomeV3() {
             <span>FEATURED WORLDS / V3</span>
             <h2 id="bc-worlds-v2-title">Миры внутри BlackCrown.</h2>
             <p>
-              Два разных визуальных языка, связанные одной системой: океанская биолюминесценция EvoFish и реакторный black-metal CROWN//FRONT.
+              Два визуальных языка, связанные одной системой: океанская биолюминесценция EvoFish и реакторный black-metal CROWN//FRONT.
             </p>
           </div>
         </GlassSurface>
@@ -94,20 +95,14 @@ export function HomeV3() {
         </div>
       </section>
 
-      <PlatformV3
-        onNavigate={navigateSite}
-        onOpenLobby={() => navigateExternal("/lobby/")}
-      />
+      <PlatformV3 onNavigate={navigateSite} onOpenLobby={() => navigateExternal("/lobby/")} />
 
-      <AICoachV3
-        onOpenCoach={openTelegramBot}
-        onOpenSupport={() => navigateSite("/support")}
-      />
+      <StoreV3 onOpenStore={() => navigateSite("/store")} onOpenAccount={() => navigateSite("/account")} />
 
-      <div className="bcHomeV3__journey">
-        <NexusHome />
-      </div>
-    </div>
+      <AICoachV3 onOpenCoach={openTelegramBot} onOpenSupport={() => navigateSite("/support")} />
+
+      <LiveFeedV3 />
+    </main>
   );
 }
 
