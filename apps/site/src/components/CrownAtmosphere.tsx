@@ -1,16 +1,15 @@
 import React from "react";
-import GameShaderLayer from "./GameShaderLayer";
 import MatrixBackground from "./MatrixBackground";
 
 /**
- * Keeps the original BlackCrown Matrix identity while compositing a deliberately
- * low-resolution WebGL energy pass for additional game-platform depth.
+ * Global BlackCrown atmosphere. The original Matrix remains the persistent
+ * identity; brand-specific depth now lives in the homepage Crown Core instead
+ * of an additional full-screen WebGL pass.
  */
 export function CrownAtmosphere() {
   return (
     <div className="bcMatrixLayer bcMatrixRebirth" aria-hidden="true">
-      <MatrixBackground className="bcMatrixRebirth__canvas" intensity={1.06} />
-      <GameShaderLayer />
+      <MatrixBackground className="bcMatrixRebirth__canvas" intensity={0.94} />
 
       <div className="bcMatrixRebirth__depth" />
       <div className="bcMatrixRebirth__cursor" />
