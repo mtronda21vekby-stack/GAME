@@ -4,6 +4,12 @@ import { Icons } from "@blackcrown/assets";
 import { userStorage } from "@blackcrown/core";
 
 type ActiveKey = "home" | "about" | "store" | "support" | "privacy" | "terms" | "account";
+type SiteHeaderProps = {
+  active?: ActiveKey;
+  showLobby?: boolean;
+  showStoreButton?: boolean;
+  showAccountPill?: boolean;
+};
 
 function scrollToTop() {
   const scroller = document.querySelector(".bcScroll") as HTMLElement | null;
@@ -49,9 +55,12 @@ function NavLink(props: { href: string; label: string; active?: boolean }) {
   );
 }
 
-export function SiteHeader(props: { active?: ActiveKey }) {
+export function SiteHeader(props: SiteHeaderProps) {
   const name = getName();
   const a = props.active;
+  const showLobby = props.showLobby ?? true;
+  const showStoreButton = props.showStoreButton ?? false;
+  const showAccountPill = props.showAccountPill ?? true;
 
   return (
     <header className="bcTop">
@@ -69,13 +78,23 @@ export function SiteHeader(props: { active?: ActiveKey }) {
       </nav>
 
       <div className="bcRight">
-        <button type="button" className="bcAccountPill" onClick={() => navSite("/account")} aria-label="Аккаунт">
-          Аккаунт: {name}
-        </button>
+        {showAccountPill ? (
+          <button type="button" className="bcAccountPill" onClick={() => navSite("/account")} aria-label="Аккаунт" aria-current={a === "account" ? "page" : undefined}>
+            Аккаунт: {name}
+          </button>
+        ) : null}
 
-        <Button variant="secondary" onClick={() => navExternal("/lobby/")}>
-          Lobby
-        </Button>
+        {showStoreButton ? (
+          <Button variant="secondary" onClick={() => navSite("/store")}>
+            Store
+          </Button>
+        ) : null}
+
+        {showLobby ? (
+          <Button variant="secondary" onClick={() => navExternal("/lobby/")}>
+            Lobby
+          </Button>
+        ) : null}
 
         <Button variant="primary" leftIconSrc={Icons.play} onClick={() => navExternal("/game/")}>
           Играть

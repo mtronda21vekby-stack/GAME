@@ -61,7 +61,7 @@ export function HomeBlocks({ blocks }: { blocks: ContentBlock[] }) {
                           as="a"
                           href={it.href}
                           className="bcAccountPill"
-                          ariaLabel={it.title}
+                          aria-label={it.title}
                           onClick={() => void sendXpEvent({ type: "cta_click", key: `block:${b.id}` })}
                         >
                           Open

@@ -1,7 +1,7 @@
 import React from "react";
 
 export function Roadmap() {
-  const items = [
+  const items: Array<{ title: string; status: "готово" | "в процессе" | "план"; desc: string }> = [
     { title: "Единый домен", status: "готово", desc: "Сайт + /game + /lobby в одном dist." },
     { title: "Контейнер игры", status: "в процессе", desc: "Настройки, fullscreen, ввод, стабильная загрузка EvoFish." },
     { title: "Лобби (8 игроков)", status: "в процессе", desc: "Ready/unready, чат, анти-спам, транспорт-абстракция." },

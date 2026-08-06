@@ -1,11 +1,11 @@
 import React from "react";
-import { Home } from "./Home";
-import { About } from "./pages/About";
-import { Support } from "./pages/Support";
-import { Privacy } from "./pages/Privacy";
-import { Terms } from "./pages/Terms";
-import { Store } from "./pages/Store";
-import { Account } from "./pages/Account";
+import { Home } from "./routes/Home";
+import { About } from "./routes/pages/About";
+import { Support } from "./routes/pages/Support";
+import { Privacy } from "./routes/pages/Privacy";
+import { Terms } from "./routes/pages/Terms";
+import { Store } from "./routes/pages/Store";
+import { Account } from "./routes/pages/Account";
 
 function pathOf() {
   const p = window.location.pathname;
@@ -14,6 +14,15 @@ function pathOf() {
 
 function isInternal(href: string) {
   return href.startsWith("/") && !href.startsWith("//");
+}
+
+export function Link(props: React.AnchorHTMLAttributes<HTMLAnchorElement> & { to: string }) {
+  const { to, children, ...rest } = props;
+  return (
+    <a href={to} {...rest}>
+      {children}
+    </a>
+  );
 }
 
 export function Router() {
