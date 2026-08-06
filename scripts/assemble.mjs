@@ -60,7 +60,7 @@ const redirects = [
 ].join("\n") + "\n";
 fs.writeFileSync(path.join(OUT, "_redirects"), redirects, "utf-8");
 
-// Headers: site can cache shell normally, game must be NO-CACHE (no-store)
+// Headers: never retain the HTML shell or service worker; hashed assets remain immutable.
 const headers = [
   "/*",
   "  X-Content-Type-Options: nosniff",
@@ -68,10 +68,10 @@ const headers = [
   "  Permissions-Policy: interest-cohort=()",
   "",
   "/",
-  "  Cache-Control: no-cache",
+  "  Cache-Control: no-store, max-age=0, must-revalidate",
   "",
   "/index.html",
-  "  Cache-Control: no-cache",
+  "  Cache-Control: no-store, max-age=0, must-revalidate",
   "",
   "/assets/*",
   "  Cache-Control: public, max-age=31536000, immutable",
@@ -80,7 +80,7 @@ const headers = [
   "  Cache-Control: public, max-age=31536000, immutable",
   "",
   "/sw.js",
-  "  Cache-Control: no-cache",
+  "  Cache-Control: no-store, max-age=0, must-revalidate",
   "",
   "/game/*",
   "  Cache-Control: no-store",
