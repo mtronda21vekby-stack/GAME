@@ -1,0 +1,152 @@
+/* BLACKCROWN V3 — Platform and AI-Coach service scenes. */
+
+.bcPlatformV3,
+.bcCoachV3 {
+  width: min(1460px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: clamp(54px, 8vw, 112px) 0;
+}
+
+.bcPlatformV3__shell,
+.bcCoachV3__shell {
+  display: grid;
+  grid-template-columns: minmax(320px, .82fr) minmax(0, 1.18fr);
+  gap: clamp(30px, 6vw, 92px);
+  align-items: center;
+  padding: clamp(24px, 4vw, 58px);
+}
+
+.bcPlatformV3__visual,
+.bcCoachV3__visual {
+  position: relative;
+  min-height: clamp(320px, 38vw, 560px);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(0,229,255,.11);
+  border-radius: 28px;
+  background: radial-gradient(circle at 50% 50%, rgba(0,229,255,.1), transparent 58%), rgba(1,5,9,.72);
+}
+
+.bcPlatformV3__visual img,
+.bcCoachV3__visual img {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: contrast(1.12) saturate(1.12) brightness(1.02);
+}
+
+.bcPlatformV3__visual > span,
+.bcCoachV3__telemetry {
+  position: absolute;
+  z-index: 4;
+  left: 18px;
+  bottom: 16px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 8px;
+  font-weight: 760;
+  letter-spacing: .16em;
+  color: rgba(190,238,246,.58);
+}
+
+.bcPlatformV3__orbit {
+  position: absolute;
+  z-index: 3;
+  border-radius: 50%;
+  border: 1px solid rgba(0,229,255,.16);
+  pointer-events: none;
+}
+.bcPlatformV3__orbit--outer { width: 74%; aspect-ratio: 1; animation: bcServiceSpin 26s linear infinite; }
+.bcPlatformV3__orbit--inner { width: 48%; aspect-ratio: 1; border-style: dashed; animation: bcServiceSpin 18s linear infinite reverse; }
+.bcPlatformV3__pulse { position:absolute; z-index:1; width:46%; aspect-ratio:1; border-radius:50%; background:rgba(0,229,255,.12); filter:blur(34px); animation:bcServicePulse 4.8s ease-in-out infinite alternate; }
+
+.bcPlatformV3__eyebrow,
+.bcCoachV3__eyebrow {
+  color: rgba(164,224,237,.56);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 9px;
+  font-weight: 760;
+  letter-spacing: .15em;
+}
+
+.bcPlatformV3__copy h2,
+.bcCoachV3__copy h2 {
+  max-width: 12ch;
+  margin: 18px 0 0;
+  color: #f4f9ff;
+  font-size: clamp(2.5rem, 5vw, 5.8rem);
+  line-height: .91;
+  letter-spacing: -.065em;
+}
+
+.bcPlatformV3__copy > p,
+.bcCoachV3__copy > p {
+  max-width: 58ch;
+  margin: 22px 0 0;
+  color: rgba(190,207,226,.66);
+  font-size: clamp(14px, 1.25vw, 17px);
+  line-height: 1.68;
+}
+
+.bcPlatformV3__modules { display:grid; gap:10px; margin-top:30px; }
+.bcPlatformV3__module {
+  --module-rgb: 0,229,255;
+  width:100%; display:grid; grid-template-columns:auto minmax(0,1fr) auto auto; gap:14px; align-items:center;
+  min-height:82px; padding:14px 16px; border:1px solid rgba(var(--module-rgb),.12); border-radius:18px;
+  color:#edf8ff; background:rgba(2,8,13,.62); text-align:left; cursor:pointer;
+  transition:transform 280ms cubic-bezier(.16,1,.3,1), border-color 280ms ease, background 280ms ease;
+}
+.bcPlatformV3__module[data-tone="violet"] { --module-rgb:126,92,255; }
+.bcPlatformV3__module[data-tone="green"] { --module-rgb:91,255,193; }
+.bcPlatformV3__code { color:rgba(var(--module-rgb),.72); font:700 9px/1 ui-monospace,SFMono-Regular,monospace; letter-spacing:.14em; }
+.bcPlatformV3__moduleCopy { display:grid; gap:5px; }
+.bcPlatformV3__moduleCopy strong { font-size:15px; }
+.bcPlatformV3__moduleCopy small { color:rgba(190,207,226,.55); font-size:12px; line-height:1.35; }
+.bcPlatformV3__status { color:rgba(var(--module-rgb),.68); font:700 8px/1 ui-monospace,SFMono-Regular,monospace; letter-spacing:.12em; }
+.bcPlatformV3__arrow { color:rgba(220,244,255,.46); font-size:17px; }
+
+.bcCoachV3__shell { grid-template-columns:minmax(0,1.08fr) minmax(320px,.92fr); }
+.bcCoachV3__visual { background:radial-gradient(circle at 60% 45%, rgba(126,92,255,.18), transparent 48%), rgba(2,5,12,.78); }
+.bcCoachV3__halo { position:absolute; z-index:1; width:64%; aspect-ratio:1; border-radius:50%; background:rgba(126,92,255,.14); filter:blur(40px); }
+.bcCoachV3__nodes span { position:absolute; z-index:3; width:7px; height:7px; border-radius:50%; background:#c8fbff; box-shadow:0 0 16px rgba(0,229,255,.9); }
+.bcCoachV3__nodes span:nth-child(1){left:18%;top:22%}.bcCoachV3__nodes span:nth-child(2){right:20%;top:18%}.bcCoachV3__nodes span:nth-child(3){left:13%;bottom:24%}.bcCoachV3__nodes span:nth-child(4){right:14%;bottom:20%}.bcCoachV3__nodes span:nth-child(5){left:50%;top:12%}
+.bcCoachV3__telemetry { display:flex; gap:12px; align-items:center; }
+.bcCoachV3__telemetry strong { color:rgba(91,255,193,.82); }
+.bcCoachV3__features { display:flex; flex-wrap:wrap; gap:8px; margin-top:24px; }
+.bcCoachV3__features span { padding:9px 11px; border:1px solid rgba(126,92,255,.18); border-radius:999px; color:rgba(216,224,246,.68); background:rgba(126,92,255,.055); font:700 8px/1 ui-monospace,SFMono-Regular,monospace; letter-spacing:.1em; text-transform:uppercase; }
+.bcCoachV3__actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:28px; }
+
+@media (hover:hover) and (pointer:fine) {
+  .bcPlatformV3__module:hover { transform:translateX(5px); border-color:rgba(var(--module-rgb),.32); background:rgba(var(--module-rgb),.05); }
+}
+
+@media (max-width:900px) {
+  .bcPlatformV3__shell,
+  .bcCoachV3__shell { grid-template-columns:1fr; }
+  .bcCoachV3__visual { order:2; }
+  .bcCoachV3__copy { order:1; }
+  .bcPlatformV3__copy h2,
+  .bcCoachV3__copy h2 { max-width:14ch; }
+}
+
+@media (max-width:600px) {
+  .bcPlatformV3,
+  .bcCoachV3 { width:min(100% - 20px, 1460px); padding:42px 0; }
+  .bcPlatformV3__shell,
+  .bcCoachV3__shell { gap:22px; padding:14px; border-radius:22px; }
+  .bcPlatformV3__visual,
+  .bcCoachV3__visual { min-height:260px; border-radius:18px; }
+  .bcPlatformV3__copy,
+  .bcCoachV3__copy { padding:5px 4px 10px; }
+  .bcPlatformV3__copy h2,
+  .bcCoachV3__copy h2 { font-size:clamp(2.2rem, 11vw, 3.4rem); }
+  .bcPlatformV3__module { grid-template-columns:auto minmax(0,1fr) auto; min-height:76px; }
+  .bcPlatformV3__status { display:none; }
+  .bcCoachV3__actions .bcBtn { width:100%; }
+}
+
+@keyframes bcServiceSpin { to { transform:rotate(360deg); } }
+@keyframes bcServicePulse { from { opacity:.45; transform:scale(.88); } to { opacity:1; transform:scale(1.08); } }
+@media (prefers-reduced-motion:reduce) { .bcPlatformV3__orbit,.bcPlatformV3__pulse { animation:none !important; } .bcPlatformV3__module { transition:none !important; } }
