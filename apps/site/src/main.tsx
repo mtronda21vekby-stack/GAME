@@ -14,6 +14,7 @@ import "./styles/brand-nexus.css";
 import "./styles/v3-mobile-art-pass.css";
 import "./styles/dock-v2.css";
 import "./styles/home-v3.css";
+import "./styles/v3-1-visual-impact.css";
 import { App } from "./App";
 import { registerSW } from "./pwa/registerSW";
 import { ErrorBoundary } from "./ErrorBoundary";
@@ -80,17 +81,14 @@ function initMotionRuntime() {
   const root = document.documentElement;
 
   const state = {
-    // cursor
     cx: window.innerWidth * 0.5,
     cy: window.innerHeight * 0.35,
     tx: window.innerWidth * 0.5,
     ty: window.innerHeight * 0.35,
     pcx: window.innerWidth * 0.5,
     pcy: window.innerHeight * 0.35,
-    // scroll
     sy: window.scrollY || 0,
     psy: window.scrollY || 0,
-    // timing
     t: performance.now(),
     raf: 0 as number | 0,
     active: true,
@@ -130,7 +128,6 @@ function initMotionRuntime() {
     root.style.setProperty("--bc-cy-n", `${ny.toFixed(4)}`);
     root.style.setProperty("--bc-cvx", `${vx.toFixed(4)}`);
     root.style.setProperty("--bc-cvy", `${vy.toFixed(4)}`);
-
     root.style.setProperty("--bc-scroll-y", `${Math.round(state.sy)}px`);
     root.style.setProperty("--bc-scroll-p", `${sp.toFixed(5)}`);
     root.style.setProperty("--bc-scroll-v", `${sv.toFixed(5)}`);
