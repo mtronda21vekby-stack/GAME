@@ -1,5 +1,5 @@
 import React from "react";
-import { MobileDock } from "../components/MobileDock";
+import { DockV2 } from "../components/DockV2";
 import { SiteFooter } from "../components/SiteFooter";
 import { Home } from "./Home";
 import { About } from "./pages/About";
@@ -150,7 +150,7 @@ export function Router() {
       </div>
 
       {showGlobalNavigation ? <SiteFooter /> : null}
-      {showGlobalNavigation ? <MobileDock activePath={routePath} /> : null}
+      {showGlobalNavigation ? <DockV2 activePath={routePath} /> : null}
     </>
   );
 }
