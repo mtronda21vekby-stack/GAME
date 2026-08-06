@@ -1,0 +1,55 @@
+.bcReactorFX {
+  --bc-reactor-rgb: 0, 229, 255;
+  --bc-reactor-size: 220px;
+  position: absolute;
+  width: var(--bc-reactor-size);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  opacity: calc(.9 * var(--bc-reactor-intensity, 1));
+  filter: saturate(1.08);
+  isolation: isolate;
+}
+.bcReactorFX[data-tone="orange"] { --bc-reactor-rgb: 255, 105, 45; }
+.bcReactorFX[data-tone="violet"] { --bc-reactor-rgb: 126, 92, 255; }
+.bcReactorFX--compact { --bc-reactor-size: 150px; }
+.bcReactorFX--large { --bc-reactor-size: 320px; }
+.bcReactorFX__aura,
+.bcReactorFX__ring,
+.bcReactorFX__core,
+.bcReactorFX__beam { position: absolute; border-radius: 50%; }
+.bcReactorFX__aura {
+  inset: 12%;
+  background: radial-gradient(circle, rgba(var(--bc-reactor-rgb),.28), rgba(var(--bc-reactor-rgb),.08) 42%, transparent 72%);
+  filter: blur(22px);
+  animation: bcReactorPulse 3.8s ease-in-out infinite alternate;
+}
+.bcReactorFX__ring { border: 1px solid rgba(var(--bc-reactor-rgb),.32); box-shadow: 0 0 20px rgba(var(--bc-reactor-rgb),.08), inset 0 0 18px rgba(var(--bc-reactor-rgb),.05); }
+.bcReactorFX__ring--outer { inset: 4%; border-style: dashed; animation: bcReactorSpin 18s linear infinite; }
+.bcReactorFX__ring--middle { inset: 21%; animation: bcReactorSpinReverse 11s linear infinite; }
+.bcReactorFX__ring--inner { inset: 35%; border-color: rgba(var(--bc-reactor-rgb),.54); animation: bcReactorPulse 2.4s ease-in-out infinite alternate; }
+.bcReactorFX__core {
+  width: 22%;
+  aspect-ratio: 1;
+  background: radial-gradient(circle at 40% 35%, #fff 0 8%, rgba(220,255,255,.95) 10%, rgb(var(--bc-reactor-rgb)) 34%, rgba(var(--bc-reactor-rgb),.22) 68%, transparent 72%);
+  box-shadow: 0 0 18px rgba(var(--bc-reactor-rgb),.9), 0 0 58px rgba(var(--bc-reactor-rgb),.46);
+}
+.bcReactorFX__beam { width: 2px; height: 76%; border-radius: 999px; background: linear-gradient(transparent, rgba(var(--bc-reactor-rgb),.4), transparent); filter: blur(.3px); opacity: .55; }
+.bcReactorFX__spark { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: rgb(var(--bc-reactor-rgb)); box-shadow: 0 0 14px rgba(var(--bc-reactor-rgb),.95); animation: bcReactorSpark 2.8s ease-in-out infinite; }
+.bcReactorFX__spark--a { top: 18%; left: 27%; }
+.bcReactorFX__spark--b { right: 18%; top: 42%; animation-delay: -.9s; }
+.bcReactorFX__spark--c { bottom: 20%; left: 38%; animation-delay: -1.8s; }
+@keyframes bcReactorSpin { to { transform: rotate(360deg); } }
+@keyframes bcReactorSpinReverse { to { transform: rotate(-360deg); } }
+@keyframes bcReactorPulse { from { transform: scale(.94); opacity: .58; } to { transform: scale(1.04); opacity: 1; } }
+@keyframes bcReactorSpark { 0%,100% { transform: scale(.6); opacity: .2; } 45% { transform: scale(1.45); opacity: 1; } }
+@media (max-width:760px) {
+  .bcReactorFX[data-mobile-lite="true"] { --bc-reactor-size: 160px; filter: none; }
+  .bcReactorFX[data-mobile-lite="true"] .bcReactorFX__ring--middle,
+  .bcReactorFX[data-mobile-lite="true"] .bcReactorFX__spark--c { display: none; }
+  .bcReactorFX[data-mobile-lite="true"] .bcReactorFX__aura { filter: blur(16px); }
+}
+@media (prefers-reduced-motion:reduce) {
+  .bcReactorFX *, .bcReactorFX { animation: none !important; }
+}
