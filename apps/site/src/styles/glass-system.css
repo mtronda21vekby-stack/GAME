@@ -1,0 +1,51 @@
+.bcGlassSurface {
+  --bc-glass-rgb: 0, 229, 255;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid rgba(var(--bc-glass-rgb), .16);
+  border-radius: 24px;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.055), transparent 28%),
+    rgba(3, 9, 15, .72);
+  box-shadow: 0 28px 90px rgba(0,0,0,.46), inset 0 1px 0 rgba(255,255,255,.055);
+  backdrop-filter: blur(28px) saturate(1.2);
+  -webkit-backdrop-filter: blur(28px) saturate(1.2);
+}
+.bcGlassSurface[data-glass-tone="violet"] { --bc-glass-rgb: 126, 92, 255; }
+.bcGlassSurface[data-glass-tone="orange"] { --bc-glass-rgb: 255, 105, 45; }
+.bcGlassSurface[data-glass-tone="neutral"] { --bc-glass-rgb: 190, 210, 226; }
+.bcGlassSurface--frosted { background: rgba(7, 14, 22, .6); }
+.bcGlassSurface--reactor { background: radial-gradient(circle at 75% 100%, rgba(var(--bc-glass-rgb), .15), transparent 44%), rgba(4, 8, 13, .82); }
+.bcGlassSurface--metal { background: linear-gradient(135deg, rgba(20,29,37,.9), rgba(2,5,8,.94) 58%, rgba(12,19,26,.86)); }
+.bcGlassSurface__content { position: relative; z-index: 2; }
+.bcGlassSurface__light { position: absolute; z-index: 0; inset: -40%; background: radial-gradient(circle at 25% 20%, rgba(var(--bc-glass-rgb), .13), transparent 32%); pointer-events: none; }
+.bcGlassSurface__edge { position: absolute; z-index: 1; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px rgba(255,255,255,.025), inset 0 -30px 70px rgba(var(--bc-glass-rgb), .025); pointer-events: none; }
+.bcGlassSurface__noise { position: absolute; z-index: 1; inset: 0; opacity: .025; background-image: repeating-linear-gradient(0deg, rgba(255,255,255,.7) 0 1px, transparent 1px 3px); pointer-events: none; }
+.bcGlassSurface.is-interactive { transition: transform 320ms cubic-bezier(.16,1,.3,1), border-color 320ms ease, box-shadow 320ms ease; }
+@media (hover:hover) and (pointer:fine) { .bcGlassSurface.is-interactive:hover { transform: translateY(-4px); border-color: rgba(var(--bc-glass-rgb), .34); box-shadow: 0 36px 110px rgba(0,0,0,.54), 0 0 45px rgba(var(--bc-glass-rgb), .08), inset 0 1px 0 rgba(255,255,255,.08); } }
+
+/* Apply the V3 material language to the retained Nexus service sections. */
+.bcHomeV3 .bcNexusPlatform__shell,
+.bcHomeV3 .bcNexusCoach,
+.bcHomeV3 .bcNexusUpdate,
+.bcHomeV3 .bcNexusModule {
+  border-color: rgba(0,229,255,.13) !important;
+  background: linear-gradient(145deg, rgba(255,255,255,.04), transparent 28%), rgba(3,9,15,.7) !important;
+  box-shadow: 0 28px 90px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.05) !important;
+  backdrop-filter: blur(24px) saturate(1.15);
+  -webkit-backdrop-filter: blur(24px) saturate(1.15);
+}
+.bcHomeV3 .bcNexusCoach { background: radial-gradient(circle at 18% 50%, rgba(126,92,255,.12), transparent 42%), rgba(3,7,14,.76) !important; }
+.bcHomeV3 .bcNexusModule[data-tone="violet"] { border-color: rgba(126,92,255,.22) !important; }
+.bcHomeV3 .bcNexusModule[data-tone="green"] { border-color: rgba(91,255,193,.18) !important; }
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .bcGlassSurface,
+  .bcHomeV3 .bcNexusPlatform__shell,
+  .bcHomeV3 .bcNexusCoach,
+  .bcHomeV3 .bcNexusUpdate,
+  .bcHomeV3 .bcNexusModule { background-color: rgba(4,10,17,.96) !important; }
+}
+@media (max-width:760px) { .bcGlassSurface { border-radius: 20px; backdrop-filter: blur(20px) saturate(1.12); -webkit-backdrop-filter: blur(20px) saturate(1.12); } }
+@media (prefers-reduced-motion:reduce) { .bcGlassSurface.is-interactive { transition: none !important; transform: none !important; } }
