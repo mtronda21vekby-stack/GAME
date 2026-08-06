@@ -1,5 +1,4 @@
 import React from "react";
-import MatrixBackground from "./MatrixBackground";
 import "../styles/matrix-depth-engine.css";
 
 export type MatrixDepthQuality = "auto" | "low" | "high";
@@ -12,6 +11,10 @@ export type MatrixDepthEngineProps = {
 
 type DepthStyle = React.CSSProperties & {
   "--bc-matrix-depth-intensity"?: string;
+};
+
+type GlyphStyle = React.CSSProperties & {
+  "--bc-glyph-index"?: number;
 };
 
 const GLYPHS = ["01", "BC", "N", "X", "//", "A7", "R", "C", "K", "11", "V3", "∞"] as const;
@@ -36,11 +39,7 @@ function useMedia(query: string) {
   return matches;
 }
 
-export function MatrixDepthEngine({
-  quality = "auto",
-  intensity = 1,
-  className,
-}: MatrixDepthEngineProps) {
+export function MatrixDepthEngine({ quality = "auto", intensity = 1, className }: MatrixDepthEngineProps) {
   const reducedMotion = useMedia("(prefers-reduced-motion: reduce)");
   const coarsePointer = useMedia("(pointer: coarse)");
   const narrowViewport = useMedia("(max-width: 760px)");
@@ -49,20 +48,11 @@ export function MatrixDepthEngine({
     return Boolean(connection?.saveData);
   }, []);
 
-  const resolvedQuality =
-    quality === "auto"
-      ? saveData || coarsePointer || narrowViewport
-        ? "low"
-        : "high"
-      : quality;
-
+  const resolvedQuality = quality === "auto" ? (saveData || coarsePointer || narrowViewport ? "low" : "high") : quality;
   const safeIntensity = clamp(intensity, 0.35, 1.35);
+  const glyphCount = resolvedQuality === "high" ? 24 : 12;
   const classes = ["bcMatrixDepthEngine", className].filter(Boolean).join(" ");
-  const style: DepthStyle = {
-    "--bc-matrix-depth-intensity": safeIntensity.toFixed(2),
-  };
-
-  const glyphCount = resolvedQuality === "high" ? 12 : 6;
+  const style: DepthStyle = { "--bc-matrix-depth-intensity": safeIntensity.toFixed(2) };
 
   return (
     <div
@@ -72,20 +62,12 @@ export function MatrixDepthEngine({
       data-reduced-motion={reducedMotion ? "true" : "false"}
       aria-hidden="true"
     >
-      <MatrixBackground
-        className="bcMatrixDepthEngine__canvas"
-        intensity={resolvedQuality === "high" ? safeIntensity : safeIntensity * 0.72}
-      />
-
       <div className="bcMatrixDepthEngine__plane bcMatrixDepthEngine__plane--far" />
       <div className="bcMatrixDepthEngine__plane bcMatrixDepthEngine__plane--middle" />
 
-      <div className="bcMatrixDepthEngine__near" aria-hidden="true">
+      <div className="bcMatrixDepthEngine__near">
         {Array.from({ length: glyphCount }, (_, index) => (
-          <span
-            key={`${GLYPHS[index % GLYPHS.length]}-${index}`}
-            style={{ "--bc-glyph-index": index } as React.CSSProperties}
-          >
+          <span key={`${GLYPHS[index % GLYPHS.length]}-${index}`} style={{ "--bc-glyph-index": index } as GlyphStyle}>
             {GLYPHS[index % GLYPHS.length]}
           </span>
         ))}
