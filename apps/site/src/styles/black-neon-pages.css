@@ -1,0 +1,637 @@
+/* BlackCrown black-neon treatment for Store, Account, About, Support and legal pages. */
+
+.bcRouteView:not([data-route="/"]):not([data-route="/admin"]) {
+  --page-accent-rgb: var(--bc-neon-rgb);
+  --page-accent: var(--bc-neon);
+}
+
+.bcRouteView[data-route="/store"] {
+  --page-accent-rgb: var(--bc-violet-rgb);
+  --page-accent: var(--bc-violet);
+}
+
+.bcRouteView[data-route="/account"] {
+  --page-accent-rgb: var(--bc-blue-rgb);
+  --page-accent: var(--bc-blue);
+}
+
+.bcRouteView[data-route="/support"] {
+  --page-accent-rgb: var(--bc-green-rgb);
+  --page-accent: var(--bc-green);
+}
+
+.bcRouteView[data-route="/privacy"],
+.bcRouteView[data-route="/terms"] {
+  --page-accent-rgb: 118, 164, 208;
+  --page-accent: #76a4d0;
+}
+
+/* ---------- shared compact page hero ---------- */
+
+.bcRouteView:not([data-route="/"]):not([data-route="/admin"]) .bcHero {
+  min-height: auto !important;
+  padding:
+    clamp(104px, 11vh, 132px)
+    clamp(16px, 4vw, 54px)
+    26px !important;
+  overflow: visible !important;
+}
+
+.bcRouteView:not([data-route="/"]):not([data-route="/admin"]) .bcHero > .bcTop + div {
+  width: min(1180px, 100%);
+  max-width: 1180px !important;
+  margin: 0 auto !important;
+  padding: 18px 0 14px !important;
+}
+
+.bcRouteView:not([data-route="/"]):not([data-route="/admin"]) .bcHero > .bcTop + div > .glassStrong {
+  position: relative;
+  isolation: isolate;
+  min-height: 330px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: clamp(27px, 4vw, 54px) !important;
+  overflow: hidden;
+  border: 1px solid rgba(var(--page-accent-rgb), 0.14) !important;
+  border-radius: 30px !important;
+  background:
+    radial-gradient(circle at 82% 12%, rgba(var(--page-accent-rgb), 0.12), transparent 31%),
+    radial-gradient(circle at 8% 88%, rgba(var(--bc-neon-rgb), 0.045), transparent 31%),
+    linear-gradient(145deg, rgba(15, 28, 43, 0.66), rgba(3, 8, 14, 0.92) 62%),
+    rgba(3, 8, 14, 0.9) !important;
+  box-shadow:
+    0 42px 128px rgba(0, 0, 0, 0.62),
+    0 0 0 1px rgba(255, 255, 255, 0.018),
+    inset 0 1px 0 rgba(217, 250, 255, 0.055) !important;
+  backdrop-filter: blur(22px) saturate(1.1) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.1) !important;
+}
+
+.bcRouteView:not([data-route="/"]):not([data-route="/admin"]) .bcHero > .bcTop + div > .glassStrong::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -46%;
+  right: -10%;
+  width: min(52%, 460px);
+  aspect-ratio: 1;
+  border: 1px solid rgba(var(--page-accent-rgb), 0.13);
+  border-radius: 50%;
+  background:
+    repeating-radial-gradient(circle, transparent 0 34px, rgba(var(--page-accent-rgb), 0.035) 35px 36px),
+    radial-gradient(circle, rgba(var(--page-accent-rgb), 0.075), transparent 67%);
+  box-shadow: 0 0 0 46px rgba(var(--page-accent-rgb), 0.01), 0 0 0 88px rgba(var(--bc-violet-rgb), 0.008);
+  transform: translate3d(calc(var(--bc-cx-n, 0) * -12px), calc(var(--bc-cy-n, 0) * -8px), 0);
+  transition: transform 480ms var(--bc-ease-out);
+  pointer-events: none;
+}
+
+.bcRouteView:not([data-route="/"]):not([data-route="/admin"]) .bcHero > .bcTop + div > .glassStrong::after {
+  content: "BC // PUBLIC PLATFORM";
+  position: absolute;
+  top: 22px;
+  right: 25px;
+  color: rgba(var(--page-accent-rgb), 0.38);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 7px;
+  font-weight: 720;
+  letter-spacing: 0.18em;
+}
+
+.bcRouteView[data-route="/store"] .bcHero > .bcTop + div > .glassStrong::after {
+  content: "BC // DIGITAL COLLECTION";
+}
+
+.bcRouteView[data-route="/account"] .bcHero > .bcTop + div > .glassStrong::after {
+  content: "BC // PLAYER PROFILE";
+}
+
+.bcRouteView[data-route="/support"] .bcHero > .bcTop + div > .glassStrong::after {
+  content: "BC // SUPPORT CHANNEL";
+}
+
+.bcRouteView[data-route="/about"] .bcHero > .bcTop + div > .glassStrong::after {
+  content: "BC // PLATFORM BRIEF";
+}
+
+.bcRouteView[data-route="/privacy"] .bcHero > .bcTop + div > .glassStrong::after,
+.bcRouteView[data-route="/terms"] .bcHero > .bcTop + div > .glassStrong::after {
+  content: "BC // LEGAL DOCUMENT";
+}
+
+.bcRouteView:not([data-route="/"]):not([data-route="/admin"]) .bcH1 {
+  max-width: 14ch;
+  margin: 18px 0 0 !important;
+  color: transparent !important;
+  background: linear-gradient(100deg, var(--bc-copy), rgba(208, 245, 255, 0.92) 58%, rgba(var(--page-accent-rgb), 0.84));
+  background-clip: text;
+  -webkit-background-clip: text;
+  font-size: clamp(2.8rem, 5.1vw, 4.75rem) !important;
+  font-weight: 790 !important;
+  line-height: 0.94 !important;
+  letter-spacing: -0.071em !important;
+  text-wrap: balance;
+}
+
+.bcRouteView[data-route="/privacy"] .bcH1,
+.bcRouteView[data-route="/terms"] .bcH1 {
+  max-width: 18ch;
+  background: linear-gradient(100deg, var(--bc-copy), rgba(200, 220, 241, 0.82));
+  background-clip: text;
+  -webkit-background-clip: text;
+}
+
+.bcRouteView:not([data-route="/"]):not([data-route="/admin"]) .bcLead {
+  max-width: 68ch !important;
+  margin-top: 14px !important;
+  color: var(--bc-copy-muted) !important;
+  font-size: clamp(14px, 1.25vw, 16px) !important;
+  font-weight: 480 !important;
+  line-height: 1.68 !important;
+}
+
+/* Inline page pills are normalized without changing page business logic. */
+.bcRouteView:not([data-route="/"]):not([data-route="/admin"]) .bcSiteRoot span[style*="border-radius: 999px"] {
+  padding: 7px 9px !important;
+  border: 1px solid rgba(var(--page-accent-rgb), 0.15) !important;
+  border-radius: 999px !important;
+  background: rgba(var(--page-accent-rgb), 0.045) !important;
+  color: rgba(203, 224, 242, 0.68) !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-size: 8px !important;
+  font-weight: 710 !important;
+  letter-spacing: 0.09em !important;
+  text-transform: uppercase;
+}
+
+/* ---------- content width and generic cards ---------- */
+
+.bcRouteView:not([data-route="/"]):not([data-route="/admin"]) .bcSection {
+  width: min(1280px, 100%);
+  padding:
+    clamp(28px, 4vw, 58px)
+    clamp(16px, 4vw, 54px)
+    clamp(70px, 8vw, 112px) !important;
+}
+
+.bcRouteView:not([data-route="/"]):not([data-route="/admin"]) .bcSection > div:first-child {
+  width: min(1180px, 100%);
+  max-width: 1180px !important;
+  margin-inline: auto !important;
+  padding-inline: 0 !important;
+}
+
+.bcRouteView:not([data-route="/"]):not([data-route="/admin"]) .bcSection .glassStrong {
+  position: relative;
+  border: 1px solid rgba(var(--page-accent-rgb), 0.09) !important;
+  border-radius: 22px !important;
+  background:
+    radial-gradient(circle at 92% 0%, rgba(var(--page-accent-rgb), 0.04), transparent 28%),
+    linear-gradient(145deg, rgba(12, 23, 36, 0.6), rgba(3, 8, 14, 0.91) 64%),
+    rgba(3, 8, 14, 0.88) !important;
+  box-shadow:
+    0 26px 82px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(218, 249, 255, 0.035) !important;
+}
+
+.bcRouteView:not([data-route="/"]):not([data-route="/admin"]) .bcSection .glassStrong > div:first-child [style*="font-weight: 980"],
+.bcRouteView:not([data-route="/"]):not([data-route="/admin"]) .bcSection .glassStrong > div:first-child [style*="font-weight: 950"] {
+  color: rgba(238, 246, 255, 0.9) !important;
+  letter-spacing: -0.03em !important;
+}
+
+.bcRouteView:not([data-route="/"]):not([data-route="/admin"]) .bcSection [style*="opacity: 0.86"],
+.bcRouteView:not([data-route="/"]):not([data-route="/admin"]) .bcSection [style*="opacity: 0.82"],
+.bcRouteView:not([data-route="/"]):not([data-route="/admin"]) .bcSection [style*="opacity: 0.78"] {
+  color: var(--bc-copy-muted) !important;
+  font-weight: 500 !important;
+}
+
+/* ---------- form system ---------- */
+
+.bcRouteView:not([data-route="/admin"]) .bcSiteRoot :where(input, textarea, select) {
+  min-height: 46px;
+  border: 1px solid rgba(var(--page-accent-rgb, var(--bc-neon-rgb)), 0.16) !important;
+  border-radius: 13px !important;
+  background:
+    linear-gradient(180deg, rgba(8, 17, 28, 0.84), rgba(3, 8, 14, 0.92)) !important;
+  color: var(--bc-copy) !important;
+  caret-color: var(--page-accent, var(--bc-neon));
+  box-shadow:
+    inset 0 1px 0 rgba(229, 252, 255, 0.035),
+    inset 0 10px 30px rgba(0, 0, 0, 0.15);
+  font-weight: 600 !important;
+  outline: none !important;
+  transition: border-color 180ms ease, box-shadow 200ms ease, background 180ms ease;
+}
+
+.bcRouteView:not([data-route="/admin"]) .bcSiteRoot :where(input, textarea, select)::placeholder {
+  color: rgba(150, 174, 199, 0.42) !important;
+}
+
+.bcRouteView:not([data-route="/admin"]) .bcSiteRoot :where(input, textarea, select):focus {
+  border-color: rgba(var(--page-accent-rgb, var(--bc-neon-rgb)), 0.58) !important;
+  background:
+    linear-gradient(180deg, rgba(9, 24, 37, 0.92), rgba(3, 10, 17, 0.96)) !important;
+  box-shadow:
+    0 0 0 3px rgba(var(--page-accent-rgb, var(--bc-neon-rgb)), 0.1),
+    0 12px 34px rgba(var(--page-accent-rgb, var(--bc-neon-rgb)), 0.055),
+    inset 0 1px 0 rgba(231, 253, 255, 0.05) !important;
+}
+
+.bcRouteView:not([data-route="/admin"]) input:-webkit-autofill,
+.bcRouteView:not([data-route="/admin"]) input:-webkit-autofill:hover,
+.bcRouteView:not([data-route="/admin"]) input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--bc-copy);
+  -webkit-box-shadow: 0 0 0 1000px #07111b inset !important;
+  transition: background-color 9999s ease-out 0s;
+}
+
+/* Segmented controls authored as inline buttons. */
+.bcRouteView:not([data-route="/admin"]) button[aria-pressed] {
+  min-height: 40px !important;
+  padding: 8px 12px !important;
+  border: 1px solid rgba(var(--page-accent-rgb, var(--bc-neon-rgb)), 0.1) !important;
+  border-radius: 11px !important;
+  background: rgba(7, 14, 23, 0.74) !important;
+  color: rgba(188, 210, 230, 0.58) !important;
+  font-size: 11px !important;
+  font-weight: 690 !important;
+  cursor: pointer;
+  transition: border-color 180ms ease, color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+.bcRouteView:not([data-route="/admin"]) button[aria-pressed="true"] {
+  border-color: rgba(var(--page-accent-rgb, var(--bc-neon-rgb)), 0.38) !important;
+  background:
+    linear-gradient(180deg, rgba(var(--page-accent-rgb, var(--bc-neon-rgb)), 0.14), rgba(var(--page-accent-rgb, var(--bc-neon-rgb)), 0.055)) !important;
+  color: rgba(229, 250, 255, 0.92) !important;
+  box-shadow:
+    0 8px 24px rgba(var(--page-accent-rgb, var(--bc-neon-rgb)), 0.075),
+    inset 0 1px 0 rgba(233, 253, 255, 0.08) !important;
+}
+
+/* ---------- Store ---------- */
+
+.bcRouteView[data-route="/store"] .bcHero > .bcTop + div > .glassStrong {
+  background:
+    radial-gradient(circle at 84% 10%, rgba(var(--bc-violet-rgb), 0.14), transparent 32%),
+    radial-gradient(circle at 12% 86%, rgba(var(--bc-neon-rgb), 0.055), transparent 32%),
+    linear-gradient(145deg, rgba(19, 19, 42, 0.7), rgba(3, 8, 15, 0.93) 62%),
+    rgba(3, 8, 14, 0.91) !important;
+}
+
+.bcRouteView[data-route="/store"] .bcSection [style*="grid-template-columns: repeat(2"] {
+  gap: 14px !important;
+}
+
+.bcRouteView[data-route="/store"] [role="button"].glassStrong {
+  --store-card-rgb: var(--bc-violet-rgb);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-color: rgba(var(--store-card-rgb), 0.13) !important;
+  border-radius: 22px !important;
+  background:
+    radial-gradient(circle at var(--bc-glow-x, 82%) var(--bc-glow-y, 12%), rgba(var(--store-card-rgb), 0.1), transparent 38%),
+    linear-gradient(150deg, rgba(18, 25, 45, 0.68), rgba(3, 8, 15, 0.92) 63%),
+    rgba(3, 8, 15, 0.9) !important;
+  box-shadow:
+    0 28px 82px rgba(0, 0, 0, 0.46),
+    inset 0 1px 0 rgba(226, 250, 255, 0.04) !important;
+  transform:
+    perspective(1100px)
+    rotateX(var(--bc-tilt-x, 0deg))
+    rotateY(var(--bc-tilt-y, 0deg));
+  transform-style: preserve-3d;
+  transition: transform 260ms var(--bc-ease-out), border-color 220ms ease, box-shadow 260ms var(--bc-ease-out) !important;
+}
+
+.bcRouteView[data-route="/store"] [role="button"].glassStrong::before {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 25%, rgba(224, 250, 255, 0.055), transparent 59%);
+  opacity: 0;
+  transition: opacity 220ms ease;
+  pointer-events: none;
+}
+
+.bcRouteView[data-route="/store"] [role="button"].glassStrong > div:first-child {
+  min-height: 205px;
+  border-bottom: 1px solid rgba(var(--bc-violet-rgb), 0.08);
+  transform: translateZ(16px);
+}
+
+.bcRouteView[data-route="/store"] [role="button"].glassStrong > div:last-child {
+  padding: 16px !important;
+  transform: translateZ(20px);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .bcRouteView[data-route="/store"] [role="button"].glassStrong:hover {
+    border-color: rgba(var(--bc-violet-rgb), 0.34) !important;
+    box-shadow:
+      0 42px 112px rgba(0, 0, 0, 0.58),
+      0 0 38px rgba(var(--bc-violet-rgb), 0.07),
+      inset 0 1px 0 rgba(229, 251, 255, 0.065) !important;
+  }
+
+  .bcRouteView[data-route="/store"] [role="button"].glassStrong:hover::before {
+    opacity: 1;
+  }
+}
+
+.bcRouteView[data-route="/store"] button[style*="text-align: left"] {
+  border-color: rgba(var(--bc-violet-rgb), 0.1) !important;
+  background:
+    linear-gradient(90deg, rgba(var(--bc-violet-rgb), 0.045), transparent 44%),
+    rgba(4, 10, 18, 0.78) !important;
+  color: rgba(231, 240, 251, 0.82) !important;
+  transition: border-color 180ms ease, background 180ms ease, translate 180ms var(--bc-ease-out);
+}
+
+@media (hover: hover) {
+  .bcRouteView[data-route="/store"] button[style*="text-align: left"]:hover {
+    translate: 0 -1px;
+    border-color: rgba(var(--bc-violet-rgb), 0.27) !important;
+    background:
+      linear-gradient(90deg, rgba(var(--bc-violet-rgb), 0.09), transparent 50%),
+      rgba(6, 13, 23, 0.92) !important;
+  }
+}
+
+.bcRouteView[data-route="/store"] [style*="background: rgba(0, 0, 0, 0.16)"],
+.bcRouteView[data-route="/store"] [style*="background: rgba(0,0,0,0.16)"] {
+  background: rgba(4, 10, 18, 0.76) !important;
+  border-color: rgba(var(--bc-violet-rgb), 0.1) !important;
+}
+
+/* ---------- Account ---------- */
+
+.bcRouteView[data-route="/account"] .bcHero > .bcTop + div > .glassStrong {
+  background:
+    radial-gradient(circle at 84% 9%, rgba(var(--bc-blue-rgb), 0.15), transparent 32%),
+    radial-gradient(circle at 9% 88%, rgba(var(--bc-neon-rgb), 0.05), transparent 30%),
+    linear-gradient(145deg, rgba(12, 27, 45, 0.7), rgba(3, 8, 15, 0.93) 62%),
+    rgba(3, 8, 14, 0.91) !important;
+}
+
+.bcRouteView[data-route="/account"] div[aria-label="Прогресс уровня"] {
+  height: 9px !important;
+  border-color: rgba(var(--bc-blue-rgb), 0.14) !important;
+  background: rgba(1, 5, 10, 0.76) !important;
+  box-shadow: inset 0 2px 7px rgba(0, 0, 0, 0.55);
+}
+
+.bcRouteView[data-route="/account"] div[aria-label="Прогресс уровня"] > div {
+  background: linear-gradient(90deg, var(--bc-neon), var(--bc-blue) 58%, var(--bc-violet)) !important;
+  box-shadow: 0 0 18px rgba(var(--bc-neon-rgb), 0.42);
+}
+
+.bcRouteView[data-route="/account"] button[aria-label="Аватар"] {
+  border-color: rgba(var(--bc-neon-rgb), 0.24) !important;
+  box-shadow:
+    0 22px 64px rgba(0, 0, 0, 0.48),
+    0 0 28px rgba(var(--bc-neon-rgb), 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+.bcRouteView[data-route="/account"] button[aria-label^="Аватар "] {
+  border-color: rgba(var(--bc-blue-rgb), 0.14) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  transition: translate 180ms var(--bc-ease-out), border-color 180ms ease, box-shadow 180ms ease;
+}
+
+@media (hover: hover) {
+  .bcRouteView[data-route="/account"] button[aria-label^="Аватар "]:hover {
+    translate: 0 -2px;
+    border-color: rgba(var(--bc-neon-rgb), 0.42) !important;
+    box-shadow: 0 12px 30px rgba(var(--bc-neon-rgb), 0.08) !important;
+  }
+}
+
+.bcRouteView[data-route="/account"] [style*="grid-template-columns: repeat(4"] {
+  gap: 9px !important;
+}
+
+.bcRouteView[data-route="/account"] .bcSection .glassStrong [style*="background-image"] {
+  border-color: rgba(var(--bc-blue-rgb), 0.14) !important;
+}
+
+/* ---------- Support / FAQ ---------- */
+
+.bcRouteView[data-route="/support"] .bcHero > .bcTop + div > .glassStrong {
+  background:
+    radial-gradient(circle at 82% 11%, rgba(var(--bc-green-rgb), 0.11), transparent 31%),
+    radial-gradient(circle at 8% 89%, rgba(var(--bc-neon-rgb), 0.05), transparent 30%),
+    linear-gradient(145deg, rgba(11, 31, 36, 0.66), rgba(3, 8, 14, 0.93) 62%),
+    rgba(3, 8, 14, 0.91) !important;
+}
+
+.bcRouteView[data-route="/support"] [aria-expanded] {
+  min-height: 52px;
+  border-radius: 14px !important;
+  color: rgba(232, 244, 253, 0.84) !important;
+  font-size: 12px;
+  font-weight: 690 !important;
+}
+
+.bcRouteView[data-route="/support"] [aria-expanded] + div {
+  color: var(--bc-copy-muted) !important;
+  font-weight: 480 !important;
+  line-height: 1.68 !important;
+}
+
+.bcRouteView[data-route="/support"] [style*="overflow: hidden"]:has(> [aria-expanded]) {
+  border-color: rgba(var(--bc-green-rgb), 0.1) !important;
+  background: rgba(4, 12, 18, 0.72) !important;
+  transition: border-color 180ms ease, background 180ms ease;
+}
+
+.bcRouteView[data-route="/support"] [style*="overflow: hidden"]:has(> [aria-expanded="true"]) {
+  border-color: rgba(var(--bc-green-rgb), 0.26) !important;
+  background:
+    linear-gradient(145deg, rgba(var(--bc-green-rgb), 0.055), transparent 58%),
+    rgba(4, 12, 18, 0.86) !important;
+}
+
+/* ---------- About ---------- */
+
+.bcRouteView[data-route="/about"] .bcSection .glassStrong img {
+  filter: brightness(1.6) saturate(0.2) drop-shadow(0 0 9px rgba(var(--bc-neon-rgb), 0.45));
+}
+
+.bcRouteView[data-route="/about"] .bcSection .glassStrong {
+  min-height: 150px;
+}
+
+/* ---------- legal reading mode ---------- */
+
+.bcRouteView[data-route="/privacy"] .bcSection > div:first-child,
+.bcRouteView[data-route="/terms"] .bcSection > div:first-child {
+  width: min(920px, 100%);
+  max-width: 920px !important;
+}
+
+.bcRouteView[data-route="/privacy"] .bcSection .glassStrong,
+.bcRouteView[data-route="/terms"] .bcSection .glassStrong {
+  padding: clamp(20px, 3vw, 30px) !important;
+  border-color: rgba(122, 164, 208, 0.1) !important;
+  background:
+    linear-gradient(145deg, rgba(12, 21, 32, 0.68), rgba(3, 8, 14, 0.93) 65%),
+    rgba(3, 8, 14, 0.91) !important;
+  box-shadow: 0 24px 72px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(220, 240, 255, 0.035) !important;
+  backdrop-filter: blur(13px) !important;
+  -webkit-backdrop-filter: blur(13px) !important;
+}
+
+.bcRouteView[data-route="/privacy"] .bcSection .glassStrong > div:first-child,
+.bcRouteView[data-route="/terms"] .bcSection .glassStrong > div:first-child {
+  color: rgba(236, 244, 253, 0.9) !important;
+  font-size: 17px !important;
+  font-weight: 730 !important;
+  letter-spacing: -0.025em !important;
+}
+
+.bcRouteView[data-route="/privacy"] .bcSection .glassStrong > div:last-child,
+.bcRouteView[data-route="/terms"] .bcSection .glassStrong > div:last-child {
+  color: rgba(190, 206, 225, 0.7) !important;
+  font-size: 14px;
+  font-weight: 470 !important;
+  line-height: 1.78 !important;
+}
+
+/* ---------- modal system ---------- */
+
+body:has([role="dialog"]) {
+  overflow: hidden;
+}
+
+[role="dialog"][aria-modal="true"] {
+  padding:
+    max(18px, env(safe-area-inset-top, 0px))
+    max(14px, env(safe-area-inset-right, 0px))
+    max(18px, env(safe-area-inset-bottom, 0px))
+    max(14px, env(safe-area-inset-left, 0px)) !important;
+  background:
+    radial-gradient(circle at 50% 40%, rgba(var(--bc-neon-rgb), 0.055), transparent 34%),
+    rgba(0, 2, 5, 0.76) !important;
+  backdrop-filter: blur(12px) saturate(0.86);
+  -webkit-backdrop-filter: blur(12px) saturate(0.86);
+}
+
+[role="dialog"][aria-modal="true"] > .glassStrong {
+  width: min(620px, 100%) !important;
+  max-height: min(820px, calc(100vh - 36px));
+  padding: clamp(18px, 3vw, 26px) !important;
+  overflow: auto;
+  border: 1px solid rgba(var(--bc-neon-rgb), 0.2) !important;
+  border-radius: 24px !important;
+  background:
+    radial-gradient(circle at 88% 0%, rgba(var(--bc-violet-rgb), 0.08), transparent 32%),
+    linear-gradient(145deg, rgba(13, 25, 39, 0.98), rgba(2, 7, 12, 0.99) 64%),
+    #03080e !important;
+  box-shadow:
+    0 48px 160px rgba(0, 0, 0, 0.76),
+    0 0 52px rgba(var(--bc-neon-rgb), 0.07),
+    inset 0 1px 0 rgba(225, 251, 255, 0.065) !important;
+}
+
+[role="dialog"] .bc-h2 {
+  color: var(--bc-copy);
+  font-size: 22px;
+  font-weight: 760;
+  letter-spacing: -0.045em;
+}
+
+[role="dialog"] .bc-p {
+  color: var(--bc-copy-muted);
+  font-weight: 480;
+}
+
+/* ---------- responsive pages ---------- */
+
+@media (max-width: 900px) {
+  .bcRouteView[data-route="/store"] .bcSection [style*="grid-template-columns: repeat(2"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .bcRouteView:not([data-route="/"]):not([data-route="/admin"]) .bcHero {
+    padding: 82px 11px 16px !important;
+  }
+
+  .bcRouteView:not([data-route="/"]):not([data-route="/admin"]) .bcHero > .bcTop + div {
+    padding: 14px 0 10px !important;
+  }
+
+  .bcRouteView:not([data-route="/"]):not([data-route="/admin"]) .bcHero > .bcTop + div > .glassStrong {
+    min-height: 320px;
+    padding: 25px 21px !important;
+    border-radius: 24px !important;
+  }
+
+  .bcRouteView:not([data-route="/"]):not([data-route="/admin"]) .bcHero > .bcTop + div > .glassStrong::before {
+    top: -18%;
+    right: -42%;
+    width: 88%;
+  }
+
+  .bcRouteView:not([data-route="/"]):not([data-route="/admin"]) .bcHero > .bcTop + div > .glassStrong::after {
+    top: 18px;
+    right: 20px;
+    font-size: 6px;
+  }
+
+  .bcRouteView:not([data-route="/"]):not([data-route="/admin"]) .bcH1 {
+    max-width: 12ch;
+    font-size: clamp(2.65rem, 12.7vw, 4rem) !important;
+  }
+
+  .bcRouteView:not([data-route="/"]):not([data-route="/admin"]) .bcSection {
+    padding: 22px 11px 76px !important;
+  }
+
+  .bcRouteView:not([data-route="/"]):not([data-route="/admin"]) .bcSection .glassStrong {
+    border-radius: 19px !important;
+  }
+
+  .bcRouteView[data-route="/store"] [role="button"].glassStrong {
+    transform: none;
+  }
+
+  .bcRouteView[data-route="/store"] [role="button"].glassStrong > div:first-child {
+    min-height: 190px;
+  }
+
+  .bcRouteView[data-route="/account"] [style*="grid-template-columns: repeat(4"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  [role="dialog"][aria-modal="true"] > .glassStrong {
+    max-height: calc(100vh - 22px);
+    border-radius: 20px !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .bcRouteView:not([data-route="/"]):not([data-route="/admin"]) .bcHero > .bcTop + div > .glassStrong {
+    padding-inline: 18px !important;
+  }
+
+  .bcRouteView:not([data-route="/"]):not([data-route="/admin"]) .bcH1 {
+    font-size: clamp(2.45rem, 13.4vw, 3.5rem) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bcRouteView:not([data-route="/"]):not([data-route="/admin"]) .bcHero > .bcTop + div > .glassStrong::before,
+  .bcRouteView[data-route="/store"] [role="button"].glassStrong {
+    transform: none !important;
+    transition: none !important;
+  }
+}
