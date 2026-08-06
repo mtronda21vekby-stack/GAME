@@ -1,11 +1,12 @@
 /* BlackCrown site service worker.
  *
  * Navigation is deliberately network-only with a small offline response. We do
- * not cache index.html because stale HTML can reference hashed JavaScript files
- * that no longer exist after a deployment, leaving Safari on a blank black page.
+ * not cache index.html because stale HTML can reference hashed JavaScript or CSS
+ * files that no longer exist after a deployment, leaving Safari with a blank or
+ * completely unstyled page.
  */
 
-const CACHE = "bc-site-v3";
+const CACHE = "bc-site-v4";
 const CACHE_PREFIX = "bc-site-";
 const STATIC = ["/manifest.webmanifest"];
 
@@ -13,7 +14,7 @@ const OFFLINE_HTML = `<!doctype html>
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,viewport-fit=cover" />
   <meta name="color-scheme" content="dark" />
   <title>BlackCrown — offline</title>
   <style>
@@ -33,6 +34,10 @@ const OFFLINE_HTML = `<!doctype html>
   </main>
 </body>
 </html>`;
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
+});
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
