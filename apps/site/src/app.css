@@ -1,10 +1,20 @@
-html, body {
+html,
+body {
   height: 100%;
+  width: 100%;
+  max-width: 100%;
   margin: 0;
   padding: 0;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 :root {
+  /* Runtime health marker: the boot layer uses this to detect a missing Vite CSS bundle. */
+  --bc-site-css-ready: 1;
   --app-vh: 100vh;
 
   --bg0: #05070f;
@@ -18,12 +28,17 @@ html, body {
 }
 
 body {
+  min-width: 0;
   background: var(--bg1);
   color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
   overflow-x: hidden;
 }
 
 #root {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
   min-height: 100%;
 }
 
