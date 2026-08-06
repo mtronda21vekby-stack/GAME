@@ -1,7 +1,13 @@
 import React from "react";
 import { userStorage } from "@blackcrown/core";
 import HeroScene from "../components/HeroScene";
+import WorldStageV2 from "../components/WorldStageV2";
 import { Home as NexusHome } from "./Home";
+
+const WORLD_ART = {
+  evofish: "/assets/site/neon/evofish.svg",
+  crownFront: "/assets/games/crown-front/crown-front-preview.svg",
+} as const;
 
 function getPlayerName() {
   return userStorage.getString("nickname", "") || "Игрок";
@@ -25,14 +31,6 @@ function scrollToWorlds() {
   });
 }
 
-/**
- * Transitional V3 composition.
- *
- * HeroScene owns the new first viewport while the existing NexusHome continues
- * to provide the world, platform, AI-Coach and live-content sections. The old
- * inline hero is hidden by home-v3.css, so production behavior remains intact
- * while the monolithic Home.tsx is split into dedicated components file by file.
- */
 export function HomeV3() {
   const playerName = getPlayerName();
 
@@ -44,6 +42,49 @@ export function HomeV3() {
         onPlay={() => navigateExternal("/game/")}
         onExploreWorlds={scrollToWorlds}
       />
+
+      <section id="worlds" className="bcWorldsV2" aria-labelledby="bc-worlds-v2-title">
+        <div className="bcWorldsV2__head">
+          <span>FEATURED WORLDS / V3</span>
+          <h2 id="bc-worlds-v2-title">Миры внутри BlackCrown.</h2>
+          <p>
+            Два разных визуальных языка, связанные одной системой: океанская биолюминесценция EvoFish и реакторный black-metal CROWN//FRONT.
+          </p>
+        </div>
+
+        <div className="bcWorldsV2__list">
+          <WorldStageV2
+            index="01"
+            title="EvoFish"
+            subtitle="Эволюция начинается в глубине."
+            description="Исследуй океан, развивай хищника и выживай в мире, где каждый новый уровень меняет форму, скорость и стиль игры."
+            status="LIVE"
+            imageSrc={WORLD_ART.evofish}
+            imageAlt="EvoFish — океанский мир BlackCrown"
+            tone="ocean"
+            primaryLabel="Войти в EvoFish"
+            onPrimary={() => navigateExternal("/game/")}
+            secondaryLabel="О мире"
+            onSecondary={() => navigateSite("/about")}
+          />
+
+          <WorldStageV2
+            index="02"
+            title="CROWN//FRONT"
+            subtitle="Тактическая война на теле механического короля."
+            description="Сражайся за контроль над живой машиной, захватывай ключевые узлы и меняй ход боя в мобильной WebGL alpha."
+            status="ALPHA"
+            imageSrc={WORLD_ART.crownFront}
+            imageAlt="CROWN FRONT — тактический мир BlackCrown"
+            tone="reactor"
+            reverse
+            primaryLabel="Войти в Alpha"
+            onPrimary={() => navigateExternal("/games/crown-front/")}
+            secondaryLabel="Открыть Lobby"
+            onSecondary={() => navigateExternal("/lobby/")}
+          />
+        </div>
+      </section>
 
       <div className="bcHomeV3__journey">
         <NexusHome />
