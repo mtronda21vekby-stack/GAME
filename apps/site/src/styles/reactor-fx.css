@@ -40,6 +40,12 @@
 .bcReactorFX__spark--a { top: 18%; left: 27%; }
 .bcReactorFX__spark--b { right: 18%; top: 42%; animation-delay: -.9s; }
 .bcReactorFX__spark--c { bottom: 20%; left: 38%; animation-delay: -1.8s; }
+
+.bcV3Hero__coreReactor { z-index: -1; left: 50%; bottom: 3%; transform: translateX(-50%) scaleX(1.34) scaleY(.58); opacity: .72; }
+.bcWorldStageV2__reactorFX { z-index: 0; left: 50%; bottom: -16%; transform: translateX(-50%) scaleX(1.45) scaleY(.56); }
+.bcWorldStageV2[data-tone="reactor"] .bcWorldStageV2__reactorFX { bottom: -12%; opacity: .94; }
+.bcWorldStageV2[data-tone="ocean"] .bcWorldStageV2__reactorFX { bottom: -20%; opacity: .7; }
+
 @keyframes bcReactorSpin { to { transform: rotate(360deg); } }
 @keyframes bcReactorSpinReverse { to { transform: rotate(-360deg); } }
 @keyframes bcReactorPulse { from { transform: scale(.94); opacity: .58; } to { transform: scale(1.04); opacity: 1; } }
@@ -49,6 +55,8 @@
   .bcReactorFX[data-mobile-lite="true"] .bcReactorFX__ring--middle,
   .bcReactorFX[data-mobile-lite="true"] .bcReactorFX__spark--c { display: none; }
   .bcReactorFX[data-mobile-lite="true"] .bcReactorFX__aura { filter: blur(16px); }
+  .bcV3Hero__coreReactor { bottom: 0; transform: translateX(-50%) scaleX(1.15) scaleY(.5); }
+  .bcWorldStageV2__reactorFX { bottom: -9%; transform: translateX(-50%) scaleX(1.22) scaleY(.5); }
 }
 @media (prefers-reduced-motion:reduce) {
   .bcReactorFX *, .bcReactorFX { animation: none !important; }
