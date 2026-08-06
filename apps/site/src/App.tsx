@@ -1,5 +1,5 @@
 import React from "react";
-import CrownAtmosphere from "./components/CrownAtmosphere";
+import MatrixDepthEngine from "./components/MatrixDepthEngine";
 import MotionDirector from "./components/MotionDirector";
 import { Router } from "./routes/Router";
 
@@ -67,13 +67,12 @@ export function App() {
   }, []);
 
   React.useEffect(() => {
-    // user bootstrap (guest)
     ensureGuestUser();
   }, []);
 
   return (
     <div className="bcAppShell">
-      <CrownAtmosphere />
+      <MatrixDepthEngine quality="auto" intensity={1} />
       <MotionDirector />
 
       <div className="bcAppContent">
