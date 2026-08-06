@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+<title id="title">BlackCrown Store artwork</title><desc id="desc">Neon digital collection cards on a dark background.</desc>
+<defs>
+<linearGradient id="bg" x2="1" y2="1"><stop stop-color="#020408"/><stop offset=".55" stop-color="#07101a"/><stop offset="1" stop-color="#020205"/></linearGradient>
+<radialGradient id="halo" cx="70%" cy="45%" r="52%"><stop stop-color="#00e5ff" stop-opacity=".18"/><stop offset=".45" stop-color="#8b5cff" stop-opacity=".10"/><stop offset="1" stop-opacity="0"/></radialGradient>
+<linearGradient id="edge" x2="1" y2="1"><stop stop-color="#c9fcff"/><stop offset=".48" stop-color="#00e5ff"/><stop offset="1" stop-color="#8b5cff"/></linearGradient>
+<filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="10" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse"><path d="M64 0H0V64" fill="none" stroke="#62eaff" stroke-opacity=".045"/></pattern>
+</defs>
+<rect width="1200" height="720" rx="48" fill="url(#bg)"/><rect width="1200" height="720" rx="48" fill="url(#grid)"/><rect width="1200" height="720" rx="48" fill="url(#halo)"/>
+<g transform="translate(510 150)" filter="url(#glow)">
+<rect x="130" y="80" width="310" height="310" rx="42" fill="#06111b" stroke="url(#edge)" stroke-width="5"/>
+<rect x="169" y="119" width="232" height="232" rx="30" fill="#071523" stroke="#65f2ff" stroke-opacity=".3" stroke-width="2"/>
+<circle cx="285" cy="235" r="58" fill="#02070c" stroke="#00e5ff" stroke-width="4"/><circle cx="285" cy="235" r="32" fill="none" stroke="#8b5cff" stroke-width="4" stroke-dasharray="12 9"/>
+<path d="M285 204v62M254 235h62" stroke="#e0feff" stroke-width="5" stroke-linecap="round"/>
+<rect x="30" y="24" width="210" height="270" rx="32" fill="#09111f" stroke="#8b5cff" stroke-width="4" transform="rotate(-12 135 159)"/>
+<rect x="-58" y="106" width="184" height="232" rx="28" fill="#061522" stroke="#00e5ff" stroke-width="4" transform="rotate(-22 34 222)"/>
+<path d="M-4 190h74M-15 218h94M-24 246h110" stroke="#8eeeff" stroke-opacity=".56" stroke-width="4" stroke-linecap="round" transform="rotate(-22 34 222)"/>
+<circle cx="135" cy="116" r="24" fill="#8b5cff" fill-opacity=".35" stroke="#d5c5ff" stroke-width="3" transform="rotate(-12 135 159)"/>
+</g>
+<g fill="#c8fbff" font-family="ui-monospace,monospace"><text x="72" y="92" font-size="19" letter-spacing="7" opacity=".72">BLACKCROWN / COLLECTION</text><text x="72" y="154" font-size="54" font-weight="700">STORE</text><text x="74" y="195" font-size="17" letter-spacing="4" opacity=".48">COLLECT · EQUIP · CUSTOMIZE</text></g>
+<g transform="translate(72 628)"><circle r="6" fill="#8b5cff" filter="url(#glow)"/><text x="19" y="6" fill="#9fb0c7" font-size="14" font-family="ui-monospace,monospace" letter-spacing="3">COLLECTION SYNCED</text></g>
+</svg>
