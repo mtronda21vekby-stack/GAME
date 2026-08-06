@@ -1,0 +1,177 @@
+/* BLACKCROWN V3 — layered Matrix atmosphere. */
+
+.bcMatrixDepthEngine {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: #000;
+  isolation: isolate;
+}
+
+.bcMatrixDepthEngine__canvas,
+.bcMatrixDepthEngine__plane,
+.bcMatrixDepthEngine__near,
+.bcMatrixDepthEngine__cursor,
+.bcMatrixDepthEngine__beam,
+.bcMatrixDepthEngine__scan,
+.bcMatrixDepthEngine__fog,
+.bcMatrixDepthEngine__grain,
+.bcMatrixDepthEngine__vignette {
+  position: absolute;
+  inset: 0;
+}
+
+.bcMatrixDepthEngine__canvas {
+  opacity: calc(.48 * var(--bc-matrix-depth-intensity, 1));
+  filter: saturate(.92) contrast(1.08) brightness(.72);
+}
+
+.bcMatrixDepthEngine__plane {
+  transform-origin: 50% 40%;
+  will-change: transform, opacity;
+}
+
+.bcMatrixDepthEngine__plane--far {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 70px, rgba(43, 219, 255, .025) 71px 72px),
+    repeating-linear-gradient(180deg, transparent 0 96px, rgba(46, 115, 255, .018) 97px 98px),
+    radial-gradient(circle at 72% 28%, rgba(0, 220, 255, .075), transparent 31%),
+    radial-gradient(circle at 18% 70%, rgba(77, 61, 255, .05), transparent 38%);
+  opacity: calc(.68 * var(--bc-matrix-depth-intensity, 1));
+  animation: bcMatrixDepthFar 28s ease-in-out infinite alternate;
+}
+
+.bcMatrixDepthEngine__plane--middle {
+  inset: -8%;
+  background:
+    linear-gradient(116deg, transparent 0 43%, rgba(0, 224, 255, .045) 49%, transparent 56%),
+    repeating-linear-gradient(0deg, transparent 0 142px, rgba(161, 246, 255, .022) 143px 144px);
+  opacity: calc(.56 * var(--bc-matrix-depth-intensity, 1));
+  animation: bcMatrixDepthMiddle 18s ease-in-out infinite alternate;
+}
+
+.bcMatrixDepthEngine__near {
+  overflow: hidden;
+  opacity: calc(.34 * var(--bc-matrix-depth-intensity, 1));
+  filter: blur(.35px);
+}
+
+.bcMatrixDepthEngine__near span {
+  --bc-glyph-x: calc((var(--bc-glyph-index) * 17 + 7) * 1%);
+  --bc-glyph-delay: calc(var(--bc-glyph-index) * -1.7s);
+  position: absolute;
+  top: -16vh;
+  left: var(--bc-glyph-x);
+  color: rgba(194, 248, 255, .38);
+  font: 800 clamp(18px, 2.4vw, 38px)/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-shadow: 0 0 22px rgba(0, 218, 255, .42);
+  animation: bcMatrixDepthNear 17s linear infinite;
+  animation-delay: var(--bc-glyph-delay);
+}
+
+.bcMatrixDepthEngine__cursor {
+  background: radial-gradient(
+    600px circle at var(--bc-cx, 50vw) var(--bc-cy, 35vh),
+    rgba(0, 224, 255, .075),
+    transparent 72%
+  );
+  opacity: calc(.8 * var(--bc-matrix-depth-intensity, 1));
+}
+
+.bcMatrixDepthEngine__beam {
+  height: 1px;
+  inset-inline: 8%;
+  background: linear-gradient(90deg, transparent, rgba(126, 238, 255, .18), transparent);
+  box-shadow: 0 0 20px rgba(0, 213, 255, .12);
+}
+
+.bcMatrixDepthEngine__beam--top { top: 19%; bottom: auto; }
+.bcMatrixDepthEngine__beam--bottom { top: auto; bottom: 17%; }
+
+.bcMatrixDepthEngine__scan {
+  height: 26vh;
+  top: -30vh;
+  bottom: auto;
+  background: linear-gradient(180deg, transparent, rgba(80, 226, 255, .035), transparent);
+  animation: bcMatrixDepthScan 13s linear infinite;
+}
+
+.bcMatrixDepthEngine__fog {
+  background:
+    radial-gradient(ellipse 70% 42% at 50% 102%, rgba(0, 75, 106, .14), transparent 70%),
+    radial-gradient(ellipse 45% 34% at 88% 44%, rgba(64, 45, 255, .065), transparent 72%);
+  filter: blur(18px);
+}
+
+.bcMatrixDepthEngine__grain {
+  opacity: .035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.92' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.45'/%3E%3C/svg%3E");
+  mix-blend-mode: screen;
+}
+
+.bcMatrixDepthEngine__vignette {
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.12), transparent 18%, rgba(0,0,0,.72) 100%),
+    radial-gradient(ellipse at 56% 34%, transparent 16%, rgba(0,0,0,.34) 58%, rgba(0,0,0,.92) 100%);
+}
+
+.bcMatrixDepthEngine[data-quality="low"] .bcMatrixDepthEngine__near span:nth-child(n+7),
+.bcMatrixDepthEngine[data-quality="low"] .bcMatrixDepthEngine__beam--bottom {
+  display: none;
+}
+
+.bcMatrixDepthEngine[data-quality="low"] .bcMatrixDepthEngine__canvas {
+  opacity: calc(.38 * var(--bc-matrix-depth-intensity, 1));
+  filter: saturate(.86) contrast(1.04) brightness(.67);
+}
+
+@keyframes bcMatrixDepthFar {
+  from { transform: translate3d(-1.5%, -1%, 0) scale(1.015); }
+  to { transform: translate3d(1.5%, 1.2%, 0) scale(1.045); }
+}
+
+@keyframes bcMatrixDepthMiddle {
+  from { transform: translate3d(-1.5%, 0, 0) skewX(-1deg); }
+  to { transform: translate3d(1.5%, -1%, 0) skewX(1deg); }
+}
+
+@keyframes bcMatrixDepthNear {
+  from { transform: translate3d(0, -12vh, 0) scale(1.15); opacity: 0; }
+  8% { opacity: .8; }
+  85% { opacity: .42; }
+  to { transform: translate3d(0, 128vh, 0) scale(1.34); opacity: 0; }
+}
+
+@keyframes bcMatrixDepthScan {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(0, 150vh, 0); }
+}
+
+@media (max-width: 760px), (pointer: coarse) {
+  .bcMatrixDepthEngine__plane--middle {
+    opacity: .34;
+  }
+
+  .bcMatrixDepthEngine__near {
+    opacity: .22;
+  }
+
+  .bcMatrixDepthEngine__scan {
+    animation-duration: 18s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bcMatrixDepthEngine *,
+  .bcMatrixDepthEngine *::before,
+  .bcMatrixDepthEngine *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .bcMatrixDepthEngine__near {
+    display: none;
+  }
+}
