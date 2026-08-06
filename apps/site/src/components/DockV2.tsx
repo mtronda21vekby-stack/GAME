@@ -74,24 +74,30 @@ export function DockV2({
   ariaLabel = "Мобильная навигация",
 }: DockV2Props) {
   const normalizedPath = normalizePath(activePath);
-  const activeIndex = Math.max(
-    0,
-    items.findIndex((item) => (item.isActive ? item.isActive(normalizedPath) : defaultActive(item, normalizedPath)))
+  const activeIndex = items.findIndex((item) =>
+    item.isActive ? item.isActive(normalizedPath) : defaultActive(item, normalizedPath)
   );
+  const visualActiveIndex = Math.max(0, activeIndex);
 
   const style: DockStyle = {
-    "--bc-dock-active-index": activeIndex,
+    "--bc-dock-active-index": visualActiveIndex,
     "--bc-dock-item-count": Math.max(1, items.length),
   };
 
   const classes = ["bcMobileDock", "bcDock", "bcDockV2", className].filter(Boolean).join(" ");
 
   return (
-    <nav className={classes} style={style} aria-label={ariaLabel} data-active-index={activeIndex}>
+    <nav
+      className={classes}
+      style={style}
+      aria-label={ariaLabel}
+      data-active-index={activeIndex}
+      data-has-active={activeIndex >= 0 ? "true" : "false"}
+    >
       <div className="bcDockV2__ambient" aria-hidden="true" />
 
       <div className="bcMobileDock__frame bcDockV2__frame">
-        <span className="bcDockV2__activeRail" aria-hidden="true" />
+        {activeIndex >= 0 ? <span className="bcDockV2__activeRail" aria-hidden="true" /> : null}
 
         {items.map((item, index) => {
           const active = item.isActive
