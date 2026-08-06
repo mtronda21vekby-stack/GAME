@@ -36,7 +36,6 @@ namespace CrownFront.Cloud
             // Stable presentation hook. Production clips can be assigned later without changing combat timing.
             if (_source == null || _source.clip == null) return;
             _source.pitch = cue == CrownAudioCue.TankShot ? 0.82f : cue == CrownAudioCue.RaiderAttack ? 1.16f : 1f;
-            _source.volume = 0.42f * (cue == CrownAudioCue.TitanAmbient ? CrownRuntimePreferences.MusicVolume : CrownRuntimePreferences.SfxVolume);
             _source.PlayOneShot(_source.clip);
         }
     }
@@ -197,8 +196,6 @@ namespace CrownFront.Cloud
         private Transform[] _rings;
         private Vector3 _barrelBasePosition;
         private Vector3 _visualBaseScale;
-        private Vector3 _visualBasePosition;
-        private Quaternion _visualBaseRotation;
         private float _shotTime = -10f;
         private float _hitTime = -10f;
         private float _damage;
@@ -215,23 +212,7 @@ namespace CrownFront.Cloud
             _energy = energy;
             _rings = rings ?? new Transform[0];
             _visualBaseScale = visualRoot != null ? visualRoot.localScale : Vector3.one;
-            _visualBasePosition = visualRoot != null ? visualRoot.localPosition : Vector3.zero;
-            _visualBaseRotation = visualRoot != null ? visualRoot.localRotation : Quaternion.identity;
             _barrelBasePosition = barrel != null ? barrel.localPosition : Vector3.zero;
-        }
-
-        public void ResetState()
-        {
-            _destroyed = false;
-            _damage = 0f;
-            _shotTime = _hitTime = _destroyTime = -10f;
-            if (_visualRoot != null)
-            {
-                _visualRoot.localScale = _visualBaseScale;
-                _visualRoot.localPosition = _visualBasePosition;
-                _visualRoot.localRotation = _visualBaseRotation;
-            }
-            if (_barrel != null) _barrel.localPosition = _barrelBasePosition;
         }
 
         public void Track(Vector3 target)

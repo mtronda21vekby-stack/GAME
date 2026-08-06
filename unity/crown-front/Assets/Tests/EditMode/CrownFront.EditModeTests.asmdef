@@ -1,0 +1,21 @@
+{
+  "name": "CrownFront.EditModeTests",
+  "rootNamespace": "CrownFront.Tests.EditMode",
+  "references": [
+    "CrownFront.Runtime"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}
