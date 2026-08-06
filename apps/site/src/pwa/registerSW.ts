@@ -1,1 +1,4 @@
-export function registerSW(){ if(!('serviceWorker' in navigator)) return; window.addEventListener('load',()=>{ navigator.serviceWorker.register('/sw.js').catch(()=>{}); }); }
+export function registerSW() {
+  // Temporarily disabled after the iOS black-screen incident.
+  // The pre-React recovery in index.html unregisters stale workers and clears caches.
+}
