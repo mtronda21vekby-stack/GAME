@@ -1,0 +1,33 @@
+/* Customer-facing stability overrides loaded last for BlackCrown site. */
+
+.bcCards {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.bcCards:has(.bcHotCard) {
+  grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+}
+
+@media (max-width: 979px) {
+  .bcCards:has(.bcHotCard) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .bcTop .bcNav {
+    display: none !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .bcSiteRoot .bcSection [style*="1.05fr 0.95fr"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .bcCards:has(.bcHotCard) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}

@@ -9,6 +9,7 @@ import "./styles/visual-overhaul.css";
 import "./styles/experience-layer.css";
 import "./styles/stability-fixes.css";
 import "./styles/matrix-rebirth.css";
+import "./styles/customer-stability.css";
 import { App } from "./App";
 import { registerSW } from "./pwa/registerSW";
 import { ErrorBoundary } from "./ErrorBoundary";
