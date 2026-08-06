@@ -1,5 +1,6 @@
 @import "./black-neon-core.css";
 @import "./black-neon-pages.css";
+@import "./game-shader-pass.css";
 
 /* Customer-facing stability overrides loaded last for BlackCrown site. */
 
