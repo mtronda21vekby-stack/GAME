@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">BlackCrown Lobby neon network artwork</title>
+  <desc id="desc">Connected cyan player nodes inside a dark multiplayer network.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#020309"/>
+      <stop offset=".5" stop-color="#07101c"/>
+      <stop offset="1" stop-color="#020206"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="67%" cy="47%" r="52%">
+      <stop offset="0" stop-color="#8b5cff" stop-opacity=".20"/>
+      <stop offset=".38" stop-color="#00e5ff" stop-opacity=".10"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="9" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="dots" width="34" height="34" patternUnits="userSpaceOnUse">
+      <circle cx="1.5" cy="1.5" r="1.5" fill="#8eeeff" fill-opacity=".055"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="720" rx="48" fill="url(#bg)"/>
+  <rect width="1200" height="720" rx="48" fill="url(#dots)"/>
+  <rect width="1200" height="720" rx="48" fill="url(#halo)"/>
+  <g stroke="#5ceeff" stroke-opacity=".28" fill="none">
+    <path d="M565 354 735 244 911 346 824 522 620 514 474 446Z"/>
+    <path d="M565 354 824 522M735 244 620 514M911 346 474 446" stroke-opacity=".12"/>
+  </g>
+  <g filter="url(#glow)">
+    <circle cx="565" cy="354" r="46" fill="#061825" stroke="#00e5ff" stroke-width="4"/>
+    <circle cx="735" cy="244" r="33" fill="#0a1024" stroke="#8b5cff" stroke-width="4"/>
+    <circle cx="911" cy="346" r="38" fill="#061825" stroke="#00e5ff" stroke-width="4"/>
+    <circle cx="824" cy="522" r="31" fill="#071326" stroke="#4b8cff" stroke-width="4"/>
+    <circle cx="620" cy="514" r="37" fill="#061825" stroke="#00e5ff" stroke-width="4"/>
+    <circle cx="474" cy="446" r="29" fill="#0a1024" stroke="#8b5cff" stroke-width="4"/>
+  </g>
+  <g fill="#c5fbff">
+    <circle cx="565" cy="342" r="10"/><path d="M545 374c5-15 35-15 40 0"/>
+    <circle cx="735" cy="236" r="7"/><path d="M721 258c4-11 24-11 28 0"/>
+    <circle cx="911" cy="337" r="8"/><path d="M895 365c4-12 28-12 32 0"/>
+    <circle cx="824" cy="514" r="7"/><path d="M811 536c3-10 23-10 26 0"/>
+    <circle cx="620" cy="504" r="8"/><path d="M604 531c4-12 28-12 32 0"/>
+    <circle cx="474" cy="439" r="6"/><path d="M463 458c3-9 19-9 22 0"/>
+  </g>
+  <g fill="#c8fbff" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">
+    <text x="72" y="92" font-size="19" letter-spacing="7" opacity=".72">BLACKCROWN / SOCIAL LAYER</text>
+    <text x="72" y="154" font-size="54" font-weight="700" letter-spacing="-2">LOBBY</text>
+    <text x="74" y="195" font-size="17" letter-spacing="4" opacity=".48">ROOM · READY · CHAT · CONNECT</text>
+  </g>
+  <g transform="translate(72 628)">
+    <circle r="6" fill="#00e5ff" filter="url(#glow)"/>
+    <text x="19" y="6" fill="#9fb0c7" font-size="14" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" letter-spacing="3">NETWORK ONLINE</text>
+  </g>
+</svg>
