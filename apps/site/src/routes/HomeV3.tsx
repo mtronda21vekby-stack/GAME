@@ -1,8 +1,13 @@
 import React from "react";
 import { userStorage } from "@blackcrown/core";
+import AICoachV3 from "../components/AICoachV3";
 import GlassSurface from "../components/GlassSurface";
 import HeroScene from "../components/HeroScene";
+import PlatformV3 from "../components/PlatformV3";
 import WorldStageV2 from "../components/WorldStageV2";
+import { openTelegramBot } from "../lib/telegram";
+import "../styles/services-v3.css";
+import "../styles/home-v3-services.css";
 import { Home as NexusHome } from "./Home";
 
 const WORLD_ART = {
@@ -88,6 +93,16 @@ export function HomeV3() {
           />
         </div>
       </section>
+
+      <PlatformV3
+        onNavigate={navigateSite}
+        onOpenLobby={() => navigateExternal("/lobby/")}
+      />
+
+      <AICoachV3
+        onOpenCoach={openTelegramBot}
+        onOpenSupport={() => navigateSite("/support")}
+      />
 
       <div className="bcHomeV3__journey">
         <NexusHome />
