@@ -27,6 +27,40 @@
     <link rel="manifest" href="/manifest.webmanifest" />
 
     <title>BlackCrown — Interactive Worlds</title>
+
+    <script>
+      (function () {
+        var recoveryKey = "bc.recovery.black-screen.v1";
+        if (sessionStorage.getItem(recoveryKey) === "done") return;
+        sessionStorage.setItem(recoveryKey, "done");
+
+        var tasks = [];
+        if ("serviceWorker" in navigator) {
+          tasks.push(
+            navigator.serviceWorker.getRegistrations().then(function (registrations) {
+              return Promise.all(registrations.map(function (registration) { return registration.unregister(); }));
+            }).catch(function () {})
+          );
+        }
+        if ("caches" in window) {
+          tasks.push(
+            caches.keys().then(function (keys) {
+              return Promise.all(keys.map(function (key) { return caches.delete(key); }));
+            }).catch(function () {})
+          );
+        }
+
+        if (tasks.length) {
+          Promise.all(tasks).finally(function () {
+            var url = new URL(window.location.href);
+            if (url.searchParams.get("bc-recovered") !== "1") {
+              url.searchParams.set("bc-recovered", "1");
+              window.location.replace(url.toString());
+            }
+          });
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
