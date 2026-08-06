@@ -1,4 +1,76 @@
 /* BLACKCROWN V3 componentized home composition. */
 .bcHomeV3{position:relative;min-height:100%;overflow:clip;background:transparent}.bcHomeV3__journey{position:relative;z-index:1}.bcHomeV3__journey>.bcNexusHome{min-height:0}.bcHomeV3__journey>.bcNexusHome>.bcNexusHero:first-child{display:none!important}.bcHomeV3__journey>.bcNexusHome>.bcNexusWorlds:first-of-type{display:none!important}.bcHomeV3>.bcV3Hero{position:relative;z-index:2}.bcHomeV3>.bcWorldsV2{scroll-margin-top:74px}
-@media(max-width:820px){.bcHomeV3__journey>.bcNexusHome{padding-bottom:calc(82px + env(safe-area-inset-bottom,0px))}.bcHomeV3>.bcWorldsV2{scroll-margin-top:66px}}
-@media(prefers-reduced-motion:reduce){.bcHomeV3,.bcHomeV3 *{scroll-behavior:auto!important}}
+
+/* V3.3 Hero polish — scoped to the componentized homepage hero only. */
+.bcHomeV3>.bcV3Hero{
+  min-height:min(860px,max(680px,var(--app-vh,100vh)));
+  padding-bottom:clamp(28px,4vw,56px);
+}
+.bcHomeV3>.bcV3Hero .bcV3Hero__layout{
+  grid-template-columns:minmax(0,.86fr) minmax(390px,1.14fr);
+  gap:clamp(12px,2.5vw,38px);
+  align-items:center;
+}
+.bcHomeV3>.bcV3Hero .bcV3Hero__copy{max-width:620px}
+.bcHomeV3>.bcV3Hero .bcV3Hero__title{margin-top:clamp(12px,2vw,24px);font-size:clamp(4.6rem,8.4vw,8.4rem);line-height:.78;letter-spacing:-.075em}
+.bcHomeV3>.bcV3Hero .bcV3Hero__tagline{margin-top:clamp(18px,2.4vw,30px);max-width:19ch}
+.bcHomeV3>.bcV3Hero .bcV3Hero__lead{max-width:38ch;margin-top:12px}
+.bcHomeV3>.bcV3Hero .bcV3Hero__actions{margin-top:20px}
+.bcHomeV3>.bcV3Hero .bcV3Hero__core{min-height:clamp(430px,52vw,690px);transform:translateX(clamp(0px,2.2vw,34px))}
+.bcHomeV3>.bcV3Hero .bcDigitalCrownCore{filter:drop-shadow(0 28px 72px rgba(0,229,255,.14))}
+.bcHomeV3>.bcV3Hero .bcV3Hero__coreReactor{opacity:.96;transform:translate(-50%,-50%) scale(1.08)}
+.bcHomeV3>.bcV3Hero .bcV3Hero__reactorFloor{width:78%;opacity:.9}
+.bcHomeV3>.bcV3Hero .bcV3Hero__status{margin-top:clamp(0px,1vw,12px)}
+
+@media(max-width:980px){
+  .bcHomeV3>.bcV3Hero .bcV3Hero__layout{grid-template-columns:minmax(0,1fr) minmax(330px,.95fr)}
+  .bcHomeV3>.bcV3Hero .bcV3Hero__title{font-size:clamp(4rem,9.6vw,6.4rem)}
+}
+
+@media(max-width:820px){
+  .bcHomeV3__journey>.bcNexusHome{padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}
+  .bcHomeV3>.bcWorldsV2{scroll-margin-top:16px}
+  .bcHomeV3>.bcV3Hero{
+    min-height:auto;
+    padding-top:max(10px,env(safe-area-inset-top,0px))!important;
+    padding-bottom:24px;
+    overflow:visible!important;
+  }
+
+  /* Critical mobile fix: the BlackCrown bar must scroll with the hero. */
+  .bcHomeV3>.bcV3Hero .bcV3Hero__top,
+  .bcHomeV3>.bcV3Hero .bcNexusTop,
+  .bcHomeV3>.bcV3Hero header.bcTop{
+    position:relative!important;
+    inset:auto!important;
+    top:auto!important;
+    left:auto!important;
+    right:auto!important;
+    bottom:auto!important;
+    width:100%!important;
+    max-width:none!important;
+    margin:0 0 18px!important;
+    transform:none!important;
+    translate:none!important;
+    z-index:3!important;
+  }
+
+  .bcHomeV3>.bcV3Hero .bcV3Hero__layout{display:flex;flex-direction:column;gap:0}
+  .bcHomeV3>.bcV3Hero .bcV3Hero__copy{width:100%;max-width:none}
+  .bcHomeV3>.bcV3Hero .bcV3Hero__title{margin-top:14px;font-size:clamp(3.25rem,16.4vw,5.35rem);line-height:.79}
+  .bcHomeV3>.bcV3Hero .bcV3Hero__tagline{margin-top:17px;max-width:21ch}
+  .bcHomeV3>.bcV3Hero .bcV3Hero__lead{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;max-width:34ch}
+  .bcHomeV3>.bcV3Hero .bcV3Hero__actions{margin-top:17px}
+  .bcHomeV3>.bcV3Hero .bcV3Hero__core{width:100%;min-height:clamp(292px,78vw,390px);margin:-18px 0 -28px;transform:none}
+  .bcHomeV3>.bcV3Hero .bcDigitalCrownCore{--bc-core-size:min(92vw,430px)!important}
+  .bcHomeV3>.bcV3Hero .bcV3Hero__coreReactor{transform:translate(-50%,-50%) scale(.94)}
+  .bcHomeV3>.bcV3Hero .bcV3Hero__status{margin-top:4px}
+}
+
+@media(max-width:390px){
+  .bcHomeV3>.bcV3Hero .bcV3Hero__title{font-size:clamp(3rem,15.7vw,4.6rem)}
+  .bcHomeV3>.bcV3Hero .bcV3Hero__core{min-height:282px;margin-top:-24px}
+  .bcHomeV3>.bcV3Hero .bcDigitalCrownCore{--bc-core-size:min(96vw,398px)!important}
+}
+
+@media(prefers-reduced-motion:reduce){.bcHomeV3,.bcHomeV3 *{scroll-behavior:auto!important}.bcHomeV3>.bcV3Hero .bcDigitalCrownCore{filter:none}}

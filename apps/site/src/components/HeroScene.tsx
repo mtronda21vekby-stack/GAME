@@ -95,17 +95,17 @@ export default function HeroScene({
           <div className="bcNexusHero__eyebrow"><span aria-hidden="true" /><strong>BLACKCROWN NETWORK</strong><small>ONLINE</small></div>
           <h1 id="bc-v3-hero-title" className="bcNexusHero__title bcV3Hero__title"><span>BLACK</span><span>CROWN</span></h1>
           <p className="bcNexusHero__tagline bcV3Hero__tagline">Одна корона. Несколько миров.</p>
-          <p className="bcNexusHero__lead bcV3Hero__lead">Единая игровая экосистема для профиля, прогресса, коллекции и новых миров BlackCrown.</p>
+          <p className="bcNexusHero__lead bcV3Hero__lead">Профиль, прогресс и игры BlackCrown — в одной системе.</p>
           <div className="bcNexusHero__actions bcV3Hero__actions">
-            <Button variant="primary" onClick={() => onNavigate("/account")}>Войти в BlackCrown</Button>
-            <Button variant="secondary" onClick={onExploreWorlds}>Исследовать миры</Button>
+            <Button variant="primary" onClick={onPlay}>Запустить BlackCrown</Button>
+            <Button variant="secondary" onClick={onExploreWorlds}>Смотреть миры</Button>
           </div>
-          <div className="bcNexusHero__signature"><span>BC // V3 EXPERIENCE</span><span>WEBGL · MOBILE · DESKTOP</span></div>
+          <div className="bcNexusHero__signature"><span>BC // V3.3 EXPERIENCE</span><span>WEBGL · MOBILE · DESKTOP</span></div>
         </div>
 
         <div className="bcNexusHero__core bcV3Hero__core">
-          <ReactorFX className="bcV3Hero__coreReactor" tone="cyan" size="large" intensity={1.08} />
-          <DigitalCrownCore size="default" intensity={1.12} />
+          <ReactorFX className="bcV3Hero__coreReactor" tone="cyan" size="large" intensity={1.18} />
+          <DigitalCrownCore size="large" intensity={1.24} />
           <div className="bcV3Hero__reactorFloor" aria-hidden="true" />
         </div>
       </div>
