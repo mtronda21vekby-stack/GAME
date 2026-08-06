@@ -1,5 +1,6 @@
 import React from "react";
 import { userStorage } from "@blackcrown/core";
+import GlassSurface from "../components/GlassSurface";
 import HeroScene from "../components/HeroScene";
 import WorldStageV2 from "../components/WorldStageV2";
 import { Home as NexusHome } from "./Home";
@@ -44,13 +45,15 @@ export function HomeV3() {
       />
 
       <section id="worlds" className="bcWorldsV2" aria-labelledby="bc-worlds-v2-title">
-        <div className="bcWorldsV2__head">
-          <span>FEATURED WORLDS / V3</span>
-          <h2 id="bc-worlds-v2-title">Миры внутри BlackCrown.</h2>
-          <p>
-            Два разных визуальных языка, связанные одной системой: океанская биолюминесценция EvoFish и реакторный black-metal CROWN//FRONT.
-          </p>
-        </div>
+        <GlassSurface material="frosted" tone="cyan" className="bcWorldsV2__intro">
+          <div className="bcWorldsV2__head">
+            <span>FEATURED WORLDS / V3</span>
+            <h2 id="bc-worlds-v2-title">Миры внутри BlackCrown.</h2>
+            <p>
+              Два разных визуальных языка, связанные одной системой: океанская биолюминесценция EvoFish и реакторный black-metal CROWN//FRONT.
+            </p>
+          </div>
+        </GlassSurface>
 
         <div className="bcWorldsV2__list">
           <WorldStageV2
