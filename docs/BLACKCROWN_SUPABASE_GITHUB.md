@@ -8,8 +8,34 @@ BlackCrown uses only the dedicated Supabase project below:
 - Project ref: `nmgotvxisujvpfoxivoq`
 - Region: `us-east-2`
 - Public API URL: `https://nmgotvxisujvpfoxivoq.supabase.co`
+- GitHub repository: `mtronda21vekby-stack/GAME`
+- Production Git branch: `main`
 
 The `planetlocksmiths-admin` project belongs exclusively to Planet Locksmiths and must never be linked, queried, migrated, or deployed from BlackCrown workflows.
+
+## Connection status
+
+The native Supabase GitHub integration is connected to:
+
+```text
+mtronda21vekby-stack/GAME → main
+```
+
+Supabase reports the default `main` branch as connected and healthy. The repository root is the working directory because `supabase/` lives directly at the root of `GAME`.
+
+## One deployment owner
+
+Production schema deployment is owned exclusively by the native Supabase GitHub integration.
+
+The repository workflow:
+
+```text
+.github/workflows/blackcrown-supabase.yml
+```
+
+is validation-only. It must not link to production or run `supabase db push`. This prevents the same migration from being deployed twice by two independent systems.
+
+No GitHub secrets are required for the validation workflow. In particular, do not add database passwords, service-role keys, or Supabase access tokens unless the deployment architecture is intentionally changed in a separate reviewed pull request.
 
 ## Source of truth
 
@@ -29,59 +55,30 @@ The local filename intentionally matches `supabase_migrations.schema_migrations`
 
 Do not edit production tables manually unless the same change is also represented by a versioned migration.
 
-## GitHub Actions workflow
+## GitHub Actions validation
 
-Workflow:
+On pull requests and pushes that change `supabase/**`, GitHub Actions:
 
-```text
-.github/workflows/blackcrown-supabase.yml
-```
+1. Starts a clean local Supabase stack.
+2. Applies every migration from scratch.
+3. Runs database linting.
+4. Stops the local stack even when a previous step fails.
 
-It performs two separate jobs:
+This workflow validates migration reproducibility; it does not deploy to production.
 
-1. Every pull request that changes `supabase/**` starts a clean local Supabase stack, applies all migrations, and runs database linting.
-2. Production migration deployment is guarded. It runs only when manually requested or when the repository variable `BLACKCROWN_SUPABASE_AUTODEPLOY` equals `true` on a push to `main`.
+## Native Supabase integration settings
 
-## One-time GitHub configuration
-
-Open the repository settings:
+Inside the `blackcrown` project, the integration should remain scoped to:
 
 ```text
-Settings → Secrets and variables → Actions
+Repository: mtronda21vekby-stack/GAME
+Production branch: main
+Working directory: .
 ```
 
-Create these repository secrets:
+Do not connect `planetlocksmiths-admin` to this repository.
 
-```text
-SUPABASE_ACCESS_TOKEN
-BLACKCROWN_SUPABASE_DB_PASSWORD
-```
-
-- `SUPABASE_ACCESS_TOKEN` is a personal access token created in the Supabase account settings.
-- `BLACKCROWN_SUPABASE_DB_PASSWORD` is the database password for the dedicated `blackcrown` project only.
-- Never use credentials from `planetlocksmiths-admin`.
-
-Create this repository variable only after the first manual workflow deployment succeeds:
-
-```text
-BLACKCROWN_SUPABASE_AUTODEPLOY=true
-```
-
-Recommended GitHub environment:
-
-```text
-blackcrown-supabase-production
-```
-
-The deploy job already targets this environment, so optional approval rules can be added in GitHub before migrations reach production.
-
-## First deployment
-
-1. Merge a pull request only after `Validate migrations locally` is green.
-2. Open `Actions → BlackCrown Supabase → Run workflow`.
-3. Set `deploy` to `true`.
-4. Confirm that `Deploy migrations to BlackCrown` and `Show remote migration state` pass.
-5. Then set `BLACKCROWN_SUPABASE_AUTODEPLOY=true` if automatic migration deployment from `main` is desired.
+For automatic production schema deployment, enable deployment only in the native Supabase integration. Do not recreate a parallel GitHub Actions deploy job.
 
 ## Site runtime variables
 
@@ -102,9 +99,12 @@ supabase db lint --local --level warning
 supabase stop --no-backup
 ```
 
-To inspect the linked production migration state after GitHub secrets are configured:
+## Review gate
 
-```bash
-supabase link --project-ref nmgotvxisujvpfoxivoq
-supabase migration list --linked
-```
+Before merging a schema change:
+
+1. `BlackCrown Supabase Validation` must pass.
+2. Site typecheck and production build must pass.
+3. The migration must contain only BlackCrown schema changes.
+4. The native Supabase integration must point to `GAME → main`.
+5. Planet Locksmiths infrastructure must remain untouched.
