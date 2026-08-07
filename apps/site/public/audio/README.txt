@@ -1,0 +1,1 @@
+BlackCrown uploaded site music loop assets. The six blackcrown-loop-part-XX.txt files contain a compact base64-packed PCM loop derived from the user-provided 1.mp3. SiteMusic.tsx reconstructs the audio into a Web Audio buffer and loops it continuously. Do not replace these parts with generated audio.
