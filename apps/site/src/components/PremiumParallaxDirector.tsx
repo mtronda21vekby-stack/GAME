@@ -19,13 +19,6 @@ type ParallaxNode = {
   targetScale: number;
 };
 
-type PointerState = {
-  x: number;
-  y: number;
-  targetX: number;
-  targetY: number;
-};
-
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
@@ -65,13 +58,8 @@ export function PremiumParallaxDirector() {
     let refreshQueued = false;
     let viewportWidth = Math.max(1, window.innerWidth);
     let viewportHeight = Math.max(1, window.visualViewport?.height ?? window.innerHeight);
-
-    const pointer: PointerState = {
-      x: 0,
-      y: 0,
-      targetX: 0,
-      targetY: 0,
-    };
+    let pointerTargetX = 0;
+    let pointerTargetY = 0;
 
     const clearNode = (node: ParallaxNode) => {
       node.element.style.removeProperty("--bc-parallax-x");
@@ -134,8 +122,8 @@ export function PremiumParallaxDirector() {
     const measureTargets = () => {
       const mobileFactor = compactViewport.matches ? 0.44 : 1;
       const pointerEnabled = finePointer.matches && !compactViewport.matches;
-      const effectivePointerX = pointerEnabled ? pointer.x : 0;
-      const effectivePointerY = pointerEnabled ? pointer.y : 0;
+      const effectivePointerX = pointerEnabled ? pointerTargetX : 0;
+      const effectivePointerY = pointerEnabled ? pointerTargetY : 0;
 
       const measurements = nodes.map((node) => {
         const rect = node.element.getBoundingClientRect();
@@ -199,20 +187,14 @@ export function PremiumParallaxDirector() {
     const tick = () => {
       frame = 0;
 
-      pointer.x += (pointer.targetX - pointer.x) * 0.12;
-      pointer.y += (pointer.targetY - pointer.y) * 0.12;
-
-      if (geometryDirty || pointerDirty || finePointer.matches) {
-        measureTargets();
-      }
+      if (geometryDirty || pointerDirty) measureTargets();
 
       let moving = false;
       for (const node of nodes) {
         if (writeNode(node)) moving = true;
       }
 
-      const pointerMoving = !near(pointer.x, pointer.targetX, 0.002) || !near(pointer.y, pointer.targetY, 0.002);
-      if (moving || pointerMoving) requestTick();
+      if (moving) requestTick();
     };
 
     function requestTick() {
@@ -227,15 +209,16 @@ export function PremiumParallaxDirector() {
 
     const onPointerMove = (event: PointerEvent) => {
       if (!finePointer.matches || compactViewport.matches) return;
-      pointer.targetX = clamp((event.clientX / viewportWidth - 0.5) * 2, -1, 1);
-      pointer.targetY = clamp((event.clientY / viewportHeight - 0.5) * 2, -1, 1);
+      pointerTargetX = clamp((event.clientX / viewportWidth - 0.5) * 2, -1, 1);
+      pointerTargetY = clamp((event.clientY / viewportHeight - 0.5) * 2, -1, 1);
       pointerDirty = true;
       requestTick();
     };
 
-    const onPointerLeave = () => {
-      pointer.targetX = 0;
-      pointer.targetY = 0;
+    const onPointerOut = (event: PointerEvent) => {
+      if (event.relatedTarget) return;
+      pointerTargetX = 0;
+      pointerTargetY = 0;
       pointerDirty = true;
       requestTick();
     };
@@ -243,8 +226,8 @@ export function PremiumParallaxDirector() {
     const onResize = () => {
       viewportWidth = Math.max(1, window.innerWidth);
       viewportHeight = Math.max(1, window.visualViewport?.height ?? window.innerHeight);
-      pointer.targetX = 0;
-      pointer.targetY = 0;
+      pointerTargetX = 0;
+      pointerTargetY = 0;
       geometryDirty = true;
       pointerDirty = true;
       requestTick();
@@ -269,7 +252,7 @@ export function PremiumParallaxDirector() {
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize, { passive: true });
     window.addEventListener("pointermove", onPointerMove, { passive: true });
-    window.addEventListener("pointerout", onPointerLeave, { passive: true });
+    window.addEventListener("pointerout", onPointerOut, { passive: true });
     window.visualViewport?.addEventListener("resize", onResize, { passive: true });
     reducedMotion.addEventListener?.("change", onMotionPreference);
     finePointer.addEventListener?.("change", onResize);
@@ -284,7 +267,7 @@ export function PremiumParallaxDirector() {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("pointermove", onPointerMove);
-      window.removeEventListener("pointerout", onPointerLeave);
+      window.removeEventListener("pointerout", onPointerOut);
       window.visualViewport?.removeEventListener("resize", onResize);
       reducedMotion.removeEventListener?.("change", onMotionPreference);
       finePointer.removeEventListener?.("change", onResize);
