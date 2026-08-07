@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node scripts/build-music.mjs && vite",
-    "build": "node scripts/build-music.mjs && vite build",
+    "dev": "vite",
+    "build": "vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "node -e \"process.exit(0)\""
   },
