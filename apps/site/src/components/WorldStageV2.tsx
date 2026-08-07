@@ -39,6 +39,8 @@ export function WorldStageV2({
   onSecondary,
 }: WorldStageV2Props) {
   const reactorTone = tone === "reactor" ? "orange" : "cyan";
+  const visualPointer = reverse ? -8 : 8;
+  const imagePointer = reverse ? -15 : 15;
 
   return (
     <article
@@ -47,7 +49,13 @@ export function WorldStageV2({
       data-reverse={reverse ? "true" : "false"}
       aria-labelledby={`bc-world-v2-${index}`}
     >
-      <div className="bcWorldStageV2__copy">
+      <div
+        className="bcWorldStageV2__copy"
+        data-bc-parallax
+        data-bc-parallax-depth="10"
+        data-bc-parallax-pointer={reverse ? "-2" : "2"}
+        data-bc-parallax-rotate="0.12"
+      >
         <div className="bcWorldStageV2__meta">
           <span>{index}</span>
           <span>BLACKCROWN WORLD</span>
@@ -70,7 +78,14 @@ export function WorldStageV2({
         </div>
       </div>
 
-      <div className="bcWorldStageV2__visual">
+      <div
+        className="bcWorldStageV2__visual"
+        data-bc-parallax
+        data-bc-parallax-depth="22"
+        data-bc-parallax-pointer={String(visualPointer)}
+        data-bc-parallax-rotate="0.5"
+        data-bc-parallax-scale="0.006"
+      >
         <ReactorFX
           className="bcWorldStageV2__reactorFX"
           tone={reactorTone}
@@ -80,7 +95,16 @@ export function WorldStageV2({
         <div className="bcWorldStageV2__reactor" aria-hidden="true" />
         <div className="bcWorldStageV2__scan" aria-hidden="true" />
         <div className="bcWorldStageV2__particles" aria-hidden="true" />
-        <img src={imageSrc} alt={imageAlt} loading="lazy" />
+        <img
+          src={imageSrc}
+          alt={imageAlt}
+          loading="lazy"
+          data-bc-parallax
+          data-bc-parallax-depth="36"
+          data-bc-parallax-pointer={String(imagePointer)}
+          data-bc-parallax-rotate="0.34"
+          data-bc-parallax-scale="0.014"
+        />
         <div className="bcWorldStageV2__overlay" aria-hidden="true" />
         <div className="bcWorldStageV2__frame" aria-hidden="true" />
         <span className="bcWorldStageV2__coordinate" aria-hidden="true">
