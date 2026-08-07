@@ -61,10 +61,34 @@ export default function HeroScene({
   return (
     <section className="bcHero bcNexusHero bcV3Hero" aria-labelledby="bc-v3-hero-title">
       <div className="bcHeroBg bcNexusHero__background" aria-hidden="true">
-        <div className="bcNexusHero__focus" />
-        <div className="bcV3Hero__light bcV3Hero__light--cyan" />
-        <div className="bcV3Hero__light bcV3Hero__light--violet" />
-        <div className="bcV3Hero__grid" />
+        <div
+          className="bcNexusHero__focus"
+          data-bc-parallax
+          data-bc-parallax-depth="22"
+          data-bc-parallax-pointer="5"
+          data-bc-parallax-scale="0.006"
+        />
+        <div
+          className="bcV3Hero__light bcV3Hero__light--cyan"
+          data-bc-parallax
+          data-bc-parallax-depth="52"
+          data-bc-parallax-pointer="18"
+          data-bc-parallax-scale="0.014"
+        />
+        <div
+          className="bcV3Hero__light bcV3Hero__light--violet"
+          data-bc-parallax
+          data-bc-parallax-depth="38"
+          data-bc-parallax-pointer="-13"
+          data-bc-parallax-scale="0.01"
+        />
+        <div
+          className="bcV3Hero__grid"
+          data-bc-parallax
+          data-bc-parallax-depth="18"
+          data-bc-parallax-pointer="6"
+          data-bc-parallax-rotate="0.28"
+        />
         <div className="bcHeroVignette" />
         <div className="bcHeroNoise" />
       </div>
@@ -91,7 +115,13 @@ export default function HeroScene({
       </header>
 
       <div className="bcNexusHero__layout bcV3Hero__layout">
-        <div className="bcNexusHero__copy bcV3Hero__copy">
+        <div
+          className="bcNexusHero__copy bcV3Hero__copy"
+          data-bc-parallax
+          data-bc-parallax-depth="10"
+          data-bc-parallax-pointer="3"
+          data-bc-parallax-rotate="0.16"
+        >
           <div className="bcNexusHero__eyebrow"><span aria-hidden="true" /><strong>BLACKCROWN NETWORK</strong><small>ONLINE</small></div>
           <h1 id="bc-v3-hero-title" className="bcNexusHero__title bcV3Hero__title"><span>BLACK</span><span>CROWN</span></h1>
           <p className="bcNexusHero__tagline bcV3Hero__tagline">Одна корона. Несколько миров.</p>
@@ -103,14 +133,27 @@ export default function HeroScene({
           <div className="bcNexusHero__signature"><span>BC // V3.3 EXPERIENCE</span><span>WEBGL · MOBILE · DESKTOP</span></div>
         </div>
 
-        <div className="bcNexusHero__core bcV3Hero__core">
+        <div
+          className="bcNexusHero__core bcV3Hero__core"
+          data-bc-parallax
+          data-bc-parallax-depth="30"
+          data-bc-parallax-pointer="16"
+          data-bc-parallax-rotate="1.05"
+          data-bc-parallax-scale="0.018"
+        >
           <ReactorFX className="bcV3Hero__coreReactor" tone="cyan" size="large" intensity={1.18} />
           <DigitalCrownCore size="large" intensity={1.24} />
           <div className="bcV3Hero__reactorFloor" aria-hidden="true" />
         </div>
       </div>
 
-      <div className="bcNexusStatus bcV3Hero__status" aria-label="Статус экосистемы">
+      <div
+        className="bcNexusStatus bcV3Hero__status"
+        aria-label="Статус экосистемы"
+        data-bc-parallax
+        data-bc-parallax-depth="7"
+        data-bc-parallax-pointer="2"
+      >
         {statuses.map((status) => <HeroStatusItem key={`${status.label}-${status.value}`} {...status} />)}
       </div>
     </section>
