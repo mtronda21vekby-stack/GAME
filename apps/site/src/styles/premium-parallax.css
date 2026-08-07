@@ -20,7 +20,7 @@
 .bcPremiumParallax .bcWorldStageV2__visual img[data-bc-parallax]{--bc-parallax-base-scale:1.065;inset:-2.5%;width:105%;height:105%;max-width:none;transform-origin:center}
 .bcPremiumParallax .bcWorldStageV2[data-tone=ocean] .bcWorldStageV2__visual img[data-bc-parallax]{filter:contrast(1.18) saturate(1.22) brightness(1.07)}
 .bcPremiumParallax .bcWorldStageV2[data-tone=reactor] .bcWorldStageV2__visual img[data-bc-parallax]{filter:contrast(1.23) saturate(1.28) brightness(1.08)}
-.bcPremiumParallax .bcWorldStageV2__visual::before{content:"";position:absolute;z-index:2;inset:-18%;pointer-events:none;background:linear-gradient(118deg,transparent 26%,rgba(var(--world-accent),.055) 44%,rgba(255,255,255,.035) 50%,transparent 61%);transform:translate3d(calc(var(--bc-parallax-x,0px)*-.42),calc(var(--bc-parallax-y,0px)*-.22),0);mix-blend-mode:screen;opacity:.72}
+.bcPremiumParallax .bcWorldStageV2__visual::before{content:"";position:absolute;z-index:2;inset:-18%;pointer-events:none;background:linear-gradient(118deg,transparent 26%,rgba(var(--world-accent),.055) 44%,rgba(255,255,255,.035) 50%,transparent 61%);mix-blend-mode:screen;opacity:.72}
 
 /* Keep interaction surfaces crisp while surrounding layers move. */
 .bcPremiumParallax .bcHomeV3 button,.bcPremiumParallax .bcHomeV3 a{transform-style:flat}
