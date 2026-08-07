@@ -2,6 +2,7 @@ import React from "react";
 import MatrixDepthEngine from "./components/MatrixDepthEngine";
 import MotionDirector from "./components/MotionDirector";
 import MotionRevealV3 from "./components/MotionRevealV3";
+import PremiumParallaxDirector from "./components/PremiumParallaxDirector";
 import SiteMusic from "./components/SiteMusic";
 import { Router } from "./routes/Router";
 
@@ -77,6 +78,7 @@ export function App() {
       <MatrixDepthEngine quality="auto" intensity={1} />
       <MotionDirector />
       <MotionRevealV3 />
+      <PremiumParallaxDirector />
       <SiteMusic />
 
       <div className="bcAppContent">
