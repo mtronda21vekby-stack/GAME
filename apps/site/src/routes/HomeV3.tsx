@@ -1,6 +1,7 @@
 import React from "react";
 import { userStorage } from "@blackcrown/core";
 import AICoachV3 from "../components/AICoachV3";
+import CinematicWorldTransition from "../components/CinematicWorldTransition";
 import GlassSurface from "../components/GlassSurface";
 import HeroScene, { type HeroStatus, type HeroStatusTone } from "../components/HeroScene";
 import LiveFeedV3 from "../components/LiveFeedV3";
@@ -143,6 +144,13 @@ export function HomeV3() {
         statuses={heroStatuses}
       />
 
+      <CinematicWorldTransition
+        tone="ocean"
+        index="01"
+        title="EvoFish"
+        detail="ABYSSAL LINK / DESCENT ACTIVE"
+      />
+
       <section id="worlds" className="bcWorldsV2" aria-labelledby="bc-worlds-v2-title">
         <GlassSurface material="frosted" tone="cyan" className="bcWorldsV2__intro">
           <div className="bcWorldsV2__head">
@@ -180,6 +188,13 @@ export function HomeV3() {
             onPrimary={() => navigateExternal("/game/")}
             secondaryLabel="О мире"
             onSecondary={() => navigateSite("/about")}
+          />
+
+          <CinematicWorldTransition
+            tone="reactor"
+            index="02"
+            title="CROWN//FRONT"
+            detail="REACTOR LINK / INDUSTRIAL CHANNEL"
           />
 
           <WorldStageV2
