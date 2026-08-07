@@ -1,0 +1,3 @@
+blackcrown-uploaded-loop-v1
+source: user-provided 1.mp3
+runtime: Web Audio AudioBufferSourceNode.loop
