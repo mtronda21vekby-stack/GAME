@@ -1,9 +1,9 @@
 import React from "react";
 import "../styles/site-music.css";
 
-const ENABLED_KEY = "bc.siteMusic.enabled.v8";
-const VOLUME_KEY = "bc.siteMusic.volume.v8";
-const AUDIO_SRC = "/audio/blackcrown-long.mp3?v=static-v8";
+const ENABLED_KEY = "bc.siteMusic.enabled.v9";
+const VOLUME_KEY = "bc.siteMusic.volume.v9";
+const AUDIO_SRC = "https://cdn1.suno.ai/9ffd5c5a-9995-47da-bf04-c212a6b02804.mp3";
 
 type MusicState = "ready" | "starting" | "playing" | "paused" | "error";
 
@@ -46,7 +46,6 @@ function clampVolume(volume: number) {
 
 export function SiteMusic() {
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
-  const [enabled, setEnabled] = React.useState(readEnabled);
   const [volume, setVolume] = React.useState(readVolume);
   const [state, setState] = React.useState<MusicState>(() => (readEnabled() ? "ready" : "paused"));
   const [expanded, setExpanded] = React.useState(false);
@@ -59,56 +58,44 @@ export function SiteMusic() {
     audio.muted = false;
   }, [volume]);
 
-  const pause = React.useCallback(() => {
-    const audio = audioRef.current;
-    if (audio) audio.pause();
-    setEnabled(false);
-    storeEnabled(false);
-    setState("paused");
-  }, []);
-
-  const playFromTap = React.useCallback(() => {
+  const playFromTap = () => {
     const audio = audioRef.current;
     if (!audio) {
       setState("error");
       return;
     }
 
-    setEnabled(true);
     storeEnabled(true);
-    setState("starting");
-
     audio.loop = true;
     audio.muted = false;
     audio.volume = clampVolume(volume);
-
-    if (state === "error") {
-      try {
-        audio.load();
-      } catch {
-        // play() below will expose the real media error.
-      }
-    }
+    setState("starting");
 
     try {
-      const result = audio.play();
-      void result
+      const promise = audio.play();
+      void promise
         .then(() => setState("playing"))
         .catch((error) => {
-          console.warn("BlackCrown static MP3 play() rejected", error);
+          console.warn("BlackCrown Suno MP3 play() rejected", error);
           setState("error");
         });
     } catch (error) {
-      console.warn("BlackCrown static MP3 play() failed", error);
+      console.warn("BlackCrown Suno MP3 play() failed", error);
       setState("error");
     }
-  }, [state, volume]);
+  };
 
   const toggle = () => {
     const audio = audioRef.current;
     if (state === "playing" || (audio && !audio.paused)) {
-      pause();
+      audio?.pause();
+      storeEnabled(false);
+      setState("paused");
       return;
+    }
+
+    if (state === "error" && audio) {
+      audio.load();
     }
     playFromTap();
   };
@@ -133,9 +120,8 @@ export function SiteMusic() {
     >
       <audio
         ref={audioRef}
-        className="bcSiteMusic__nativeAudio"
         src={AUDIO_SRC}
-        preload="auto"
+        preload="metadata"
         loop
         playsInline
         onPlaying={() => setState("playing")}
