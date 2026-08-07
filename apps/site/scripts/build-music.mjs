@@ -6,9 +6,11 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const audioDir = path.resolve(here, "../public/audio");
 const outputPath = path.join(audioDir, "blackcrown-long.mp3");
 const parts = [
-  "blackcrown-long-part-00.txt",
-  "blackcrown-long-part-01.txt",
-  "blackcrown-long-part-02.txt",
+  "blackcrown-long-v4-part-00.txt",
+  "blackcrown-long-v4-part-01.txt",
+  "blackcrown-long-v4-part-02.txt",
+  "blackcrown-long-v4-part-03.txt",
+  "blackcrown-long-v4-part-04.txt",
 ];
 
 const encodedParts = await Promise.all(
