@@ -1,17 +1,13 @@
 import React from "react";
 import "../styles/site-music.css";
 
-const ENABLED_KEY = "bc.siteMusic.enabled.v3";
-const VOLUME_KEY = "bc.siteMusic.volume.v3";
-const SAMPLE_RATE = 16_000;
-const TRACK_VERSION = "uploaded-loop-v3-ios";
+const ENABLED_KEY = "bc.siteMusic.enabled.v4";
+const VOLUME_KEY = "bc.siteMusic.volume.v4";
+const TRACK_VERSION = "uploaded-long-loop-v4";
 const TRACK_PARTS = [
-  "/audio/blackcrown-loop-part-00.txt",
-  "/audio/blackcrown-loop-part-01.txt",
-  "/audio/blackcrown-loop-part-02.txt",
-  "/audio/blackcrown-loop-part-03.txt",
-  "/audio/blackcrown-loop-part-04.txt",
-  "/audio/blackcrown-loop-part-05.txt",
+  "/audio/blackcrown-long-part-00.txt",
+  "/audio/blackcrown-long-part-01.txt",
+  "/audio/blackcrown-long-part-02.txt",
 ] as const;
 
 type MusicState = "loading" | "waiting" | "playing" | "paused" | "error" | "unsupported";
@@ -20,10 +16,12 @@ type Engine = {
   context: AudioContext;
   master: GainNode;
   source: AudioBufferSourceNode | null;
+  buffer: AudioBuffer | null;
+  decodePromise: Promise<AudioBuffer> | null;
 };
 
-let pcmCache: Uint8Array | null = null;
-let pcmLoadPromise: Promise<Uint8Array> | null = null;
+let mediaCache: Uint8Array | null = null;
+let mediaLoadPromise: Promise<Uint8Array> | null = null;
 
 function readEnabled() {
   try {
@@ -87,7 +85,13 @@ function buildEngine(): Engine | null {
   master.connect(compressor);
   compressor.connect(context.destination);
 
-  return { context, master, source: null };
+  return {
+    context,
+    master,
+    source: null,
+    buffer: null,
+    decodePromise: null,
+  };
 }
 
 async function fetchTrackPart(url: string) {
@@ -110,7 +114,7 @@ async function fetchTrackPart(url: string) {
   return text;
 }
 
-function decodePackedPcm(encoded: string) {
+function decodeBase64Bytes(encoded: string) {
   const compact = encoded.replace(/\s+/g, "");
   const binary = window.atob(compact);
   if (!binary.length) throw new Error("BlackCrown music asset is empty");
@@ -122,42 +126,61 @@ function decodePackedPcm(encoded: string) {
   return bytes;
 }
 
-function preloadTrack(force = false) {
+function preloadMedia(force = false) {
   if (force) {
-    pcmCache = null;
-    pcmLoadPromise = null;
+    mediaCache = null;
+    mediaLoadPromise = null;
   }
 
-  if (pcmCache) return Promise.resolve(pcmCache);
-  if (pcmLoadPromise) return pcmLoadPromise;
+  if (mediaCache) return Promise.resolve(mediaCache);
+  if (mediaLoadPromise) return mediaLoadPromise;
 
-  pcmLoadPromise = Promise.all(TRACK_PARTS.map(fetchTrackPart))
-    .then((parts) => decodePackedPcm(parts.join("")))
+  mediaLoadPromise = Promise.all(TRACK_PARTS.map(fetchTrackPart))
+    .then((parts) => decodeBase64Bytes(parts.join("")))
     .then((bytes) => {
-      pcmCache = bytes;
+      mediaCache = bytes;
       return bytes;
     })
     .finally(() => {
-      pcmLoadPromise = null;
+      mediaLoadPromise = null;
     });
 
-  return pcmLoadPromise;
+  return mediaLoadPromise;
 }
 
-function createPcmBuffer(context: AudioContext, bytes: Uint8Array) {
-  const audioBuffer = context.createBuffer(1, bytes.length, SAMPLE_RATE);
-  const channel = audioBuffer.getChannelData(0);
-
-  for (let index = 0; index < bytes.length; index += 1) {
-    channel[index] = (bytes[index] - 128) / 128;
+function decodeTrack(engine: Engine, bytes: Uint8Array, force = false) {
+  if (force) {
+    engine.buffer = null;
+    engine.decodePromise = null;
   }
 
-  return audioBuffer;
+  if (engine.buffer) return Promise.resolve(engine.buffer);
+  if (engine.decodePromise) return engine.decodePromise;
+
+  // Copy into a standalone ArrayBuffer before handing the MP3 to Web Audio.
+  const encodedMp3 = new Uint8Array(bytes).buffer;
+  engine.decodePromise = engine.context
+    .decodeAudioData(encodedMp3)
+    .then((buffer) => {
+      if (!Number.isFinite(buffer.duration) || buffer.duration < 10) {
+        throw new Error("BlackCrown long music loop decoded with an invalid duration");
+      }
+      engine.buffer = buffer;
+      return buffer;
+    })
+    .finally(() => {
+      engine.decodePromise = null;
+    });
+
+  return engine.decodePromise;
 }
 
-function createLoopSource(engine: Engine, bytes: Uint8Array) {
+function preloadTrack(engine: Engine, force = false) {
+  return preloadMedia(force).then((bytes) => decodeTrack(engine, bytes, force));
+}
+
+function createLoopSource(engine: Engine, buffer: AudioBuffer) {
   const source = engine.context.createBufferSource();
-  const buffer = createPcmBuffer(engine.context, bytes);
   source.buffer = buffer;
   source.loop = true;
   source.loopStart = 0;
@@ -181,36 +204,29 @@ export function SiteMusic() {
   const start = React.useCallback(() => {
     if (state === "unsupported") return;
 
-    const bytes = pcmCache;
-    if (!bytes) {
+    const engine = engineRef.current;
+    const buffer = engine?.buffer;
+    if (!engine || !buffer) {
       if (mountedRef.current) setState("loading");
-      void preloadTrack()
-        .then(() => {
-          if (mountedRef.current) setState("waiting");
-        })
-        .catch(() => {
-          if (mountedRef.current) setState("error");
-        });
+      if (engine) {
+        void preloadTrack(engine)
+          .then(() => {
+            if (mountedRef.current) setState("waiting");
+          })
+          .catch(() => {
+            if (mountedRef.current) setState("error");
+          });
+      }
       return;
     }
 
-    let engine = engineRef.current;
-    if (!engine) {
-      engine = buildEngine();
-      if (!engine) {
-        if (mountedRef.current) setState("unsupported");
-        return;
-      }
-      engineRef.current = engine;
-    }
-
     try {
-      // iOS Safari: resume and source.start are both invoked immediately inside
-      // the user gesture. There is no network await between unlock and playback.
+      // iOS Safari: both calls happen immediately inside the user's gesture.
+      // The MP3 has already been downloaded and decoded before this point.
       const resumePromise = engine.context.resume();
 
       if (!engine.source) {
-        createLoopSource(engine, bytes);
+        createLoopSource(engine, buffer);
       }
 
       const now = engine.context.currentTime;
@@ -261,7 +277,17 @@ export function SiteMusic() {
     if (state === "unsupported") return;
 
     let active = true;
-    void preloadTrack()
+    let engine = engineRef.current;
+    if (!engine) {
+      engine = buildEngine();
+      if (!engine) {
+        setState("unsupported");
+        return;
+      }
+      engineRef.current = engine;
+    }
+
+    void preloadTrack(engine)
       .then(() => {
         if (!active || !mountedRef.current) return;
         setState(enabled ? "waiting" : "paused");
@@ -273,14 +299,19 @@ export function SiteMusic() {
     return () => {
       active = false;
     };
-    // Load exactly once. The user's saved enabled preference is read at mount.
+    // Preload and decode the long MP3 exactly once at mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   React.useEffect(() => {
     if (!enabled || state !== "waiting") return;
 
-    const unlock = () => start();
+    const unlock = (event: Event) => {
+      const target = event.target;
+      if (target instanceof Element && target.closest(".bcSiteMusic")) return;
+      start();
+    };
+
     window.addEventListener("pointerdown", unlock, { once: true, passive: true });
     window.addEventListener("touchend", unlock, { once: true, passive: true });
     window.addEventListener("keydown", unlock, { once: true });
@@ -349,8 +380,18 @@ export function SiteMusic() {
     }
 
     if (state === "error") {
+      let engine = engineRef.current;
+      if (!engine) {
+        engine = buildEngine();
+        if (!engine) {
+          setState("unsupported");
+          return;
+        }
+        engineRef.current = engine;
+      }
+
       setState("loading");
-      void preloadTrack(true)
+      void preloadTrack(engine, true)
         .then(() => {
           if (mountedRef.current) setState("waiting");
         })
