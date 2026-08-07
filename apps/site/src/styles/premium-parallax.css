@@ -1,0 +1,45 @@
+/* BLACKCROWN premium multi-layer parallax — progressive enhancement only. */
+.bcPremiumParallax .bcHomeV3{--bc-parallax-x:0px;--bc-parallax-y:0px;--bc-parallax-rx:0deg;--bc-parallax-ry:0deg;--bc-parallax-scale:0;perspective:1500px;perspective-origin:50% 42%}
+.bcPremiumParallax .bcHomeV3 [data-bc-parallax]{--bc-parallax-base-scale:1;transform:translate3d(var(--bc-parallax-x,0px),var(--bc-parallax-y,0px),0) rotateX(var(--bc-parallax-rx,0deg)) rotateY(var(--bc-parallax-ry,0deg)) scale(calc(var(--bc-parallax-base-scale) + var(--bc-parallax-scale,0)));transform-origin:center;backface-visibility:hidden;-webkit-backface-visibility:hidden;will-change:transform}
+
+/* Hero depth stack. The navigation/header is deliberately excluded. */
+.bcPremiumParallax .bcHomeV3>.bcV3Hero{transform-style:preserve-3d}
+.bcPremiumParallax .bcHomeV3>.bcV3Hero .bcNexusHero__background{transform-style:preserve-3d}
+.bcPremiumParallax .bcHomeV3>.bcV3Hero .bcNexusHero__focus[data-bc-parallax]{filter:blur(.2px)}
+.bcPremiumParallax .bcHomeV3>.bcV3Hero .bcV3Hero__light[data-bc-parallax]{filter:blur(1px);mix-blend-mode:screen}
+.bcPremiumParallax .bcHomeV3>.bcV3Hero .bcV3Hero__grid[data-bc-parallax]{transform-origin:50% 40%}
+.bcPremiumParallax .bcHomeV3>.bcV3Hero .bcV3Hero__copy[data-bc-parallax]{position:relative;z-index:4;transform-style:preserve-3d}
+.bcPremiumParallax .bcHomeV3>.bcV3Hero .bcV3Hero__core[data-bc-parallax]{transform:translate3d(calc(clamp(0px,2.2vw,34px) + var(--bc-parallax-x,0px)),var(--bc-parallax-y,0px),0) rotateX(var(--bc-parallax-rx,0deg)) rotateY(var(--bc-parallax-ry,0deg)) scale(calc(1 + var(--bc-parallax-scale,0)));transform-style:preserve-3d}
+.bcPremiumParallax .bcHomeV3>.bcV3Hero .bcV3Hero__status[data-bc-parallax]{position:relative;z-index:5}
+.bcPremiumParallax .bcHomeV3>.bcV3Hero::after{content:"";position:absolute;z-index:1;left:7%;right:7%;bottom:3%;height:26%;pointer-events:none;background:radial-gradient(ellipse at 50% 100%,rgba(0,229,255,.075),transparent 66%);filter:blur(34px);opacity:.86;transform:translateZ(-1px)}
+
+/* Featured Worlds: text sits close to the viewer, media moves deeper. */
+.bcPremiumParallax .bcWorldStageV2{perspective:1300px;transform-style:preserve-3d}
+.bcPremiumParallax .bcWorldStageV2__copy[data-bc-parallax]{transform-origin:50% 46%}
+.bcPremiumParallax .bcWorldStageV2__visual[data-bc-parallax]{transform-origin:50% 50%;transform-style:preserve-3d}
+.bcPremiumParallax .bcWorldStageV2__visual img[data-bc-parallax]{--bc-parallax-base-scale:1.065;inset:-2.5%;width:105%;height:105%;max-width:none;transform-origin:center}
+.bcPremiumParallax .bcWorldStageV2[data-tone=ocean] .bcWorldStageV2__visual img[data-bc-parallax]{filter:contrast(1.18) saturate(1.22) brightness(1.07)}
+.bcPremiumParallax .bcWorldStageV2[data-tone=reactor] .bcWorldStageV2__visual img[data-bc-parallax]{filter:contrast(1.23) saturate(1.28) brightness(1.08)}
+.bcPremiumParallax .bcWorldStageV2__visual::before{content:"";position:absolute;z-index:2;inset:-18%;pointer-events:none;background:linear-gradient(118deg,transparent 26%,rgba(var(--world-accent),.055) 44%,rgba(255,255,255,.035) 50%,transparent 61%);mix-blend-mode:screen;opacity:.72}
+
+/* Keep interaction surfaces crisp while surrounding layers move. */
+.bcPremiumParallax .bcHomeV3 button,.bcPremiumParallax .bcHomeV3 a{transform-style:flat}
+
+@media(max-width:820px){
+  .bcPremiumParallax .bcHomeV3{perspective:none}
+  .bcPremiumParallax .bcHomeV3>.bcV3Hero .bcV3Hero__top,.bcPremiumParallax .bcHomeV3>.bcV3Hero .bcNexusTop,.bcPremiumParallax .bcHomeV3>.bcV3Hero header.bcTop{transform:none!important;will-change:auto!important}
+  .bcPremiumParallax .bcHomeV3>.bcV3Hero .bcV3Hero__copy[data-bc-parallax]{--bc-parallax-x:0px!important;--bc-parallax-rx:0deg!important;--bc-parallax-ry:0deg!important}
+  .bcPremiumParallax .bcHomeV3>.bcV3Hero .bcV3Hero__core[data-bc-parallax]{transform:translate3d(0,var(--bc-parallax-y,0px),0) scale(calc(1 + var(--bc-parallax-scale,0)))}
+  .bcPremiumParallax .bcWorldStageV2__copy[data-bc-parallax]{--bc-parallax-x:0px!important;--bc-parallax-rx:0deg!important;--bc-parallax-ry:0deg!important}
+  .bcPremiumParallax .bcWorldStageV2__visual img[data-bc-parallax]{--bc-parallax-base-scale:1.045;inset:-1.75%;width:103.5%;height:103.5%}
+  .bcPremiumParallax .bcWorldStageV2__visual::before{opacity:.46}
+}
+
+@media(max-width:560px){
+  .bcPremiumParallax .bcHomeV3>.bcV3Hero::after{left:0;right:0;bottom:8%;height:18%;opacity:.58}
+  .bcPremiumParallax .bcWorldStageV2__visual[data-bc-parallax]{--bc-parallax-rx:0deg!important;--bc-parallax-ry:0deg!important}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .bcHomeV3 [data-bc-parallax]{will-change:auto!important}
+}
