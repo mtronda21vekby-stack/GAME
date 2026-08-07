@@ -1,27 +1,24 @@
 import React from "react";
 import "../styles/site-music.css";
 
-const ENABLED_KEY = "bc.siteMusic.enabled.v4";
-const VOLUME_KEY = "bc.siteMusic.volume.v4";
-const TRACK_VERSION = "uploaded-long-loop-v4";
+const ENABLED_KEY = "bc.siteMusic.enabled.v5";
+const VOLUME_KEY = "bc.siteMusic.volume.v5";
+const TRACK_VERSION = "uploaded-long-loop-v5-native";
 const TRACK_PARTS = [
   "/audio/blackcrown-long-part-00.txt",
   "/audio/blackcrown-long-part-01.txt",
   "/audio/blackcrown-long-part-02.txt",
 ] as const;
 
-type MusicState = "loading" | "waiting" | "playing" | "paused" | "error" | "unsupported";
+type MusicState = "loading" | "waiting" | "playing" | "paused" | "error";
 
 type Engine = {
-  context: AudioContext;
-  master: GainNode;
-  source: AudioBufferSourceNode | null;
-  buffer: AudioBuffer | null;
-  decodePromise: Promise<AudioBuffer> | null;
+  audio: HTMLAudioElement;
+  objectUrl: string;
 };
 
-let mediaCache: Uint8Array | null = null;
-let mediaLoadPromise: Promise<Uint8Array> | null = null;
+let mediaCache: ArrayBuffer | null = null;
+let mediaLoadPromise: Promise<ArrayBuffer> | null = null;
 
 function readEnabled() {
   try {
@@ -56,42 +53,8 @@ function storeVolume(volume: number) {
   }
 }
 
-function audioContextCtor() {
-  const target = window as typeof window & {
-    webkitAudioContext?: typeof AudioContext;
-  };
-  return window.AudioContext ?? target.webkitAudioContext;
-}
-
-function targetGain(volume: number) {
-  return Math.max(0.0001, Math.min(0.68, volume * 0.68));
-}
-
-function buildEngine(): Engine | null {
-  const Context = audioContextCtor();
-  if (!Context) return null;
-
-  const context = new Context();
-  const master = context.createGain();
-  const compressor = context.createDynamicsCompressor();
-
-  master.gain.value = 0.0001;
-  compressor.threshold.value = -10;
-  compressor.knee.value = 8;
-  compressor.ratio.value = 2.5;
-  compressor.attack.value = 0.02;
-  compressor.release.value = 0.3;
-
-  master.connect(compressor);
-  compressor.connect(context.destination);
-
-  return {
-    context,
-    master,
-    source: null,
-    buffer: null,
-    decodePromise: null,
-  };
+function clampVolume(volume: number) {
+  return Math.max(0, Math.min(1, volume));
 }
 
 async function fetchTrackPart(url: string) {
@@ -114,16 +77,27 @@ async function fetchTrackPart(url: string) {
   return text;
 }
 
-function decodeBase64Bytes(encoded: string) {
+function decodeBase64Buffer(encoded: string) {
   const compact = encoded.replace(/\s+/g, "");
   const binary = window.atob(compact);
-  if (!binary.length) throw new Error("BlackCrown music asset is empty");
 
-  const bytes = new Uint8Array(binary.length);
+  if (binary.length < 100_000) {
+    throw new Error("BlackCrown long music asset is incomplete");
+  }
+
+  const buffer = new ArrayBuffer(binary.length);
+  const bytes = new Uint8Array(buffer);
   for (let index = 0; index < binary.length; index += 1) {
     bytes[index] = binary.charCodeAt(index);
   }
-  return bytes;
+
+  const isId3 = bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33;
+  const isMpegFrame = bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0;
+  if (!isId3 && !isMpegFrame) {
+    throw new Error("BlackCrown music asset is not a valid MP3 stream");
+  }
+
+  return buffer;
 }
 
 function preloadMedia(force = false) {
@@ -136,10 +110,10 @@ function preloadMedia(force = false) {
   if (mediaLoadPromise) return mediaLoadPromise;
 
   mediaLoadPromise = Promise.all(TRACK_PARTS.map(fetchTrackPart))
-    .then((parts) => decodeBase64Bytes(parts.join("")))
-    .then((bytes) => {
-      mediaCache = bytes;
-      return bytes;
+    .then((parts) => decodeBase64Buffer(parts.join("")))
+    .then((buffer) => {
+      mediaCache = buffer;
+      return buffer;
     })
     .finally(() => {
       mediaLoadPromise = null;
@@ -148,146 +122,95 @@ function preloadMedia(force = false) {
   return mediaLoadPromise;
 }
 
-function decodeTrack(engine: Engine, bytes: Uint8Array, force = false) {
-  if (force) {
-    engine.buffer = null;
-    engine.decodePromise = null;
+function createEngine(buffer: ArrayBuffer, volume: number): Engine {
+  const blob = new Blob([buffer], { type: "audio/mpeg" });
+  const objectUrl = URL.createObjectURL(blob);
+  const audio = new Audio();
+
+  audio.preload = "auto";
+  audio.loop = true;
+  audio.volume = clampVolume(volume);
+  audio.src = objectUrl;
+  audio.load();
+
+  return { audio, objectUrl };
+}
+
+function destroyEngine(engine: Engine | null) {
+  if (!engine) return;
+
+  try {
+    engine.audio.pause();
+    engine.audio.removeAttribute("src");
+    engine.audio.load();
+  } catch {
+    // Best-effort cleanup.
   }
 
-  if (engine.buffer) return Promise.resolve(engine.buffer);
-  if (engine.decodePromise) return engine.decodePromise;
-
-  // Copy into a standalone ArrayBuffer before handing the MP3 to Web Audio.
-  const encodedMp3 = new Uint8Array(bytes).buffer;
-  engine.decodePromise = engine.context
-    .decodeAudioData(encodedMp3)
-    .then((buffer) => {
-      if (!Number.isFinite(buffer.duration) || buffer.duration < 10) {
-        throw new Error("BlackCrown long music loop decoded with an invalid duration");
-      }
-      engine.buffer = buffer;
-      return buffer;
-    })
-    .finally(() => {
-      engine.decodePromise = null;
-    });
-
-  return engine.decodePromise;
-}
-
-function preloadTrack(engine: Engine, force = false) {
-  return preloadMedia(force).then((bytes) => decodeTrack(engine, bytes, force));
-}
-
-function createLoopSource(engine: Engine, buffer: AudioBuffer) {
-  const source = engine.context.createBufferSource();
-  source.buffer = buffer;
-  source.loop = true;
-  source.loopStart = 0;
-  source.loopEnd = buffer.duration;
-  source.connect(engine.master);
-  source.start(0);
-  engine.source = source;
-  return source;
+  URL.revokeObjectURL(engine.objectUrl);
 }
 
 export function SiteMusic() {
   const engineRef = React.useRef<Engine | null>(null);
   const mountedRef = React.useRef(true);
+  const startingRef = React.useRef(false);
   const [enabled, setEnabled] = React.useState(readEnabled);
   const [volume, setVolume] = React.useState(readVolume);
-  const [state, setState] = React.useState<MusicState>(() =>
-    audioContextCtor() ? "loading" : "unsupported"
-  );
+  const [state, setState] = React.useState<MusicState>("loading");
   const [expanded, setExpanded] = React.useState(false);
 
+  const prepare = React.useCallback((force = false) => {
+    if (force) {
+      destroyEngine(engineRef.current);
+      engineRef.current = null;
+    }
+
+    if (engineRef.current) return Promise.resolve(engineRef.current);
+
+    return preloadMedia(force).then((buffer) => {
+      const engine = createEngine(buffer, volume);
+      engineRef.current = engine;
+      return engine;
+    });
+  }, [volume]);
+
   const start = React.useCallback(() => {
-    if (state === "unsupported") return;
-
     const engine = engineRef.current;
-    const buffer = engine?.buffer;
-    if (!engine || !buffer) {
-      if (mountedRef.current) setState("loading");
-      if (engine) {
-        void preloadTrack(engine)
-          .then(() => {
-            if (mountedRef.current) setState("waiting");
-          })
-          .catch(() => {
-            if (mountedRef.current) setState("error");
-          });
-      }
-      return;
-    }
+    if (!engine || startingRef.current) return;
 
-    try {
-      // iOS Safari: both calls happen immediately inside the user's gesture.
-      // The MP3 has already been downloaded and decoded before this point.
-      const resumePromise = engine.context.resume();
+    startingRef.current = true;
+    engine.audio.loop = true;
+    engine.audio.volume = clampVolume(volume);
 
-      if (!engine.source) {
-        createLoopSource(engine, buffer);
-      }
+    // Critical for iOS Safari: play() is invoked synchronously inside the
+    // user's pointer/touch/click event. No AudioContext or async decode sits
+    // between the gesture and media playback.
+    const playPromise = engine.audio.play();
 
-      const now = engine.context.currentTime;
-      engine.master.gain.cancelScheduledValues(now);
-      engine.master.gain.setValueAtTime(Math.max(0.0001, engine.master.gain.value), now);
-      engine.master.gain.exponentialRampToValueAtTime(targetGain(volume), now + 0.32);
-      if (mountedRef.current) setState("playing");
-
-      void resumePromise.catch(() => {
+    void playPromise
+      .then(() => {
+        if (mountedRef.current) setState("playing");
+      })
+      .catch(() => {
         if (mountedRef.current) setState("waiting");
+      })
+      .finally(() => {
+        startingRef.current = false;
       });
-    } catch {
-      if (mountedRef.current) setState("error");
-    }
-  }, [state, volume]);
+  }, [volume]);
 
   const pause = React.useCallback(() => {
     const engine = engineRef.current;
-    if (!engine) {
-      setState("paused");
-      return;
-    }
-
-    const source = engine.source;
-    engine.source = null;
-
-    const now = engine.context.currentTime;
-    engine.master.gain.cancelScheduledValues(now);
-    engine.master.gain.setValueAtTime(Math.max(0.0001, engine.master.gain.value), now);
-    engine.master.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
-
-    window.setTimeout(() => {
-      if (source) {
-        try {
-          source.stop();
-        } catch {
-          // Source may already be stopped.
-        }
-        source.disconnect();
-      }
-      if (!engine.source) void engine.context.suspend().catch(() => undefined);
-    }, 190);
-
+    if (engine) engine.audio.pause();
+    startingRef.current = false;
     setState("paused");
   }, []);
 
   React.useEffect(() => {
-    if (state === "unsupported") return;
-
     let active = true;
-    let engine = engineRef.current;
-    if (!engine) {
-      engine = buildEngine();
-      if (!engine) {
-        setState("unsupported");
-        return;
-      }
-      engineRef.current = engine;
-    }
 
-    void preloadTrack(engine)
+    setState("loading");
+    void prepare()
       .then(() => {
         if (!active || !mountedRef.current) return;
         setState(enabled ? "waiting" : "paused");
@@ -299,75 +222,38 @@ export function SiteMusic() {
     return () => {
       active = false;
     };
-    // Preload and decode the long MP3 exactly once at mount.
+    // The long MP3 is assembled once on mount, before the first gesture.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   React.useEffect(() => {
     if (!enabled || state !== "waiting") return;
 
-    const unlock = (event: Event) => {
-      const target = event.target;
-      if (target instanceof Element && target.closest(".bcSiteMusic")) return;
-      start();
-    };
+    const unlock = () => start();
 
     window.addEventListener("pointerdown", unlock, { once: true, passive: true });
-    window.addEventListener("touchend", unlock, { once: true, passive: true });
+    window.addEventListener("touchstart", unlock, { once: true, passive: true });
     window.addEventListener("keydown", unlock, { once: true });
 
     return () => {
       window.removeEventListener("pointerdown", unlock);
-      window.removeEventListener("touchend", unlock);
+      window.removeEventListener("touchstart", unlock);
       window.removeEventListener("keydown", unlock);
     };
   }, [enabled, start, state]);
 
   React.useEffect(() => {
     const engine = engineRef.current;
-    if (!engine || state !== "playing") return;
-
-    const now = engine.context.currentTime;
-    engine.master.gain.cancelScheduledValues(now);
-    engine.master.gain.setTargetAtTime(targetGain(volume), now, 0.1);
-  }, [state, volume]);
-
-  React.useEffect(() => {
-    const onVisibility = () => {
-      const engine = engineRef.current;
-      if (!engine || !enabled || state !== "playing") return;
-
-      if (document.visibilityState === "hidden") {
-        void engine.context.suspend().catch(() => undefined);
-      } else {
-        void engine.context.resume().catch(() => {
-          if (mountedRef.current) setState("waiting");
-        });
-      }
-    };
-
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, [enabled, state]);
+    if (engine) engine.audio.volume = clampVolume(volume);
+  }, [volume]);
 
   React.useEffect(() => {
     return () => {
       mountedRef.current = false;
-      const engine = engineRef.current;
-      if (engine?.source) {
-        try {
-          engine.source.stop();
-        } catch {
-          // Source may already be stopped.
-        }
-        engine.source.disconnect();
-      }
-      void engine?.context.close().catch(() => undefined);
+      destroyEngine(engineRef.current);
       engineRef.current = null;
     };
   }, []);
-
-  if (state === "unsupported") return null;
 
   const toggle = () => {
     if (state === "loading") return;
@@ -380,18 +266,8 @@ export function SiteMusic() {
     }
 
     if (state === "error") {
-      let engine = engineRef.current;
-      if (!engine) {
-        engine = buildEngine();
-        if (!engine) {
-          setState("unsupported");
-          return;
-        }
-        engineRef.current = engine;
-      }
-
       setState("loading");
-      void preloadTrack(engine, true)
+      void prepare(true)
         .then(() => {
           if (mountedRef.current) setState("waiting");
         })
