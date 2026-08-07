@@ -46,7 +46,15 @@ export function PlatformV3({ onNavigate, onOpenLobby }: PlatformV3Props) {
   return (
     <section className="bcPlatformV3" aria-labelledby="bc-platform-v3-title">
       <GlassSurface className="bcPlatformV3__shell" material="metal" tone="cyan">
-        <div className="bcPlatformV3__visual" aria-hidden="true">
+        <div
+          className="bcPlatformV3__visual"
+          aria-hidden="true"
+          data-bc-parallax
+          data-bc-parallax-depth="12"
+          data-bc-parallax-pointer="4"
+          data-bc-parallax-rotate="0.24"
+          data-bc-parallax-scale="0.005"
+        >
           <img src="/assets/site/neon/network.svg" alt="" loading="lazy" />
           <div className="bcPlatformV3__orbit bcPlatformV3__orbit--outer" />
           <div className="bcPlatformV3__orbit bcPlatformV3__orbit--inner" />
@@ -54,7 +62,13 @@ export function PlatformV3({ onNavigate, onOpenLobby }: PlatformV3Props) {
           <span>NETWORK / STABLE</span>
         </div>
 
-        <div className="bcPlatformV3__copy">
+        <div
+          className="bcPlatformV3__copy"
+          data-bc-parallax
+          data-bc-parallax-depth="4"
+          data-bc-parallax-pointer="1"
+          data-bc-parallax-rotate="0.08"
+        >
           <div className="bcPlatformV3__eyebrow">BLACKCROWN PLATFORM / CORE SERVICES</div>
           <h2 id="bc-platform-v3-title">Один профиль для всей экосистемы.</h2>
           <p>
