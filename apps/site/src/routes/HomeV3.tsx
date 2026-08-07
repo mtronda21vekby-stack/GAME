@@ -16,6 +16,7 @@ import {
 import { openTelegramBot } from "../lib/telegram";
 import "../styles/services-v3.css";
 import "../styles/home-v3-services.css";
+import "../styles/v3-4-services-visual.css";
 
 const WORLD_ART = {
   evofish: "/assets/site/neon/evofish.svg",
