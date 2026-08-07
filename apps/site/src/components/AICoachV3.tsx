@@ -11,7 +11,14 @@ export function AICoachV3({ onOpenCoach, onOpenSupport }: AICoachV3Props) {
   return (
     <section className="bcCoachV3" aria-labelledby="bc-coach-v3-title">
       <GlassSurface className="bcCoachV3__shell" material="reactor" tone="violet">
-        <div className="bcCoachV3__visual">
+        <div
+          className="bcCoachV3__visual"
+          data-bc-parallax
+          data-bc-parallax-depth="7"
+          data-bc-parallax-pointer="2"
+          data-bc-parallax-rotate="0.14"
+          data-bc-parallax-scale="0.003"
+        >
           <img src="/assets/site/neon/coach.svg" alt="Нейронная корона BlackCrown AI-Coach" loading="lazy" />
           <div className="bcCoachV3__halo" aria-hidden="true" />
           <div className="bcCoachV3__nodes" aria-hidden="true">
@@ -23,7 +30,13 @@ export function AICoachV3({ onOpenCoach, onOpenSupport }: AICoachV3Props) {
           </div>
         </div>
 
-        <div className="bcCoachV3__copy">
+        <div
+          className="bcCoachV3__copy"
+          data-bc-parallax
+          data-bc-parallax-depth="2"
+          data-bc-parallax-pointer="0.5"
+          data-bc-parallax-rotate="0.04"
+        >
           <div className="bcCoachV3__eyebrow">BLACKCROWN INTELLIGENCE / AI-COACH</div>
           <h2 id="bc-coach-v3-title">Игровой контекст остаётся с тобой.</h2>
           <p>
