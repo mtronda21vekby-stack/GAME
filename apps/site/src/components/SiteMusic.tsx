@@ -1,16 +1,16 @@
 import React from "react";
 import "../styles/site-music.css";
 
-const ENABLED_KEY = "bc.siteMusic.enabled.v5";
-const VOLUME_KEY = "bc.siteMusic.volume.v5";
-const TRACK_VERSION = "uploaded-long-loop-v5-native";
+const ENABLED_KEY = "bc.siteMusic.enabled.v7";
+const VOLUME_KEY = "bc.siteMusic.volume.v7";
+const TRACK_VERSION = "uploaded-long-loop-v7-button";
 const TRACK_PARTS = [
   "/audio/blackcrown-long-part-00.txt",
   "/audio/blackcrown-long-part-01.txt",
   "/audio/blackcrown-long-part-02.txt",
 ] as const;
 
-type MusicState = "loading" | "waiting" | "playing" | "paused" | "error";
+type MusicState = "loading" | "waiting" | "starting" | "playing" | "paused" | "error";
 
 type Engine = {
   audio: HTMLAudioElement;
@@ -78,9 +78,7 @@ async function fetchTrackPart(url: string) {
 }
 
 function decodeBase64Buffer(encoded: string) {
-  const compact = encoded.replace(/\s+/g, "");
-  const binary = window.atob(compact);
-
+  const binary = window.atob(encoded.replace(/\s+/g, ""));
   if (binary.length < 100_000) {
     throw new Error("BlackCrown long music asset is incomplete");
   }
@@ -94,7 +92,7 @@ function decodeBase64Buffer(encoded: string) {
   const isId3 = bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33;
   const isMpegFrame = bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0;
   if (!isId3 && !isMpegFrame) {
-    throw new Error("BlackCrown music asset is not a valid MP3 stream");
+    throw new Error("BlackCrown music asset is not an MP3 stream");
   }
 
   return buffer;
@@ -105,7 +103,6 @@ function preloadMedia(force = false) {
     mediaCache = null;
     mediaLoadPromise = null;
   }
-
   if (mediaCache) return Promise.resolve(mediaCache);
   if (mediaLoadPromise) return mediaLoadPromise;
 
@@ -125,11 +122,15 @@ function preloadMedia(force = false) {
 function createEngine(buffer: ArrayBuffer, volume: number): Engine {
   const blob = new Blob([buffer], { type: "audio/mpeg" });
   const objectUrl = URL.createObjectURL(blob);
-  const audio = new Audio();
+  const audio = document.createElement("audio");
 
   audio.preload = "auto";
   audio.loop = true;
+  audio.autoplay = false;
+  audio.muted = false;
   audio.volume = clampVolume(volume);
+  audio.setAttribute("playsinline", "");
+  audio.setAttribute("webkit-playsinline", "");
   audio.src = objectUrl;
   audio.load();
 
@@ -138,7 +139,6 @@ function createEngine(buffer: ArrayBuffer, volume: number): Engine {
 
 function destroyEngine(engine: Engine | null) {
   if (!engine) return;
-
   try {
     engine.audio.pause();
     engine.audio.removeAttribute("src");
@@ -146,14 +146,12 @@ function destroyEngine(engine: Engine | null) {
   } catch {
     // Best-effort cleanup.
   }
-
   URL.revokeObjectURL(engine.objectUrl);
 }
 
 export function SiteMusic() {
   const engineRef = React.useRef<Engine | null>(null);
   const mountedRef = React.useRef(true);
-  const startingRef = React.useRef(false);
   const [enabled, setEnabled] = React.useState(readEnabled);
   const [volume, setVolume] = React.useState(readVolume);
   const [state, setState] = React.useState<MusicState>("loading");
@@ -164,7 +162,6 @@ export function SiteMusic() {
       destroyEngine(engineRef.current);
       engineRef.current = null;
     }
-
     if (engineRef.current) return Promise.resolve(engineRef.current);
 
     return preloadMedia(force).then((buffer) => {
@@ -174,77 +171,62 @@ export function SiteMusic() {
     });
   }, [volume]);
 
-  const start = React.useCallback(() => {
+  const startFromUserTap = React.useCallback(() => {
     const engine = engineRef.current;
-    if (!engine || startingRef.current) return;
+    if (!engine) {
+      setState("error");
+      return;
+    }
 
-    startingRef.current = true;
+    setEnabled(true);
+    storeEnabled(true);
+    setState("starting");
+
     engine.audio.loop = true;
+    engine.audio.muted = false;
     engine.audio.volume = clampVolume(volume);
 
-    // Critical for iOS Safari: play() is invoked synchronously inside the
-    // user's pointer/touch/click event. No AudioContext or async decode sits
-    // between the gesture and media playback.
+    // The only playback trigger is the MUSIC button's click event.
+    // This avoids the pointerdown/onClick race that blocked iOS Safari.
     const playPromise = engine.audio.play();
-
     void playPromise
       .then(() => {
         if (mountedRef.current) setState("playing");
       })
-      .catch(() => {
+      .catch((error) => {
+        console.warn("BlackCrown music play() rejected", error);
         if (mountedRef.current) setState("waiting");
-      })
-      .finally(() => {
-        startingRef.current = false;
       });
   }, [volume]);
 
   const pause = React.useCallback(() => {
-    const engine = engineRef.current;
-    if (engine) engine.audio.pause();
-    startingRef.current = false;
+    engineRef.current?.audio.pause();
     setState("paused");
   }, []);
 
   React.useEffect(() => {
     let active = true;
-
     setState("loading");
+
     void prepare()
       .then(() => {
         if (!active || !mountedRef.current) return;
         setState(enabled ? "waiting" : "paused");
       })
-      .catch(() => {
+      .catch((error) => {
+        console.warn("BlackCrown music preload failed", error);
         if (active && mountedRef.current) setState("error");
       });
 
     return () => {
       active = false;
     };
-    // The long MP3 is assembled once on mount, before the first gesture.
+    // Prepare once. Playback itself only happens from the MUSIC button click.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   React.useEffect(() => {
-    if (!enabled || state !== "waiting") return;
-
-    const unlock = () => start();
-
-    window.addEventListener("pointerdown", unlock, { once: true, passive: true });
-    window.addEventListener("touchstart", unlock, { once: true, passive: true });
-    window.addEventListener("keydown", unlock, { once: true });
-
-    return () => {
-      window.removeEventListener("pointerdown", unlock);
-      window.removeEventListener("touchstart", unlock);
-      window.removeEventListener("keydown", unlock);
-    };
-  }, [enabled, start, state]);
-
-  React.useEffect(() => {
-    const engine = engineRef.current;
-    if (engine) engine.audio.volume = clampVolume(volume);
+    if (engineRef.current) engineRef.current.audio.volume = clampVolume(volume);
   }, [volume]);
 
   React.useEffect(() => {
@@ -256,12 +238,16 @@ export function SiteMusic() {
   }, []);
 
   const toggle = () => {
-    if (state === "loading") return;
-
-    if (state === "playing") {
+    if (state === "playing" || state === "starting") {
       setEnabled(false);
       storeEnabled(false);
       pause();
+      return;
+    }
+
+    if (state === "loading") {
+      // Do not swallow the tap silently. Keep the control visibly responsive.
+      setState("loading");
       return;
     }
 
@@ -271,27 +257,28 @@ export function SiteMusic() {
         .then(() => {
           if (mountedRef.current) setState("waiting");
         })
-        .catch(() => {
+        .catch((error) => {
+          console.warn("BlackCrown music retry failed", error);
           if (mountedRef.current) setState("error");
         });
       return;
     }
 
-    setEnabled(true);
-    storeEnabled(true);
-    start();
+    startFromUserTap();
   };
 
   const statusLabel =
     state === "playing"
       ? "ON"
-      : state === "loading"
-        ? "LOAD"
-        : state === "waiting"
-          ? "TAP"
-          : state === "error"
-            ? "RETRY"
-            : "OFF";
+      : state === "starting"
+        ? "START"
+        : state === "loading"
+          ? "LOAD"
+          : state === "waiting"
+            ? "TAP"
+            : state === "error"
+              ? "RETRY"
+              : "OFF";
 
   return (
     <aside
@@ -305,13 +292,7 @@ export function SiteMusic() {
         className="bcSiteMusic__toggle"
         onClick={toggle}
         aria-pressed={state === "playing"}
-        title={
-          state === "loading"
-            ? "Музыка загружается"
-            : state === "playing"
-              ? "Выключить музыку"
-              : "Включить музыку"
-        }
+        title={state === "playing" ? "Выключить музыку" : "Включить музыку"}
       >
         <span className="bcSiteMusic__bars" aria-hidden="true"><i /><i /><i /></span>
         <span className="bcSiteMusic__copy"><strong>MUSIC</strong><small>{statusLabel}</small></span>
