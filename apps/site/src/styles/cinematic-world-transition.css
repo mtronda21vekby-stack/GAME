@@ -1,5 +1,7 @@
 /* BLACKCROWN cinematic world gates — native-scroll transition zones. */
 .bcWorldTransition{position:relative;z-index:1;width:100%;height:clamp(390px,72vh,820px);margin:-42px 0 -22px;overflow:hidden;isolation:isolate;pointer-events:none;background:#010408}
+.bcWorldTransition[data-tone=ocean]+.bcWorldsV2{padding-top:clamp(34px,5vw,76px)}
+.bcWorldsV2__list>.bcWorldTransition[data-tone=reactor]{margin-block:-26px}
 .bcWorldTransition__depth,.bcWorldTransition__energy,.bcWorldTransition__veil,.bcWorldTransition__particles{position:absolute;inset:-10%;pointer-events:none}
 .bcWorldTransition__label{position:absolute;z-index:5;left:50%;top:50%;display:grid;justify-items:center;gap:9px;min-width:min(88vw,520px);transform:translate(-50%,-50%);text-align:center;text-transform:uppercase}
 .bcWorldTransition__label span,.bcWorldTransition__label small{font:760 9px/1 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;letter-spacing:.2em}
@@ -15,7 +17,7 @@
 .bcWorldTransition[data-tone=ocean] .bcWorldTransition__label strong{color:#eafcff;text-shadow:0 0 44px rgba(0,229,255,.12),0 28px 90px rgba(0,0,0,.92)}
 .bcWorldTransition[data-tone=ocean] .bcWorldTransition__label small{color:rgba(91,231,255,.54)}
 
-.bcWorldTransition[data-tone=reactor]{height:clamp(420px,64vh,740px);margin:clamp(10px,2vw,26px) 0;background:linear-gradient(180deg,#021018 0%,#020509 34%,#010204 51%,#090402 73%,#160704 100%)}
+.bcWorldTransition[data-tone=reactor]{height:clamp(420px,64vh,740px);background:linear-gradient(180deg,#021018 0%,#020509 34%,#010204 51%,#090402 73%,#160704 100%)}
 .bcWorldTransition[data-tone=reactor] .bcWorldTransition__depth{inset:-22%;background:radial-gradient(ellipse at 50% 104%,rgba(255,92,31,.34),rgba(255,92,31,.08) 34%,transparent 66%),radial-gradient(ellipse at 50% -10%,rgba(0,180,220,.08),transparent 43%);filter:blur(22px)}
 .bcWorldTransition[data-tone=reactor] .bcWorldTransition__energy{inset:-18%;background:linear-gradient(90deg,transparent 0 22%,rgba(255,94,34,.025) 36%,rgba(255,147,79,.11) 50%,rgba(255,80,27,.025) 64%,transparent 78%);mix-blend-mode:screen}
 .bcWorldTransition[data-tone=reactor] .bcWorldTransition__veil{background:linear-gradient(180deg,rgba(0,11,16,.1),rgba(0,0,0,.8) 43%,rgba(0,0,0,.96) 54%,rgba(42,9,2,.18) 76%,rgba(31,6,2,.44))}
@@ -33,6 +35,6 @@
 .bcPremiumParallax .bcWorldTransition[data-tone=reactor] .bcWorldTransition__particles{opacity:var(--bc-reactor-particles-opacity,.4);transform:translate3d(0,var(--bc-reactor-particles-shift,0px),0)}
 .bcPremiumParallax .bcWorldTransition[data-tone=reactor] .bcWorldTransition__label{opacity:var(--bc-reactor-label-opacity,1);transform:translate3d(-50%,calc(-50% + var(--bc-reactor-label-shift,0px)),0) scale(var(--bc-reactor-label-scale,1))}
 
-@media(max-width:820px){.bcWorldTransition{height:clamp(300px,48vh,470px);margin:-18px 0 -8px}.bcWorldTransition[data-tone=reactor]{height:clamp(300px,46vh,440px);margin:6px 0}.bcWorldTransition__label{gap:7px}.bcWorldTransition__label strong{font-size:clamp(2.2rem,12vw,4rem)}.bcWorldTransition__label span,.bcWorldTransition__label small{font-size:8px}.bcWorldTransition[data-tone=ocean] .bcWorldTransition__depth,.bcWorldTransition[data-tone=reactor] .bcWorldTransition__depth{filter:blur(14px)}}
-@media(max-width:560px){.bcWorldTransition{height:clamp(280px,43vh,390px)}.bcWorldTransition[data-tone=reactor]{height:clamp(285px,42vh,390px)}.bcWorldTransition__label{min-width:92vw}}
+@media(max-width:820px){.bcWorldTransition{height:clamp(300px,48vh,470px);margin:-18px 0 -8px}.bcWorldTransition[data-tone=ocean]+.bcWorldsV2{padding-top:28px}.bcWorldsV2__list>.bcWorldTransition[data-tone=reactor]{height:clamp(300px,46vh,440px);margin-block:-10px}.bcWorldTransition__label{gap:7px}.bcWorldTransition__label strong{font-size:clamp(2.2rem,12vw,4rem)}.bcWorldTransition__label span,.bcWorldTransition__label small{font-size:8px}.bcWorldTransition[data-tone=ocean] .bcWorldTransition__depth,.bcWorldTransition[data-tone=reactor] .bcWorldTransition__depth{filter:blur(14px)}}
+@media(max-width:560px){.bcWorldTransition{height:clamp(280px,43vh,390px)}.bcWorldsV2__list>.bcWorldTransition[data-tone=reactor]{height:clamp(285px,42vh,390px)}.bcWorldTransition__label{min-width:92vw}}
 @media(prefers-reduced-motion:reduce){.bcWorldTransition__depth,.bcWorldTransition__energy,.bcWorldTransition__particles,.bcWorldTransition__label{transform:none!important}.bcWorldTransition__label{transform:translate(-50%,-50%)!important}}
