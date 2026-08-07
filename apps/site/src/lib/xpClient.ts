@@ -1,5 +1,9 @@
 import { getOrCreateGuestId } from "./guest";
-import type { XpEvent } from "@blackcrown/core";
+
+export type XpEvent = {
+  type: string;
+  key?: string;
+};
 
 type Progress = {
   xp: number;

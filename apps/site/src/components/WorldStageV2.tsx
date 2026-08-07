@@ -3,6 +3,7 @@ import { Button } from "@blackcrown/ui";
 import { Icons } from "@blackcrown/assets";
 import ReactorFX from "./ReactorFX";
 import "../styles/world-stage-v2.css";
+import "../styles/v3-4-world-visual.css";
 
 export type WorldStageV2Tone = "ocean" | "reactor";
 

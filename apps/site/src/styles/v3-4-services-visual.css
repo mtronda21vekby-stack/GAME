@@ -1,0 +1,225 @@
+/* BLACKCROWN V3.4 — premium service scene pass. Scoped to V3 homepage sections only. */
+
+.bcPlatformV3__shell,
+.bcStoreV3__shell,
+.bcCoachV3__shell {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(121, 229, 255, 0.12) !important;
+  box-shadow:
+    0 42px 120px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.055) !important;
+}
+
+.bcPlatformV3__shell::before,
+.bcStoreV3__shell::before,
+.bcCoachV3__shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(115deg, rgba(255,255,255,.025), transparent 24% 68%, rgba(255,255,255,.018)),
+    radial-gradient(circle at 12% 8%, rgba(0,229,255,.075), transparent 30%);
+}
+
+.bcStoreV3__shell::before {
+  background:
+    linear-gradient(115deg, rgba(255,255,255,.028), transparent 24% 70%, rgba(255,255,255,.018)),
+    radial-gradient(circle at 76% 18%, rgba(255,112,52,.12), transparent 34%),
+    radial-gradient(circle at 92% 72%, rgba(126,92,255,.07), transparent 30%);
+}
+
+.bcCoachV3__shell::before {
+  background:
+    linear-gradient(115deg, rgba(255,255,255,.025), transparent 24% 70%, rgba(255,255,255,.016)),
+    radial-gradient(circle at 18% 22%, rgba(126,92,255,.12), transparent 35%),
+    radial-gradient(circle at 88% 76%, rgba(0,229,255,.07), transparent 28%);
+}
+
+.bcPlatformV3__copy,
+.bcStoreV3__copy,
+.bcCoachV3__copy,
+.bcPlatformV3__visual,
+.bcStoreV3__visual,
+.bcCoachV3__visual {
+  position: relative;
+  z-index: 2;
+}
+
+.bcPlatformV3__visual,
+.bcCoachV3__visual {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.065),
+    0 30px 90px rgba(0,0,0,.42),
+    0 0 0 1px rgba(0,229,255,.055);
+}
+
+.bcCoachV3__visual {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.065),
+    0 30px 90px rgba(0,0,0,.42),
+    0 0 70px rgba(126,92,255,.065);
+}
+
+.bcPlatformV3__module {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
+}
+
+.bcPlatformV3__module::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgb(var(--module-rgb));
+  box-shadow: 0 0 14px rgba(var(--module-rgb), .72);
+}
+
+.bcStoreV3__features article {
+  position: relative;
+  overflow: hidden;
+  min-height: 118px;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.025), transparent 32%),
+    rgba(4,8,13,.62);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+}
+
+.bcStoreV3__features article::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255,115,55,.62), transparent);
+  opacity: .5;
+}
+
+.bcStoreV3__orb {
+  width: 64%;
+  background:
+    radial-gradient(circle at 36% 27%, rgba(255,255,255,.74), rgba(255,130,64,.25) 16%, rgba(126,92,255,.14) 47%, transparent 70%);
+  box-shadow:
+    0 0 90px rgba(255,105,45,.18),
+    0 0 150px rgba(126,92,255,.07);
+}
+
+.bcStoreV3__card {
+  backdrop-filter: blur(16px) saturate(1.15);
+  -webkit-backdrop-filter: blur(16px) saturate(1.15);
+  box-shadow:
+    0 34px 90px rgba(0,0,0,.62),
+    0 0 44px rgba(255,105,45,.05),
+    inset 0 1px 0 rgba(255,255,255,.11);
+}
+
+.bcCoachV3__features span {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+}
+
+.bcLiveFeedV3__head {
+  padding: 0 2px;
+}
+
+.bcLiveFeedV3__block {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(0,229,255,.11) !important;
+  box-shadow:
+    0 28px 78px rgba(0,0,0,.4),
+    inset 0 1px 0 rgba(255,255,255,.04) !important;
+}
+
+.bcLiveFeedV3__block::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 92% 6%, rgba(0,229,255,.07), transparent 34%);
+}
+
+.bcLiveFeedV3__cards article {
+  position: relative;
+  overflow: hidden;
+  min-height: 96px;
+  background: linear-gradient(145deg, rgba(7,18,26,.68), rgba(2,7,12,.52));
+}
+
+.bcLiveFeedV3__cards article::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 2px;
+  border-radius: 99px;
+  background: rgb(0,229,255);
+  box-shadow: 0 0 14px rgba(0,229,255,.7);
+  opacity: .52;
+}
+
+@media (hover:hover) and (pointer:fine) {
+  .bcStoreV3__features article,
+  .bcLiveFeedV3__cards article {
+    transition: transform 240ms cubic-bezier(.16,1,.3,1), border-color 240ms ease, box-shadow 240ms ease;
+  }
+  .bcStoreV3__features article:hover,
+  .bcLiveFeedV3__cards article:hover {
+    transform: translateY(-3px);
+    border-color: rgba(0,229,255,.2);
+    box-shadow: 0 20px 54px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05);
+  }
+}
+
+@media (max-width:600px) {
+  .bcPlatformV3,
+  .bcStoreV3,
+  .bcCoachV3,
+  .bcLiveFeedV3 {
+    width: min(100% - 20px, 1460px);
+  }
+
+  .bcPlatformV3__shell,
+  .bcStoreV3__shell,
+  .bcCoachV3__shell {
+    border-radius: 27px !important;
+  }
+
+  .bcPlatformV3__visual,
+  .bcCoachV3__visual {
+    min-height: 300px;
+    border-radius: 21px;
+  }
+
+  .bcStoreV3__shell {
+    padding: 18px;
+    gap: 12px;
+  }
+
+  .bcStoreV3__visual {
+    min-height: 360px;
+    margin-top: -8px;
+  }
+
+  .bcStoreV3__features {
+    gap: 8px;
+  }
+
+  .bcStoreV3__features article {
+    min-height: 100px;
+    padding: 15px;
+  }
+
+  .bcLiveFeedV3__head h2 {
+    max-width: 9ch;
+  }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .bcStoreV3__features article,
+  .bcLiveFeedV3__cards article {
+    transition: none !important;
+    transform: none !important;
+  }
+}

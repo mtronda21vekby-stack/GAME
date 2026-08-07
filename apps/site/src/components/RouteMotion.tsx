@@ -42,17 +42,17 @@ export function RouteMotion(props: RouteMotionProps) {
       try {
         const { pushState, replaceState } = window.history;
 
-        window.history.pushState = function (...args: any[]) {
-          const r = pushState.apply(this, args as any);
+        window.history.pushState = function (...args: Parameters<History["pushState"]>) {
+          const r = pushState.apply(window.history, args);
           notify();
           return r;
-        } as any;
+        };
 
-        window.history.replaceState = function (...args: any[]) {
-          const r = replaceState.apply(this, args as any);
+        window.history.replaceState = function (...args: Parameters<History["replaceState"]>) {
+          const r = replaceState.apply(window.history, args);
           notify();
           return r;
-        } as any;
+        };
       } catch {
         // ignore
       }

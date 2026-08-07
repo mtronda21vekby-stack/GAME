@@ -1,0 +1,56 @@
+name: BlackCrown Supabase Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "supabase/**"
+      - ".github/workflows/blackcrown-supabase.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "supabase/**"
+      - ".github/workflows/blackcrown-supabase.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: blackcrown-supabase-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-migrations:
+    name: Validate BlackCrown migrations locally
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start clean local Supabase
+        run: supabase start
+
+      - name: Apply every migration from scratch
+        run: supabase db reset --local
+
+      - name: Lint local database
+        run: supabase db lint --local --level warning
+
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup
+
+# Production schema deployment is handled exclusively by the native Supabase
+# GitHub integration connected to mtronda21vekby-stack/GAME → main.
+# Keeping this workflow validation-only prevents duplicate production deploys
+# and means no Supabase access token or database password is stored in GitHub.
