@@ -18,7 +18,13 @@ export function StoreV3({ onOpenStore, onOpenAccount }: StoreV3Props) {
   return (
     <section className="bcStoreV3" aria-labelledby="bc-store-v3-title">
       <GlassSurface material="metal" tone="orange" className="bcStoreV3__shell">
-        <div className="bcStoreV3__copy">
+        <div
+          className="bcStoreV3__copy"
+          data-bc-parallax
+          data-bc-parallax-depth="3"
+          data-bc-parallax-pointer="0.8"
+          data-bc-parallax-rotate="0.06"
+        >
           <span className="bcStoreV3__eyebrow">BLACKCROWN STORE / PREMIUM ACCESS</span>
           <h2 id="bc-store-v3-title">Твоя коллекция — часть экосистемы.</h2>
           <p>
@@ -41,7 +47,15 @@ export function StoreV3({ onOpenStore, onOpenAccount }: StoreV3Props) {
           </div>
         </div>
 
-        <div className="bcStoreV3__visual" aria-hidden="true">
+        <div
+          className="bcStoreV3__visual"
+          aria-hidden="true"
+          data-bc-parallax
+          data-bc-parallax-depth="9"
+          data-bc-parallax-pointer="3"
+          data-bc-parallax-rotate="0.2"
+          data-bc-parallax-scale="0.004"
+        >
           <div className="bcStoreV3__orb" />
           <div className="bcStoreV3__ring bcStoreV3__ring--one" />
           <div className="bcStoreV3__ring bcStoreV3__ring--two" />
