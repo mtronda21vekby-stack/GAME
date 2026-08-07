@@ -2,6 +2,7 @@ import React from "react";
 import MatrixDepthEngine from "./components/MatrixDepthEngine";
 import MotionDirector from "./components/MotionDirector";
 import MotionRevealV3 from "./components/MotionRevealV3";
+import SiteMusic from "./components/SiteMusic";
 import { Router } from "./routes/Router";
 
 function syncAppVh() {
@@ -76,6 +77,7 @@ export function App() {
       <MatrixDepthEngine quality="auto" intensity={1} />
       <MotionDirector />
       <MotionRevealV3 />
+      <SiteMusic />
 
       <div className="bcAppContent">
         <Router />
