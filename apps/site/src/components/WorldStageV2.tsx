@@ -39,8 +39,13 @@ export function WorldStageV2({
   onSecondary,
 }: WorldStageV2Props) {
   const reactorTone = tone === "reactor" ? "orange" : "cyan";
-  const visualPointer = reverse ? -8 : 8;
-  const imagePointer = reverse ? -15 : 15;
+  const isReactor = tone === "reactor";
+  const visualPointer = reverse ? (isReactor ? -5 : -7) : isReactor ? 5 : 7;
+  const imagePointer = reverse ? (isReactor ? -9 : -13) : isReactor ? 9 : 13;
+  const visualDepth = isReactor ? 25 : 19;
+  const imageDepth = isReactor ? 38 : 31;
+  const visualRotate = isReactor ? 0.3 : 0.42;
+  const imageRotate = isReactor ? 0.2 : 0.28;
 
   return (
     <article
@@ -52,9 +57,9 @@ export function WorldStageV2({
       <div
         className="bcWorldStageV2__copy"
         data-bc-parallax
-        data-bc-parallax-depth="10"
+        data-bc-parallax-depth={isReactor ? "8" : "10"}
         data-bc-parallax-pointer={reverse ? "-2" : "2"}
-        data-bc-parallax-rotate="0.12"
+        data-bc-parallax-rotate={isReactor ? "0.08" : "0.12"}
       >
         <div className="bcWorldStageV2__meta">
           <span>{index}</span>
@@ -81,10 +86,10 @@ export function WorldStageV2({
       <div
         className="bcWorldStageV2__visual"
         data-bc-parallax
-        data-bc-parallax-depth="22"
+        data-bc-parallax-depth={String(visualDepth)}
         data-bc-parallax-pointer={String(visualPointer)}
-        data-bc-parallax-rotate="0.5"
-        data-bc-parallax-scale="0.006"
+        data-bc-parallax-rotate={String(visualRotate)}
+        data-bc-parallax-scale={isReactor ? "0.005" : "0.007"}
       >
         <ReactorFX
           className="bcWorldStageV2__reactorFX"
@@ -100,10 +105,10 @@ export function WorldStageV2({
           alt={imageAlt}
           loading="lazy"
           data-bc-parallax
-          data-bc-parallax-depth="36"
+          data-bc-parallax-depth={String(imageDepth)}
           data-bc-parallax-pointer={String(imagePointer)}
-          data-bc-parallax-rotate="0.34"
-          data-bc-parallax-scale="0.014"
+          data-bc-parallax-rotate={String(imageRotate)}
+          data-bc-parallax-scale={isReactor ? "0.011" : "0.014"}
         />
         <div className="bcWorldStageV2__overlay" aria-hidden="true" />
         <div className="bcWorldStageV2__frame" aria-hidden="true" />
