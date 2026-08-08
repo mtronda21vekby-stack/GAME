@@ -5,6 +5,7 @@ import MotionRevealV3 from "./components/MotionRevealV3";
 import PremiumParallaxDirector from "./components/PremiumParallaxDirector";
 import SiteMusic from "./components/SiteMusic";
 import { Router } from "./routes/Router";
+import "./styles/mobile-scroll-stability.css";
 
 function syncAppVh() {
   const h = window.visualViewport?.height ?? window.innerHeight;
