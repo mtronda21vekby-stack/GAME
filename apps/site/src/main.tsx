@@ -14,10 +14,23 @@ import "./styles/brand-nexus.css";
 import "./styles/v3-mobile-art-pass.css";
 import "./styles/dock-v2.css";
 import "./styles/home-v3.css";
+import criticalMobileShell from "./styles/critical-mobile-shell.css?inline";
 import { App } from "./App";
 import { registerSW } from "./pwa/registerSW";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { applySitePrefs } from "./lib/prefs";
+
+function installCriticalMobileShell() {
+  const styleId = "bc-critical-mobile-shell-v1";
+  if (document.getElementById(styleId)) return;
+
+  const style = document.createElement("style");
+  style.id = styleId;
+  style.dataset.bcCriticalShell = "v1";
+  style.textContent = criticalMobileShell;
+  document.head.appendChild(style);
+  document.documentElement.dataset.bcCriticalShell = "v1";
+}
 
 /**
  * Crash hooks (Production Safe)
@@ -78,6 +91,7 @@ function initMotionRuntime() {
   w.__bc_motion_inited = true;
 
   const root = document.documentElement;
+  const coarsePointer = window.matchMedia?.("(pointer: coarse)").matches ?? false;
 
   const state = {
     cx: window.innerWidth * 0.5,
@@ -150,14 +164,6 @@ function initMotionRuntime() {
     requestTick();
   };
 
-  const onTouchMove = (e: TouchEvent) => {
-    const t = e.touches[0];
-    if (!t) return;
-    state.tx = t.clientX;
-    state.ty = t.clientY;
-    requestTick();
-  };
-
   const onScroll = () => requestTick();
   const onResize = () => requestTick();
 
@@ -173,8 +179,9 @@ function initMotionRuntime() {
 
   requestTick();
 
-  window.addEventListener("pointermove", onPointerMove, { passive: true });
-  window.addEventListener("touchmove", onTouchMove, { passive: true });
+  if (!coarsePointer) {
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+  }
   window.addEventListener("scroll", onScroll, { passive: true });
   window.addEventListener("resize", onResize);
   window.addEventListener("orientationchange", onResize);
@@ -183,9 +190,9 @@ function initMotionRuntime() {
 
   const vv = window.visualViewport;
   vv?.addEventListener?.("resize", onResize);
-  vv?.addEventListener?.("scroll", onResize);
 }
 
+installCriticalMobileShell();
 applySitePrefs();
 installCrashHooks();
 initMotionRuntime();
