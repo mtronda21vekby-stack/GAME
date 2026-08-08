@@ -32,8 +32,6 @@
 
     <script>
       (function () {
-        var recoveryKey = "bc.recovery.black-screen.v2";
-
         function clearRuntimeCaches() {
           var tasks = [];
           if ("serviceWorker" in navigator) {
@@ -52,21 +50,32 @@
         window.__bcRecover = function () {
           clearRuntimeCaches().finally(function () {
             var url = new URL(window.location.href);
+            url.searchParams.delete("bc-recovered");
             url.searchParams.set("bc-recover", String(Date.now()));
             window.location.replace(url.toString());
           });
         };
 
-        if (sessionStorage.getItem(recoveryKey) !== "done") {
-          sessionStorage.setItem(recoveryKey, "done");
-          clearRuntimeCaches().finally(function () {
-            var url = new URL(window.location.href);
-            if (url.searchParams.get("bc-recovered") !== "2") {
-              url.searchParams.set("bc-recovered", "2");
-              window.location.replace(url.toString());
-            }
-          });
-        }
+        /*
+         * Recovery used to clear caches and force a reload on every new browser
+         * session. That was an emergency black-screen hotfix and is intentionally
+         * no longer automatic: healthy sessions must not be interrupted.
+         */
+        try {
+          var cleanUrl = new URL(window.location.href);
+          var changed = false;
+          if (cleanUrl.searchParams.has("bc-recovered")) {
+            cleanUrl.searchParams.delete("bc-recovered");
+            changed = true;
+          }
+          if (cleanUrl.searchParams.has("bc-recover")) {
+            cleanUrl.searchParams.delete("bc-recover");
+            changed = true;
+          }
+          if (changed) {
+            window.history.replaceState(window.history.state, "", cleanUrl.pathname + cleanUrl.search + cleanUrl.hash);
+          }
+        } catch (_) {}
 
         window.addEventListener("DOMContentLoaded", function () {
           window.setTimeout(function () {

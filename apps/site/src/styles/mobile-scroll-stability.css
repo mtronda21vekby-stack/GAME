@@ -1,0 +1,159 @@
+/*
+ * BLACKCROWN mobile scroll stability profile.
+ *
+ * iPhone Safari is particularly sensitive to many simultaneous compositor
+ * surfaces (fixed animated layers + backdrop-filter + large blur/blend layers
+ * + nested 3D transforms). Keep the cinematic composition, but make mobile
+ * scrolling use a deliberately flatter GPU budget.
+ */
+
+@media (max-width: 820px), (pointer: coarse) {
+  /* The global Matrix atmosphere is redundant behind the mobile cinematic
+     scenes and is the largest always-on fixed animated surface. */
+  .bcMatrixDepthEngine {
+    display: none !important;
+  }
+
+  /* Backdrop blur forces continuous re-sampling while the page scrolls. On
+     mobile use the existing opaque/translucent fills instead. */
+  .bcGlassSurface,
+  .bcHomeV3 .bcNexusPlatform__shell,
+  .bcHomeV3 .bcNexusCoach,
+  .bcHomeV3 .bcNexusUpdate,
+  .bcHomeV3 .bcNexusModule,
+  .bcHomeV3 > .bcV3Hero .bcV3Hero__top,
+  .bcHomeV3 > .bcV3Hero .bcNexusTop,
+  .bcSiteMusic {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .bcGlassSurface {
+    background-color: rgba(4, 10, 17, .94) !important;
+  }
+
+  /* Do not pre-promote every parallax node into its own GPU layer. */
+  .bcPremiumParallax .bcHomeV3 [data-bc-parallax] {
+    will-change: auto !important;
+    backface-visibility: visible !important;
+    -webkit-backface-visibility: visible !important;
+    transform-style: flat !important;
+  }
+
+  /* Mobile keeps only the Crown Core and world artwork as moving depth
+     planes. Text, shells and service scenes stay in normal document flow. */
+  .bcPremiumParallax .bcHomeV3 > .bcV3Hero .bcNexusHero__focus[data-bc-parallax],
+  .bcPremiumParallax .bcHomeV3 > .bcV3Hero .bcV3Hero__light[data-bc-parallax],
+  .bcPremiumParallax .bcHomeV3 > .bcV3Hero .bcV3Hero__grid[data-bc-parallax],
+  .bcPremiumParallax .bcHomeV3 > .bcV3Hero .bcV3Hero__copy[data-bc-parallax],
+  .bcPremiumParallax .bcHomeV3 > .bcV3Hero .bcV3Hero__status[data-bc-parallax],
+  .bcPremiumParallax .bcWorldStageV2__copy[data-bc-parallax],
+  .bcPremiumParallax .bcWorldStageV2__visual[data-bc-parallax],
+  .bcPremiumParallax .bcPlatformV3 [data-bc-parallax],
+  .bcPremiumParallax .bcStoreV3 [data-bc-parallax],
+  .bcPremiumParallax .bcCoachV3 [data-bc-parallax] {
+    transform: none !important;
+  }
+
+  /* Keep the Hero camera simple: no 3D scene graph on mobile. */
+  .bcPremiumParallax .bcHomeV3,
+  .bcPremiumParallax .bcHomeV3 > .bcV3Hero,
+  .bcPremiumParallax .bcHomeV3 > .bcV3Hero .bcNexusHero__background,
+  .bcPremiumParallax .bcWorldStageV2,
+  .bcPremiumParallax .bcWorldStageV2__visual {
+    perspective: none !important;
+    transform-style: flat !important;
+  }
+
+  .bcPremiumParallax .bcHomeV3 > .bcV3Hero .bcV3Hero__light[data-bc-parallax],
+  .bcPremiumParallax .bcHomeV3 > .bcV3Hero .bcV3Hero__grid[data-bc-parallax] {
+    filter: none !important;
+    mix-blend-mode: normal !important;
+  }
+
+  .bcPremiumParallax .bcHomeV3 > .bcV3Hero::after {
+    filter: none !important;
+    opacity: .16 !important;
+  }
+
+  /* Nested world overlays are attractive on desktop but expensive while a
+     large image underneath is moving. Mobile keeps the artwork + frame. */
+  .bcPremiumParallax .bcWorldStageV2__visual::before,
+  .bcPremiumParallax .bcWorldStageV2[data-tone="ocean"] .bcWorldStageV2__visual::after,
+  .bcPremiumParallax .bcWorldStageV2[data-tone="reactor"] .bcWorldStageV2__visual::after {
+    display: none !important;
+  }
+
+  .bcWorldStageV2__scan,
+  .bcWorldStageV2__particles,
+  .bcWorldStageV2__reactor {
+    animation: none !important;
+  }
+
+  /* Cinematic gates remain visible, but only the static gradient/veil and
+     label survive. Full-screen blended particle/energy layers are removed. */
+  .bcWorldTransition__energy,
+  .bcWorldTransition__particles {
+    display: none !important;
+  }
+
+  .bcWorldTransition__depth {
+    filter: none !important;
+    transform: none !important;
+    opacity: .72 !important;
+  }
+
+  .bcWorldTransition__veil {
+    mix-blend-mode: normal !important;
+  }
+
+  /* ReactorFX becomes a static accent instead of several continuously
+     composited rings, sparks and blurred surfaces. */
+  .bcReactorFX,
+  .bcReactorFX * {
+    animation: none !important;
+  }
+
+  .bcReactorFX__spark,
+  .bcReactorFX__beam,
+  .bcReactorFX__ring--middle {
+    display: none !important;
+  }
+
+  .bcReactorFX__aura {
+    filter: none !important;
+    opacity: .52 !important;
+  }
+
+  /* The SVG crown contains multiple large Gaussian/drop-shadow filters. They
+     are valuable on desktop but costly when the whole core is scroll-moved. */
+  .bcDigitalCrownCore__field,
+  .bcDigitalCrownCore__halo,
+  .bcDigitalCrownCore__reactor,
+  .bcDigitalCrownCore__crown {
+    filter: none !important;
+  }
+
+  .bcDigitalCrownCore *,
+  .bcStoreV3__ring,
+  .bcPlatformV3__orbit,
+  .bcPlatformV3__pulse {
+    animation-play-state: paused !important;
+  }
+
+  /* Fixed music control stays sharp without another scrolling blur surface. */
+  .bcSiteMusic {
+    background: rgba(2, 8, 13, .96) !important;
+    box-shadow: 0 14px 44px rgba(0, 0, 0, .44) !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .bcWorldTransition {
+    isolation: auto !important;
+  }
+
+  .bcWorldTransition__label {
+    will-change: auto !important;
+  }
+}
