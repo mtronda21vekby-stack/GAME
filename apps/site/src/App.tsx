@@ -1,4 +1,5 @@
 import React from "react";
+import HeroParallaxDirector from "./components/HeroParallaxDirector";
 import MatrixDepthEngine from "./components/MatrixDepthEngine";
 import MobileParallaxDirector from "./components/MobileParallaxDirector";
 import MotionDirector from "./components/MotionDirector";
@@ -122,7 +123,14 @@ export function App() {
       {!mobileStabilityProfile ? <MatrixDepthEngine quality="auto" intensity={1} /> : null}
       <MotionDirector />
       <MotionRevealV3 />
-      {mobileStabilityProfile ? <MobileParallaxDirector /> : <PremiumParallaxDirector />}
+      {mobileStabilityProfile ? (
+        <>
+          <MobileParallaxDirector />
+          <HeroParallaxDirector />
+        </>
+      ) : (
+        <PremiumParallaxDirector />
+      )}
       <SiteMusic />
 
       <div className="bcAppContent">
