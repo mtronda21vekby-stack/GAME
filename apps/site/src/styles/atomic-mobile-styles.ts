@@ -25,6 +25,7 @@ import premiumParallaxCss from "./premium-parallax.css?inline";
 import siteMusicCss from "./site-music.css?inline";
 import mobileStabilityCss from "./mobile-scroll-stability.css?inline";
 import criticalShellCss from "./critical-mobile-shell.css?inline";
+import heroPremiumCss from "./hero-premium-v1.css?inline";
 
 /**
  * Atomic mobile presentation bundle.
@@ -61,4 +62,5 @@ export const atomicMobileStyles = [
   siteMusicCss,
   mobileStabilityCss,
   criticalShellCss,
+  heroPremiumCss,
 ].join("\n");
