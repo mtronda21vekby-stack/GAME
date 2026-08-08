@@ -1,5 +1,6 @@
 import React from "react";
 import MatrixDepthEngine from "./components/MatrixDepthEngine";
+import MobileParallaxDirector from "./components/MobileParallaxDirector";
 import MotionDirector from "./components/MotionDirector";
 import MotionRevealV3 from "./components/MotionRevealV3";
 import PremiumParallaxDirector from "./components/PremiumParallaxDirector";
@@ -10,6 +11,23 @@ import "./styles/mobile-scroll-stability.css";
 function syncAppVh() {
   const h = window.visualViewport?.height ?? window.innerHeight;
   document.documentElement.style.setProperty("--app-vh", `${Math.round(h)}px`);
+}
+
+function useMobileStabilityProfile() {
+  const query = "(max-width: 820px), (pointer: coarse)";
+  const [enabled, setEnabled] = React.useState(() => window.matchMedia?.(query).matches ?? false);
+
+  React.useEffect(() => {
+    const media = window.matchMedia?.(query);
+    if (!media) return;
+
+    const sync = () => setEnabled(media.matches);
+    sync();
+    media.addEventListener?.("change", sync);
+    return () => media.removeEventListener?.("change", sync);
+  }, []);
+
+  return enabled;
 }
 
 function safeId() {
@@ -53,6 +71,8 @@ async function ensureGuestUser() {
 }
 
 export function App() {
+  const mobileStabilityProfile = useMobileStabilityProfile();
+
   React.useEffect(() => {
     syncAppVh();
 
@@ -75,11 +95,11 @@ export function App() {
   }, []);
 
   return (
-    <div className="bcAppShell">
-      <MatrixDepthEngine quality="auto" intensity={1} />
+    <div className="bcAppShell" data-mobile-stability={mobileStabilityProfile ? "true" : "false"}>
+      {!mobileStabilityProfile ? <MatrixDepthEngine quality="auto" intensity={1} /> : null}
       <MotionDirector />
       <MotionRevealV3 />
-      <PremiumParallaxDirector />
+      {mobileStabilityProfile ? <MobileParallaxDirector /> : <PremiumParallaxDirector />}
       <SiteMusic />
 
       <div className="bcAppContent">
