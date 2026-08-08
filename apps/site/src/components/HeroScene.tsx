@@ -1,8 +1,8 @@
 import React from "react";
 import { Button } from "@blackcrown/ui";
 import { Icons } from "@blackcrown/assets";
-import DigitalCrownCore from "./DigitalCrownCore";
-import ReactorFX from "./ReactorFX";
+import { BLACKCROWN_HERO_CROWN } from "../assets/blackcrownHeroCrown";
+import "../styles/hero-premium-v1.css";
 
 export type HeroStatusTone = "cyan" | "orange" | "green";
 
@@ -19,16 +19,6 @@ export type HeroSceneProps = {
   onExploreWorlds: () => void;
   statuses?: HeroStatus[];
 };
-
-function HeroStatusItem({ label, value, tone = "cyan" }: HeroStatus) {
-  return (
-    <div className="bcNexusStatus__item" data-tone={tone}>
-      <span aria-hidden="true" />
-      <strong>{label}</strong>
-      <small>{value}</small>
-    </div>
-  );
-}
 
 function HeroNavLink({ href, onNavigate, children }: { href: string; onNavigate: (path: string) => void; children: React.ReactNode }) {
   return (
@@ -58,45 +48,40 @@ export default function HeroScene({
   onExploreWorlds,
   statuses = DEFAULT_STATUSES,
 }: HeroSceneProps) {
+  const network = statuses.find((status) => status.label === "BLACKCROWN NETWORK")?.value ?? "ONLINE";
+
   return (
-    <section className="bcHero bcNexusHero bcV3Hero" aria-labelledby="bc-v3-hero-title">
-      <div className="bcHeroBg bcNexusHero__background" aria-hidden="true">
+    <section className="bcHero bcNexusHero bcV3Hero bcHeroPremium" aria-labelledby="bc-v3-hero-title">
+      <div className="bcHeroBg bcNexusHero__background bcHeroPremium__background" aria-hidden="true">
         <div
-          className="bcNexusHero__focus"
+          className="bcNexusHero__focus bcHeroPremium__depth bcHeroPremium__depth--far"
           data-bc-parallax
-          data-bc-parallax-depth="22"
-          data-bc-parallax-pointer="5"
+          data-bc-parallax-depth="12"
+          data-bc-parallax-pointer="3"
+          data-bc-parallax-scale="0.004"
+        />
+        <div
+          className="bcV3Hero__light bcV3Hero__light--cyan bcHeroPremium__depth bcHeroPremium__depth--cyan"
+          data-bc-parallax
+          data-bc-parallax-depth="30"
+          data-bc-parallax-pointer="8"
+          data-bc-parallax-scale="0.008"
+        />
+        <div
+          className="bcV3Hero__light bcV3Hero__light--violet bcHeroPremium__depth bcHeroPremium__depth--violet"
+          data-bc-parallax
+          data-bc-parallax-depth="24"
+          data-bc-parallax-pointer="-7"
           data-bc-parallax-scale="0.006"
         />
-        <div
-          className="bcV3Hero__light bcV3Hero__light--cyan"
-          data-bc-parallax
-          data-bc-parallax-depth="52"
-          data-bc-parallax-pointer="18"
-          data-bc-parallax-scale="0.014"
-        />
-        <div
-          className="bcV3Hero__light bcV3Hero__light--violet"
-          data-bc-parallax
-          data-bc-parallax-depth="38"
-          data-bc-parallax-pointer="-13"
-          data-bc-parallax-scale="0.01"
-        />
-        <div
-          className="bcV3Hero__grid"
-          data-bc-parallax
-          data-bc-parallax-depth="18"
-          data-bc-parallax-pointer="6"
-          data-bc-parallax-rotate="0.28"
-        />
+        <div className="bcHeroPremium__city" />
         <div className="bcHeroVignette" />
-        <div className="bcHeroNoise" />
       </div>
 
-      <header className="bcTop bcNexusTop bcV3Hero__top">
+      <header className="bcTop bcNexusTop bcV3Hero__top bcHeroPremium__top">
         <button type="button" className="bcBrand bcHot" onClick={() => onNavigate("/")} aria-label="BlackCrown — главная">
-          <span className="bcBrand__mark"><img alt="" src={Icons.crown} width="22" height="22" /></span>
-          <span className="bcBrand__copy"><strong>BlackCrown</strong><small>INTERACTIVE WORLDS</small></span>
+          <span className="bcBrand__mark"><img alt="" src={Icons.crown} width="24" height="24" /></span>
+          <span className="bcBrand__copy"><strong>BLACKCROWN</strong><small>INTERACTIVE WORLDS</small></span>
         </button>
 
         <nav className="bcNav" aria-label="Основная навигация">
@@ -106,7 +91,7 @@ export default function HeroScene({
           <HeroNavLink href="/support" onNavigate={onNavigate}>Поддержка</HeroNavLink>
         </nav>
 
-        <div className="bcRight">
+        <div className="bcRight bcHeroPremium__right">
           <button type="button" className="bcAccountPill bcHot" onClick={() => onNavigate("/account")} aria-label="Открыть аккаунт">
             <span className="bcAccountPill__dot" aria-hidden="true" /><span>{playerName}</span>
           </button>
@@ -114,48 +99,49 @@ export default function HeroScene({
         </div>
       </header>
 
-      <div className="bcNexusHero__layout bcV3Hero__layout">
+      <div className="bcNexusHero__layout bcV3Hero__layout bcHeroPremium__layout">
         <div
-          className="bcNexusHero__copy bcV3Hero__copy"
+          className="bcNexusHero__copy bcV3Hero__copy bcHeroPremium__copy"
           data-bc-parallax
-          data-bc-parallax-depth="10"
-          data-bc-parallax-pointer="3"
-          data-bc-parallax-rotate="0.16"
+          data-bc-parallax-depth="7"
+          data-bc-parallax-pointer="2"
+          data-bc-parallax-rotate="0.08"
         >
-          <div className="bcNexusHero__eyebrow"><span aria-hidden="true" /><strong>BLACKCROWN NETWORK</strong><small>ONLINE</small></div>
-          <h1 id="bc-v3-hero-title" className="bcNexusHero__title bcV3Hero__title"><span>BLACK</span><span>CROWN</span></h1>
-          <p className="bcNexusHero__tagline bcV3Hero__tagline">Одна корона. Несколько миров.</p>
-          <p className="bcNexusHero__lead bcV3Hero__lead">Профиль, прогресс и игры BlackCrown — в одной системе.</p>
-          <div className="bcNexusHero__actions bcV3Hero__actions">
-            <Button variant="primary" onClick={onPlay}>Запустить BlackCrown</Button>
+          <div className="bcNexusHero__eyebrow bcHeroPremium__eyebrow">
+            <span aria-hidden="true" />
+            <strong>BLACKCROWN NETWORK</strong>
+            <small>{network}</small>
+          </div>
+
+          <h1 id="bc-v3-hero-title" className="bcNexusHero__title bcV3Hero__title bcHeroPremium__title">BLACKCROWN</h1>
+          <p className="bcNexusHero__tagline bcV3Hero__tagline bcHeroPremium__tagline">Одна корона. Несколько миров.</p>
+          <p className="bcNexusHero__lead bcV3Hero__lead bcHeroPremium__lead">Профиль, прогресс и игры BlackCrown — в одной системе.</p>
+
+          <div className="bcNexusHero__actions bcV3Hero__actions bcHeroPremium__actions">
+            <Button variant="primary" leftIconSrc={Icons.play} onClick={onPlay}>Запустить BlackCrown</Button>
             <Button variant="secondary" onClick={onExploreWorlds}>Смотреть миры</Button>
           </div>
-          <div className="bcNexusHero__signature"><span>BC // V3.3 EXPERIENCE</span><span>WEBGL · MOBILE · DESKTOP</span></div>
         </div>
 
         <div
-          className="bcNexusHero__core bcV3Hero__core"
+          className="bcNexusHero__core bcV3Hero__core bcHeroPremium__art"
           data-bc-parallax
-          data-bc-parallax-depth="30"
-          data-bc-parallax-pointer="16"
-          data-bc-parallax-rotate="1.05"
-          data-bc-parallax-scale="0.018"
+          data-bc-parallax-depth="26"
+          data-bc-parallax-pointer="9"
+          data-bc-parallax-rotate="0.24"
+          data-bc-parallax-scale="0.014"
+          aria-hidden="true"
         >
-          <ReactorFX className="bcV3Hero__coreReactor" tone="cyan" size="large" intensity={1.18} />
-          <DigitalCrownCore size="large" intensity={1.24} />
-          <div className="bcV3Hero__reactorFloor" aria-hidden="true" />
+          <div className="bcHeroPremium__artGlow" />
+          <img className="bcHeroPremium__artImage" src={BLACKCROWN_HERO_CROWN} alt="" />
+          <div className="bcHeroPremium__artFloor" />
         </div>
       </div>
 
-      <div
-        className="bcNexusStatus bcV3Hero__status"
-        aria-label="Статус экосистемы"
-        data-bc-parallax
-        data-bc-parallax-depth="7"
-        data-bc-parallax-pointer="2"
-      >
-        {statuses.map((status) => <HeroStatusItem key={`${status.label}-${status.value}`} {...status} />)}
-      </div>
+      <button type="button" className="bcHeroPremium__scroll" onClick={onExploreWorlds} aria-label="Прокрутить к мирам">
+        <span>SCROLL</span>
+        <i aria-hidden="true" />
+      </button>
     </section>
   );
 }
