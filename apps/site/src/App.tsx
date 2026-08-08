@@ -8,9 +8,13 @@ import SiteMusic from "./components/SiteMusic";
 import { Router } from "./routes/Router";
 import "./styles/mobile-scroll-stability.css";
 
+let lastAppVh = 0;
+
 function syncAppVh() {
-  const h = window.visualViewport?.height ?? window.innerHeight;
-  document.documentElement.style.setProperty("--app-vh", `${Math.round(h)}px`);
+  const h = Math.round(window.visualViewport?.height ?? window.innerHeight);
+  if (Math.abs(h - lastAppVh) < 2) return;
+  lastAppVh = h;
+  document.documentElement.style.setProperty("--app-vh", `${h}px`);
 }
 
 function useMobileStabilityProfile() {
@@ -76,17 +80,36 @@ export function App() {
   React.useEffect(() => {
     syncAppVh();
 
-    const onResize = () => syncAppVh();
+    let frame = 0;
+    let viewportTimer = 0;
     const vv = window.visualViewport;
 
-    window.addEventListener("resize", onResize);
-    window.addEventListener("orientationchange", onResize);
-    vv?.addEventListener("resize", onResize);
+    const queueSync = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        syncAppVh();
+      });
+    };
+
+    const onVisualViewportResize = () => {
+      // iOS Safari can emit a stream of visualViewport resize events while the
+      // address bar collapses during a flick. Updating a root layout variable on
+      // every one of those events makes scroll compositing unnecessarily costly.
+      window.clearTimeout(viewportTimer);
+      viewportTimer = window.setTimeout(queueSync, 120);
+    };
+
+    window.addEventListener("resize", queueSync, { passive: true });
+    window.addEventListener("orientationchange", queueSync, { passive: true });
+    vv?.addEventListener("resize", onVisualViewportResize, { passive: true });
 
     return () => {
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("orientationchange", onResize);
-      vv?.removeEventListener("resize", onResize);
+      if (frame) window.cancelAnimationFrame(frame);
+      window.clearTimeout(viewportTimer);
+      window.removeEventListener("resize", queueSync);
+      window.removeEventListener("orientationchange", queueSync);
+      vv?.removeEventListener("resize", onVisualViewportResize);
     };
   }, []);
 
