@@ -10,7 +10,6 @@ import brandNexusCss from "./brand-nexus.css?inline";
 import mobileArtPassCss from "./v3-mobile-art-pass.css?inline";
 import dockCss from "./dock-v2.css?inline";
 import homeCss from "./home-v3.css?inline";
-import heroPremiumCss from "./hero-premium-v1.css?inline";
 import glassCss from "./glass-system.css?inline";
 import reactorCss from "./reactor-fx.css?inline";
 import worldStageCss from "./world-stage-v2.css?inline";
@@ -26,6 +25,7 @@ import premiumParallaxCss from "./premium-parallax.css?inline";
 import siteMusicCss from "./site-music.css?inline";
 import mobileStabilityCss from "./mobile-scroll-stability.css?inline";
 import criticalShellCss from "./critical-mobile-shell.css?inline";
+import heroPremiumCss from "./hero-premium-v1.css?inline";
 
 /**
  * Atomic mobile presentation bundle.
@@ -47,7 +47,6 @@ export const atomicMobileStyles = [
   mobileArtPassCss,
   dockCss,
   homeCss,
-  heroPremiumCss,
   glassCss,
   reactorCss,
   worldStageCss,
@@ -63,4 +62,5 @@ export const atomicMobileStyles = [
   siteMusicCss,
   mobileStabilityCss,
   criticalShellCss,
+  heroPremiumCss,
 ].join("\n");
