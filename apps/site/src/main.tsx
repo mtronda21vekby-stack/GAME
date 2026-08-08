@@ -14,22 +14,25 @@ import "./styles/brand-nexus.css";
 import "./styles/v3-mobile-art-pass.css";
 import "./styles/dock-v2.css";
 import "./styles/home-v3.css";
-import criticalMobileShell from "./styles/critical-mobile-shell.css?inline";
+import { atomicMobileStyles } from "./styles/atomic-mobile-styles";
 import { App } from "./App";
 import { registerSW } from "./pwa/registerSW";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { applySitePrefs } from "./lib/prefs";
 
-function installCriticalMobileShell() {
-  const styleId = "bc-critical-mobile-shell-v1";
+function installAtomicMobileStyles() {
+  const mobile = window.matchMedia?.("(max-width: 820px), (pointer: coarse)").matches ?? false;
+  if (!mobile) return;
+
+  const styleId = "bc-atomic-mobile-styles-v2";
   if (document.getElementById(styleId)) return;
 
   const style = document.createElement("style");
   style.id = styleId;
-  style.dataset.bcCriticalShell = "v1";
-  style.textContent = criticalMobileShell;
+  style.dataset.bcAtomicStyles = "v2";
+  style.textContent = atomicMobileStyles;
   document.head.appendChild(style);
-  document.documentElement.dataset.bcCriticalShell = "v1";
+  document.documentElement.dataset.bcAtomicStyles = "v2";
 }
 
 /**
@@ -192,7 +195,7 @@ function initMotionRuntime() {
   vv?.addEventListener?.("resize", onResize);
 }
 
-installCriticalMobileShell();
+installAtomicMobileStyles();
 applySitePrefs();
 installCrashHooks();
 initMotionRuntime();
