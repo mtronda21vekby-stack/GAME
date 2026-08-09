@@ -2,6 +2,7 @@ import React from "react";
 import "../styles/cinematic-experience-v1.css";
 
 type WorldStatus = { status: string };
+type KeyArtId = "hero" | "evofish";
 
 export type CinematicExperienceProps = {
   evofish: WorldStatus;
@@ -30,6 +31,25 @@ export function CinematicExperience({
   onOpenLobby,
 }: CinematicExperienceProps) {
   const rootRef = React.useRef<HTMLElement | null>(null);
+  const readyKeyArtRef = React.useRef<Set<KeyArtId>>(new Set());
+
+  const verifyKeyArt = React.useCallback((event: React.SyntheticEvent<HTMLImageElement>, id: KeyArtId) => {
+    const image = event.currentTarget;
+    const valid = image.complete && image.naturalWidth > 0 && image.naturalHeight > 0;
+    image.dataset.keyArtStatus = valid ? "ready" : "error";
+
+    const root = rootRef.current;
+    if (!root) return;
+
+    if (!valid) {
+      readyKeyArtRef.current.delete(id);
+      root.dataset.keyArtStatus = "error";
+      return;
+    }
+
+    readyKeyArtRef.current.add(id);
+    root.dataset.keyArtStatus = readyKeyArtRef.current.size === 2 ? "ready" : "loading";
+  }, []);
 
   React.useEffect(() => {
     const root = rootRef.current;
@@ -72,7 +92,14 @@ export function CinematicExperience({
   }, []);
 
   return (
-    <section ref={rootRef} id="worlds" className="bcCinematicExperience" data-phase="0" aria-label="BlackCrown cinematic experience">
+    <section
+      ref={rootRef}
+      id="worlds"
+      className="bcCinematicExperience"
+      data-phase="0"
+      data-key-art-status="loading"
+      aria-label="BlackCrown cinematic experience"
+    >
       <div className="bcCinematicExperience__sticky">
         <div className="bcCinematicExperience__grain" aria-hidden="true" />
         <div className="bcCinematicExperience__scan" aria-hidden="true" />
@@ -88,6 +115,8 @@ export function CinematicExperience({
             loading="eager"
             decoding="async"
             fetchPriority="high"
+            onLoad={(event) => verifyKeyArt(event, "hero")}
+            onError={(event) => verifyKeyArt(event, "hero")}
           />
         </div>
 
@@ -105,6 +134,8 @@ export function CinematicExperience({
             height="500"
             loading="eager"
             decoding="async"
+            onLoad={(event) => verifyKeyArt(event, "evofish")}
+            onError={(event) => verifyKeyArt(event, "evofish")}
           />
           <div className="bcCinematicExperience__oceanLight" />
         </div>
