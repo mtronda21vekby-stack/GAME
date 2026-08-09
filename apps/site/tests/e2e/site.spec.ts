@@ -323,6 +323,7 @@ test("@lab Candidate B uses one allowlisted LOD, drives its iris and reverses it
 });
 
 test("@lab local Crown selector disposes each A/B backend and keeps one renderer", async ({ page }) => {
+  test.skip(test.info().project.name === "webkit-lab", "The desktop debug selector is intentionally hidden by the mobile HUD composition.");
   const requests: string[] = [];
   page.on("request", (request) => requests.push(request.url()));
   await installApiAdapter(page);
