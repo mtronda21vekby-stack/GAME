@@ -1,6 +1,7 @@
 import React from "react";
 import CrownWebGLCanvas from "./CrownWebGLCanvas";
 import "../styles/cinematic-experience-v1.css";
+import "../styles/cinematic-experience-webgl-fix.css";
 
 type WorldStatus = { status: string };
 type KeyArtId = "hero" | "evofish";
@@ -94,6 +95,7 @@ export function CinematicExperience({
       root.dataset.phase = String(nextPhase);
       root.style.setProperty("--cx-p", progress.toFixed(5));
       root.style.setProperty("--cx-v", smoothedVelocity.toFixed(5));
+      root.style.setProperty("--cx-nav-y", `${Math.max(-12, Math.min(12, smoothedVelocity * 80)).toFixed(2)}px`);
       root.style.setProperty("--cx-hero", phaseOpacity(progress, 0.06, 0.2).toFixed(4));
       root.style.setProperty("--cx-gate", phaseOpacity(progress, 0.26, 0.18).toFixed(4));
       root.style.setProperty("--cx-ocean", phaseOpacity(progress, 0.48, 0.23).toFixed(4));
