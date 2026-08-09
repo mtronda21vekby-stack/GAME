@@ -1,16 +1,12 @@
 import React from "react";
 import { Button } from "@blackcrown/ui";
 import { Icons } from "@blackcrown/assets";
-
-function navigate(path: string) {
-  window.history.pushState(null, "", path);
-  window.dispatchEvent(new PopStateEvent("popstate"));
-  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-}
+import { nav } from "../lib/nav";
+import type { SitePath } from "../routes/siteRoutes";
 
 export type CommerceHeaderProps = {
   cartCount?: number;
-  backHref?: string;
+  backHref?: SitePath;
   backLabel?: string;
   hideCart?: boolean;
 };
@@ -23,17 +19,17 @@ export function CommerceHeader({
 }: CommerceHeaderProps) {
   return (
     <header className="bcCommerceHeader">
-      <button type="button" className="bcCommerceBrand" onClick={() => navigate("/")} aria-label="BlackCrown Home">
+      <button type="button" className="bcCommerceBrand" onClick={() => nav("/")} aria-label="BlackCrown Home">
         <img src={Icons.crown} alt="" width="25" height="25" />
         <span>BLACKCROWN</span>
       </button>
 
       <div className="bcCommerceHeader__actions">
-        <Button variant="secondary" onClick={() => navigate(backHref)}>
+        <Button variant="secondary" onClick={() => nav(backHref)}>
           {backLabel}
         </Button>
         {!hideCart ? (
-          <Button variant="primary" onClick={() => navigate("/cart")}>
+          <Button variant="primary" onClick={() => nav("/cart")}>
             Корзина{cartCount > 0 ? ` · ${cartCount}` : ""}
           </Button>
         ) : null}

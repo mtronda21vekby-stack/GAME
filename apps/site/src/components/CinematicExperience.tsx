@@ -1,4 +1,5 @@
 import React from "react";
+import type { SitePath } from "../routes/siteRoutes";
 import "../styles/cinematic-experience-v1.css";
 
 type WorldStatus = { status: string };
@@ -9,7 +10,7 @@ export type CinematicExperienceProps = {
   crownFront: WorldStatus;
   network: WorldStatus;
   statusSource: string;
-  onNavigate: (path: string) => void;
+  onNavigate: (path: SitePath) => void;
   onPlay: () => void;
   onOpenCrownFront: () => void;
   onOpenLobby: () => void;

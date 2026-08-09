@@ -2,18 +2,9 @@ import React from "react";
 import { Button } from "@blackcrown/ui";
 import { HeroArt, Icons } from "@blackcrown/assets";
 import { SiteHeader } from "../../components/SiteHeader";
+import { nav as navSite, navExternal } from "../../lib/nav";
 import { openTelegramBot } from "../../lib/telegram";
 import "../../styles/content-pages.css";
-
-function navSite(path: string) {
-  window.history.pushState(null, "", path);
-  window.dispatchEvent(new PopStateEvent("popstate"));
-  window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
-}
-
-function navExternal(path: string) {
-  window.location.assign(path);
-}
 
 function Pill(props: { children: React.ReactNode }) {
   return (

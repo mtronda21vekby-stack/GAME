@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "check:bundle": "node scripts/check-bundle-budget.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:assets": "node scripts/validate-key-art.mjs",
     "lint": "node -e \"process.exit(0)\""

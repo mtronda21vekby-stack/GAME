@@ -1,5 +1,4 @@
 import React from "react";
-import SiteMusic from "./components/SiteMusic";
 import { Router } from "./routes/Router";
 
 let lastAppVh = 0;
@@ -91,8 +90,6 @@ export function App() {
 
   return (
     <div className="bcAppShell">
-      <SiteMusic />
-
       <div className="bcAppContent">
         <Router />
       </div>

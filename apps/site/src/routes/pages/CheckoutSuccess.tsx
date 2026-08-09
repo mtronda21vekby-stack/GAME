@@ -1,15 +1,10 @@
 import React from "react";
 import { Button } from "@blackcrown/ui";
 import CommerceHeader from "../../components/CommerceHeader";
+import { nav } from "../../lib/nav";
 import { formatCoins } from "../../lib/store";
 import { getCommerceOrder, type CommerceOrder } from "../../lib/commerce";
 import "../../styles/commerce.css";
-
-function navigate(path: string) {
-  window.history.pushState(null, "", path);
-  window.dispatchEvent(new PopStateEvent("popstate"));
-  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-}
 
 export function CheckoutSuccess() {
   const orderId = React.useMemo(() => new URLSearchParams(window.location.search).get("order")?.trim() ?? "", []);
@@ -54,8 +49,8 @@ export function CheckoutSuccess() {
             <h2>Заказ не найден</h2>
             <p>Сервер не смог подтвердить этот ID заказа: {error}.</p>
             <div className="bcCommerceActions">
-              <Button variant="primary" onClick={() => navigate("/store")}>Открыть Store</Button>
-              <Button variant="secondary" onClick={() => navigate("/support")}>Поддержка</Button>
+              <Button variant="primary" onClick={() => nav("/store")}>Открыть Store</Button>
+              <Button variant="secondary" onClick={() => nav("/support")}>Поддержка</Button>
             </div>
           </section>
         ) : null}
@@ -93,8 +88,8 @@ export function CheckoutSuccess() {
             </div>
 
             <div className="bcCommerceActions">
-              <Button variant="primary" onClick={() => navigate("/account")}>Открыть профиль</Button>
-              <Button variant="secondary" onClick={() => navigate("/store")}>Продолжить покупки</Button>
+              <Button variant="primary" onClick={() => nav("/account")}>Открыть профиль</Button>
+              <Button variant="secondary" onClick={() => nav("/store")}>Продолжить покупки</Button>
             </div>
           </section>
         ) : null}

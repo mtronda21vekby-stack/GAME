@@ -1,17 +1,8 @@
 import React from "react";
 import { Button } from "@blackcrown/ui";
 import { Icons, HeroArt } from "@blackcrown/assets";
+import { nav, navExternal } from "../../lib/nav";
 import "../../styles/content-pages.css";
-
-function nav(path: string) {
-  window.history.pushState(null, "", path);
-  window.dispatchEvent(new PopStateEvent("popstate"));
-  window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
-}
-
-function navExternal(path: string) {
-  window.location.assign(path);
-}
 
 function Pill(props: { children: React.ReactNode }) {
   return (
