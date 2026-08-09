@@ -21,6 +21,8 @@ unity/**/*.sln
 unity/**/*.user
 
 .DS_Store
+__pycache__/
+*.py[cod]
 .env
 .env.*
 !.env.example

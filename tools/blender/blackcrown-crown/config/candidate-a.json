@@ -1,0 +1,39 @@
+{
+  "assetId": "blackcrown-digital-crown-candidate-a-v1",
+  "seed": 240809,
+  "segmentCount": 9,
+  "spireCount": 9,
+  "frontAxis": "+Z",
+  "upAxis": "+Y",
+  "units": "meters",
+  "textureSize": 512,
+  "dimensions": {
+    "width": 2.32,
+    "height": 1.98,
+    "depth": 0.78,
+    "coreY": 0.62
+  },
+  "lods": {
+    "lod0": {
+      "bevelSegments": 3,
+      "ringSegments": 64,
+      "ringTubeSegments": 8,
+      "coreSubdivisions": 3,
+      "panelDetail": 2
+    },
+    "lod1": {
+      "bevelSegments": 2,
+      "ringSegments": 48,
+      "ringTubeSegments": 6,
+      "coreSubdivisions": 2,
+      "panelDetail": 1
+    },
+    "lod2": {
+      "bevelSegments": 1,
+      "ringSegments": 32,
+      "ringTubeSegments": 4,
+      "coreSubdivisions": 1,
+      "panelDetail": 0
+    }
+  }
+}
