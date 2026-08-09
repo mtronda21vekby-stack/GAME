@@ -5,6 +5,15 @@ export default defineConfig({
   plugins: [react()],
   build: {
     outDir: "dist",
-    target: "es2022"
+    target: "es2022",
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("/node_modules/.pnpm/three@") || id.includes("/node_modules/three/")) {
+            return "nexus-three";
+          }
+        },
+      },
+    },
   }
 });

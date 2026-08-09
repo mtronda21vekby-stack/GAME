@@ -7,6 +7,7 @@ export const BUNDLE_BUDGETS = Object.freeze({
   initialJs: 350 * 1024,
   initialCss: 120 * 1024,
   initialChunk: 500 * 1024,
+  nexusAsyncChunk: 500 * 1024,
 });
 
 export function collectInitialAssets(html) {
@@ -53,6 +54,10 @@ export async function inspectBundle({ distDir, sourceDir }) {
   const css = await Promise.all(initialAssets.styles.map((asset) => getAssetMetric(distDir, asset)));
   const distFiles = await listFiles(path.join(distDir, "assets"));
   const jsFiles = distFiles.filter((file) => file.endsWith(".js"));
+  const jsMetrics = await Promise.all(jsFiles.map(async (file) => ({
+    file: path.basename(file),
+    bytes: (await stat(file)).size,
+  })));
   const jsSources = await Promise.all(jsFiles.map((file) => readFile(file, "utf8")));
   const sourceFiles = await listFiles(sourceDir);
   const sourceJs = sourceFiles.filter((file) => /\.(?:ts|tsx|js|jsx|mjs)$/.test(file));
@@ -62,6 +67,7 @@ export async function inspectBundle({ distDir, sourceDir }) {
     js,
     css,
     allJsFiles: jsFiles.map((file) => path.basename(file)),
+    allJsMetrics: jsMetrics,
     embedsCssInline: sourceContents.some((source) => /\.css\?inline["']/.test(source)),
     embedsRasterDataUri: jsSources.some((source) => /data:image\/(?:avif|webp|jpe?g|png);base64,/i.test(source)),
   };
@@ -81,6 +87,11 @@ export function validateBundle(report) {
   for (const asset of report.js) {
     if (asset.bytes > BUNDLE_BUDGETS.initialChunk) {
       errors.push(`Initial chunk ${asset.asset} is ${formatBytes(asset.bytes)}; limit is ${formatBytes(BUNDLE_BUDGETS.initialChunk)}.`);
+    }
+  }
+  for (const asset of report.allJsMetrics.filter((candidate) => /^(?:ExperienceRuntime|nexus-three)-/.test(candidate.file))) {
+    if (asset.bytes > BUNDLE_BUDGETS.nexusAsyncChunk) {
+      errors.push(`Nexus async chunk ${asset.file} is ${formatBytes(asset.bytes)}; limit is ${formatBytes(BUNDLE_BUDGETS.nexusAsyncChunk)}.`);
     }
   }
   if (report.embedsCssInline) errors.push("A source module imports a full stylesheet through ?inline.");
@@ -109,6 +120,7 @@ async function main() {
   console.log(`- initial JS: ${formatBytes(result.initialJs)} (${report.js.map((asset) => asset.asset).join(", ")})`);
   console.log(`- initial CSS: ${formatBytes(result.initialCss)} (${report.css.map((asset) => asset.asset).join(", ")})`);
   console.log(`- lazy route chunks: ${report.allJsFiles.filter((file) => /^(?:Account|Admin|Checkout)-/.test(file)).join(", ")}`);
+  console.log(`- Nexus async chunks: ${report.allJsMetrics.filter((asset) => /^(?:ExperienceRuntime|nexus-three)-/.test(asset.file)).map((asset) => `${asset.file} ${formatBytes(asset.bytes)}`).join(", ") || "not emitted in this mode"}`);
 
   if (result.errors.length) {
     for (const error of result.errors) console.error(`ERROR: ${error}`);
