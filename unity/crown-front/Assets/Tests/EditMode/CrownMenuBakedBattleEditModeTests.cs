@@ -103,5 +103,24 @@ namespace CrownFront.Tests.EditMode
         {
             Assert.That(PlayerSettings.bundleVersion, Is.EqualTo(CrownBuildInfo.Version));
         }
+
+        [Test]
+        public void RuntimeUiShaderIsAvailableForDynamicWebGlCanvas()
+        {
+            Shader shader = Shader.Find("CrownFront/RuntimeUI");
+            Assert.That(shader, Is.Not.Null);
+            Assert.That(shader.isSupported, Is.True);
+        }
+
+        [Test]
+        public void RuntimeFontContainsCyrillicMenuGlyphs()
+        {
+            Font font = Resources.Load<Font>("CrownFonts/NotoSans-Regular");
+            Assert.That(font, Is.Not.Null);
+            Assert.That(font.HasCharacter('В'), Is.True);
+            Assert.That(font.HasCharacter('Б'), Is.True);
+            Assert.That(font.HasCharacter('О'), Is.True);
+            Assert.That(font.HasCharacter('Й'), Is.True);
+        }
     }
 }

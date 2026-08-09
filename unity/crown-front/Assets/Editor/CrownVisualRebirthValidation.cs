@@ -46,6 +46,11 @@ namespace CrownFront.Editor
                 throw new InvalidOperationException("CrownFront/EngineSurface shader was not imported.");
             }
 
+            if (Shader.Find("CrownFront/RuntimeUI") == null)
+            {
+                throw new InvalidOperationException("CrownFront/RuntimeUI shader was not imported.");
+            }
+
             Scene scene = SceneManager.GetActiveScene();
             CrownEngineGame game = UnityEngine.Object.FindAnyObjectByType<CrownEngineGame>();
             if (!scene.IsValid() || game == null)
@@ -62,7 +67,7 @@ namespace CrownFront.Editor
                 }
             }
 
-            Debug.Log("CROWN//FRONT visual rebirth validation PASS: shader, source scan, scene root, and serialized components are valid.");
+            Debug.Log("CROWN//FRONT visual rebirth validation PASS: surface/UI shaders, source scan, scene root, and serialized components are valid.");
         }
 
         [MenuItem("CROWN FRONT/Review/Capture Gameplay Frames")]

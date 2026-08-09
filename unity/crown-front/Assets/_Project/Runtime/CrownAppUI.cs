@@ -15,6 +15,8 @@ namespace CrownFront.Cloud
         private static readonly Color White = new Color(0.86f, 0.93f, 0.98f, 1f);
         private static readonly Color Muted = new Color(0.43f, 0.55f, 0.63f, 1f);
         private static readonly Color Orange = new Color(1f, 0.25f, 0.025f, 1f);
+        private static Material _runtimeUiMaterial;
+        private static Font _runtimeFont;
 
         private CrownAppFlowController _flow;
         private Canvas _canvas;
@@ -452,6 +454,7 @@ namespace CrownFront.Cloud
                 rect.offsetMin = new Vector2(8f, 8f);
                 rect.offsetMax = new Vector2(-8f, -8f);
                 Image image = imageObject.GetComponent<Image>();
+                ApplyRuntimeMaterial(image);
                 image.sprite = sprite;
                 image.color = sprite != null ? Color.white : new Color(0.03f, 0.12f, 0.18f, 1f);
                 image.preserveAspect = true;
@@ -491,11 +494,11 @@ namespace CrownFront.Cloud
             toggleObject.transform.SetParent(row, false);
             RectTransform rect = toggleObject.GetComponent<RectTransform>();
             rect.anchorMin = new Vector2(0.82f, 0.2f); rect.anchorMax = new Vector2(0.95f, 0.8f); rect.offsetMin = rect.offsetMax = Vector2.zero;
-            Image background = toggleObject.GetComponent<Image>(); background.color = Steel;
+            Image background = toggleObject.GetComponent<Image>(); ApplyRuntimeMaterial(background); background.color = Steel;
             GameObject checkObject = new GameObject("Checkmark", typeof(RectTransform), typeof(Image));
             checkObject.transform.SetParent(toggleObject.transform, false);
             Stretch(checkObject.GetComponent<RectTransform>()); checkObject.GetComponent<RectTransform>().offsetMin = new Vector2(7f, 7f); checkObject.GetComponent<RectTransform>().offsetMax = new Vector2(-7f, -7f);
-            Image check = checkObject.GetComponent<Image>(); check.color = Cyan;
+            Image check = checkObject.GetComponent<Image>(); ApplyRuntimeMaterial(check); check.color = Cyan;
             Toggle toggle = toggleObject.GetComponent<Toggle>(); toggle.targetGraphic = background; toggle.graphic = check; toggle.onValueChanged.AddListener(callback);
         }
 
@@ -522,7 +525,7 @@ namespace CrownFront.Cloud
             GameObject go = new GameObject(name, typeof(RectTransform), typeof(Image));
             go.transform.SetParent(_safeArea, false);
             Stretch(go.GetComponent<RectTransform>());
-            Image image = go.GetComponent<Image>(); image.color = color; image.raycastTarget = color.a > 0.01f;
+            Image image = go.GetComponent<Image>(); ApplyRuntimeMaterial(image); image.color = color; image.raycastTarget = color.a > 0.01f;
             _screens[screen] = go;
             go.SetActive(false);
             return go;
@@ -533,7 +536,7 @@ namespace CrownFront.Cloud
             GameObject go = new GameObject(name, typeof(RectTransform), typeof(Image));
             go.transform.SetParent(parent, false);
             RectTransform rect = go.GetComponent<RectTransform>(); rect.anchorMin = min; rect.anchorMax = max; rect.offsetMin = rect.offsetMax = Vector2.zero;
-            Image image = go.GetComponent<Image>(); image.color = color; image.raycastTarget = color.a > 0.01f;
+            Image image = go.GetComponent<Image>(); ApplyRuntimeMaterial(image); image.color = color; image.raycastTarget = color.a > 0.01f;
             return rect;
         }
 
@@ -542,7 +545,7 @@ namespace CrownFront.Cloud
             GameObject go = new GameObject(name, typeof(RectTransform), typeof(Text));
             go.transform.SetParent(parent, false);
             RectTransform rect = go.GetComponent<RectTransform>(); rect.anchorMin = min; rect.anchorMax = max; rect.offsetMin = rect.offsetMax = Vector2.zero;
-            Text label = go.GetComponent<Text>(); label.text = text; label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); label.fontSize = size; label.alignment = anchor; label.color = color; label.fontStyle = style; label.resizeTextForBestFit = false; label.raycastTarget = false;
+            Text label = go.GetComponent<Text>(); label.text = text; label.font = RuntimeFont; ApplyRuntimeMaterial(label); label.fontSize = size; label.alignment = anchor; label.color = color; label.fontStyle = style; label.resizeTextForBestFit = false; label.raycastTarget = false;
             return label;
         }
 
@@ -551,7 +554,7 @@ namespace CrownFront.Cloud
             GameObject go = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
             go.transform.SetParent(parent, false);
             RectTransform rect = go.GetComponent<RectTransform>(); rect.anchorMin = min; rect.anchorMax = max; rect.offsetMin = rect.offsetMax = Vector2.zero;
-            Image image = go.GetComponent<Image>(); image.color = color;
+            Image image = go.GetComponent<Image>(); ApplyRuntimeMaterial(image); image.color = color;
             Button button = go.GetComponent<Button>();
             ColorBlock colors = button.colors; colors.normalColor = color; colors.highlightedColor = Color.Lerp(color, Color.white, 0.18f); colors.pressedColor = Color.Lerp(color, Color.black, 0.22f); colors.selectedColor = colors.highlightedColor; colors.disabledColor = new Color(0.08f, 0.09f, 0.1f, 0.7f); button.colors = colors;
             if (action != null) button.onClick.AddListener(action);
@@ -569,6 +572,35 @@ namespace CrownFront.Cloud
         private static void Stretch(RectTransform rect)
         {
             rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
+        }
+
+        private static void ApplyRuntimeMaterial(Graphic graphic)
+        {
+            if (graphic == null) return;
+            if (_runtimeUiMaterial == null)
+            {
+                Shader shader = Shader.Find("CrownFront/RuntimeUI");
+                if (shader == null) throw new InvalidOperationException("Missing WebGL-safe CrownFront/RuntimeUI shader.");
+                _runtimeUiMaterial = new Material(shader)
+                {
+                    name = "Crown Runtime UI Shared",
+                    hideFlags = HideFlags.HideAndDontSave
+                };
+            }
+            graphic.material = _runtimeUiMaterial;
+        }
+
+        private static Font RuntimeFont
+        {
+            get
+            {
+                if (_runtimeFont == null)
+                {
+                    _runtimeFont = Resources.Load<Font>("CrownFonts/NotoSans-Regular") ??
+                                   Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                }
+                return _runtimeFont;
+            }
         }
 
         private static void ClearDynamic(Transform root, string prefix)

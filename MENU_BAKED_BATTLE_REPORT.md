@@ -54,7 +54,7 @@ No files under `apps/game/`, `apps/lobby/` or the public CROWN//FRONT payload we
 - Toolchain emitted informational Emscripten/WebGPU warnings; they did not become Unity build warnings.
 - Generated scene: opens and contains one app controller plus one gameplay root.
 - Runtime flow smoke: PASS, Menu → Deck → Battle → Results → Menu.
-- EditMode: 8/8 PASS.
+- EditMode: 10/10 PASS, including WebGL runtime UI shader support and Cyrillic menu glyph coverage.
 - PlayMode: 4/4 PASS.
 - 20-match transition soak: PASS; one gameplay root, one Canvas, one EventSystem after every cycle.
 - Missing Scripts: 0 in generated/runtime validation.
@@ -67,8 +67,8 @@ No files under `apps/game/`, `apps/lobby/` or the public CROWN//FRONT payload we
 ## Review artifact
 
 - Local artifact: `unity/crown-front/Builds/MenuBakedBattleReview/`.
-- Unity reported payload: 7,110,328 bytes.
-- Four WebGL payload files: 7,090,674 bytes combined.
+- Unity reported payload after the runtime UI/font correction: 7,372,518 bytes.
+- The increase is the embedded 569,208-byte Noto Sans font source before WebGL compression.
 - Artifact directory including template/report/manifest: 8,412 KiB.
 - SHA-256 manifest: present.
 - Local HTTP: index/loader/data/framework/wasm all returned 200.
@@ -105,6 +105,12 @@ No files under `apps/game/`, `apps/lobby/` or the public CROWN//FRONT payload we
 - `iphone_safe_area.png`
 
 These are Unity camera/uGUI renders from the actual runtime hierarchy. They are not generated concept art, HTML screenshots or CSS mockups.
+
+## WebGL runtime UI correction
+
+Manual Safari review exposed a magenta fullscreen fallback that was not detectable from HTTP or compilation checks. The cause was Unity stripping `UI/Default` because every uGUI element is created at runtime. The review branch now assigns one shared `CrownFront/RuntimeUI` WebGL-safe shader to every runtime Graphic. The shader includes Unity Alpha8 font-atlas handling through `_TextureSampleAdd`.
+
+The built-in runtime font also omitted Cyrillic glyphs in WebGL. An unmodified Noto Sans Regular asset is now embedded under the SIL Open Font License 1.1; source, license and SHA-256 are documented beside the asset. Safari visual inspection confirms that Main Menu, `В БОЙ`, `ТЕКУЩАЯ КОЛОДА` and the Russian bottom navigation render without magenta fallback. PlayMode confirms the controlled Start Battle transition independently of browser-coordinate automation.
 
 ## Production protection
 
