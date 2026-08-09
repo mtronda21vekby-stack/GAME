@@ -94,9 +94,6 @@ export function App() {
     };
 
     const onVisualViewportResize = () => {
-      // iOS Safari can emit a stream of visualViewport resize events while the
-      // address bar collapses during a flick. Updating a root layout variable on
-      // every one of those events makes scroll compositing unnecessarily costly.
       window.clearTimeout(viewportTimer);
       viewportTimer = window.setTimeout(queueSync, 120);
     };
@@ -123,14 +120,8 @@ export function App() {
       {!mobileStabilityProfile ? <MatrixDepthEngine quality="auto" intensity={1} /> : null}
       <MotionDirector />
       <MotionRevealV3 />
-      {mobileStabilityProfile ? (
-        <>
-          <MobileParallaxDirector />
-          <HeroParallaxDirector />
-        </>
-      ) : (
-        <PremiumParallaxDirector />
-      )}
+      {mobileStabilityProfile ? <MobileParallaxDirector /> : <PremiumParallaxDirector />}
+      <HeroParallaxDirector />
       <SiteMusic />
 
       <div className="bcAppContent">

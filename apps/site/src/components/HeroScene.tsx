@@ -2,6 +2,7 @@ import React from "react";
 import { Icons } from "@blackcrown/assets";
 import { BLACKCROWN_HERO_CROWN } from "../assets/blackcrownHeroCrown";
 import "../styles/hero-concept-v2.css";
+import "../styles/aaa-experience-v1.css";
 
 export type HeroStatusTone = "cyan" | "orange" | "green";
 
@@ -36,20 +37,8 @@ export default function HeroScene({
   return (
     <section className="bcHero bcV3Hero bcHeroConcept" aria-labelledby="bc-hero-concept-title">
       <div className="bcHeroConcept__background" aria-hidden="true">
-        <div
-          className="bcHeroConcept__ambient bcHeroConcept__ambient--cyan"
-          data-bc-parallax
-          data-bc-parallax-depth="22"
-          data-bc-parallax-pointer="5"
-          data-bc-parallax-scale="0.006"
-        />
-        <div
-          className="bcHeroConcept__ambient bcHeroConcept__ambient--violet"
-          data-bc-parallax
-          data-bc-parallax-depth="18"
-          data-bc-parallax-pointer="-5"
-          data-bc-parallax-scale="0.005"
-        />
+        <div className="bcHeroConcept__ambient bcHeroConcept__ambient--cyan" />
+        <div className="bcHeroConcept__ambient bcHeroConcept__ambient--violet" />
         <div className="bcHeroConcept__city" />
         <div className="bcHeroConcept__vignette" />
       </div>
@@ -73,13 +62,7 @@ export default function HeroScene({
         </button>
       </header>
 
-      <div
-        className="bcHeroConcept__copy"
-        data-bc-parallax
-        data-bc-parallax-depth="7"
-        data-bc-parallax-pointer="1.4"
-        data-bc-parallax-scale="0.002"
-      >
+      <div className="bcHeroConcept__copy">
         <div className="bcHeroConcept__network">
           <i aria-hidden="true" />
           <span>BLACKCROWN NETWORK</span>
@@ -109,18 +92,16 @@ export default function HeroScene({
         </div>
       </div>
 
-      <div
-        className="bcHeroConcept__art"
-        data-bc-parallax
-        data-bc-parallax-depth="31"
-        data-bc-parallax-pointer="7"
-        data-bc-parallax-rotate="0.18"
-        data-bc-parallax-scale="0.012"
-        aria-hidden="true"
-      >
+      <div className="bcHeroConcept__art" aria-hidden="true">
         <div className="bcHeroConcept__artAura" />
         <img className="bcHeroConcept__artImage" src={BLACKCROWN_HERO_CROWN} alt="" />
         <div className="bcHeroConcept__artTopMask" />
+      </div>
+
+      <div className="bcHeroConcept__sceneCode" aria-hidden="true">
+        <span>SCENE / 00</span>
+        <strong>CROWN CORE</strong>
+        <span>DEPTH LINK ACTIVE</span>
       </div>
 
       <button

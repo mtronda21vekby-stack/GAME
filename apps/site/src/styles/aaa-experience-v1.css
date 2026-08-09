@@ -1,0 +1,184 @@
+/* BLACKCROWN AAA EXPERIENCE V1 — cinematic scene composition over the stable shell. */
+
+.bcHomeV3{
+  --aaa-cyan:0,226,255;
+  --aaa-violet:136,83,255;
+  --aaa-orange:255,105,35;
+  background:#010205;
+}
+
+/* HERO: treat the first screen as a camera scene, not a landing-card stack. */
+.bcHomeV3>.bcHeroConcept{
+  min-height:max(980px,118svh)!important;
+  background:
+    radial-gradient(ellipse at 50% 76%,rgba(0,183,255,.08),transparent 42%),
+    linear-gradient(180deg,#010205 0%,#02060b 62%,#010205 100%)!important;
+}
+.bcHeroConcept__bar{max-width:1280px;border-radius:22px;background:rgba(3,8,15,.72);border-color:rgba(115,220,255,.16);box-shadow:0 22px 70px rgba(0,0,0,.52),inset 0 1px 0 rgba(255,255,255,.045)}
+.bcHeroConcept__copy{max-width:1040px;margin-top:clamp(46px,7vh,86px)}
+.bcHeroConcept__title{font-size:clamp(5.8rem,12.6vw,12.4rem);font-weight:590;line-height:.78;letter-spacing:.01em;text-shadow:0 22px 70px rgba(0,0,0,.72)}
+.bcHeroConcept__tagline{margin-top:clamp(22px,3vh,38px);font-size:clamp(1.8rem,3.7vw,3.4rem)}
+.bcHeroConcept__lead{max-width:44ch;color:rgba(197,211,227,.57)}
+.bcHeroConcept__actions{max-width:720px}
+
+.bcHeroConcept__art{
+  height:clamp(650px,68vw,960px);
+  margin-top:-4px;
+  perspective:1200px;
+  perspective-origin:50% 45%;
+  transform-style:preserve-3d;
+  overflow:visible;
+}
+.bcHeroConcept__art::before,
+.bcHeroConcept__art::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:47%;
+  width:min(78vw,720px);
+  aspect-ratio:1;
+  border-radius:50%;
+  transform:translate(-50%,-50%) rotateX(74deg) translateZ(-80px);
+  pointer-events:none;
+}
+.bcHeroConcept__art::before{border:1px solid rgba(var(--aaa-cyan),.16);box-shadow:0 0 70px rgba(var(--aaa-cyan),.08),inset 0 0 70px rgba(var(--aaa-violet),.06)}
+.bcHeroConcept__art::after{width:min(54vw,500px);border:1px dashed rgba(var(--aaa-violet),.19);opacity:.72}
+.bcHeroConcept__artAura{filter:none;background:radial-gradient(circle at 46% 51%,rgba(var(--aaa-cyan),.19),transparent 34%),radial-gradient(circle at 57% 52%,rgba(var(--aaa-violet),.18),transparent 42%)}
+.bcHeroConcept__artImage{
+  transform-origin:50% 48%;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+  filter:drop-shadow(0 46px 56px rgba(0,0,0,.62)) drop-shadow(0 0 24px rgba(var(--aaa-cyan),.08));
+}
+.bcHeroConcept__sceneCode{
+  position:absolute;z-index:8;left:clamp(20px,4vw,64px);bottom:clamp(70px,8vh,108px);display:grid;gap:6px;
+  color:rgba(194,225,238,.48);font:700 8px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.2em;text-transform:uppercase
+}
+.bcHeroConcept__sceneCode strong{color:rgba(232,247,255,.78);font-size:10px;letter-spacing:.16em}
+
+/* World intro becomes a quiet film-title card, not another frosted panel. */
+.bcWorldsV2{width:100%;max-width:none;padding:0 0 clamp(90px,10vw,160px)}
+.bcWorldsV2__intro{width:min(1120px,calc(100% - 40px));margin:0 auto clamp(38px,5vw,70px);padding:clamp(24px,4vw,52px)!important;border-radius:28px!important;background:linear-gradient(180deg,rgba(4,10,16,.62),rgba(2,5,9,.42))!important}
+.bcWorldsV2__head{max-width:820px;margin:0}
+.bcWorldsV2__head h2{font-size:clamp(3.5rem,7vw,7rem)}
+.bcWorldsV2__list{display:grid;gap:0}
+
+/* Each world is now a cinematic scene. */
+.bcWorldStageV2,
+.bcWorldStageV2[data-reverse=true]{
+  width:100%;
+  min-height:min(980px,100svh);
+  margin:0;
+  padding:0;
+  border:0;
+  border-radius:0;
+  display:block;
+  overflow:hidden;
+  background:#010306;
+  box-shadow:none;
+}
+.bcWorldStageV2__visual,
+.bcWorldStageV2[data-reverse=true] .bcWorldStageV2__visual{
+  position:absolute!important;
+  z-index:1;
+  inset:0;
+  width:100%;
+  height:100%;
+  min-height:0;
+  margin:0;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+  background:#010306;
+}
+.bcWorldStageV2__visual img{object-fit:cover;object-position:center;transform:scale(1.045);filter:contrast(1.2) saturate(1.24) brightness(.82)}
+.bcWorldStageV2[data-tone=ocean] .bcWorldStageV2__visual img{filter:contrast(1.18) saturate(1.2) brightness(.76)}
+.bcWorldStageV2[data-tone=reactor] .bcWorldStageV2__visual img{filter:contrast(1.22) saturate(1.28) brightness(.8)}
+.bcWorldStageV2__overlay{z-index:2;background:linear-gradient(90deg,rgba(0,0,0,.83) 0%,rgba(0,0,0,.48) 38%,rgba(0,0,0,.12) 67%,rgba(0,0,0,.38) 100%),linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.06) 54%,rgba(0,0,0,.76))}
+.bcWorldStageV2[data-reverse=true] .bcWorldStageV2__overlay{background:linear-gradient(270deg,rgba(0,0,0,.85) 0%,rgba(0,0,0,.5) 38%,rgba(0,0,0,.14) 67%,rgba(0,0,0,.4) 100%),linear-gradient(180deg,rgba(0,0,0,.1),rgba(0,0,0,.08) 54%,rgba(0,0,0,.78))}
+.bcWorldStageV2__frame{z-index:4;inset:clamp(14px,2vw,28px);border-color:rgba(var(--world-accent),.18);border-radius:26px}
+.bcWorldStageV2__copy,
+.bcWorldStageV2[data-reverse=true] .bcWorldStageV2__copy{
+  position:absolute!important;
+  z-index:6;
+  left:clamp(28px,7vw,112px);
+  top:50%;
+  width:min(560px,42vw);
+  padding:clamp(24px,3.5vw,48px);
+  transform:translateY(-50%);
+  border:1px solid rgba(var(--world-accent),.16);
+  border-radius:28px;
+  background:linear-gradient(180deg,rgba(4,10,16,.78),rgba(1,5,9,.62));
+  box-shadow:0 28px 100px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.04);
+  -webkit-backdrop-filter:blur(14px);
+  backdrop-filter:blur(14px);
+}
+.bcWorldStageV2[data-reverse=true] .bcWorldStageV2__copy{left:auto;right:clamp(28px,7vw,112px)}
+.bcWorldStageV2 h2,.bcWorldStageV2[data-tone=reactor] h2{font-size:clamp(3.7rem,7vw,7.4rem);line-height:.79}
+.bcWorldStageV2__description{color:rgba(205,219,233,.7)}
+.bcWorldStageV2__coordinate{z-index:6;right:clamp(26px,4vw,62px);bottom:clamp(28px,4vw,52px)}
+.bcWorldStageV2__scan{opacity:.4}
+.bcWorldStageV2__particles{opacity:.4}
+
+/* Gate is a transition shot, not a content card. */
+.bcWorldTransition{height:clamp(460px,72svh,820px);margin:0;background:#010205}
+.bcWorldTransition__label{gap:12px}
+.bcWorldTransition__label span{opacity:.65}
+.bcWorldTransition__label strong{font-size:clamp(3.6rem,8vw,8.2rem);letter-spacing:-.065em}
+.bcWorldTransition__label small{opacity:.82}
+.bcWorldTransition__veil{background:linear-gradient(180deg,rgba(0,0,0,.42),transparent 32%,transparent 68%,rgba(0,0,0,.64))}
+
+/* Platform is the calmer AAA command room after the two game worlds. */
+.bcPlatformV3{width:100%;padding:clamp(70px,9vw,130px) clamp(18px,3vw,42px)}
+.bcPlatformV3__shell{width:min(1380px,100%);margin:0 auto;min-height:720px;border-radius:36px!important;overflow:hidden}
+.bcPlatformV3__visual{min-height:580px;border-radius:28px}
+.bcPlatformV3__copy h2{font-size:clamp(3.2rem,5.8vw,6.5rem)}
+
+@media(max-width:820px),(pointer:coarse){
+  .bcHomeV3>.bcHeroConcept{min-height:max(940px,112svh)!important;padding-inline:12px!important}
+  .bcHeroConcept__bar{border-radius:20px}
+  .bcHeroConcept__copy{margin-top:clamp(34px,5vh,54px)}
+  .bcHeroConcept__title{font-size:clamp(3.5rem,15.2vw,5.6rem);letter-spacing:-.025em}
+  .bcHeroConcept__tagline{font-size:clamp(1.35rem,6.4vw,2rem)}
+  .bcHeroConcept__lead{font-size:12px}
+  .bcHeroConcept__art{height:clamp(500px,62svh,680px);margin-top:-10px;perspective:900px}
+  .bcHeroConcept__art::before{width:min(114vw,560px)}
+  .bcHeroConcept__art::after{width:min(82vw,410px)}
+  .bcHeroConcept__sceneCode{left:18px;bottom:58px}
+
+  .bcWorldsV2__intro{width:min(100% - 20px,760px);margin-bottom:20px;padding:24px 18px!important;border-radius:22px!important}
+  .bcWorldsV2__head h2{font-size:clamp(2.8rem,13vw,4.8rem)}
+
+  .bcWorldStageV2,.bcWorldStageV2[data-reverse=true]{min-height:max(720px,92svh)!important}
+  .bcWorldStageV2__visual,.bcWorldStageV2[data-reverse=true] .bcWorldStageV2__visual{inset:0!important;width:100%!important;height:100%!important;margin:0!important;border-radius:0!important}
+  .bcWorldStageV2__visual img{object-position:center 42%;transform:scale(1.08)}
+  .bcWorldStageV2__overlay,.bcWorldStageV2[data-reverse=true] .bcWorldStageV2__overlay{background:linear-gradient(180deg,rgba(0,0,0,.12) 0%,rgba(0,0,0,.06) 38%,rgba(0,0,0,.5) 66%,rgba(0,0,0,.92) 100%)}
+  .bcWorldStageV2__copy,.bcWorldStageV2[data-reverse=true] .bcWorldStageV2__copy{
+    left:14px!important;right:14px!important;top:auto!important;bottom:calc(82px + env(safe-area-inset-bottom,0px));width:auto!important;padding:20px 18px!important;transform:none!important;border-radius:22px;background:linear-gradient(180deg,rgba(3,9,15,.75),rgba(1,5,9,.82));-webkit-backdrop-filter:none;backdrop-filter:none
+  }
+  .bcWorldStageV2__meta{min-height:0!important;margin:0 0 18px!important;padding:0!important;border:0!important;background:transparent!important}
+  .bcWorldStageV2 h2,.bcWorldStageV2[data-tone=reactor] h2{margin-top:15px;font-size:clamp(3rem,14vw,5rem);white-space:normal}
+  .bcWorldStageV2__subtitle{margin-top:15px}
+  .bcWorldStageV2__description{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;margin-top:10px}
+  .bcWorldStageV2__actions{margin-top:18px}
+  .bcWorldStageV2__frame{inset:10px;border-radius:20px}
+  .bcWorldStageV2__coordinate{right:18px;bottom:18px}
+
+  .bcWorldTransition{height:clamp(380px,58svh,560px)}
+  .bcWorldTransition__label strong{font-size:clamp(3rem,15vw,5.2rem)}
+
+  .bcPlatformV3{padding:54px 10px}
+  .bcPlatformV3__shell{min-height:0;border-radius:24px!important}
+  .bcPlatformV3__visual{min-height:390px}
+}
+
+@media(max-width:420px){
+  .bcHeroConcept__actions{grid-template-columns:1fr 1fr}
+  .bcHeroConcept__cta{min-height:54px;font-size:11px}
+  .bcWorldStageV2,.bcWorldStageV2[data-reverse=true]{min-height:max(700px,92svh)!important}
+  .bcWorldStageV2 h2,.bcWorldStageV2[data-tone=reactor] h2{font-size:clamp(2.7rem,13vw,4.35rem)}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .bcHeroConcept__art,.bcHeroConcept__artImage,.bcHeroConcept__ambient,.bcHeroConcept__city{transform:none!important}
+}
