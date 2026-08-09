@@ -121,6 +121,9 @@ export class ExperienceRuntime {
     this.cameraRig.update(this.snapshot, pointer, this.elapsedSeconds);
     this.crown.root.position.set(crownX, crownY, 0);
     this.crown.root.scale.setScalar(compactViewport ? 0.74 : 0.88);
+    this.architecture.root.position.set(crownX, crownY, 0);
+    this.ecosystem.root.position.set(crownX, crownY, -0.4);
+    this.portal.root.position.set(crownX, crownY - 0.12, -0.1);
     this.sceneRoot.updateLighting(timeline, crownX, crownY);
 
     this.crown.setAssemblyProgress(timeline.assembly);
@@ -131,7 +134,7 @@ export class ExperienceRuntime {
     this.particles.update(this.elapsedSeconds, this.snapshot.progress, this.snapshot.reducedMotion);
     this.architecture.update(this.elapsedSeconds, this.snapshot.progress, this.snapshot.reducedMotion);
     this.ecosystem.update(this.elapsedSeconds, timeline.ecosystem, timeline.enter, this.snapshot.reducedMotion);
-    this.portal.update(this.elapsedSeconds, timeline.portal, timeline.tacticalOrange, this.snapshot.reducedMotion);
+    this.portal.update(this.elapsedSeconds, timeline.portal, timeline.tacticalOrange, timeline.enter, this.snapshot.reducedMotion);
 
     this.rendererHost.renderer.render(this.sceneRoot.scene, this.camera);
     this.container.dataset.bcExperienceProgress = this.snapshot.progress.toFixed(4);

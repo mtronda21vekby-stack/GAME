@@ -20,6 +20,7 @@ export function createCrownCore(radialSegments: number): CrownCoreVisual {
     emissiveIntensity: 0.16,
     metalness: 0.7,
     roughness: 0.32,
+    transparent: true,
   });
   const containment = new THREE.Mesh(new THREE.IcosahedronGeometry(0.48, radialSegments >= 42 ? 2 : 1), coreMaterial);
   const cage = new THREE.Mesh(

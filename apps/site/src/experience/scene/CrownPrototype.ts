@@ -244,13 +244,15 @@ export class CrownPrototype implements CrownVisual {
       this.coreEnergyVolume.rotation.set(state.elapsedSeconds * 0.14, state.elapsedSeconds * -0.19, 0);
       this.coreNucleus.rotation.set(state.elapsedSeconds * -0.24, state.elapsedSeconds * 0.28, state.elapsedSeconds * 0.16);
     }
-    const coreScale = 0.72 + this.coreIntensity * 0.16;
+    const coreScale = 0.72 + this.coreIntensity * 0.16 - this.portalProgress * 0.14;
     this.core.scale.setScalar(coreScale);
+    this.coreMaterial.opacity = 1 - this.portalProgress * 0.54;
     this.coreMaterial.emissiveIntensity = 0.12 + this.coreIntensity * 0.28;
     this.coreEnergyMaterial.opacity = Math.min(0.28, 0.08 + this.coreIntensity * 0.1);
     (this.coreNucleus.material as THREE.MeshBasicMaterial).opacity = Math.min(1, 0.56 + this.coreIntensity * 0.25);
     this.coreLight.intensity = 0.35 + this.coreIntensity * 2.2;
-    this.energyMaterial.emissive.lerpColors(CYAN, ORANGE, state.tacticalOrange * 0.62);
+    const tacticalMix = smoothstep(clamp((state.tacticalOrange - 0.18) / 0.5));
+    this.energyMaterial.emissive.lerpColors(CYAN, ORANGE, tacticalMix);
     this.energyMaterial.emissiveIntensity = 0.42 + this.coreIntensity * 0.2;
 
     this.rings.forEach((ring, index) => {
