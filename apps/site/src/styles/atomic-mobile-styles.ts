@@ -29,6 +29,7 @@ import heroPremiumCss from "./hero-premium-v1.css?inline";
 import heroConceptCss from "./hero-concept-v2.css?inline";
 import aaaExperienceCss from "./aaa-experience-v1.css?inline";
 import aaaArtV2Css from "./aaa-art-v2.css?inline";
+import cinematicExperienceCss from "./cinematic-experience-v1.css?inline";
 
 export const atomicMobileStyles = [
   appCss,
@@ -62,4 +63,5 @@ export const atomicMobileStyles = [
   heroConceptCss,
   aaaExperienceCss,
   aaaArtV2Css,
+  cinematicExperienceCss,
 ].join("\n");
