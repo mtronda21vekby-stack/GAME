@@ -4,8 +4,8 @@
   "status": "local-review-candidate",
   "sourceBlend": {
     "path": "/tmp/blackcrown-production-crown-candidate-b/BlackCrown_Crown_Candidate_B.blend",
-    "bytes": 435397,
-    "sha256": "b778df73f16918364b24c6960a8263e44ccd3e9b9da127b5d4ee79a8e39bf7c3"
+    "bytes": 435389,
+    "sha256": "e424fcdee0ac7c0a037ad0312492f4a30093e68067cfa63735c16eaf4ede693f"
   },
   "authoring": {
     "blenderVersion": "5.1.2",
@@ -15,7 +15,8 @@
     "renderScript": "tools/blender/blackcrown-crown/render_candidate_b.py",
     "config": "tools/blender/blackcrown-crown/config/candidate-b.json",
     "seed": 240817,
-    "externalAssetsUsed": false
+    "externalAssetsUsed": false,
+    "determinism": "Scene statistics and exported GLB bytes are stable. Blender .blend serialization metadata may change between saves."
   },
   "textures": {
     "sourceDirectory": "/tmp/blackcrown-production-crown-candidate-b/texture-source",

@@ -18,8 +18,8 @@ promotion.
 ## Source And Reproduction
 
 - Blend: `/tmp/blackcrown-production-crown-candidate-b/BlackCrown_Crown_Candidate_B.blend`
-- Blend size: `435397` bytes
-- Blend SHA-256: `b778df73f16918364b24c6960a8263e44ccd3e9b9da127b5d4ee79a8e39bf7c3`
+- Blend size: `435389` bytes
+- Blend SHA-256: `e424fcdee0ac7c0a037ad0312492f4a30093e68067cfa63735c16eaf4ede693f`
 - Generator: `tools/blender/blackcrown-crown/generate_candidate_b.py`
 - Exporter: `tools/blender/blackcrown-crown/export_candidate_b.py`
 - Renderer: `tools/blender/blackcrown-crown/render_candidate_b.py`
@@ -81,6 +81,11 @@ KTX2 is not claimed. `toktx`, `ktx`, `basisu`, and `gltf-transform` are absent.
 without creating a fake package. Planned settings are UASTC plus mipmaps for
 normal data and ETC1S plus mipmaps for base color/ORM, subject to visual and
 WebKit verification.
+
+Repeated scene generation preserves the seed, hierarchy, mesh statistics, and
+all exported GLB hashes. Blender 5.1.2 changes a few bytes of internal `.blend`
+save metadata between serializations, so the source-manifest records the exact
+current container hash but does not claim byte-identical `.blend` saves.
 
 ## Hierarchy And LODs
 
