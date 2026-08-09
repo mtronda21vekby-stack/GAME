@@ -153,8 +153,8 @@ mobile overlay behavior and protected external routes.
 
 All `DELETE` decisions above were applied only after the import/reference proof
 and were followed by green typecheck, build, off-mode screenshots and browser
-smoke tests. The final origin/main diff removes 68 files, adds 57 files and
-modifies 28 files; 166 tracked files remain under `apps/site`.
+smoke tests. The final origin/main diff removes 68 files, adds 64 files and
+modifies 28 files; 173 tracked files remain under `apps/site`.
 
 Deleted component groups:
 
