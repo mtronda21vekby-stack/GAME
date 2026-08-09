@@ -1,7 +1,6 @@
 import React from "react";
 import SiteMusic from "./components/SiteMusic";
 import { Router } from "./routes/Router";
-import "./styles/mobile-scroll-stability.css";
 
 let lastAppVh = 0;
 

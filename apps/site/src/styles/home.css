@@ -1,0 +1,6 @@
+.bcHomeV3 {
+  position: relative;
+  min-height: 100%;
+  overflow: clip;
+  background: var(--bc-bg);
+}

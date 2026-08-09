@@ -1,6 +1,7 @@
 import React from "react";
 import { Button } from "@blackcrown/ui";
 import { Icons, HeroArt } from "@blackcrown/assets";
+import "../../styles/content-pages.css";
 
 function nav(path: string) {
   window.history.pushState(null, "", path);

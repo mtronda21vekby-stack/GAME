@@ -3,6 +3,7 @@ import { Button } from "@blackcrown/ui";
 import { HeroArt, Icons } from "@blackcrown/assets";
 import { SiteHeader } from "../../components/SiteHeader";
 import { openTelegramBot } from "../../lib/telegram";
+import "../../styles/content-pages.css";
 
 function navSite(path: string) {
   window.history.pushState(null, "", path);
