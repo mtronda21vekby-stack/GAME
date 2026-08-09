@@ -1,6 +1,7 @@
 import React from "react";
 import { Button } from "@blackcrown/ui";
 import CommerceHeader from "../../components/CommerceHeader";
+import { nav } from "../../lib/nav";
 import { formatCoins } from "../../lib/store";
 import {
   clearCart,
@@ -11,12 +12,6 @@ import {
   type CommerceQuote,
 } from "../../lib/commerce";
 import "../../styles/commerce.css";
-
-function navigate(path: string) {
-  window.history.pushState(null, "", path);
-  window.dispatchEvent(new PopStateEvent("popstate"));
-  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-}
 
 export function Checkout() {
   const [quote, setQuote] = React.useState<CommerceQuote | null>(null);
@@ -58,7 +53,7 @@ export function Checkout() {
     try {
       const order = await submitMockCheckout();
       clearCart();
-      navigate(`/checkout/success?order=${encodeURIComponent(order.id)}`);
+      nav(`/checkout/success?order=${encodeURIComponent(order.id)}`);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Не удалось создать заказ.");
       setSubmitting(false);
@@ -87,7 +82,7 @@ export function Checkout() {
           <section className="bcCommerceEmpty">
             <h2>Нечего оформлять</h2>
             <p>Корзина пуста или уже была очищена после успешного заказа.</p>
-            <Button variant="primary" onClick={() => navigate("/store")}>Открыть Store</Button>
+            <Button variant="primary" onClick={() => nav("/store")}>Открыть Store</Button>
           </section>
         ) : (
           <div className="bcCommerceSplit">
@@ -116,7 +111,7 @@ export function Checkout() {
                 <Button variant="primary" onClick={placeOrder} disabled={loading || submitting || !quote}>
                   {submitting ? "Создаём заказ…" : loading ? "Проверяем цены…" : `Оплатить ${formatCoins(total)} BC`}
                 </Button>
-                <Button variant="secondary" onClick={() => navigate("/cart")} disabled={submitting}>
+                <Button variant="secondary" onClick={() => nav("/cart")} disabled={submitting}>
                   Изменить корзину
                 </Button>
               </div>

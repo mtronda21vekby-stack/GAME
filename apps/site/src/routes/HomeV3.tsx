@@ -10,6 +10,7 @@ import {
   type BlackCrownWorldStatusSnapshot,
 } from "../lib/blackcrownWorldStatus";
 import { openTelegramBot } from "../lib/telegram";
+import { nav, navExternal } from "../lib/nav";
 import "../styles/home.css";
 import "../styles/services-v3.css";
 import "../styles/home-v3-services.css";
@@ -23,16 +24,6 @@ const FALLBACK_STATUS_SNAPSHOT: BlackCrownWorldStatusSnapshot = {
 
 function getPlayerName() {
   return userStorage.getString("nickname", "") || "Игрок";
-}
-
-function navigateSite(path: string) {
-  window.history.pushState(null, "", path);
-  window.dispatchEvent(new PopStateEvent("popstate"));
-  window.scrollTo({ top: 0, behavior: "auto" });
-}
-
-function navigateExternal(path: string) {
-  window.location.assign(path);
 }
 
 export function HomeV3() {
@@ -63,14 +54,14 @@ export function HomeV3() {
         crownFront={crownFront}
         network={network}
         statusSource={statusSnapshot.source}
-        onNavigate={navigateSite}
-        onPlay={() => navigateExternal("/game/")}
-        onOpenCrownFront={() => navigateExternal("/games/crown-front/")}
-        onOpenLobby={() => navigateExternal("/lobby/")}
+        onNavigate={nav}
+        onPlay={() => navExternal("/game/")}
+        onOpenCrownFront={() => navExternal("/games/crown-front/")}
+        onOpenLobby={() => navExternal("/lobby/")}
       />
 
-      <StoreV3 onOpenStore={() => navigateSite("/store")} onOpenAccount={() => navigateSite("/account")} />
-      <AICoachV3 onOpenCoach={openTelegramBot} onOpenSupport={() => navigateSite("/support")} />
+      <StoreV3 onOpenStore={() => nav("/store")} onOpenAccount={() => nav("/account")} />
+      <AICoachV3 onOpenCoach={openTelegramBot} onOpenSupport={() => nav("/support")} />
       <LiveFeedV3 />
     </main>
   );

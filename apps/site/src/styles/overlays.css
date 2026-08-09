@@ -23,11 +23,6 @@
     width: min(230px, calc(100vw - var(--bc-safe-left) - var(--bc-safe-right) - 24px));
   }
 
-  html[data-bc-route="/checkout"] .bcSiteMusic,
-  html[data-bc-route="/checkout/success"] .bcSiteMusic {
-    display: none;
-  }
-
   html[data-bc-route="/checkout"] .bcRouteView,
   html[data-bc-route="/checkout/success"] .bcRouteView {
     padding-bottom: var(--bc-safe-bottom);
