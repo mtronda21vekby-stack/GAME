@@ -16,6 +16,19 @@ async function enterNexus(page: Page) {
   if (await enter.isVisible()) await enter.click();
 }
 
+async function setNexusProgress(page: Page, progress: number) {
+  await page.evaluate((targetProgress) => {
+    const story = document.querySelector<HTMLElement>(".bcNexusStory");
+    if (!story) throw new Error("Nexus story is unavailable");
+    const experienceTop = story.getBoundingClientRect().top + window.scrollY;
+    const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+    const scrollableDistance = Math.max(1, story.offsetHeight - viewportHeight);
+    window.scrollTo(0, experienceTop + targetProgress * scrollableDistance);
+  }, progress);
+  const runtime = page.locator('[data-bc-experience-runtime="active"]');
+  await expect.poll(async () => Math.abs(Number(await runtime.getAttribute("data-bc-experience-progress")) - progress)).toBeLessThan(0.004);
+}
+
 test("@off Home preserves key art, CTA and fast-scroll stability", async ({ page }) => {
   const requests: string[] = [];
   page.on("request", (request) => requests.push(request.url()));
@@ -106,13 +119,34 @@ test("@lab Nexus boots one runtime and scroll is reversible", async ({ page }) =
   await expect(page.locator(".bcDockV2, .bcSiteMusic")).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
 
+  const canvasBox = await page.locator("canvas[data-bc-nexus-canvas]").boundingBox();
+  expect(canvasBox?.width).toBeGreaterThan(0);
+  expect(canvasBox?.height).toBeGreaterThan(0);
+
   const runtime = page.locator('[data-bc-experience-runtime="active"]');
-  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight * 0.5));
-  await expect.poll(async () => Number(await runtime.getAttribute("data-bc-experience-progress"))).toBeGreaterThan(0.35);
-  const forwardChapter = await runtime.getAttribute("data-bc-experience-chapter");
-  expect(forwardChapter).not.toBe("awakening");
-  await page.evaluate(() => window.scrollTo(0, 0));
-  await expect.poll(async () => Number(await runtime.getAttribute("data-bc-experience-progress"))).toBeLessThan(0.02);
+  for (const [progress, chapter] of [
+    [0, "awakening"],
+    [0.18, "assembly"],
+    [0.34, "inspection"],
+    [0.52, "core-reveal"],
+    [0.68, "crown-front"],
+    [0.84, "ecosystem"],
+    [0.96, "enter"],
+  ] as const) {
+    await setNexusProgress(page, progress);
+    await expect(runtime).toHaveAttribute("data-bc-experience-chapter", chapter);
+    await expect(page.locator(`[data-chapter="${chapter}"]`)).toHaveAttribute("data-active", "true");
+  }
+
+  if (test.info().project.name === "chromium-lab") {
+    await page.getByTitle("low quality").click();
+    await expect(page.getByTitle("low quality")).toHaveAttribute("aria-checked", "true");
+    await expect(page.locator(".bcNexusDebug dd").nth(3)).toHaveText("low");
+    await page.getByTitle("high quality").click();
+    await expect(page.locator(".bcNexusDebug dd").nth(3)).toHaveText("high");
+  }
+
+  await setNexusProgress(page, 0);
   await expect(runtime).toHaveAttribute("data-bc-experience-chapter", "awakening");
   expect(errors).toEqual([]);
 });

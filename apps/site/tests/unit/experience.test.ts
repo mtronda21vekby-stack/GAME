@@ -33,6 +33,18 @@ describe("deterministic experience math", () => {
     expect(getScrollDirection(normalizeScrollVelocity(0.8, 0.7, 1 / 60))).toBe(-1);
     expect(evaluateExperienceTimeline(0.56)).toEqual(evaluateExperienceTimeline(0.56));
     expect(evaluateExperienceTimeline(0.2).assembly).toBeLessThan(evaluateExperienceTimeline(0.3).assembly);
+    expect(evaluateExperienceTimeline(0.68).tacticalOrange).toBeGreaterThan(0.5);
+    expect(evaluateExperienceTimeline(0.9).tacticalOrange).toBe(0);
+    expect(evaluateExperienceTimeline(0.68)).toEqual(evaluateExperienceTimeline(0.68));
+  });
+
+  it("keeps reduced motion assembled and bounds the shell opening", () => {
+    const start = evaluateExperienceTimeline(0, true);
+    const core = evaluateExperienceTimeline(0.56, true);
+    expect(start.assembly).toBe(1);
+    expect(start.idleAmount).toBe(0);
+    expect(core.open).toBeGreaterThan(0);
+    expect(core.open).toBeLessThanOrEqual(0.58);
   });
 
   it("initializes seeded geometry deterministically", () => {
