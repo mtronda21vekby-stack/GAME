@@ -149,3 +149,65 @@ than creating a parallel crown or replacing it with a generic model. The
 `CrownVisual` adapter contract, chapter ranges, native scrolling, one renderer,
 one RAF, lazy Three.js boundary, off-mode isolation and current commerce/site
 foundation remain protected.
+
+## Implemented Outcome
+
+The post-pass frames use the `after-desktop-*` and `after-mobile-*` prefixes in
+the same `/tmp/blackcrown-nexus-visual-pass-v1/` directory. Reduced-motion
+evidence is stored as `desktop-reduced-00.png`, `desktop-reduced-core.png` and
+`desktop-reduced-final.png`.
+
+| Chapter | Result | Post-pass direction |
+| --- | --- | --- |
+| Awakening | PASS | A partially assembled nine-segment silhouette is visible from the first frame. The central spire, side rhythm and lower crown arc balance the brand without hiding the core. |
+| Assembly | PASS | Panels interpolate from independent side/depth origins with deterministic stagger and settle without random rotation or scale-from-zero behavior. |
+| Inspection | PASS | The complete Crown occupies the intended hero range, preserves physical gaps and separates black titanium from carbon inner structure with key/rim/fill lighting. |
+| Core Reveal | PASS | Segments part laterally and in depth while containment, energy volume, nucleus, cage, rings and local light establish a layered core. |
+| CROWN//FRONT | PASS | Orange channels, local portal light, aperture blades, spokes, tunnel rings and foreground shutters create a dedicated tactical state while cyan remains at the system rim. |
+| Ecosystem | PASS | Housed nodes use primary, secondary and tertiary depth bands. Desktop exposes all eight destinations; mobile prioritizes Game, Lobby, Store and Account with an accessible secondary menu. |
+| Enter | PASS | Secondary nodes recede, the camera recenters, the portal expands and one primary plus one secondary CTA occupy a verified hit-safe region without redirect. |
+
+## Post-pass Composition
+
+- **Silhouette: PASS.** Nine tapered, chamfered shell panels include a dominant
+  central spire, controlled side asymmetry, thickness, gaps and a structural
+  lower arc. It no longer reads as a turbine or ring.
+- **Materials: PASS.** Shared physical/standard materials separate black
+  titanium, high-roughness inner structure, containment and narrow energy
+  channels. HIGH clearcoat is restrained and no shell-wide emissive fill is
+  used.
+- **Lighting: PASS.** A cool key describes the shell, cyan rim separates the
+  silhouette, weak fill preserves shadow detail, and core/orange lights follow
+  absolute chapter progress.
+- **Portal: PASS with limitation.** Nested geometry establishes containment,
+  aperture, tunnel, spokes, a procedural energy volume and foreground
+  occlusion. It does not attempt expensive refraction or postprocessing.
+- **HUD: PASS.** Desktop keeps brand, current chapter, compact chapter access
+  and quality/sound. Mobile uses brand, current chapter, sound and a compact
+  destination menu instead of a two-row development toolbar.
+- **Mobile: PASS.** Captures at `390x844`, `430x932` and `844x390` have no
+  horizontal overflow. Directed scale/camera and fixed active copy prevent the
+  core, HUD and CTA from competing; primary CTA centers pass
+  `elementFromPoint()`.
+- **Reduced motion: PASS.** The Crown begins assembled, shell opening is
+  bounded, camera travel is compressed, pointer parallax is disabled, seeded
+  particles are minimal and the story height is 4,646 px at `1440x900` rather
+  than hundreds of viewports.
+
+## Metrics Before to After
+
+| State | Before | After |
+| --- | --- | --- |
+| Inspection complexity | 64 draw calls / 14,320 triangles | 51 draw calls / 8,236 triangles |
+| Portal complexity | Not separately captured | 81 draw calls / 12,924 triangles |
+| Ecosystem worst case | Not separately captured | 121 draw calls / 16,092 triangles |
+| Local HIGH frame time | 9.5 ms baseline sample | 15.4-16.7 ms across inspection, portal and ecosystem |
+| Local HIGH observed FPS | 119.8 baseline sample | 71.8-87.6 across inspection, portal and ecosystem; Enter measured 75 after node culling |
+| Initial JS/CSS | 191.21 KiB / 47.74 KiB | 191.21 KiB / 47.74 KiB |
+| Lazy Nexus runtime | 21.56 KiB at checkpoint `198d5c9` | 31.35 KiB final visual runtime |
+| Lazy Three.js | 467.71 KiB | 467.44 KiB |
+
+The runtime remains one canvas, one renderer, one RAF and one ScrollDirector.
+The final GLB stage should replace procedural shell detail through
+`CrownAssetAdapter`, not bypass the existing quality, fallback or lifecycle
+contracts.
