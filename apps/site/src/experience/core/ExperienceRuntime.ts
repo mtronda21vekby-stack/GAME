@@ -114,13 +114,14 @@ export class ExperienceRuntime {
     const pointer = this.pointer.update(deltaSeconds);
     const { viewportWidth, viewportHeight } = this.snapshot;
     const compactViewport = viewportWidth <= 820 || viewportHeight <= 520;
+    const narrowViewport = viewportWidth <= 820 && viewportHeight > 520;
     const crownX = compactViewport ? 0 : 1.15;
-    const crownY = compactViewport ? 1.35 : 0;
+    const crownY = narrowViewport ? 1.25 : viewportHeight <= 520 ? 0.3 : 0;
     this.rendererHost.resize(viewportWidth, viewportHeight);
     this.camera.aspect = Math.max(1, viewportWidth) / Math.max(1, viewportHeight);
     this.cameraRig.update(this.snapshot, pointer, this.elapsedSeconds);
     this.crown.root.position.set(crownX, crownY, 0);
-    this.crown.root.scale.setScalar(compactViewport ? 0.74 : 0.88);
+    this.crown.root.scale.setScalar(narrowViewport ? 0.62 : compactViewport ? 0.7 : 0.88);
     this.architecture.root.position.set(crownX, crownY, 0);
     this.ecosystem.root.position.set(crownX, crownY, -0.4);
     this.portal.root.position.set(crownX, crownY - 0.12, -0.1);

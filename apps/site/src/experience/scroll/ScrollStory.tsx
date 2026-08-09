@@ -37,13 +37,32 @@ function ChapterActions({ id, active }: { id: ScrollChapterId; active: boolean }
     );
   }
   if (id === "ecosystem") {
+    const primaryModules = [["GAME", "/game/"], ["LOBBY", "/lobby/"], ["STORE", "/store"]] as const;
+    const secondaryModules = [["ACCOUNT", "/account"], ["ARSENAL", "/store"], ["COSMETICS", "/store"]] as const;
+    const tertiaryModules = [["ROADMAP", "/about"], ["NETWORK", "/about"]] as const;
+    const modules = [...primaryModules, ...secondaryModules, ...tertiaryModules];
     return (
-      <div className="bcNexusModules" aria-label="BlackCrown ecosystem">
-        {[
-          ["GAME", "/game/"], ["LOBBY", "/lobby/"], ["STORE", "/store"], ["ARSENAL", "/store"],
-          ["COSMETICS", "/store"], ["ROADMAP", "/about"], ["NETWORK", "/about"], ["ACCOUNT", "/account"],
-        ].map(([label, href]) => <a tabIndex={tabIndex} key={label} href={href}>{label}</a>)}
-      </div>
+      <>
+        <div className="bcNexusModules" aria-label="BlackCrown ecosystem">
+          {modules.map(([label, href], index) => (
+            <a
+              tabIndex={tabIndex}
+              key={label}
+              href={href}
+              data-priority={index < 3 ? "primary" : index < 6 ? "secondary" : "tertiary"}
+              data-mobile-hidden={index > 3 ? "true" : undefined}
+            >{label}</a>
+          ))}
+        </div>
+        <details className="bcNexusModulesMore">
+          <summary>MORE WORLDS</summary>
+          <div>
+            {[...secondaryModules.slice(1), ...tertiaryModules].map(([label, href]) => (
+              <a tabIndex={tabIndex} key={label} href={href}>{label}</a>
+            ))}
+          </div>
+        </details>
+      </>
     );
   }
   if (id === "enter") {
@@ -51,7 +70,6 @@ function ChapterActions({ id, active }: { id: ScrollChapterId; active: boolean }
       <div className="bcNexusChapter__actions">
         <a tabIndex={tabIndex} className="bcNexusAction bcNexusAction--primary" data-nexus-primary-cta="true" href="/game/">ENTER GAME</a>
         <a tabIndex={tabIndex} className="bcNexusAction" href="/store">OPEN STORE</a>
-        <a tabIndex={tabIndex} className="bcNexusAction" href="/account">PROFILE</a>
       </div>
     );
   }

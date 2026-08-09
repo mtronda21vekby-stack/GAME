@@ -37,12 +37,21 @@ export class CameraRig {
     this.toTarget.fromArray(right.target);
     this.directedTarget.lerpVectors(this.fromTarget, this.toTarget, amount);
 
-    const mobileScale = snapshot.viewportWidth <= 820 ? 0.35 : 1;
+    if (snapshot.reducedMotion) {
+      this.directedPosition.x *= 0.3;
+      this.directedPosition.y = 0.08 + this.directedPosition.y * 0.18;
+      this.directedPosition.z = 9.6 - progress * 0.6;
+      this.directedTarget.set(0.5 + progress * 0.16, 0.48, -progress * 0.12);
+    }
+
+    const mobileViewport = snapshot.viewportWidth <= 820;
+    const mobileScale = mobileViewport ? 0.25 : 1;
     const pointerX = pointer.x * 0.62 * mobileScale;
     const pointerY = pointer.y * 0.35 * mobileScale;
     const idleY = snapshot.reducedMotion ? 0 : Math.sin(elapsedSeconds * 0.22) * 0.035;
 
     this.camera.position.copy(this.directedPosition);
+    if (mobileViewport) this.camera.position.z += snapshot.viewportHeight <= 520 ? 0.9 : 1.8;
     this.camera.position.x += pointerX;
     this.camera.position.y += pointerY + idleY;
     this.finalTarget.copy(this.directedTarget);
