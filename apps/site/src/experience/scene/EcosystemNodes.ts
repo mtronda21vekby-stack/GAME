@@ -71,8 +71,8 @@ export class EcosystemNodes {
     this.root.scale.setScalar(Math.max(0.001, reveal * (0.72 + exit * 0.28)));
     this.nodes.forEach((node, index) => {
       const delayedReveal = smoothstep(clamp((reveal - node.userData.depthDelay) / 0.76));
-      node.visible = delayedReveal > 0.01;
       const exitScale = node.userData.primary ? 1 - enter * 0.34 : 1 - enter;
+      node.visible = delayedReveal > 0.01 && exitScale > 0.42;
       node.scale.setScalar(node.userData.baseScale * delayedReveal * Math.max(0.001, exitScale));
       node.position.z = node.userData.baseZ - (1 - delayedReveal) * 2.2;
       if (!reducedMotion) {
