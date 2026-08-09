@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { installApiAdapter, makeOrder } from "./apiAdapter";
+import { createTestCrownGlb } from "../helpers/crownFixture";
 
 const CART_KEY = "blackcrown:commerce.cart.v1";
 
@@ -14,6 +15,16 @@ async function enterNexus(page: Page) {
   await expect.poll(async () => page.locator(".bcNexusLab").getAttribute("data-boot-stage")).toMatch(/ready|fallback/);
   const enter = page.getByRole("button", { name: "ENTER THE NEXUS" });
   if (await enter.isVisible()) await enter.click();
+  await expect(page.locator(".bcNexusBoot")).toHaveCount(0);
+}
+
+async function installCrownFixture(page: Page, fixture = createTestCrownGlb()) {
+  let requests = 0;
+  await page.route("**/__test__/blackcrown-crown-fixture.glb", async (route) => {
+    requests += 1;
+    await route.fulfill({ status: 200, contentType: "model/gltf-binary", body: Buffer.from(fixture) });
+  });
+  return () => requests;
 }
 
 async function setNexusProgress(page: Page, progress: number) {
@@ -49,7 +60,7 @@ test("@off Home preserves key art, CTA and fast-scroll stability", async ({ page
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   await page.evaluate(() => window.scrollTo(0, 0));
   await expect(root).toBeVisible();
-  expect(requests.filter((url) => /NexusLabPage|ExperienceRuntime|nexus-three|node_modules\/three/i.test(url))).toEqual([]);
+  expect(requests.filter((url) => /NexusLabPage|ExperienceRuntime|nexus-three|nexus-gltf-loader|crown\.manifest\.json|\.glb(?:\?|$)|node_modules\/three/i.test(url))).toEqual([]);
   await expect(page.locator("canvas[data-bc-nexus-canvas]")).toHaveCount(0);
 });
 
@@ -60,7 +71,7 @@ test("@off Nexus route is inactive and unknown URLs render NotFound", async ({ p
   await page.goto("/nexus-lab");
   await expect(page.getByRole("heading", { name: "Маршрут не найден" })).toBeVisible();
   await expect(page.locator("canvas")).toHaveCount(0);
-  expect(requests.filter((url) => /ExperienceRuntime|node_modules\/three/i.test(url))).toEqual([]);
+  expect(requests.filter((url) => /ExperienceRuntime|nexus-gltf-loader|crown\.manifest\.json|\.glb(?:\?|$)|node_modules\/three/i.test(url))).toEqual([]);
   await page.goto("/unknown-test-route");
   await expect(page).toHaveTitle("Страница не найдена — BlackCrown");
   await expect(page.getByText("/unknown-test-route")).toBeVisible();
@@ -116,6 +127,8 @@ test("@lab Nexus boots one runtime and scroll is reversible", async ({ page }) =
   await enterNexus(page);
   await expect(page.locator("canvas[data-bc-nexus-canvas]")).toHaveCount(1);
   await expect(page.locator('[data-bc-experience-runtime="active"]')).toHaveCount(1);
+  await expect(page.locator('[data-bc-experience-runtime="active"]')).toHaveAttribute("data-bc-crown-backend", "procedural");
+  await expect(page.locator('[data-bc-experience-runtime="active"]')).toHaveAttribute("data-bc-crown-reason", "manifest_disabled");
   await expect(page.locator(".bcDockV2, .bcSiteMusic")).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
 
@@ -155,6 +168,7 @@ test("@lab Nexus mobile layouts keep native scroll and CTA hit targets", async (
   await installApiAdapter(page);
   await page.goto("/nexus-lab");
   await enterNexus(page);
+  if (test.info().project.name === "webkit-lab") await expect(page.locator(".bcNexusDebug dd").nth(3)).toHaveText("low");
   for (const viewport of [
     { width: 390, height: 844 },
     { width: 393, height: 852 },
@@ -180,13 +194,15 @@ test("@lab route leave disposes and re-entry creates one clean runtime", async (
   await page.goto("/nexus-lab");
   await enterNexus(page);
   await expect(page.locator("canvas[data-bc-nexus-canvas]")).toHaveCount(1);
-  await page.evaluate(() => { history.pushState(null, "", "/about"); dispatchEvent(new PopStateEvent("popstate")); });
-  await expect(page.getByRole("heading", { name: "BlackCrown — хаб, где игры и сервисы работают вместе." })).toBeVisible();
-  await expect(page.locator("canvas[data-bc-nexus-canvas]")).toHaveCount(0);
-  await expect(page.locator('[data-bc-experience-runtime="active"]')).toHaveCount(0);
-  await page.evaluate(() => { history.pushState(null, "", "/nexus-lab"); dispatchEvent(new PopStateEvent("popstate")); });
-  await expect(page.locator("canvas[data-bc-nexus-canvas]")).toHaveCount(1);
-  await expect(page.locator('[data-bc-experience-runtime="active"]')).toHaveCount(1);
+  for (let cycle = 0; cycle < 5; cycle += 1) {
+    await page.evaluate(() => { history.pushState(null, "", "/about"); dispatchEvent(new PopStateEvent("popstate")); });
+    await expect(page.getByRole("heading", { name: "BlackCrown — хаб, где игры и сервисы работают вместе." })).toBeVisible();
+    await expect(page.locator("canvas[data-bc-nexus-canvas]")).toHaveCount(0);
+    await expect(page.locator('[data-bc-experience-runtime="active"]')).toHaveCount(0);
+    await page.evaluate(() => { history.pushState(null, "", "/nexus-lab"); dispatchEvent(new PopStateEvent("popstate")); });
+    await expect(page.locator("canvas[data-bc-nexus-canvas]")).toHaveCount(1);
+    await expect(page.locator('[data-bc-experience-runtime="active"]')).toHaveCount(1);
+  }
 });
 
 test("@lab reduced motion remains accessible and idles the RAF", async ({ page }) => {
@@ -198,5 +214,73 @@ test("@lab reduced motion remains accessible and idles the RAF", async ({ page }
   expect(await page.locator(".bcNexusStory").evaluate((element) => element.getBoundingClientRect().height)).toBeLessThan(5_000);
   await expect(page.getByRole("heading", { name: "BLACKCROWN SYSTEM ONLINE" })).toBeVisible();
   const runtime = page.locator('[data-bc-experience-runtime="active"]');
-  if (await runtime.count()) await expect(runtime).toHaveAttribute("data-bc-experience-raf", "0", { timeout: 5_000 });
+  if (await runtime.count()) {
+    await expect(runtime).toHaveAttribute("data-bc-experience-raf", "0", { timeout: 5_000 });
+    await expect(runtime).toHaveAttribute("data-bc-crown-lod", "low");
+  }
+});
+
+test("@lab forced GLB with disabled production asset keeps the procedural Crown", async ({ page }) => {
+  const requests: string[] = [];
+  page.on("request", (request) => requests.push(request.url()));
+  await installApiAdapter(page);
+  await page.goto("/nexus-lab?bcasset=glb&bcdebug=1");
+  await enterNexus(page);
+  const runtime = page.locator('[data-bc-experience-runtime="active"]');
+  await expect(runtime).toHaveAttribute("data-bc-crown-backend", "procedural");
+  await expect(runtime).toHaveAttribute("data-bc-crown-reason", "manifest_disabled");
+  await expect(page.locator("canvas[data-bc-nexus-canvas]")).toHaveCount(1);
+  expect(requests.filter((url) => /\.glb(?:\?|$)|nexus-gltf-loader/iu.test(url))).toEqual([]);
+});
+
+test("@lab test-only GLB fixture activates lazy bindings and disposes on route exit", async ({ page }) => {
+  const fixtureRequests = await installCrownFixture(page);
+  await installApiAdapter(page);
+  await page.goto("/nexus-lab?bcasset=fixture&bcdebug=1");
+  await enterNexus(page);
+  const runtime = page.locator('[data-bc-experience-runtime="active"]');
+  await expect(runtime).toHaveAttribute("data-bc-crown-backend", "glb", { timeout: 10_000 });
+  await expect(runtime).toHaveAttribute("data-bc-crown-status", "ready");
+  expect(fixtureRequests()).toBe(1);
+  await setNexusProgress(page, 0.56);
+  await setNexusProgress(page, 0.18);
+  await setNexusProgress(page, 0.56);
+  await page.evaluate(() => { history.pushState(null, "", "/about"); dispatchEvent(new PopStateEvent("popstate")); });
+  await expect(page.locator("canvas[data-bc-nexus-canvas]")).toHaveCount(0);
+});
+
+test("@lab context loss exposes DOM fallback and restores one canvas", async ({ page }) => {
+  await installApiAdapter(page);
+  await page.goto("/nexus-lab");
+  await enterNexus(page);
+  const runtime = page.locator('[data-bc-experience-runtime="active"]');
+  const canvas = page.locator("canvas[data-bc-nexus-canvas]");
+  await canvas.dispatchEvent("webglcontextlost", { cancelable: true });
+  await expect(runtime).toHaveAttribute("data-bc-experience-context", "lost");
+  await expect(page.getByRole("heading", { name: "BLACKCROWN SYSTEM ONLINE" })).toBeVisible();
+  await canvas.dispatchEvent("webglcontextrestored");
+  await expect(runtime).toHaveAttribute("data-bc-experience-context", "ready");
+  await expect(canvas).toHaveCount(1);
+});
+
+test("@lab local device QA exports a PII-free report and resets the sampler", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async () => undefined } });
+  });
+  await installApiAdapter(page);
+  await page.goto("/nexus-lab?bcdeviceqa=1");
+  await enterNexus(page);
+  const panel = page.locator('[data-bc-device-qa="ready"]');
+  await expect(panel).toBeVisible();
+  await panel.locator("summary").click();
+  const report = JSON.parse(await panel.locator("[data-bc-device-report]").textContent() || "{}");
+  expect(report).toMatchObject({ schemaVersion: 1, canvasCount: 1 });
+  expect(JSON.stringify(report)).not.toMatch(/userAgent|email|token|session|ipAddress/iu);
+  await page.getByRole("button", { name: "COPY DEVICE REPORT" }).click();
+  await expect(panel.locator("output")).toHaveText("COPIED");
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "DOWNLOAD DEVICE REPORT" }).click();
+  expect((await download).suggestedFilename()).toMatch(/^blackcrown-device-report-\d+\.json$/u);
+  await page.getByRole("button", { name: "RESET QA SAMPLE" }).click();
+  await expect(panel.locator("output")).toHaveText("SAMPLE RESET");
 });
