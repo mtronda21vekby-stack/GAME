@@ -1,4 +1,5 @@
 import type { BlackCrownExperienceQuality } from "./experienceConfig";
+import type { CrownAssetReason, CrownBackend, CrownLOD, CrownLoaderCounters } from "./assets/CrownAssetAdapter";
 
 export const SCROLL_CHAPTER_IDS = [
   "awakening",
@@ -32,12 +33,40 @@ export type ExperienceBootStage = "idle" | "renderer" | "scene" | "geometry" | "
 export type ExperienceMetrics = {
   fps: number;
   frameTime: number;
+  firstFrameTime: number;
+  frameP50: number;
+  frameP95: number;
+  worstFrame: number;
+  droppedFrames: number;
   dpr: number;
   quality: QualityTier;
+  requestedQuality: BlackCrownExperienceQuality;
   drawCalls: number;
   triangles: number;
+  textures: number;
+  geometries: number;
   renderer: string;
+  maxTextureSize: number;
+  maxRenderbufferSize: number;
   contextState: "ready" | "lost" | "fallback";
+  contextLostCount: number;
+  routeEntryCount: number;
+  routeDisposeCount: number;
+  rafOwnerCount: number;
+  crownBackend: CrownBackend;
+  crownLod: CrownLOD;
+  crownStatus: "fallback" | "loading" | "ready";
+  crownReason: CrownAssetReason;
+  crownAssetId: string;
+  crownAssetBytes: number;
+  crownParseTime: number;
+  crownMaterials: number;
+  crownTextures: number;
+  crownTriangles: number;
+  crownDrawCalls: number;
+  estimatedTextureMemory: number;
+  loader: CrownLoaderCounters;
+  warnings: string[];
 };
 
 export type ExperienceTimelineState = {
@@ -68,10 +97,38 @@ export const INITIAL_SCROLL_SNAPSHOT: ScrollSnapshot = {
 export const INITIAL_EXPERIENCE_METRICS: ExperienceMetrics = {
   fps: 0,
   frameTime: 0,
+  firstFrameTime: 0,
+  frameP50: 0,
+  frameP95: 0,
+  worstFrame: 0,
+  droppedFrames: 0,
   dpr: 1,
   quality: "low",
+  requestedQuality: "auto",
   drawCalls: 0,
   triangles: 0,
+  textures: 0,
+  geometries: 0,
   renderer: "pending",
+  maxTextureSize: 0,
+  maxRenderbufferSize: 0,
   contextState: "ready",
+  contextLostCount: 0,
+  routeEntryCount: 0,
+  routeDisposeCount: 0,
+  rafOwnerCount: 0,
+  crownBackend: "procedural",
+  crownLod: "low",
+  crownStatus: "fallback",
+  crownReason: "manifest_disabled",
+  crownAssetId: "procedural-digital-crown-v2",
+  crownAssetBytes: 0,
+  crownParseTime: 0,
+  crownMaterials: 0,
+  crownTextures: 0,
+  crownTriangles: 0,
+  crownDrawCalls: 0,
+  estimatedTextureMemory: 0,
+  loader: { fetch: 0, parse: 0, attach: 0, dispose: 0, activeReferences: 0 },
+  warnings: [],
 };

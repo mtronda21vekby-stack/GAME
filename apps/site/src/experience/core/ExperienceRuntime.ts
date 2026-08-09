@@ -1,12 +1,17 @@
 import * as THREE from "three";
-import type { BlackCrownExperienceQuality } from "../experienceConfig";
+import { experienceConfig, type BlackCrownExperienceQuality } from "../experienceConfig";
 import type { ExperienceBootStage, ExperienceMetrics, ScrollSnapshot } from "../types";
 import { INITIAL_SCROLL_SNAPSHOT } from "../types";
 import { CameraRig } from "../camera/CameraRig";
 import { ScrollDirector } from "../scroll/ScrollDirector";
 import { PointerParallax } from "../input/PointerParallax";
 import { QualityManager } from "../quality/QualityManager";
-import { CrownPrototype } from "../scene/CrownPrototype";
+import { readDeviceCapabilities } from "../quality/DeviceCapabilities";
+import type { DeviceCapabilities } from "../quality/DeviceCapabilities";
+import { FrameSampler } from "../quality/FrameSampler";
+import { CrownAssetManager } from "../assets/CrownAssetLoader";
+import type { CrownLoadResult, CrownVisual } from "../assets/CrownAssetAdapter";
+import { getCrownLoaderCounters } from "../assets/CrownAssetCache";
 import { ParticleField } from "../scene/ParticleField";
 import { NexusArchitecture } from "../scene/NexusArchitecture";
 import { EcosystemNodes } from "../scene/EcosystemNodes";
@@ -15,6 +20,7 @@ import { ChapterDirector } from "../timeline/ChapterDirector";
 import { RendererHost } from "./RendererHost";
 import { SceneRoot } from "./SceneRoot";
 import { AudioController } from "../audio/AudioController";
+import { getRuntimeLifecycleCounters, recordRuntimeDispose, recordRuntimeEntry } from "./RuntimeDiagnostics";
 
 export type ExperienceRuntimeOptions = {
   container: HTMLElement;
@@ -32,13 +38,15 @@ export class ExperienceRuntime {
   private readonly onMetrics: (metrics: ExperienceMetrics) => void;
   private readonly quality: QualityManager;
   private readonly rendererHost: RendererHost;
+  private readonly capabilities: DeviceCapabilities;
   private readonly sceneRoot: SceneRoot;
   private readonly camera: THREE.PerspectiveCamera;
   private readonly cameraRig: CameraRig;
   private readonly scroll: ScrollDirector;
   private readonly pointer: PointerParallax;
   private readonly chapterDirector = new ChapterDirector();
-  private readonly crown: CrownPrototype;
+  private readonly crownAssets: CrownAssetManager;
+  private crown: CrownVisual;
   private readonly particles: ParticleField;
   private readonly architecture: NexusArchitecture;
   private readonly ecosystem: EcosystemNodes;
@@ -54,6 +62,11 @@ export class ExperienceRuntime {
   private metricFrames = 0;
   private lastUiUpdate = 0;
   private firstFrameRendered = false;
+  private readonly routeAbort = new AbortController();
+  private readonly frameSampler = new FrameSampler();
+  private readonly bootStartedAt = performance.now();
+  private firstFrameTime = 0;
+  private contextLostCount = 0;
 
   constructor(options: ExperienceRuntimeOptions) {
     this.container = options.container;
@@ -68,6 +81,8 @@ export class ExperienceRuntime {
       preset: this.quality.preset,
       onContextState: this.handleContextState,
     });
+    this.capabilities = readDeviceCapabilities(this.rendererHost.renderer);
+    recordRuntimeEntry();
     this.onBootStage("scene");
     this.sceneRoot = new SceneRoot();
     this.camera = new THREE.PerspectiveCamera(36, 1, 0.05, 100);
@@ -78,7 +93,8 @@ export class ExperienceRuntime {
 
     this.onBootStage("geometry");
     const preset = this.quality.preset;
-    this.crown = new CrownPrototype(preset.radialSegments);
+    this.crownAssets = new CrownAssetManager(preset.radialSegments, preset.tier);
+    this.crown = this.crownAssets.visual;
     this.particles = new ParticleField(preset.particles, preset.foregroundParticles);
     this.architecture = new NexusArchitecture(preset.radialSegments);
     this.ecosystem = new EcosystemNodes(preset.ecosystemNodes);
@@ -88,12 +104,55 @@ export class ExperienceRuntime {
 
     this.container.dataset.bcExperienceRuntime = "active";
     this.container.dataset.bcExperienceRaf = "0";
+    this.writeCrownDiagnostics(this.crownAssets.result);
     document.addEventListener("visibilitychange", this.handleVisibility);
   }
 
   start() {
     this.onBootStage("first-frame");
     this.requestFrame();
+    void this.loadCrownBackend();
+  }
+
+  private async loadCrownBackend(preferredLod?: "low" | "medium" | "high", downgrade = false) {
+    try {
+      const result = await this.crownAssets.load({
+        requestedMode: experienceConfig.crownAssetMode,
+        quality: this.quality.requestedQuality,
+        resolvedQuality: this.quality.preset.tier,
+        capabilities: readDeviceCapabilities(this.rendererHost.renderer),
+        renderer: this.rendererHost.renderer,
+        debug: experienceConfig.debug || new URLSearchParams(window.location.search).has("bcdebug") || new URLSearchParams(window.location.search).has("bcdeviceqa"),
+        signal: this.routeAbort.signal,
+        preferredLod,
+      });
+      if (this.disposed || this.routeAbort.signal.aborted) {
+        if (result.visual !== this.crown) result.visual.dispose();
+        return;
+      }
+      if (downgrade && result.backend !== "glb") return;
+      const previous = this.crown;
+      if (result.visual !== previous) {
+        this.sceneRoot.root.remove(previous.root);
+        this.crown = result.visual;
+        this.sceneRoot.root.add(this.crown.root);
+      }
+      const replaced = this.crownAssets.activate(result);
+      if (replaced) replaced.dispose();
+      this.writeCrownDiagnostics(result);
+      this.requestFrame();
+    } catch (error) {
+      if (!this.disposed && !(error instanceof DOMException && error.name === "AbortError")) {
+        console.warn("BlackCrown Crown backend did not activate:", error instanceof Error ? error.message : error);
+      }
+    }
+  }
+
+  private writeCrownDiagnostics(result: CrownLoadResult) {
+    this.container.dataset.bcCrownBackend = result.backend;
+    this.container.dataset.bcCrownLod = result.lod;
+    this.container.dataset.bcCrownStatus = result.diagnostics.status;
+    this.container.dataset.bcCrownReason = result.diagnostics.reason;
   }
 
   private requestFrame = () => {
@@ -108,6 +167,7 @@ export class ExperienceRuntime {
     const deltaSeconds = this.lastFrameTime ? Math.min(0.05, Math.max(0.001, (now - this.lastFrameTime) / 1000)) : 1 / 60;
     this.lastFrameTime = now;
     this.elapsedSeconds += deltaSeconds;
+    this.frameSampler.add(deltaSeconds * 1000, now);
 
     this.snapshot = this.scroll.update(deltaSeconds);
     const timeline = this.chapterDirector.evaluate(this.snapshot);
@@ -146,6 +206,7 @@ export class ExperienceRuntime {
     const firstUiUpdate = !this.firstFrameRendered;
     if (firstUiUpdate) {
       this.firstFrameRendered = true;
+      this.firstFrameTime = now - this.bootStartedAt;
       this.metricWindowStart = now;
       this.onBootStage("ready");
     }
@@ -155,18 +216,61 @@ export class ExperienceRuntime {
       this.lastUiUpdate = now;
       this.onSnapshot({ ...this.snapshot });
       const elapsedWindow = Math.max(1, now - this.metricWindowStart);
-      const fps = (this.metricFrames * 1000) / elapsedWindow;
+      const sample = this.frameSampler.snapshot(now);
+      const fps = sample.p50 > 0 ? 1000 / sample.p50 : (this.metricFrames * 1000) / elapsedWindow;
       const renderInfo = this.rendererHost.renderer.info.render;
+      const memoryInfo = this.rendererHost.renderer.info.memory;
+      const crown = this.crownAssets.result.diagnostics;
+      const lifecycle = getRuntimeLifecycleCounters();
+      const warnings = [...crown.warnings];
+      if (renderInfo.calls > this.quality.preset.maxDrawCalls) warnings.push(`draw_calls_over_${this.quality.preset.tier}_target`);
+      if (renderInfo.triangles > this.quality.preset.maxTriangles) warnings.push(`triangles_over_${this.quality.preset.tier}_target`);
       this.onMetrics({
         fps: Math.round(fps * 10) / 10,
         frameTime: Math.round(deltaSeconds * 10000) / 10,
+        firstFrameTime: Math.round(this.firstFrameTime * 10) / 10,
+        frameP50: Math.round(sample.p50 * 10) / 10,
+        frameP95: Math.round(sample.p95 * 10) / 10,
+        worstFrame: Math.round(sample.worst * 10) / 10,
+        droppedFrames: sample.droppedFrames,
         dpr: this.rendererHost.renderer.getPixelRatio(),
         quality: this.quality.preset.tier,
+        requestedQuality: this.quality.requestedQuality,
         drawCalls: renderInfo.calls,
         triangles: renderInfo.triangles,
-        renderer: this.rendererHost.renderer.capabilities.isWebGL2 ? "WebGL2" : "WebGL1",
+        textures: memoryInfo.textures,
+        geometries: memoryInfo.geometries,
+        renderer: this.capabilities.renderer,
+        maxTextureSize: this.capabilities.maxTextureSize,
+        maxRenderbufferSize: this.capabilities.maxRenderbufferSize,
         contextState: this.contextState,
+        contextLostCount: this.contextLostCount,
+        ...lifecycle,
+        crownBackend: crown.backend,
+        crownLod: crown.lod,
+        crownStatus: crown.status,
+        crownReason: crown.reason,
+        crownAssetId: crown.assetId,
+        crownAssetBytes: crown.bytes,
+        crownParseTime: crown.parseTime,
+        crownMaterials: crown.materials,
+        crownTextures: crown.textures,
+        crownTriangles: crown.triangles,
+        crownDrawCalls: crown.drawCalls,
+        estimatedTextureMemory: crown.estimatedTextureMemory,
+        loader: getCrownLoaderCounters(),
+        warnings,
       });
+      const lowAttention = this.snapshot.progress < 0.1 || this.snapshot.progress > 0.92;
+      if (lowAttention) {
+        const downgraded = this.quality.considerAutomaticDowngrade(sample);
+        if (downgraded) {
+          this.rendererHost.setPreset(downgraded);
+          this.container.dataset.bcQualityDowngrade = downgraded.tier;
+          this.frameSampler.reset(now);
+          if (this.crownAssets.result.backend === "glb") void this.loadCrownBackend(downgraded.tier, true);
+        }
+      }
       if (elapsedWindow > 1000) {
         this.metricWindowStart = now;
         this.metricFrames = 0;
@@ -192,12 +296,14 @@ export class ExperienceRuntime {
   private handleContextState = (state: "ready" | "lost") => {
     this.contextState = state;
     this.container.dataset.bcExperienceContext = state;
+    if (state === "lost") this.contextLostCount += 1;
     if (state === "lost" && this.raf) {
       window.cancelAnimationFrame(this.raf);
       this.raf = 0;
       this.container.dataset.bcExperienceRaf = "0";
     } else if (state === "ready") {
       this.lastFrameTime = 0;
+      this.frameSampler.reset();
       this.requestFrame();
     }
   };
@@ -212,9 +318,15 @@ export class ExperienceRuntime {
     void this.audio.setEnabled(enabled);
   }
 
+  resetPerformanceSample() {
+    this.frameSampler.reset();
+    this.requestFrame();
+  }
+
   dispose() {
     if (this.disposed) return;
     this.disposed = true;
+    this.routeAbort.abort();
     if (this.raf) window.cancelAnimationFrame(this.raf);
     this.raf = 0;
     document.removeEventListener("visibilitychange", this.handleVisibility);
@@ -223,16 +335,22 @@ export class ExperienceRuntime {
     this.audio.dispose();
     this.portal.dispose();
     this.ecosystem.dispose();
-    this.crown.dispose();
+    this.crownAssets.dispose();
     this.particles.dispose();
     this.architecture.dispose();
     this.sceneRoot.dispose();
     this.rendererHost.dispose();
+    recordRuntimeDispose();
     delete this.container.dataset.bcExperienceRuntime;
     delete this.container.dataset.bcExperienceRaf;
     delete this.container.dataset.bcExperienceProgress;
     delete this.container.dataset.bcExperienceTarget;
     delete this.container.dataset.bcExperienceChapter;
     delete this.container.dataset.bcExperienceContext;
+    delete this.container.dataset.bcCrownBackend;
+    delete this.container.dataset.bcCrownLod;
+    delete this.container.dataset.bcCrownStatus;
+    delete this.container.dataset.bcCrownReason;
+    delete this.container.dataset.bcQualityDowngrade;
   }
 }

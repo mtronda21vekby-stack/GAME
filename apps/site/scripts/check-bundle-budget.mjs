@@ -59,6 +59,7 @@ export async function inspectBundle({ distDir, sourceDir }) {
     bytes: (await stat(file)).size,
   })));
   const jsSources = await Promise.all(jsFiles.map((file) => readFile(file, "utf8")));
+  const initialJsSources = await Promise.all(initialAssets.scripts.map((asset) => readFile(path.join(distDir, normalizeAssetPath(asset)), "utf8")));
   const sourceFiles = await listFiles(sourceDir);
   const sourceJs = sourceFiles.filter((file) => /\.(?:ts|tsx|js|jsx|mjs)$/.test(file));
   const sourceContents = await Promise.all(sourceJs.map((file) => readFile(file, "utf8")));
@@ -69,7 +70,10 @@ export async function inspectBundle({ distDir, sourceDir }) {
     allJsFiles: jsFiles.map((file) => path.basename(file)),
     allJsMetrics: jsMetrics,
     embedsCssInline: sourceContents.some((source) => /\.css\?inline["']/.test(source)),
-    embedsRasterDataUri: jsSources.some((source) => /data:image\/(?:avif|webp|jpe?g|png);base64,/i.test(source)),
+    embedsRasterDataUri: jsSources.some((source) => /data:image\/(?:avif|webp|jpe?g|png);base64,[a-z0-9+/=]{1024,}/i.test(source)),
+    embedsGlbData: jsSources.some((source) => /data:(?:model\/gltf-binary|application\/octet-stream);base64,/i.test(source) || /Z2xURgAAAA/i.test(source)),
+    initialContainsGltfLoader: initialJsSources.some((source) => /GLTFLoader|nexus-gltf-loader/i.test(source)),
+    initialContainsCrownAsset: initialJsSources.some((source) => /crown\.manifest\.json|\.glb(?:["'`?])/i.test(source)),
   };
 }
 
@@ -89,13 +93,16 @@ export function validateBundle(report) {
       errors.push(`Initial chunk ${asset.asset} is ${formatBytes(asset.bytes)}; limit is ${formatBytes(BUNDLE_BUDGETS.initialChunk)}.`);
     }
   }
-  for (const asset of report.allJsMetrics.filter((candidate) => /^(?:ExperienceRuntime|nexus-three)-/.test(candidate.file))) {
+  for (const asset of report.allJsMetrics.filter((candidate) => /^(?:ExperienceRuntime|nexus-three|nexus-gltf-loader)-/.test(candidate.file))) {
     if (asset.bytes > BUNDLE_BUDGETS.nexusAsyncChunk) {
       errors.push(`Nexus async chunk ${asset.file} is ${formatBytes(asset.bytes)}; limit is ${formatBytes(BUNDLE_BUDGETS.nexusAsyncChunk)}.`);
     }
   }
   if (report.embedsCssInline) errors.push("A source module imports a full stylesheet through ?inline.");
   if (report.embedsRasterDataUri) errors.push("A raster key-art candidate is embedded as a data URI in JavaScript.");
+  if (report.embedsGlbData) errors.push("A GLB or glTF binary candidate is embedded as a data URI in JavaScript.");
+  if (report.initialContainsGltfLoader) errors.push("The mode=off initial entry references GLTFLoader.");
+  if (report.initialContainsCrownAsset) errors.push("The mode=off initial entry references a Crown manifest or GLB asset.");
 
   for (const routeName of ["Account", "Admin", "Checkout"]) {
     if (!report.allJsFiles.some((file) => file.startsWith(`${routeName}-`))) {
@@ -120,7 +127,7 @@ async function main() {
   console.log(`- initial JS: ${formatBytes(result.initialJs)} (${report.js.map((asset) => asset.asset).join(", ")})`);
   console.log(`- initial CSS: ${formatBytes(result.initialCss)} (${report.css.map((asset) => asset.asset).join(", ")})`);
   console.log(`- lazy route chunks: ${report.allJsFiles.filter((file) => /^(?:Account|Admin|Checkout)-/.test(file)).join(", ")}`);
-  console.log(`- Nexus async chunks: ${report.allJsMetrics.filter((asset) => /^(?:ExperienceRuntime|nexus-three)-/.test(asset.file)).map((asset) => `${asset.file} ${formatBytes(asset.bytes)}`).join(", ") || "not emitted in this mode"}`);
+  console.log(`- Nexus async chunks: ${report.allJsMetrics.filter((asset) => /^(?:ExperienceRuntime|nexus-three|nexus-gltf-loader)-/.test(asset.file)).map((asset) => `${asset.file} ${formatBytes(asset.bytes)}`).join(", ") || "not emitted in this mode"}`);
 
   if (result.errors.length) {
     for (const error of result.errors) console.error(`ERROR: ${error}`);

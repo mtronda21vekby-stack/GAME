@@ -2,6 +2,7 @@ import type { BlackCrownExperienceQuality } from "../experienceConfig";
 import type { QualityTier } from "../types";
 import { readDeviceCapabilities } from "./DeviceCapabilities";
 import { QUALITY_PRESETS, type QualityPreset } from "./qualityPresets";
+import type { FrameSample } from "./FrameSampler";
 
 export function selectAutoQuality(): QualityTier {
   const device = readDeviceCapabilities();
@@ -14,6 +15,7 @@ export function selectAutoQuality(): QualityTier {
 export class QualityManager {
   private requested: BlackCrownExperienceQuality;
   private tier: QualityTier;
+  private automaticDowngradeUsed = false;
 
   constructor(requested: BlackCrownExperienceQuality) {
     this.requested = requested;
@@ -32,5 +34,14 @@ export class QualityManager {
 
   get requestedQuality() {
     return this.requested;
+  }
+
+  considerAutomaticDowngrade(sample: FrameSample): QualityPreset | null {
+    if (this.requested !== "auto" || this.automaticDowngradeUsed || !sample.complete) return null;
+    const sustained = sample.p95 > 29 || sample.repeatedSlowFrames >= Math.max(4, Math.ceil(sample.count * 0.04));
+    if (!sustained || this.tier === "low") return null;
+    this.automaticDowngradeUsed = true;
+    this.tier = this.tier === "high" ? "medium" : "low";
+    return this.preset;
   }
 }
