@@ -24,12 +24,12 @@
   },
   "lods": {
     "lod0": {
-      "crossSamples": 9,
-      "bodyLevels": 10,
-      "spireLevels": 11,
-      "bevelSegments": 3,
-      "ringSections": 72,
-      "irisDetail": 2,
+      "crossSamples": 7,
+      "bodyLevels": 8,
+      "spireLevels": 9,
+      "bevelSegments": 1,
+      "ringSections": 52,
+      "irisDetail": 1,
       "channelHousing": true,
       "coreLayers": 4
     },

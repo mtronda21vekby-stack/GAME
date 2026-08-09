@@ -37,8 +37,8 @@
       "maxBytes": 8388608,
       "maxMaterials": 8,
       "maxDrawCalls": 20,
-      "sha256": "b16a03211dc48c9bc8ca978516b081e9e32514b9b362d60a2e860f389ce496ab",
-      "bytes": 2205768
+      "sha256": "7eb4542acbb0e0b727174c8e5a761647efbb62c908b53841a67cb35d3a9d759c",
+      "bytes": 1453888
     },
     "medium": {
       "url": "/experience/crown/candidate-b/crown-candidate-b-lod1.glb",
@@ -46,7 +46,7 @@
       "maxBytes": 5242880,
       "maxMaterials": 6,
       "maxDrawCalls": 14,
-      "sha256": "0bb60718c0647964a33947b71312b44a10d00c9fc5caa7c8d128143d5df534e5",
+      "sha256": "52c1047e35e3981c0be5ee03497da962b02a93e00e4aa1767e8cbadca7032bc1",
       "bytes": 1104092
     },
     "low": {
