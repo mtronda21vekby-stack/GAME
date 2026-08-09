@@ -42,14 +42,19 @@ afterEach(async () => {
 
 describe("Crown manifest and backend selection", () => {
   it("parses the production contract and rejects malformed coordinates", () => {
-    const productionShape = productionManifest(true);
+    const productionShape = { ...productionManifest(true), features: { ktx2: false, meshopt: false, draco: false, skinnedShell: true } };
     expect(parseCrownAssetManifest(productionShape).assetId).toBe("blackcrown-test-fixture");
+    expect(parseCrownAssetManifest(productionShape).features.skinnedShell).toBe(true);
     expect(() => parseCrownAssetManifest({ ...productionShape, upAxis: "+Z" })).toThrow("manifest_coordinates");
   });
 
   it("resolves explicit modes, capability LOD and lighter fallback order", () => {
     expect(readCrownAssetRequest("auto", true, "?bcasset=procedural")).toBe("procedural");
     expect(readCrownAssetRequest("auto", true, "?bcasset=fixture")).toBe("fixture");
+    expect(readCrownAssetRequest("auto", true, "?nexuscrown=candidate-a", null, "lab")).toBe("candidate-a");
+    expect(readCrownAssetRequest("auto", true, "?nexuscrown=https://example.test/crown.glb", null, "lab")).toBe("auto");
+    expect(readCrownAssetRequest("auto", true, "?nexuscrown=candidate-a", null, "off")).toBe("auto");
+    expect(readCrownAssetRequest("auto", false, "", "candidate-a", "lab")).toBe("candidate-a");
     expect(selectCrownLod("high", capabilities)).toBe("high");
     expect(selectCrownLod("high", { ...capabilities, saveData: true })).toBe("low");
     expect(getLodFallbackOrder("high")).toEqual(["high", "medium", "low"]);
@@ -163,9 +168,43 @@ describe("GLB Crown runtime", () => {
     expect(() => bindGLBCrown(duplicateScene, createFixtureManifest())).toThrow(/binding_failed:duplicate/iu);
   });
 
+  it("binds segment and spire bones through the same Object3D contract", () => {
+    const scene = new THREE.Group();
+    for (const name of ["BC_CROWN_ROOT", "BC_SHELL_ROOT", "BC_CORE_ROOT", "BC_PORTAL_ROOT", "BC_RING_INNER", "BC_RING_MIDDLE", "BC_RING_OUTER"]) {
+      scene.add(Object.assign(new THREE.Group(), { name }));
+    }
+    for (let index = 0; index < 9; index += 1) {
+      scene.add(Object.assign(new THREE.Bone(), { name: `BC_SEG_${String(index).padStart(2, "0")}` }));
+      scene.add(Object.assign(new THREE.Bone(), { name: `BC_SPIRE_${String(index).padStart(2, "0")}` }));
+    }
+    const bindings = bindGLBCrown(scene, createFixtureManifest());
+    expect(bindings.segments.every((node) => (node as THREE.Bone).isBone)).toBe(true);
+    expect(bindings.spires).toHaveLength(9);
+  });
+
+  it("aborts pending fetch and disposes a parsed result before attachment", async () => {
+    vi.stubGlobal("fetch", vi.fn((_url: string, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+      init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
+    })));
+    const aborted = new CrownAssetManager(28, "high");
+    const controller = new AbortController();
+    const pending = aborted.load(loadOptions(controller.signal));
+    controller.abort();
+    await expect(pending).rejects.toMatchObject({ name: "AbortError" });
+    aborted.dispose();
+
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(createTestCrownGlb(), { status: 200 })));
+    const parsed = new CrownAssetManager(28, "high");
+    const result = await parsed.load(loadOptions(new AbortController().signal));
+    parsed.dispose();
+    expect(parsed.activate(result)).toBeNull();
+    await Promise.resolve();
+    expect(getCrownLoaderCounters().activeReferences).toBe(0);
+  });
+
   it("reference-counts duplicate cache acquisitions and releases once", async () => {
     let loads = 0;
-    const loader = async () => { loads += 1; return { scene: new THREE.Group(), bytes: 4, parseTime: 1 }; };
+    const loader = async () => { loads += 1; return { scene: new THREE.Group(), bytes: 4, fetchTime: 1, parseTime: 1 }; };
     const first = acquireCrownAsset("shared", loader);
     const second = acquireCrownAsset("shared", loader);
     await Promise.all([first.value, second.value]);

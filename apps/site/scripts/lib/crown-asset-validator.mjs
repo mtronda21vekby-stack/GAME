@@ -1,8 +1,10 @@
 import { readFile, stat } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import path from "node:path";
 
 const GLB_MAGIC = 0x46546c67;
 const JSON_CHUNK = 0x4e4f534a;
+const BIN_CHUNK = 0x004e4942;
 const MAX_DATA_URI_BYTES = 64 * 1024;
 const REQUIRED_NODES = [
   "BC_CROWN_ROOT",
@@ -61,6 +63,9 @@ export function validateCrownManifest(value) {
   for (const feature of ["ktx2", "meshopt", "draco"]) {
     if (!isRecord(value.features) || typeof value.features[feature] !== "boolean") errors.push(`features.${feature} must be boolean.`);
   }
+  if (isRecord(value.features) && value.features.skinnedShell !== undefined && typeof value.features.skinnedShell !== "boolean") {
+    errors.push("features.skinnedShell must be boolean when provided.");
+  }
   return { errors, manifest: errors.length ? null : value };
 }
 
@@ -82,7 +87,7 @@ export function parseGlb(buffer) {
     const start = offset + 8;
     const end = start + length;
     if (end > bytes.byteLength) throw new Error("GLB chunk extends beyond the declared file length.");
-    chunks.push({ type, length });
+    chunks.push({ type, length, start, end });
     if (type === JSON_CHUNK) {
       const text = new TextDecoder().decode(bytes.subarray(start, end)).replace(/\u0000+$/u, "").trimEnd();
       try { json = JSON.parse(text); } catch { throw new Error("GLB JSON chunk is invalid JSON."); }
@@ -91,7 +96,7 @@ export function parseGlb(buffer) {
   }
   if (offset !== bytes.byteLength) throw new Error("GLB has trailing or incomplete chunk bytes.");
   if (!json) throw new Error("GLB JSON chunk is missing.");
-  return { json, chunks, bytes: bytes.byteLength };
+  return { json, chunks, bytes: bytes.byteLength, data: bytes };
 }
 
 function approximateDataUriBytes(uri) {
@@ -126,21 +131,117 @@ function triangleCountForPrimitive(primitive, accessors) {
   return 0;
 }
 
+function identityMatrix() {
+  return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+}
+
+function multiplyMatrices(a, b) {
+  const result = new Array(16).fill(0);
+  for (let column = 0; column < 4; column += 1) {
+    for (let row = 0; row < 4; row += 1) {
+      for (let index = 0; index < 4; index += 1) result[column * 4 + row] += a[index * 4 + row] * b[column * 4 + index];
+    }
+  }
+  return result;
+}
+
+function nodeMatrix(node) {
+  if (Array.isArray(node.matrix) && node.matrix.length === 16) return node.matrix;
+  const [x, y, z, w] = node.rotation ?? [0, 0, 0, 1];
+  const [sx, sy, sz] = node.scale ?? [1, 1, 1];
+  const [tx, ty, tz] = node.translation ?? [0, 0, 0];
+  const xx = x * x; const yy = y * y; const zz = z * z;
+  const xy = x * y; const xz = x * z; const yz = y * z;
+  const wx = w * x; const wy = w * y; const wz = w * z;
+  return [
+    (1 - 2 * (yy + zz)) * sx, (2 * (xy + wz)) * sx, (2 * (xz - wy)) * sx, 0,
+    (2 * (xy - wz)) * sy, (1 - 2 * (xx + zz)) * sy, (2 * (yz + wx)) * sy, 0,
+    (2 * (xz + wy)) * sz, (2 * (yz - wx)) * sz, (1 - 2 * (xx + yy)) * sz, 0,
+    tx, ty, tz, 1,
+  ];
+}
+
+function transformPoint(matrix, point) {
+  const [x, y, z] = point;
+  return [
+    matrix[0] * x + matrix[4] * y + matrix[8] * z + matrix[12],
+    matrix[1] * x + matrix[5] * y + matrix[9] * z + matrix[13],
+    matrix[2] * x + matrix[6] * y + matrix[10] * z + matrix[14],
+  ];
+}
+
+function worldNodeMatrices(json) {
+  const matrices = new Map();
+  const nodes = json.nodes ?? [];
+  const visit = (index, parent) => {
+    const node = nodes[index];
+    if (!node || matrices.has(index)) return;
+    const world = multiplyMatrices(parent, nodeMatrix(node));
+    matrices.set(index, world);
+    for (const child of node.children ?? []) visit(child, world);
+  };
+  const scene = (json.scenes ?? [])[json.scene ?? 0];
+  for (const index of scene?.nodes ?? nodes.map((_, index) => index)) visit(index, identityMatrix());
+  return matrices;
+}
+
 function inspectBounds(json) {
   const min = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
   const max = [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY];
-  for (const mesh of json.meshes ?? []) {
+  const worldMatrices = worldNodeMatrices(json);
+  for (const [nodeIndex, node] of (json.nodes ?? []).entries()) {
+    if (!Number.isInteger(node.mesh)) continue;
+    const mesh = json.meshes?.[node.mesh];
+    if (!mesh) continue;
+    const matrix = worldMatrices.get(nodeIndex) ?? identityMatrix();
     for (const primitive of mesh.primitives ?? []) {
       const accessor = json.accessors?.[primitive.attributes?.POSITION];
       if (!accessor?.min || !accessor?.max) continue;
-      for (let axis = 0; axis < 3; axis += 1) {
-        min[axis] = Math.min(min[axis], accessor.min[axis]);
-        max[axis] = Math.max(max[axis], accessor.max[axis]);
+      for (const x of [accessor.min[0], accessor.max[0]]) {
+        for (const y of [accessor.min[1], accessor.max[1]]) {
+          for (const z of [accessor.min[2], accessor.max[2]]) {
+            const point = transformPoint(matrix, [x, y, z]);
+            for (let axis = 0; axis < 3; axis += 1) {
+              min[axis] = Math.min(min[axis], point[axis]);
+              max[axis] = Math.max(max[axis], point[axis]);
+            }
+          }
+        }
       }
     }
   }
   if (!min.every(Number.isFinite) || !max.every(Number.isFinite)) return null;
   return { min, max, size: max.map((value, axis) => value - min[axis]) };
+}
+
+function inspectEmbeddedImages(parsed) {
+  const bin = parsed.chunks.find((chunk) => chunk.type === BIN_CHUNK);
+  if (!bin) return [];
+  const dimensions = [];
+  for (const image of parsed.json.images ?? []) {
+    const bufferView = parsed.json.bufferViews?.[image.bufferView];
+    if (!bufferView) continue;
+    const start = bin.start + (bufferView.byteOffset ?? 0);
+    const bytes = parsed.data.subarray(start, start + bufferView.byteLength);
+    let width = null; let height = null;
+    if (bytes.length >= 24 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) {
+      const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+      width = view.getUint32(16, false);
+      height = view.getUint32(20, false);
+    }
+    dimensions.push({ name: image.name ?? "<unnamed>", mimeType: image.mimeType ?? "unknown", width, height, bytes: bytes.length });
+  }
+  return dimensions;
+}
+
+function isIdentityRoot(node) {
+  const matrix = nodeMatrix(node);
+  const identity = identityMatrix();
+  return matrix.every((value, index) => Math.abs(value - identity[index]) < 1e-6);
+}
+
+function semanticNodeNames(names) {
+  return names.filter((name) => /^(BC_(CROWN_ROOT|SHELL_ROOT|CORE_ROOT|PORTAL_ROOT|RING_(INNER|MIDDLE|OUTER)|SEG_\d{2}|SPIRE_\d{2}|ENERGY_(CYAN|ORANGE)|CORE_(CONTAINMENT|VOLUME|NUCLEUS|CAGE)|PORTAL_(APERTURE|TUNNEL|SHUTTERS)|BASE_FIELD))$/u.test(name)).sort();
 }
 
 export function inspectCrownGlb(buffer, manifest, tier) {
@@ -161,6 +262,13 @@ export function inspectCrownGlb(buffer, manifest, tier) {
     seen.add(name);
   }
   for (const name of REQUIRED_NODES) if (!seen.has(name)) errors.push(`Required node is missing: ${name}.`);
+  const rootNode = (json.nodes ?? []).find((node) => node.name === "BC_CROWN_ROOT");
+  if (rootNode && !isIdentityRoot(rootNode)) errors.push("BC_CROWN_ROOT must have an identity transform.");
+  for (const node of json.nodes ?? []) {
+    const values = [...(node.translation ?? []), ...(node.rotation ?? []), ...(node.scale ?? []), ...(node.matrix ?? [])];
+    if (!values.every(Number.isFinite)) errors.push(`Node ${node.name ?? "<unnamed>"} has a non-finite transform.`);
+    if ((node.scale ?? []).some((value) => value <= 0)) errors.push(`Node ${node.name ?? "<unnamed>"} has a zero or negative scale.`);
+  }
   const segments = names.filter((name) => /^BC_SEG_\d{2}$/u.test(name));
   const spires = names.filter((name) => /^BC_SPIRE_\d{2}$/u.test(name));
   if (segments.length !== manifest.segmentCount) errors.push(`Expected ${manifest.segmentCount} segments, found ${segments.length}.`);
@@ -190,18 +298,41 @@ export function inspectCrownGlb(buffer, manifest, tier) {
     }
   }
 
-  if ((json.cameras?.length ?? 0) > 0) warnings.push("Production cameras are present.");
-  if ((json.animations?.length ?? 0) > 0) warnings.push("Animations are present; scroll choreography uses node transforms.");
-  if ((json.skins?.length ?? 0) > 0) warnings.push("Skins are present but are unsupported by this pipeline version.");
-  if ((json.extensionsUsed ?? []).includes("KHR_lights_punctual")) warnings.push("Production lights are present.");
+  if ((json.cameras?.length ?? 0) > 0) errors.push("Production cameras are forbidden.");
+  if ((json.animations?.length ?? 0) > 0) errors.push("Baked animations are forbidden; scroll choreography uses node transforms.");
+  if ((json.skins?.length ?? 0) > 0 && manifest.features.skinnedShell !== true) warnings.push("Skins are present without features.skinnedShell opt-in.");
+  if ((json.skins?.length ?? 0) > 1) errors.push("Only one draw-call-aware shell skin is allowed.");
+  if ((json.extensionsUsed ?? []).includes("KHR_lights_punctual")) errors.push("Production lights are forbidden.");
   if ((json.meshes ?? []).some((mesh) => (mesh.primitives ?? []).some((primitive) => (primitive.targets?.length ?? 0) > 0))) {
-    warnings.push("Morph targets are present but are unsupported by this pipeline version.");
+    errors.push("Morph targets are forbidden for Candidate A.");
   }
+
+  const textures = inspectEmbeddedImages(parsed);
+  const textureLimit = tier === "low" ? 1024 : 2048;
+  for (const texture of textures) {
+    if (!texture.width || !texture.height) warnings.push(`Could not inspect dimensions for ${texture.name}.`);
+    else if (texture.width > textureLimit || texture.height > textureLimit) errors.push(`${texture.name} exceeds the ${textureLimit}px ${tier} texture limit.`);
+  }
+  const estimatedTextureMemory = textures.reduce((total, texture) => total + (texture.width ?? 0) * (texture.height ?? 0) * 4, 0);
 
   return {
     errors,
     warnings,
-    metrics: { bytes, nodes: names.length, meshes: json.meshes?.length ?? 0, materials: materialNames.length, triangles, drawCalls, bounds },
+    metrics: {
+      bytes,
+      nodes: names.length,
+      nodeNames: names,
+      semanticNodes: semanticNodeNames(names),
+      meshes: json.meshes?.length ?? 0,
+      materials: materialNames.length,
+      materialNames,
+      triangles,
+      drawCalls,
+      bounds,
+      textures,
+      estimatedTextureMemory,
+      skins: json.skins?.length ?? 0,
+    },
   };
 }
 
@@ -225,6 +356,7 @@ export async function validateCrownAssetAtPath({ manifestPath, siteDir }) {
   if (!manifest.enabled) return { ok: true, disabled: true, messages: [`PASS ${manifest.assetId}: manifest disabled; procedural fallback is authoritative.`] };
 
   let ok = true;
+  const inspected = [];
   for (const tier of ["high", "medium", "low"]) {
     const assetPath = publicPathForUrl(siteDir, manifest.lods[tier].url);
     const assetStat = await stat(assetPath).catch(() => null);
@@ -233,11 +365,28 @@ export async function validateCrownAssetAtPath({ manifestPath, siteDir }) {
       messages.push(`ERROR ${tier}: missing ${assetPath}.`);
       continue;
     }
-    const result = inspectCrownGlb(await readFile(assetPath), manifest, tier);
+    const file = await readFile(assetPath);
+    const result = inspectCrownGlb(file, manifest, tier);
+    inspected.push({ tier, result });
+    const declared = manifest.lods[tier];
+    if (declared.bytes !== undefined && declared.bytes !== file.byteLength) result.errors.push(`Declared bytes ${declared.bytes} do not match ${file.byteLength}.`);
+    if (declared.sha256 !== undefined) {
+      const digest = createHash("sha256").update(file).digest("hex");
+      if (digest !== declared.sha256) result.errors.push(`SHA-256 mismatch for ${tier}.`);
+    }
     for (const warning of result.warnings) messages.push(`WARN ${tier}: ${warning}`);
     for (const error of result.errors) messages.push(`ERROR ${tier}: ${error}`);
     if (result.errors.length) ok = false;
     else messages.push(`PASS ${tier}: ${result.metrics.triangles} triangles, ${result.metrics.drawCalls} draws, ${result.metrics.bytes} bytes.`);
+  }
+  const reference = inspected[0]?.result.metrics?.semanticNodes;
+  if (reference) {
+    for (const entry of inspected.slice(1)) {
+      if (!entry.result.metrics || JSON.stringify(entry.result.metrics.semanticNodes) !== JSON.stringify(reference)) {
+        ok = false;
+        messages.push(`ERROR ${entry.tier}: semantic node set differs from high LOD.`);
+      }
+    }
   }
   return { ok, disabled: false, messages };
 }

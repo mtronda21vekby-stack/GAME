@@ -22,6 +22,8 @@ afterEach(async () => Promise.all(temporaryDirectories.splice(0).map((directory)
 describe("Crown asset validator", () => {
   it("accepts a disabled schema without requiring binary placeholders", () => {
     expect(validateCrownManifest({ ...manifest, enabled: false }).errors).toEqual([]);
+    expect(validateCrownManifest({ ...manifest, features: { ...manifest.features, skinnedShell: true } }).errors).toEqual([]);
+    expect(validateCrownManifest({ ...manifest, features: { ...manifest.features, skinnedShell: "yes" } }).errors).toContain("features.skinnedShell must be boolean when provided.");
   });
 
   it("accepts the in-memory TEST FIXTURE", () => {
