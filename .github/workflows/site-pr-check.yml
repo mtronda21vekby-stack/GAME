@@ -61,6 +61,20 @@ jobs:
       - name: Build site
         run: pnpm build:site
 
+      - name: Package deployable site
+        run: |
+          cd apps/site/dist
+          zip -r ../../../blackcrown-site-dist.zip .
+
+      - name: Upload deployable site
+        uses: actions/upload-artifact@v4
+        with:
+          name: blackcrown-site-dist
+          path: blackcrown-site-dist.zip
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
       - name: Report typecheck debt
         if: steps.typecheck.outcome == 'failure'
         run: echo "::warning::Workspace typecheck still contains legacy errors. The production-like site build completed separately."
