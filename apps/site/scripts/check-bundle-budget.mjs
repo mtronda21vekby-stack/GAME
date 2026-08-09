@@ -86,7 +86,7 @@ export function validateBundle(report) {
   if (report.embedsCssInline) errors.push("A source module imports a full stylesheet through ?inline.");
   if (report.embedsRasterDataUri) errors.push("A raster key-art candidate is embedded as a data URI in JavaScript.");
 
-  for (const routeName of ["Account", "Admin", "Checkout"]) {
+  for (const routeName of ["CinematicExperience", "Account", "Admin", "Checkout"]) {
     if (!report.allJsFiles.some((file) => file.startsWith(`${routeName}-`))) {
       errors.push(`Expected lazy route chunk ${routeName}-*.js was not emitted.`);
     }
@@ -108,7 +108,11 @@ async function main() {
   console.log("BlackCrown site bundle budget");
   console.log(`- initial JS: ${formatBytes(result.initialJs)} (${report.js.map((asset) => asset.asset).join(", ")})`);
   console.log(`- initial CSS: ${formatBytes(result.initialCss)} (${report.css.map((asset) => asset.asset).join(", ")})`);
-  console.log(`- lazy route chunks: ${report.allJsFiles.filter((file) => /^(?:Account|Admin|Checkout)-/.test(file)).join(", ")}`);
+  console.log(
+    `- lazy route chunks: ${report.allJsFiles
+      .filter((file) => /^(?:CinematicExperience|Account|Admin|Checkout)-/.test(file))
+      .join(", ")}`,
+  );
 
   if (result.errors.length) {
     for (const error of result.errors) console.error(`ERROR: ${error}`);

@@ -181,8 +181,9 @@ runtime graph are intentionally retained: compile-time ambient declarations in
 - Home owns one `useCinematicTimeline` runtime: one passive scroll listener, one
   RAF scheduler and one resize/VisualViewport contract. It is never mounted on
   Store, Cart, Checkout, Account or Admin routes.
-- Route metadata owns titles and chrome. Ten route components are lazy-loaded;
-  an explicit NotFound keeps the unknown URL visible instead of rendering Home.
+- Route metadata owns titles and chrome. Ten route components plus the Home
+  cinematic are lazy-loaded; an explicit NotFound keeps the unknown URL visible
+  instead of rendering Home.
 - Client and worker consume `@blackcrown/commerce` as the single typed catalog.
   Server entitlements are authoritative, order reads retain ownership checks,
   and checkout uses a user-scoped idempotency key and cart fingerprint.
@@ -195,15 +196,15 @@ runtime graph are intentionally retained: compile-time ambient declarations in
 
 | Metric | Baseline | Final |
 | --- | ---: | ---: |
-| Initial JS | 613.25 kB | 200.99 kB |
-| Initial CSS | 214.05 kB | 55.22 kB |
-| Largest initial chunk | 613.25 kB | 200.99 kB |
-| Async route chunks | 0 | 10 |
+| Initial JS | 613.25 kB | 188.72 kB |
+| Initial CSS | 214.05 kB | 39.84 kB |
+| Largest initial chunk | 613.25 kB | 188.72 kB |
+| Async route/experience chunks | 0 | 11 |
 | Source CSS files | 40 | 21 |
-| Raw CSS bytes | 346,645 | 118,973 |
+| Raw CSS bytes | 346,645 | 119,764 |
 | `!important` occurrences | 1,549 | 304 |
-| Duplicate selector names | 561 | 198 |
-| Extra duplicate definitions | 1,179 | 385 |
+| Duplicate selector names | 561 | 199 |
+| Extra duplicate definitions | 1,179 | 386 |
 | Scroll listeners | 6 | 1 |
 | Resize listeners | 10 | 3 |
 | Pointermove listeners | 4 | 0 |

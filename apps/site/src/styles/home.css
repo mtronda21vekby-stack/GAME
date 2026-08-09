@@ -4,3 +4,48 @@
   overflow: clip;
   background: var(--bc-bg);
 }
+
+.bcCinematicFallback {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  background: #020304;
+  color: #f4f8fb;
+  font-family: var(--bc-font-display);
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.bcCinematicFallback span {
+  position: relative;
+  padding-block: 1rem;
+}
+
+.bcCinematicFallback span::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 1px;
+  background: #5de8f2;
+  transform-origin: left;
+  animation: bcCinematicFallback 900ms ease-in-out infinite alternate;
+}
+
+@keyframes bcCinematicFallback {
+  from {
+    transform: scaleX(0.18);
+    opacity: 0.45;
+  }
+
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bcCinematicFallback span::after {
+    animation: none;
+  }
+}

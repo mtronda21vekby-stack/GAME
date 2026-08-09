@@ -36,6 +36,7 @@ describe("bundle budget parser", () => {
     });
     expect(result.errors.join(" ")).toContain("?inline");
     expect(result.errors.join(" ")).toContain("data URI");
+    expect(result.errors.join(" ")).toContain("CinematicExperience-*.js");
     expect(result.errors.join(" ")).toContain("Admin-*.js");
   });
 });
