@@ -27,6 +27,7 @@ import mobileStabilityCss from "./mobile-scroll-stability.css?inline";
 import criticalShellCss from "./critical-mobile-shell.css?inline";
 import heroPremiumCss from "./hero-premium-v1.css?inline";
 import heroConceptCss from "./hero-concept-v2.css?inline";
+import aaaExperienceCss from "./aaa-experience-v1.css?inline";
 
 /**
  * Atomic mobile presentation bundle.
@@ -65,4 +66,5 @@ export const atomicMobileStyles = [
   criticalShellCss,
   heroPremiumCss,
   heroConceptCss,
+  aaaExperienceCss,
 ].join("\n");
