@@ -1,14 +1,17 @@
 import { experienceConfig } from "../../experience/experienceConfig";
 import { useExperience } from "../../experience/ExperienceContext";
+import { CrownCandidateSelector } from "./CrownCandidateSelector";
 
 export function ExperienceDebugPanel() {
-  const enabled = experienceConfig.debug || new URLSearchParams(window.location.search).get("bcdebug") === "1";
+  const parameters = new URLSearchParams(window.location.search);
+  const enabled = experienceConfig.debug || parameters.get("bcdebug") === "1" || parameters.get("bcdeviceqa") === "1";
   const { metrics, snapshot, webglAvailable } = useExperience();
   if (!enabled) return null;
 
   return (
     <details className="bcNexusDebug">
       <summary>DEBUG</summary>
+      <CrownCandidateSelector />
       <dl>
         <dt>FPS</dt><dd>{metrics.fps}</dd>
         <dt>FRAME</dt><dd>{metrics.frameP50} / {metrics.frameP95} / {metrics.worstFrame} ms</dd>

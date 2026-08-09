@@ -16,6 +16,9 @@ export type GLBCrownBindings = {
   rings: [THREE.Object3D, THREE.Object3D, THREE.Object3D];
   segments: THREE.Object3D[];
   spires: THREE.Object3D[];
+  irisBlades: THREE.Object3D[];
+  iris?: THREE.Object3D;
+  portalCavity?: THREE.Object3D;
   energyCyan?: THREE.Object3D;
   energyOrange?: THREE.Object3D;
   baseTransforms: Map<THREE.Object3D, TransformSnapshot>;
@@ -55,10 +58,14 @@ export function bindGLBCrown(scene: THREE.Group, manifest: CrownAssetManifest): 
   const shell = byName.get("BC_SHELL_ROOT")!;
   const segments = [...byName.entries()].filter(([name]) => /^BC_SEG_\d{2}$/u.test(name)).sort(([a], [b]) => a.localeCompare(b)).map(([, object]) => object);
   const spires = [...byName.entries()].filter(([name]) => /^BC_SPIRE_\d{2}$/u.test(name)).sort(([a], [b]) => a.localeCompare(b)).map(([, object]) => object);
+  const irisBlades = [...byName.entries()].filter(([name]) => /^BC_IRIS_BLADE_\d{2}$/u.test(name)).sort(([a], [b]) => a.localeCompare(b)).map(([, object]) => object);
   if (segments.length !== manifest.segmentCount) throw new Error(`binding_failed:segments:${segments.length}`);
   if (spires.length !== manifest.spires) throw new Error(`binding_failed:spires:${spires.length}`);
+  if (manifest.features.irisBones !== undefined && irisBlades.length !== manifest.features.irisBones) {
+    throw new Error(`binding_failed:iris:${irisBlades.length}`);
+  }
 
-  const animated = [authoredRoot, shell, ...segments, ...spires,
+  const animated = [authoredRoot, shell, ...segments, ...spires, ...irisBlades,
     byName.get("BC_CORE_ROOT")!, byName.get("BC_PORTAL_ROOT")!,
     byName.get("BC_RING_INNER")!, byName.get("BC_RING_MIDDLE")!, byName.get("BC_RING_OUTER")!];
   return {
@@ -69,6 +76,9 @@ export function bindGLBCrown(scene: THREE.Group, manifest: CrownAssetManifest): 
     rings: [byName.get("BC_RING_INNER")!, byName.get("BC_RING_MIDDLE")!, byName.get("BC_RING_OUTER")!],
     segments,
     spires,
+    irisBlades,
+    iris: byName.get("BC_PORTAL_IRIS"),
+    portalCavity: byName.get("BC_PORTAL_CAVITY"),
     energyCyan: byName.get("BC_ENERGY_CYAN"),
     energyOrange: byName.get("BC_ENERGY_ORANGE"),
     baseTransforms: new Map(animated.map((object) => [object, snapshot(object)])),

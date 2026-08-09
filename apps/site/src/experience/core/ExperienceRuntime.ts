@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { experienceConfig, type BlackCrownExperienceQuality } from "../experienceConfig";
+import { experienceConfig, type BlackCrownCrownReviewSelection, type BlackCrownExperienceQuality } from "../experienceConfig";
 import type { ExperienceBootStage, ExperienceMetrics, ScrollSnapshot } from "../types";
 import { INITIAL_SCROLL_SNAPSHOT } from "../types";
 import { CameraRig } from "../camera/CameraRig";
@@ -11,6 +11,7 @@ import type { DeviceCapabilities } from "../quality/DeviceCapabilities";
 import { FrameSampler } from "../quality/FrameSampler";
 import { CrownAssetManager } from "../assets/CrownAssetLoader";
 import type { CrownLoadResult, CrownVisual } from "../assets/CrownAssetAdapter";
+import { readCrownAssetRequest, type CrownAssetRequest } from "../assets/CrownBackendSelector";
 import { getCrownLoaderCounters } from "../assets/CrownAssetCache";
 import { ParticleField } from "../scene/ParticleField";
 import { NexusArchitecture } from "../scene/NexusArchitecture";
@@ -46,6 +47,7 @@ export class ExperienceRuntime {
   private readonly pointer: PointerParallax;
   private readonly chapterDirector = new ChapterDirector();
   private readonly crownAssets: CrownAssetManager;
+  private crownRequest: CrownAssetRequest;
   private crown: CrownVisual;
   private readonly particles: ParticleField;
   private readonly architecture: NexusArchitecture;
@@ -77,6 +79,10 @@ export class ExperienceRuntime {
     this.onSnapshot = options.onSnapshot;
     this.onMetrics = options.onMetrics;
     this.quality = new QualityManager(options.initialQuality);
+    const debugCrown = experienceConfig.debug || import.meta.env.DEV
+      || new URLSearchParams(window.location.search).has("bcdebug")
+      || new URLSearchParams(window.location.search).has("bcdeviceqa");
+    this.crownRequest = readCrownAssetRequest(experienceConfig.crownAssetMode, debugCrown);
 
     this.onBootStage("renderer");
     this.rendererHost = new RendererHost({
@@ -117,10 +123,14 @@ export class ExperienceRuntime {
     void this.loadCrownBackend();
   }
 
-  private async loadCrownBackend(preferredLod?: "low" | "medium" | "high", downgrade = false) {
+  private async loadCrownBackend(
+    preferredLod?: "low" | "medium" | "high",
+    downgrade = false,
+    requestedMode: CrownAssetRequest = this.crownRequest,
+  ) {
     try {
       const result = await this.crownAssets.load({
-        requestedMode: experienceConfig.crownAssetMode,
+        requestedMode,
         quality: this.quality.requestedQuality,
         resolvedQuality: this.quality.preset.tier,
         capabilities: readDeviceCapabilities(this.rendererHost.renderer),
@@ -134,25 +144,29 @@ export class ExperienceRuntime {
         return;
       }
       if (downgrade && result.backend !== "glb") return;
-      const previous = this.crown;
-      if (result.visual !== previous) {
-        this.sceneRoot.root.remove(previous.root);
-        this.crown = result.visual;
-        this.sceneRoot.root.add(this.crown.root);
-      }
-      const replaced = this.crownAssets.activate(result);
-      if (replaced) replaced.dispose();
-      if (result.backend === "glb") {
-        this.crownAttachedAt = performance.now();
-        this.awaitingCrownFirstFrame = true;
-      }
-      this.writeCrownDiagnostics(result);
-      this.requestFrame();
+      this.activateCrownResult(result);
     } catch (error) {
       if (!this.disposed && !(error instanceof DOMException && error.name === "AbortError")) {
         console.warn("BlackCrown Crown backend did not activate:", error instanceof Error ? error.message : error);
       }
     }
+  }
+
+  private activateCrownResult(result: CrownLoadResult) {
+    const previous = this.crown;
+    if (result.visual !== previous) {
+      this.sceneRoot.root.remove(previous.root);
+      this.crown = result.visual;
+      this.sceneRoot.root.add(this.crown.root);
+    }
+    const replaced = this.crownAssets.activate(result);
+    if (replaced) replaced.dispose();
+    if (result.backend === "glb") {
+      this.crownAttachedAt = performance.now();
+      this.awaitingCrownFirstFrame = true;
+    }
+    this.writeCrownDiagnostics(result);
+    this.requestFrame();
   }
 
   private writeCrownDiagnostics(result: CrownLoadResult) {
@@ -335,6 +349,38 @@ export class ExperienceRuntime {
 
   setSoundEnabled(enabled: boolean) {
     void this.audio.setEnabled(enabled);
+  }
+
+  setCrownAsset(request: BlackCrownCrownReviewSelection) {
+    const parameters = new URLSearchParams(window.location.search);
+    const enabled = import.meta.env.DEV || experienceConfig.debug || parameters.has("bcdebug") || parameters.has("bcdeviceqa");
+    if (!enabled || !["procedural", "candidate-a", "candidate-b"].includes(request)) return;
+    void this.switchCrownAsset(request);
+  }
+
+  private async switchCrownAsset(request: BlackCrownCrownReviewSelection) {
+    try {
+      const fallback = await this.crownAssets.load({
+        requestedMode: "procedural",
+        quality: this.quality.requestedQuality,
+        resolvedQuality: this.quality.preset.tier,
+        capabilities: readDeviceCapabilities(this.rendererHost.renderer),
+        renderer: this.rendererHost.renderer,
+        debug: true,
+        signal: this.routeAbort.signal,
+      });
+      if (this.disposed || this.routeAbort.signal.aborted) {
+        if (fallback.visual !== this.crown) fallback.visual.dispose();
+        return;
+      }
+      this.activateCrownResult(fallback);
+      this.crownRequest = request;
+      if (request !== "procedural") await this.loadCrownBackend(undefined, false, request);
+    } catch (error) {
+      if (!this.disposed && !(error instanceof DOMException && error.name === "AbortError")) {
+        console.warn("BlackCrown Crown review switch failed:", error instanceof Error ? error.message : error);
+      }
+    }
   }
 
   resetPerformanceSample() {

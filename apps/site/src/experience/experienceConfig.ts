@@ -1,7 +1,8 @@
 export type BlackCrownExperienceMode = "off" | "lab" | "home";
 export type BlackCrownExperienceQuality = "auto" | "low" | "medium" | "high";
 export type BlackCrownCrownAssetMode = "auto" | "procedural" | "glb";
-export type BlackCrownCrownAssetOverride = "candidate-a" | null;
+export type BlackCrownCrownAssetOverride = "candidate-a" | "candidate-b" | null;
+export type BlackCrownCrownReviewSelection = "procedural" | Exclude<BlackCrownCrownAssetOverride, null>;
 
 function parseMode(value: unknown): BlackCrownExperienceMode {
   return value === "lab" || value === "home" ? value : "off";
@@ -16,7 +17,7 @@ function parseCrownAssetMode(value: unknown): BlackCrownCrownAssetMode {
 }
 
 function parseCrownAssetOverride(value: unknown): BlackCrownCrownAssetOverride {
-  return value === "candidate-a" ? value : null;
+  return value === "candidate-a" || value === "candidate-b" ? value : null;
 }
 
 export const experienceConfig = Object.freeze({

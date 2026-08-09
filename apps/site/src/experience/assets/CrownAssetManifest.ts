@@ -2,6 +2,16 @@ import type { CrownLOD } from "./CrownAssetAdapter";
 
 export const CROWN_MANIFEST_URL = "/experience/crown/crown.manifest.json";
 export const CROWN_CANDIDATE_A_MANIFEST_URL = "/experience/crown/candidate-a/crown-candidate-a.manifest.json";
+export const CROWN_CANDIDATE_B_MANIFEST_URL = "/experience/crown/candidate-b/crown-candidate-b.manifest.json";
+
+export type CrownPresentation = {
+  baseScale: number;
+  coreCenter: [number, number, number];
+  segmentOpenDistance: number;
+  spireLift: number;
+  portalDepthScale: number;
+  cameraTargetOffset: [number, number, number];
+};
 
 export type CrownLODManifest = {
   url: string;
@@ -20,12 +30,14 @@ export type CrownAssetManifest = {
   units: "meters";
   segmentCount: number;
   spires: number;
+  presentation?: CrownPresentation;
   lods: Record<CrownLOD, CrownLODManifest>;
   features: {
     ktx2: boolean;
     meshopt: boolean;
     draco: boolean;
     skinnedShell?: boolean;
+    irisBones?: number;
     ktx2TranscoderPath?: string;
     dracoDecoderPath?: string;
   };
@@ -41,6 +53,31 @@ function isPositiveInteger(value: unknown): value is number {
 
 function isLocalCrownPath(value: unknown) {
   return typeof value === "string" && value.startsWith("/experience/crown/") && value.endsWith(".glb") && !value.includes("..") && !/^https?:/iu.test(value);
+}
+
+function parseVector(value: unknown, min: number, max: number, name: string): [number, number, number] {
+  if (!Array.isArray(value) || value.length !== 3 || value.some((entry) => typeof entry !== "number" || entry < min || entry > max)) {
+    throw new Error(`manifest_presentation_${name}`);
+  }
+  return value as [number, number, number];
+}
+
+function parseNumber(value: unknown, min: number, max: number, name: string) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < min || value > max) throw new Error(`manifest_presentation_${name}`);
+  return value;
+}
+
+function parsePresentation(value: unknown): CrownPresentation | undefined {
+  if (value === undefined) return undefined;
+  if (!isRecord(value)) throw new Error("manifest_presentation");
+  return {
+    baseScale: parseNumber(value.baseScale, 0.75, 1.25, "baseScale"),
+    coreCenter: parseVector(value.coreCenter, -2, 2, "coreCenter"),
+    segmentOpenDistance: parseNumber(value.segmentOpenDistance, 0.1, 0.6, "segmentOpenDistance"),
+    spireLift: parseNumber(value.spireLift, 0.02, 0.3, "spireLift"),
+    portalDepthScale: parseNumber(value.portalDepthScale, 0.5, 1.5, "portalDepthScale"),
+    cameraTargetOffset: parseVector(value.cameraTargetOffset, -0.5, 0.5, "cameraTargetOffset"),
+  };
 }
 
 export function parseCrownAssetManifest(value: unknown): CrownAssetManifest {
@@ -65,13 +102,17 @@ export function parseCrownAssetManifest(value: unknown): CrownAssetManifest {
   const features = value.features;
   if (![features.ktx2, features.meshopt, features.draco].every((flag) => typeof flag === "boolean")) throw new Error("manifest_features");
   if (features.skinnedShell !== undefined && typeof features.skinnedShell !== "boolean") throw new Error("manifest_skinned_shell");
+  if (features.irisBones !== undefined && (!Number.isInteger(features.irisBones) || Number(features.irisBones) < 3 || Number(features.irisBones) > 12)) {
+    throw new Error("manifest_iris_bones");
+  }
   for (const key of ["ktx2TranscoderPath", "dracoDecoderPath"] as const) {
     if (features[key] !== undefined && (typeof features[key] !== "string" || !features[key].startsWith("/experience/crown/"))) {
       throw new Error(`manifest_${key}`);
     }
   }
 
-  return { ...value, schemaVersion: 1, lods, features } as CrownAssetManifest;
+  const presentation = parsePresentation(value.presentation);
+  return { ...value, schemaVersion: 1, lods, features, presentation } as CrownAssetManifest;
 }
 
 export async function fetchCrownAssetManifest(signal: AbortSignal, url = CROWN_MANIFEST_URL) {

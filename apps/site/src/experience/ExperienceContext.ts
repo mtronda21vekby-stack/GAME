@@ -1,11 +1,12 @@
 import React from "react";
-import type { BlackCrownExperienceQuality } from "./experienceConfig";
+import type { BlackCrownCrownReviewSelection, BlackCrownExperienceQuality } from "./experienceConfig";
 import type { ExperienceBootStage, ExperienceMetrics, ScrollSnapshot } from "./types";
 
 export type ExperienceRuntimeControl = {
   setQuality: (quality: BlackCrownExperienceQuality) => void;
   setSoundEnabled: (enabled: boolean) => void;
   resetPerformanceSample: () => void;
+  setCrownAsset: (asset: BlackCrownCrownReviewSelection) => void;
   dispose: () => void;
 };
 
@@ -28,6 +29,7 @@ export type ExperienceContextValue = {
   setSoundEnabled: (enabled: boolean) => void;
   setRequestedQuality: (quality: BlackCrownExperienceQuality) => void;
   resetPerformanceSample: () => void;
+  setCrownAsset: (asset: BlackCrownCrownReviewSelection) => void;
 };
 
 export const ExperienceContext = React.createContext<ExperienceContextValue | null>(null);

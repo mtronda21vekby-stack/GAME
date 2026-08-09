@@ -2,7 +2,7 @@ import type { QualityTier } from "../types";
 import { experienceConfig } from "../experienceConfig";
 import type { CrownAssetAdapter, CrownAssetLoadOptions, CrownAssetReason, CrownLoadResult, CrownVisual } from "./CrownAssetAdapter";
 import { createProceduralDiagnostics } from "./CrownAssetAdapter";
-import { CROWN_CANDIDATE_A_MANIFEST_URL, createFixtureManifest, fetchCrownAssetManifest, type CrownAssetManifest } from "./CrownAssetManifest";
+import { CROWN_CANDIDATE_A_MANIFEST_URL, CROWN_CANDIDATE_B_MANIFEST_URL, createFixtureManifest, fetchCrownAssetManifest, type CrownAssetManifest } from "./CrownAssetManifest";
 import { getCrownLoaderCounters } from "./CrownAssetCache";
 import { getLodFallbackOrder, readCrownAssetRequest, selectCrownLod, shouldAttemptGlb } from "./CrownBackendSelector";
 import { GLBCrownAdapter } from "./glb/GLBCrownAdapter";
@@ -34,7 +34,8 @@ function combineSignals(primary: AbortSignal, secondary: AbortSignal) {
 }
 
 export class CrownAssetManager implements CrownAssetAdapter {
-  private readonly procedural: ProceduralCrownAdapter;
+  private procedural: ProceduralCrownAdapter;
+  private readonly radialSegments: number;
   private currentVisual: CrownVisual;
   private currentResult: CrownLoadResult;
   private loadController = new AbortController();
@@ -42,6 +43,7 @@ export class CrownAssetManager implements CrownAssetAdapter {
   private warned = false;
 
   constructor(radialSegments: number, initialTier: QualityTier) {
+    this.radialSegments = radialSegments;
     this.procedural = new ProceduralCrownAdapter(radialSegments);
     this.currentVisual = this.procedural.visual;
     this.currentResult = {
@@ -59,7 +61,7 @@ export class CrownAssetManager implements CrownAssetAdapter {
     this.loadController.abort();
     this.loadController = new AbortController();
     const combined = combineSignals(options.signal, this.loadController.signal);
-    const request = options.requestedMode === "fixture" || options.requestedMode === "candidate-a"
+    const request = options.requestedMode === "fixture" || options.requestedMode === "candidate-a" || options.requestedMode === "candidate-b"
       ? options.requestedMode
       : readCrownAssetRequest(options.requestedMode ?? experienceConfig.crownAssetMode, options.debug);
     const preferred = options.preferredLod ?? selectCrownLod(options.resolvedQuality, options.capabilities);
@@ -70,9 +72,10 @@ export class CrownAssetManager implements CrownAssetAdapter {
 
     let manifest: CrownAssetManifest;
     try {
-      manifest = request === "fixture"
-        ? createFixtureManifest()
-        : await fetchCrownAssetManifest(combined.signal, request === "candidate-a" ? CROWN_CANDIDATE_A_MANIFEST_URL : undefined);
+      const candidateUrl = request === "candidate-a"
+        ? CROWN_CANDIDATE_A_MANIFEST_URL
+        : request === "candidate-b" ? CROWN_CANDIDATE_B_MANIFEST_URL : undefined;
+      manifest = request === "fixture" ? createFixtureManifest() : await fetchCrownAssetManifest(combined.signal, candidateUrl);
     } catch (error) {
       combined.dispose();
       if (combined.signal.aborted) throw error;
@@ -118,9 +121,12 @@ export class CrownAssetManager implements CrownAssetAdapter {
   }
 
   private fallback(lod: QualityTier, reason: CrownAssetReason, assetId = "procedural-digital-crown-v2"): CrownLoadResult {
+    if (this.currentResult.backend !== "procedural" || this.currentVisual !== this.procedural.visual) {
+      this.procedural = new ProceduralCrownAdapter(this.radialSegments);
+    }
     const diagnostics = createProceduralDiagnostics(lod, reason, getCrownLoaderCounters());
     diagnostics.assetId = assetId;
-    return { backend: "procedural", visual: this.currentVisual, lod, diagnostics };
+    return { backend: "procedural", visual: this.procedural.visual, lod, diagnostics };
   }
 
   private failedFallback(lod: QualityTier, reason: CrownAssetReason, error: unknown, debug: boolean, assetId?: string) {

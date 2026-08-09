@@ -9,7 +9,7 @@ import type { QualityTier } from "../types";
 import type { CrownAssetManifest } from "./CrownAssetManifest";
 import type { CrownLOD } from "./CrownAssetAdapter";
 
-export type CrownAssetRequest = BlackCrownCrownAssetMode | "fixture" | "candidate-a";
+export type CrownAssetRequest = BlackCrownCrownAssetMode | "fixture" | "candidate-a" | "candidate-b";
 
 export function readCrownAssetRequest(
   configured: BlackCrownCrownAssetMode,
@@ -21,8 +21,8 @@ export function readCrownAssetRequest(
   const parameters = new URLSearchParams(search);
   const candidate = parameters.get("nexuscrown");
   const candidateRouteEnabled = experienceMode === "lab" || experienceMode === "home";
-  if (candidateRouteEnabled && configuredOverride === "candidate-a") return "candidate-a";
-  if (candidateRouteEnabled && candidate === "candidate-a" && (debug || import.meta.env.DEV)) return "candidate-a";
+  if (candidateRouteEnabled && (configuredOverride === "candidate-a" || configuredOverride === "candidate-b")) return configuredOverride;
+  if (candidateRouteEnabled && (candidate === "candidate-a" || candidate === "candidate-b") && (debug || import.meta.env.DEV)) return candidate;
   const query = parameters.get("bcasset");
   if (query === "fixture") return debug || import.meta.env.DEV ? "fixture" : configured;
   if (query === "auto" || query === "procedural" || query === "glb") return query;
@@ -43,5 +43,5 @@ export function shouldAttemptGlb(request: CrownAssetRequest, manifest: CrownAsse
   if (request === "procedural") return false;
   if (!manifest.enabled) return false;
   if (!capabilities.webgl2 && (capabilities.saveData || capabilities.weakProfile)) return false;
-  return request === "glb" || request === "fixture" || request === "candidate-a" || request === "auto";
+  return request === "glb" || request === "fixture" || request === "candidate-a" || request === "candidate-b" || request === "auto";
 }

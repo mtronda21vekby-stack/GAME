@@ -242,6 +242,9 @@
 .bcNexusDebug dl { display: grid; grid-template-columns: 74px 1fr; gap: 5px 10px; margin: 0; padding: 0 12px 12px; }
 .bcNexusDebug dt { color: rgba(194, 220, 229, .42); }
 .bcNexusDebug dd { margin: 0; overflow-wrap: anywhere; }
+.bcNexusCandidateSelector { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; padding: 0 12px 10px; }
+.bcNexusCandidateSelector button { min-height: 44px; padding: 4px; border: 1px solid rgba(108, 226, 249, .2); border-radius: 3px; color: rgba(234, 250, 255, .66); background: rgba(11, 26, 34, .92); font: inherit; font-size: 9px; }
+.bcNexusCandidateSelector button[aria-checked="true"] { border-color: rgba(108, 226, 249, .72); color: #eafaff; background: rgba(21, 69, 80, .92); }
 
 .bcNexusDeviceQa {
   position: fixed;

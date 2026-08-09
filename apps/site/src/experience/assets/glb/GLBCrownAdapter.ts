@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { clamp, smoothstep, smootherstep } from "../../core/math";
 import type { CrownVisual, CrownVisualState } from "../CrownAssetAdapter";
-import type { CrownAssetManifest } from "../CrownAssetManifest";
+import type { CrownAssetManifest, CrownPresentation } from "../CrownAssetManifest";
 import type { CrownLOD, CrownAssetDiagnostics } from "../CrownAssetAdapter";
 import { getCrownLoaderCounters, recordCrownAttach } from "../CrownAssetCache";
 import { applyGLBCrownMaterials, type GLBCrownMaterialBindings } from "./GLBCrownMaterials";
@@ -20,6 +20,14 @@ type SegmentMotion = {
 
 const CYAN = new THREE.Color(0x26c9e4);
 const ORANGE = new THREE.Color(0xff5f21);
+const DEFAULT_PRESENTATION: CrownPresentation = {
+  baseScale: 1,
+  coreCenter: [0, 0.62, 0],
+  segmentOpenDistance: 0.25,
+  spireLift: 0.08,
+  portalDepthScale: 1,
+  cameraTargetOffset: [0, 0, 0],
+};
 
 export class GLBCrownAdapter implements CrownVisual {
   readonly root = new THREE.Group();
@@ -31,6 +39,7 @@ export class GLBCrownAdapter implements CrownVisual {
   private readonly materials: GLBCrownMaterialBindings;
   private readonly loaded: LoadedCrownInstance;
   private readonly motions: SegmentMotion[];
+  private readonly presentation: CrownPresentation;
   private assemblyProgress = 0;
   private openProgress = 0;
   private coreIntensity = 0;
@@ -40,6 +49,7 @@ export class GLBCrownAdapter implements CrownVisual {
   constructor(loaded: LoadedCrownInstance, manifest: CrownAssetManifest, lod: CrownLOD, quality: QualityTier, renderer: THREE.WebGLRenderer) {
     const bindStart = performance.now();
     this.loaded = loaded;
+    this.presentation = manifest.presentation ?? DEFAULT_PRESENTATION;
     this.bindings = bindGLBCrown(loaded.scene, manifest);
     this.materials = applyGLBCrownMaterials(loaded.scene, quality, renderer);
     this.shell = this.bindings.shell as THREE.Group;
@@ -49,7 +59,8 @@ export class GLBCrownAdapter implements CrownVisual {
     this.bindings.authoredRoot.removeFromParent();
     const bounds = loaded.metrics.bounds;
     const height = Math.max(0.001, bounds.getSize(new THREE.Vector3()).y);
-    this.bindings.authoredRoot.scale.multiplyScalar(3.15 / height);
+    this.bindings.authoredRoot.scale.multiplyScalar((3.15 / height) * this.presentation.baseScale);
+    this.bindings.authoredRoot.position.add(new THREE.Vector3(...this.presentation.cameraTargetOffset));
     this.root.add(this.bindings.authoredRoot);
 
     const count = this.bindings.segments.length;
@@ -115,8 +126,8 @@ export class GLBCrownAdapter implements CrownVisual {
       motion.object.quaternion.copy(motion.scatterQuaternion).slerp(motion.base.quaternion, local);
       const side = motion.normalized === 0 ? 0 : Math.sign(motion.normalized);
       const centerLift = 1 - Math.min(1, Math.abs(motion.normalized) * 2.4);
-      motion.object.position.x += side * this.openProgress * (0.25 + Math.abs(motion.normalized) * 0.34);
-      if (Math.abs(motion.normalized) < 0.01) motion.object.position.x += this.openProgress * 0.22;
+      motion.object.position.x += side * this.openProgress * (this.presentation.segmentOpenDistance + Math.abs(motion.normalized) * 0.34);
+      if (Math.abs(motion.normalized) < 0.01) motion.object.position.x += this.openProgress * this.presentation.segmentOpenDistance * 0.88;
       motion.object.position.y += centerLift * this.openProgress * 0.42 + this.openProgress * 0.04;
       motion.object.position.z -= this.openProgress * (0.22 + centerLift * 0.18);
       const openRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-centerLift * this.openProgress * 0.1, side * this.openProgress * 0.21, 0));
@@ -127,7 +138,7 @@ export class GLBCrownAdapter implements CrownVisual {
       const base = this.bindings.baseTransforms.get(spire)!;
       restoreTransform(spire, base);
       const center = 1 - Math.abs((index - (this.bindings.spires.length - 1) / 2) / Math.max(1, (this.bindings.spires.length - 1) / 2));
-      spire.position.y += this.openProgress * (0.08 + center * 0.15);
+      spire.position.y += this.openProgress * (this.presentation.spireLift + center * 0.15);
     }
 
     this.root.rotation.set(
@@ -151,6 +162,14 @@ export class GLBCrownAdapter implements CrownVisual {
     restoreTransform(this.bindings.portal, portalBase);
     this.bindings.portal.visible = this.portalProgress > 0.001;
     this.bindings.portal.scale.multiplyScalar(Math.max(0.001, this.portalProgress * (0.72 + state.enter * 0.36)));
+    this.bindings.portal.scale.z *= this.presentation.portalDepthScale;
+    for (const blade of this.bindings.irisBlades) {
+      const base = this.bindings.baseTransforms.get(blade)!;
+      restoreTransform(blade, base);
+      const open = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, this.portalProgress * 0.54, 0));
+      blade.quaternion.multiply(open);
+      blade.position.x += this.portalProgress * 0.045;
+    }
     const orangeMix = smoothstep(clamp((state.tacticalOrange - 0.18) / 0.5));
     if (this.bindings.energyCyan) this.bindings.energyCyan.visible = orangeMix < 0.99;
     if (this.bindings.energyOrange) this.bindings.energyOrange.visible = orangeMix > 0.01;
@@ -166,6 +185,7 @@ export class GLBCrownAdapter implements CrownVisual {
     }
     for (const material of this.materials.coreEnergy) material.emissiveIntensity = 0.38 + this.coreIntensity * 0.9;
     const reference = this.bindings.segments[Math.floor(this.bindings.segments.length / 2)];
+    const irisReference = this.bindings.irisBlades[0];
     this.root.userData.bcPoseSignature = [
       reference.position.x,
       reference.position.y,
@@ -173,6 +193,7 @@ export class GLBCrownAdapter implements CrownVisual {
       this.bindings.portal.scale.x,
       this.openProgress,
       this.portalProgress,
+      irisReference?.quaternion.y ?? 0,
     ].map((value) => value.toFixed(4)).join(":");
   }
 

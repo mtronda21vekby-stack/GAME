@@ -1,5 +1,5 @@
 import React from "react";
-import { experienceConfig, type BlackCrownExperienceQuality } from "./experienceConfig";
+import { experienceConfig, type BlackCrownCrownReviewSelection, type BlackCrownExperienceQuality } from "./experienceConfig";
 import { ExperienceContext, type ExperienceRuntimeControl } from "./ExperienceContext";
 import { INITIAL_EXPERIENCE_METRICS, INITIAL_SCROLL_SNAPSHOT, type ExperienceBootStage } from "./types";
 
@@ -46,6 +46,10 @@ export function ExperienceProvider({ children }: { children: React.ReactNode }) 
     runtimeRef.current?.resetPerformanceSample();
   }, []);
 
+  const setCrownAsset = React.useCallback((asset: BlackCrownCrownReviewSelection) => {
+    runtimeRef.current?.setCrownAsset(asset);
+  }, []);
+
   React.useEffect(() => {
     try {
       if (sessionStorage.getItem("bc.nexus.entered.v1") === "1") setEntered(true);
@@ -73,6 +77,7 @@ export function ExperienceProvider({ children }: { children: React.ReactNode }) 
     setSoundEnabled,
     setRequestedQuality,
     resetPerformanceSample,
+    setCrownAsset,
   }), [
     bootStage,
     enter,
@@ -80,6 +85,7 @@ export function ExperienceProvider({ children }: { children: React.ReactNode }) 
     metrics,
     requestedQuality,
     resetPerformanceSample,
+    setCrownAsset,
     setRequestedQuality,
     setRuntime,
     setSoundEnabled,
