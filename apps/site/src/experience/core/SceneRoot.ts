@@ -1,8 +1,11 @@
 import * as THREE from "three";
+import type { ExperienceTimelineState } from "../types";
+import { NexusLightingRig } from "../scene/NexusLightingRig";
 
 export class SceneRoot {
   readonly scene = new THREE.Scene();
   readonly root = new THREE.Group();
+  private readonly lighting = new NexusLightingRig();
 
   constructor() {
     this.scene.name = "BlackCrownNexusScene";
@@ -11,14 +14,11 @@ export class SceneRoot {
     this.root.name = "NexusSceneRoot";
     this.scene.add(this.root);
 
-    const hemisphere = new THREE.HemisphereLight(0x84efff, 0x030407, 0.72);
-    const key = new THREE.DirectionalLight(0xa6f4ff, 1.65);
-    key.position.set(4.5, 6, 5);
-    const violet = new THREE.PointLight(0x7459ff, 8, 15, 2);
-    violet.position.set(-3, 1.5, 3.2);
-    const cyan = new THREE.PointLight(0x29dfff, 7, 12, 2);
-    cyan.position.set(2.6, -0.8, 2.8);
-    this.scene.add(hemisphere, key, violet, cyan);
+    this.scene.add(this.lighting.root);
+  }
+
+  updateLighting(state: ExperienceTimelineState, objectX: number, objectY: number) {
+    this.lighting.update(state, objectX, objectY);
   }
 
   dispose() {

@@ -4,31 +4,44 @@ export type CrownCoreVisual = {
   group: THREE.Group;
   coreMaterial: THREE.MeshStandardMaterial;
   energyMaterial: THREE.MeshBasicMaterial;
+  containment: THREE.Mesh;
+  energyVolume: THREE.Mesh;
+  nucleus: THREE.Mesh;
+  cage: THREE.Mesh;
+  coreLight: THREE.PointLight;
 };
 
 export function createCrownCore(radialSegments: number): CrownCoreVisual {
   const group = new THREE.Group();
   group.name = "CrownCore";
   const coreMaterial = new THREE.MeshStandardMaterial({
-    color: 0x02080c,
-    emissive: 0x087e98,
-    emissiveIntensity: 0.32,
-    metalness: 0.72,
-    roughness: 0.18,
+    color: 0x071118,
+    emissive: 0x07596a,
+    emissiveIntensity: 0.16,
+    metalness: 0.7,
+    roughness: 0.32,
   });
-  const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.56, radialSegments >= 42 ? 3 : 2), coreMaterial);
+  const containment = new THREE.Mesh(new THREE.IcosahedronGeometry(0.48, radialSegments >= 42 ? 2 : 1), coreMaterial);
   const cage = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(0.7, 1),
-    new THREE.MeshBasicMaterial({ color: 0x6fe9ff, wireframe: true, transparent: true, opacity: 0.32 }),
+    new THREE.IcosahedronGeometry(0.58, 1),
+    new THREE.MeshBasicMaterial({ color: 0x78deea, wireframe: true, transparent: true, opacity: 0.17 }),
   );
   const energyMaterial = new THREE.MeshBasicMaterial({
-    color: 0x38bfd7,
+    color: 0x2ab9cf,
     transparent: true,
-    opacity: 0.1,
+    opacity: 0.12,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
   });
-  const halo = new THREE.Mesh(new THREE.SphereGeometry(0.38, radialSegments, Math.max(16, radialSegments / 2)), energyMaterial);
-  group.add(core, cage, halo);
-  return { group, coreMaterial, energyMaterial };
+  const energyVolume = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(0.32, radialSegments >= 42 ? 2 : 1),
+    energyMaterial,
+  );
+  const nucleus = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.16, 1),
+    new THREE.MeshBasicMaterial({ color: 0xc6fbff, transparent: true, opacity: 0.9 }),
+  );
+  const coreLight = new THREE.PointLight(0x49d9ed, 0.5, 5.5, 2);
+  group.add(containment, energyVolume, nucleus, cage, coreLight);
+  return { group, coreMaterial, energyMaterial, containment, energyVolume, nucleus, cage, coreLight };
 }

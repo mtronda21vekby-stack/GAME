@@ -11,17 +11,17 @@ export function createEnergyRings(radialSegments: number): EnergyRingVisual {
   group.name = "EnergyRings";
   const rings: THREE.Mesh[] = [];
   const materials: THREE.MeshBasicMaterial[] = [];
-  const radii = [1.24, 1.58, 1.95];
+  const radii = [0.72, 0.96, 1.22];
   radii.forEach((radius, index) => {
     const material = new THREE.MeshBasicMaterial({
-      color: index === 1 ? 0x826cff : 0x64eaff,
+      color: index === 1 ? 0x7568c8 : 0x55cbd9,
       transparent: true,
-      opacity: 0.3 - index * 0.035,
+      opacity: 0.2 - index * 0.028,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.018 + index * 0.006, 8, radialSegments), material);
-    ring.rotation.set(index * 0.42, index * 0.32, index * 0.78);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.012 + index * 0.005, 6, radialSegments), material);
+    ring.rotation.set(index * 0.25, index * 0.18, index * 0.62);
     group.add(ring);
     rings.push(ring);
     materials.push(material);
