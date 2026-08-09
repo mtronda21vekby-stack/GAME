@@ -2,6 +2,7 @@ import React from "react";
 import { Icons } from "@blackcrown/assets";
 import "../styles/hero-concept-v2.css";
 import "../styles/aaa-experience-v1.css";
+import "../styles/aaa-art-v2.css";
 
 export type HeroStatusTone = "cyan" | "orange" | "green";
 
