@@ -45,7 +45,7 @@ const DEFAULT_ITEMS: DockV2Item[] = [
     label: "Store",
     icon: SiteIcons.cart,
     tone: "violet",
-    isActive: (path) => path === "/store",
+    isActive: (path) => path === "/store" || path === "/cart" || path === "/checkout" || path.startsWith("/checkout/"),
   },
   {
     href: "/account",
