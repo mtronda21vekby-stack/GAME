@@ -2,38 +2,16 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import "@blackcrown/assets";
 import "@blackcrown/ui";
-import "./app.css";
-import "./styles/site.css";
-import "./styles/premium-shell.css";
-import "./styles/visual-overhaul.css";
-import "./styles/experience-layer.css";
-import "./styles/stability-fixes.css";
-import "./styles/matrix-rebirth.css";
-import "./styles/customer-stability.css";
-import "./styles/brand-nexus.css";
-import "./styles/v3-mobile-art-pass.css";
+import "./styles/tokens.css";
+import "./styles/base.css";
+import "./styles/shell.css";
+import "./styles/chrome.css";
+import "./styles/overlays.css";
 import "./styles/dock-v2.css";
-import "./styles/home-v3.css";
-import { atomicMobileStyles } from "./styles/atomic-mobile-styles";
 import { App } from "./App";
 import { registerSW } from "./pwa/registerSW";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { applySitePrefs } from "./lib/prefs";
-
-function installAtomicMobileStyles() {
-  const mobile = window.matchMedia?.("(max-width: 820px), (pointer: coarse)").matches ?? false;
-  if (!mobile) return;
-
-  const styleId = "bc-atomic-mobile-styles-v2";
-  if (document.getElementById(styleId)) return;
-
-  const style = document.createElement("style");
-  style.id = styleId;
-  style.dataset.bcAtomicStyles = "v2";
-  style.textContent = atomicMobileStyles;
-  document.head.appendChild(style);
-  document.documentElement.dataset.bcAtomicStyles = "v2";
-}
 
 /**
  * Crash hooks (Production Safe)
@@ -78,7 +56,6 @@ function installCrashHooks() {
   );
 }
 
-installAtomicMobileStyles();
 applySitePrefs();
 installCrashHooks();
 

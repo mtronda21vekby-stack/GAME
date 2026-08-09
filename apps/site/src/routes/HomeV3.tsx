@@ -10,6 +10,7 @@ import {
   type BlackCrownWorldStatusSnapshot,
 } from "../lib/blackcrownWorldStatus";
 import { openTelegramBot } from "../lib/telegram";
+import "../styles/home.css";
 import "../styles/services-v3.css";
 import "../styles/home-v3-services.css";
 import "../styles/v3-4-services-visual.css";

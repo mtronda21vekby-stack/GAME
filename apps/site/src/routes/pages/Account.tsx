@@ -6,6 +6,7 @@ import { openTelegramBot } from "../../lib/telegram";
 import { getReducedMotion, setReducedMotion } from "../../lib/prefs";
 import { nav, navExternal } from "../../lib/nav";
 import { SiteHeader } from "../../components/SiteHeader";
+import "../../styles/content-pages.css";
 import {
   StoreItem,
   ensureStoreInit,

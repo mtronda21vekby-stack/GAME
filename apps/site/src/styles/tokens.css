@@ -1,0 +1,31 @@
+:root {
+  color-scheme: dark;
+  --bc-safe-top: env(safe-area-inset-top, 0px);
+  --bc-safe-right: env(safe-area-inset-right, 0px);
+  --bc-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --bc-safe-left: env(safe-area-inset-left, 0px);
+  --bc-dock-height: 76px;
+  --bc-overlay-gap: 12px;
+  --bc-content-bottom-clearance: 0px;
+  --app-vh: 100svh;
+  --bc-bg: #010205;
+  --bc-surface: #071018;
+  --bc-surface-strong: #0a141e;
+  --bc-text: #f4fbff;
+  --bc-muted: rgba(213, 232, 244, 0.68);
+  --bc-line: rgba(156, 226, 255, 0.14);
+  --bc-cyan: #63e9ff;
+  --bc-violet: #a58aff;
+  --bc-orange: #ff7b35;
+  --bc-green: #72f1bd;
+  --bc-gold-rgb: 216, 170, 86;
+  --bc-gold-bright: #f1d49a;
+  --bc-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --bc-ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@media (max-width: 820px), (pointer: coarse) {
+  :root {
+    --bc-content-bottom-clearance: calc(var(--bc-dock-height) + var(--bc-overlay-gap) + var(--bc-safe-bottom));
+  }
+}
