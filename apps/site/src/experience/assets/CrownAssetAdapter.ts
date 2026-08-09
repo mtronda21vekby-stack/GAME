@@ -1,5 +1,6 @@
 import type * as THREE from "three";
-import type { BlackCrownCrownAssetMode, BlackCrownExperienceQuality } from "../experienceConfig";
+import type { BlackCrownExperienceQuality } from "../experienceConfig";
+import type { CrownAssetRequest } from "./CrownBackendSelector";
 import type { DeviceCapabilities } from "../quality/DeviceCapabilities";
 import type { ExperienceTimelineState } from "../types";
 
@@ -52,7 +53,9 @@ export type CrownAssetDiagnostics = {
   reason: CrownAssetReason;
   assetId: string;
   bytes: number;
+  fetchTime: number;
   parseTime: number;
+  bindTime: number;
   materials: number;
   textures: number;
   triangles: number;
@@ -66,7 +69,7 @@ export type CrownAssetDiagnostics = {
 };
 
 export type CrownAssetLoadOptions = {
-  requestedMode: BlackCrownCrownAssetMode | "fixture";
+  requestedMode: CrownAssetRequest;
   quality: BlackCrownExperienceQuality;
   resolvedQuality: CrownLOD;
   capabilities: DeviceCapabilities;
@@ -100,7 +103,9 @@ export function createProceduralDiagnostics(
     reason,
     assetId: "procedural-digital-crown-v2",
     bytes: 0,
+    fetchTime: 0,
     parseTime: 0,
+    bindTime: 0,
     materials: 0,
     textures: 0,
     triangles: 0,

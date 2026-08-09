@@ -2,7 +2,7 @@ import type { QualityTier } from "../types";
 import { experienceConfig } from "../experienceConfig";
 import type { CrownAssetAdapter, CrownAssetLoadOptions, CrownAssetReason, CrownLoadResult, CrownVisual } from "./CrownAssetAdapter";
 import { createProceduralDiagnostics } from "./CrownAssetAdapter";
-import { createFixtureManifest, fetchCrownAssetManifest, type CrownAssetManifest } from "./CrownAssetManifest";
+import { CROWN_CANDIDATE_A_MANIFEST_URL, createFixtureManifest, fetchCrownAssetManifest, type CrownAssetManifest } from "./CrownAssetManifest";
 import { getCrownLoaderCounters } from "./CrownAssetCache";
 import { getLodFallbackOrder, readCrownAssetRequest, selectCrownLod, shouldAttemptGlb } from "./CrownBackendSelector";
 import { GLBCrownAdapter } from "./glb/GLBCrownAdapter";
@@ -59,8 +59,8 @@ export class CrownAssetManager implements CrownAssetAdapter {
     this.loadController.abort();
     this.loadController = new AbortController();
     const combined = combineSignals(options.signal, this.loadController.signal);
-    const request = options.requestedMode === "fixture"
-      ? "fixture"
+    const request = options.requestedMode === "fixture" || options.requestedMode === "candidate-a"
+      ? options.requestedMode
       : readCrownAssetRequest(options.requestedMode ?? experienceConfig.crownAssetMode, options.debug);
     const preferred = options.preferredLod ?? selectCrownLod(options.resolvedQuality, options.capabilities);
     if (request === "procedural") {
@@ -70,7 +70,9 @@ export class CrownAssetManager implements CrownAssetAdapter {
 
     let manifest: CrownAssetManifest;
     try {
-      manifest = request === "fixture" ? createFixtureManifest() : await fetchCrownAssetManifest(combined.signal);
+      manifest = request === "fixture"
+        ? createFixtureManifest()
+        : await fetchCrownAssetManifest(combined.signal, request === "candidate-a" ? CROWN_CANDIDATE_A_MANIFEST_URL : undefined);
     } catch (error) {
       combined.dispose();
       if (combined.signal.aborted) throw error;

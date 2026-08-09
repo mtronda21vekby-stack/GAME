@@ -17,7 +17,8 @@ export function ExperienceDebugPanel() {
         <dt>CROWN</dt><dd>{metrics.crownBackend} / {metrics.crownLod}</dd>
         <dt>ASSET</dt><dd>{metrics.crownStatus} / {metrics.crownReason}</dd>
         <dt>BYTES</dt><dd>{metrics.crownAssetBytes}</dd>
-        <dt>PARSE</dt><dd>{metrics.crownParseTime} ms</dd>
+        <dt>LOAD</dt><dd>{metrics.crownFetchTime} / {metrics.crownParseTime} / {metrics.crownBindTime} ms</dd>
+        <dt>CROWN FRAME</dt><dd>{metrics.crownFirstFrameTime} ms</dd>
         <dt>MATERIALS</dt><dd>{metrics.crownMaterials} / {metrics.crownTextures}</dd>
         <dt>PROGRESS</dt><dd>{snapshot.progress.toFixed(3)} / {snapshot.targetProgress.toFixed(3)}</dd>
         <dt>CHAPTER</dt><dd>{snapshot.chapterId} {snapshot.chapterProgress.toFixed(2)}</dd>

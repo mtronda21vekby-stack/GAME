@@ -66,6 +66,9 @@ export class ExperienceRuntime {
   private readonly frameSampler = new FrameSampler();
   private readonly bootStartedAt = performance.now();
   private firstFrameTime = 0;
+  private crownAttachedAt = 0;
+  private crownFirstFrameTime = 0;
+  private awaitingCrownFirstFrame = false;
   private contextLostCount = 0;
 
   constructor(options: ExperienceRuntimeOptions) {
@@ -139,6 +142,10 @@ export class ExperienceRuntime {
       }
       const replaced = this.crownAssets.activate(result);
       if (replaced) replaced.dispose();
+      if (result.backend === "glb") {
+        this.crownAttachedAt = performance.now();
+        this.awaitingCrownFirstFrame = true;
+      }
       this.writeCrownDiagnostics(result);
       this.requestFrame();
     } catch (error) {
@@ -153,6 +160,7 @@ export class ExperienceRuntime {
     this.container.dataset.bcCrownLod = result.lod;
     this.container.dataset.bcCrownStatus = result.diagnostics.status;
     this.container.dataset.bcCrownReason = result.diagnostics.reason;
+    this.container.dataset.bcCrownAssetId = result.diagnostics.assetId;
   }
 
   private requestFrame = () => {
@@ -175,8 +183,9 @@ export class ExperienceRuntime {
     const { viewportWidth, viewportHeight } = this.snapshot;
     const compactViewport = viewportWidth <= 820 || viewportHeight <= 520;
     const narrowViewport = viewportWidth <= 820 && viewportHeight > 520;
+    const glbComposition = this.crownAssets.result.backend === "glb";
     const crownX = compactViewport ? 0 : 1.15;
-    const crownY = narrowViewport ? 1.25 : viewportHeight <= 520 ? 0.3 : 0;
+    const crownY = narrowViewport ? (glbComposition ? 0.9 : 1.25) : viewportHeight <= 520 ? 0.3 : glbComposition ? -0.12 : 0;
     this.rendererHost.resize(viewportWidth, viewportHeight);
     this.camera.aspect = Math.max(1, viewportWidth) / Math.max(1, viewportHeight);
     this.cameraRig.update(this.snapshot, pointer, this.elapsedSeconds);
@@ -198,10 +207,17 @@ export class ExperienceRuntime {
     this.portal.update(this.elapsedSeconds, timeline.portal, timeline.tacticalOrange, timeline.enter, this.snapshot.reducedMotion);
 
     this.rendererHost.renderer.render(this.sceneRoot.scene, this.camera);
+    if (this.awaitingCrownFirstFrame) {
+      this.awaitingCrownFirstFrame = false;
+      this.crownFirstFrameTime = performance.now() - this.crownAttachedAt;
+    }
     this.container.dataset.bcExperienceProgress = this.snapshot.progress.toFixed(4);
     this.container.dataset.bcExperienceTarget = this.snapshot.targetProgress.toFixed(4);
     this.container.dataset.bcExperienceChapter = this.snapshot.chapterId;
     this.container.dataset.bcExperienceContext = this.contextState;
+    if (experienceConfig.debug || import.meta.env.DEV) {
+      this.container.dataset.bcCrownPose = String(this.crown.root.userData.bcPoseSignature ?? "procedural");
+    }
 
     const firstUiUpdate = !this.firstFrameRendered;
     if (firstUiUpdate) {
@@ -252,7 +268,10 @@ export class ExperienceRuntime {
         crownReason: crown.reason,
         crownAssetId: crown.assetId,
         crownAssetBytes: crown.bytes,
+        crownFetchTime: crown.fetchTime,
         crownParseTime: crown.parseTime,
+        crownBindTime: crown.bindTime,
+        crownFirstFrameTime: Math.round(this.crownFirstFrameTime * 10) / 10,
         crownMaterials: crown.materials,
         crownTextures: crown.textures,
         crownTriangles: crown.triangles,

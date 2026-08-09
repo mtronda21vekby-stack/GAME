@@ -59,7 +59,10 @@ export type ExperienceMetrics = {
   crownReason: CrownAssetReason;
   crownAssetId: string;
   crownAssetBytes: number;
+  crownFetchTime: number;
   crownParseTime: number;
+  crownBindTime: number;
+  crownFirstFrameTime: number;
   crownMaterials: number;
   crownTextures: number;
   crownTriangles: number;
@@ -123,7 +126,10 @@ export const INITIAL_EXPERIENCE_METRICS: ExperienceMetrics = {
   crownReason: "manifest_disabled",
   crownAssetId: "procedural-digital-crown-v2",
   crownAssetBytes: 0,
+  crownFetchTime: 0,
   crownParseTime: 0,
+  crownBindTime: 0,
+  crownFirstFrameTime: 0,
   crownMaterials: 0,
   crownTextures: 0,
   crownTriangles: 0,

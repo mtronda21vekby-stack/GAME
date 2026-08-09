@@ -4,6 +4,7 @@ import type { CrownLoaderCounters } from "./CrownAssetAdapter";
 export type CachedCrownAsset = {
   scene: THREE.Group;
   bytes: number;
+  fetchTime: number;
   parseTime: number;
 };
 

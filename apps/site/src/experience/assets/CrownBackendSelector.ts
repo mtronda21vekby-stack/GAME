@@ -1,13 +1,29 @@
-import type { BlackCrownCrownAssetMode } from "../experienceConfig";
+import {
+  experienceConfig,
+  type BlackCrownCrownAssetMode,
+  type BlackCrownCrownAssetOverride,
+  type BlackCrownExperienceMode,
+} from "../experienceConfig";
 import type { DeviceCapabilities } from "../quality/DeviceCapabilities";
 import type { QualityTier } from "../types";
 import type { CrownAssetManifest } from "./CrownAssetManifest";
 import type { CrownLOD } from "./CrownAssetAdapter";
 
-export type CrownAssetRequest = BlackCrownCrownAssetMode | "fixture";
+export type CrownAssetRequest = BlackCrownCrownAssetMode | "fixture" | "candidate-a";
 
-export function readCrownAssetRequest(configured: BlackCrownCrownAssetMode, debug: boolean, search = window.location.search): CrownAssetRequest {
-  const query = new URLSearchParams(search).get("bcasset");
+export function readCrownAssetRequest(
+  configured: BlackCrownCrownAssetMode,
+  debug: boolean,
+  search = window.location.search,
+  configuredOverride: BlackCrownCrownAssetOverride = experienceConfig.crownAssetOverride,
+  experienceMode: BlackCrownExperienceMode = experienceConfig.mode,
+): CrownAssetRequest {
+  const parameters = new URLSearchParams(search);
+  const candidate = parameters.get("nexuscrown");
+  const candidateRouteEnabled = experienceMode === "lab" || experienceMode === "home";
+  if (candidateRouteEnabled && configuredOverride === "candidate-a") return "candidate-a";
+  if (candidateRouteEnabled && candidate === "candidate-a" && (debug || import.meta.env.DEV)) return "candidate-a";
+  const query = parameters.get("bcasset");
   if (query === "fixture") return debug || import.meta.env.DEV ? "fixture" : configured;
   if (query === "auto" || query === "procedural" || query === "glb") return query;
   return configured;
@@ -27,5 +43,5 @@ export function shouldAttemptGlb(request: CrownAssetRequest, manifest: CrownAsse
   if (request === "procedural") return false;
   if (!manifest.enabled) return false;
   if (!capabilities.webgl2 && (capabilities.saveData || capabilities.weakProfile)) return false;
-  return request === "glb" || request === "fixture" || request === "auto";
+  return request === "glb" || request === "fixture" || request === "candidate-a" || request === "auto";
 }

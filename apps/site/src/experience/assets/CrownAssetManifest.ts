@@ -1,6 +1,7 @@
 import type { CrownLOD } from "./CrownAssetAdapter";
 
 export const CROWN_MANIFEST_URL = "/experience/crown/crown.manifest.json";
+export const CROWN_CANDIDATE_A_MANIFEST_URL = "/experience/crown/candidate-a/crown-candidate-a.manifest.json";
 
 export type CrownLODManifest = {
   url: string;
@@ -24,6 +25,7 @@ export type CrownAssetManifest = {
     ktx2: boolean;
     meshopt: boolean;
     draco: boolean;
+    skinnedShell?: boolean;
     ktx2TranscoderPath?: string;
     dracoDecoderPath?: string;
   };
@@ -62,6 +64,7 @@ export function parseCrownAssetManifest(value: unknown): CrownAssetManifest {
   }
   const features = value.features;
   if (![features.ktx2, features.meshopt, features.draco].every((flag) => typeof flag === "boolean")) throw new Error("manifest_features");
+  if (features.skinnedShell !== undefined && typeof features.skinnedShell !== "boolean") throw new Error("manifest_skinned_shell");
   for (const key of ["ktx2TranscoderPath", "dracoDecoderPath"] as const) {
     if (features[key] !== undefined && (typeof features[key] !== "string" || !features[key].startsWith("/experience/crown/"))) {
       throw new Error(`manifest_${key}`);

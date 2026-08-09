@@ -60,17 +60,22 @@ function estimateTextureMemory(textures: Iterable<THREE.Texture>) {
 function createMappedMaterial(source: THREE.Material, quality: QualityTier, anisotropy: number, textures: Set<THREE.Texture>) {
   if (!ALLOWED_MATERIALS.has(source.name)) throw new Error(`binding_failed:material:${source.name || "unnamed"}`);
   const physicalShell = quality === "high" && source.name === "BC_MAT_SHELL_TITANIUM";
-  const physicalGlass = quality === "high" && source.name === "BC_MAT_CORE_GLASS";
-  const target = physicalShell || physicalGlass ? new THREE.MeshPhysicalMaterial() : new THREE.MeshStandardMaterial();
+  const target = physicalShell ? new THREE.MeshPhysicalMaterial() : new THREE.MeshStandardMaterial();
   target.name = source.name;
   target.side = THREE.FrontSide;
   target.depthWrite = true;
-  target.color.set(0x121820);
-  target.metalness = 0.72;
-  target.roughness = 0.34;
+  target.color.set((source as THREE.MeshStandardMaterial).map ? 0xffffff : 0x25313d);
+  target.metalness = 0.54;
+  target.roughness = 0.4;
+  if (source.name === "BC_MAT_SHELL_TITANIUM") {
+    target.emissive.set(0x0b1820);
+    target.emissiveIntensity = 0.5;
+  }
   if (source.name === "BC_MAT_INNER_GUNMETAL" || source.name === "BC_MAT_CARBON") {
-    target.color.set(source.name === "BC_MAT_CARBON" ? 0x080b0f : 0x11161c);
-    target.metalness = source.name === "BC_MAT_CARBON" ? 0.25 : 0.58;
+    target.color.set(source.name === "BC_MAT_CARBON"
+      ? (source as THREE.MeshStandardMaterial).map ? 0xffffff : 0x0b1016
+      : 0x26323e);
+    target.metalness = source.name === "BC_MAT_CARBON" ? 0.25 : 0.46;
     target.roughness = source.name === "BC_MAT_CARBON" ? 0.7 : 0.52;
   }
   if (physicalShell && target instanceof THREE.MeshPhysicalMaterial) {
@@ -84,10 +89,6 @@ function createMappedMaterial(source: THREE.Material, quality: QualityTier, anis
     target.transparent = true;
     target.opacity = quality === "low" ? 0.42 : 0.3;
     target.depthWrite = false;
-    if (physicalGlass && target instanceof THREE.MeshPhysicalMaterial) {
-      target.transmission = 0.14;
-      target.thickness = 0.16;
-    }
   }
   if (source.name === "BC_MAT_CORE_ENERGY" || source.name === "BC_MAT_ENERGY_CYAN" || source.name === "BC_MAT_ENERGY_ORANGE" || source.name === "BC_MAT_PORTAL") {
     const orange = source.name === "BC_MAT_ENERGY_ORANGE" || source.name === "BC_MAT_PORTAL";
@@ -137,7 +138,7 @@ export function applyGLBCrownMaterials(scene: THREE.Group, quality: QualityTier,
     estimatedTextureMemory: estimateTextureMemory(textures),
     transparentMaterials: materials.filter((material) => material.transparent).length,
     transmissionMaterials,
-    substitutions: quality === "high" ? ["controlled_clearcoat", "limited_core_transmission"] : quality === "medium" ? ["standard_core_glass"] : ["no_transmission", "low_anisotropy"],
+    substitutions: quality === "high" ? ["controlled_clearcoat", "standard_core_glass"] : quality === "medium" ? ["standard_core_glass"] : ["no_transmission", "low_anisotropy"],
     dispose: () => { for (const material of materials) material.dispose(); },
   };
 }

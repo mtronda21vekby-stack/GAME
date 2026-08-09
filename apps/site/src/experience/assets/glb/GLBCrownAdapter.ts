@@ -38,6 +38,7 @@ export class GLBCrownAdapter implements CrownVisual {
   private disposed = false;
 
   constructor(loaded: LoadedCrownInstance, manifest: CrownAssetManifest, lod: CrownLOD, quality: QualityTier, renderer: THREE.WebGLRenderer) {
+    const bindStart = performance.now();
     this.loaded = loaded;
     this.bindings = bindGLBCrown(loaded.scene, manifest);
     this.materials = applyGLBCrownMaterials(loaded.scene, quality, renderer);
@@ -84,7 +85,9 @@ export class GLBCrownAdapter implements CrownVisual {
       reason: "glb_ready",
       assetId: manifest.assetId,
       bytes: loaded.bytes,
+      fetchTime: Math.round(loaded.fetchTime * 10) / 10,
       parseTime: Math.round(loaded.parseTime * 10) / 10,
+      bindTime: Math.round((performance.now() - bindStart) * 10) / 10,
       materials: this.materials.materials.length,
       textures: this.materials.textures.length,
       triangles: loaded.metrics.triangles,
@@ -113,8 +116,9 @@ export class GLBCrownAdapter implements CrownVisual {
       const side = motion.normalized === 0 ? 0 : Math.sign(motion.normalized);
       const centerLift = 1 - Math.min(1, Math.abs(motion.normalized) * 2.4);
       motion.object.position.x += side * this.openProgress * (0.25 + Math.abs(motion.normalized) * 0.34);
-      motion.object.position.y += centerLift * this.openProgress * 0.78 + this.openProgress * 0.06;
-      motion.object.position.z -= this.openProgress * (0.28 + centerLift * 0.24);
+      if (Math.abs(motion.normalized) < 0.01) motion.object.position.x += this.openProgress * 0.22;
+      motion.object.position.y += centerLift * this.openProgress * 0.42 + this.openProgress * 0.04;
+      motion.object.position.z -= this.openProgress * (0.22 + centerLift * 0.18);
       const openRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-centerLift * this.openProgress * 0.1, side * this.openProgress * 0.21, 0));
       motion.object.quaternion.multiply(openRotation);
     }
@@ -134,7 +138,7 @@ export class GLBCrownAdapter implements CrownVisual {
 
     const coreBase = this.bindings.baseTransforms.get(this.core)!;
     restoreTransform(this.core, coreBase);
-    const coreScale = 0.74 + this.coreIntensity * 0.16 - this.portalProgress * 0.12;
+    const coreScale = 0.8 + this.coreIntensity * 0.32 - this.portalProgress * 0.1;
     this.core.scale.multiplyScalar(coreScale);
     this.rings.forEach((ring, index) => {
       const base = this.bindings.baseTransforms.get(ring)!;
@@ -160,7 +164,16 @@ export class GLBCrownAdapter implements CrownVisual {
       material.emissiveIntensity = 0.2 + orangeMix * 0.58 + this.portalProgress * 0.18;
       material.opacity = 0.08 + orangeMix * 0.78;
     }
-    for (const material of this.materials.coreEnergy) material.emissiveIntensity = 0.62 + this.coreIntensity * 1.15;
+    for (const material of this.materials.coreEnergy) material.emissiveIntensity = 0.38 + this.coreIntensity * 0.9;
+    const reference = this.bindings.segments[Math.floor(this.bindings.segments.length / 2)];
+    this.root.userData.bcPoseSignature = [
+      reference.position.x,
+      reference.position.y,
+      reference.position.z,
+      this.bindings.portal.scale.x,
+      this.openProgress,
+      this.portalProgress,
+    ].map((value) => value.toFixed(4)).join(":");
   }
 
   dispose() {
