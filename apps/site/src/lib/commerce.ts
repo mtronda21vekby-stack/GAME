@@ -38,6 +38,13 @@ export type CommerceOrder = {
   fulfilledAt?: number;
 };
 
+export type CommerceEntitlements = {
+  userId: string;
+  itemIds: string[];
+  updatedAt: number | null;
+  source: "server";
+};
+
 const CART_KEY = "commerce.cart.v1";
 const CLIENT_ID_KEY = "bc.clientId.v1";
 const MAX_QUANTITY = 10;
@@ -103,6 +110,15 @@ function createClientId() {
   return `client_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
 }
 
+export function createCheckoutIdempotencyKey() {
+  try {
+    if (crypto?.randomUUID) return `checkout:${crypto.randomUUID()}`;
+  } catch {
+    // fall through
+  }
+  return `checkout:${Date.now().toString(36)}:${Math.random().toString(36).slice(2, 12)}`;
+}
+
 function getClientId() {
   try {
     const existing = localStorage.getItem(CLIENT_ID_KEY);
@@ -115,7 +131,7 @@ function getClientId() {
   }
 }
 
-async function ensureGuestSession(signal?: AbortSignal) {
+export async function ensureGuestSession(signal?: AbortSignal) {
   const response = await fetch("/api/auth/guest", {
     method: "POST",
     headers: { "content-type": "application/json", accept: "application/json" },
@@ -210,21 +226,40 @@ export async function requestCommerceQuote(signal?: AbortSignal): Promise<Commer
   return payload as unknown as CommerceQuote;
 }
 
-export async function submitMockCheckout(signal?: AbortSignal): Promise<CommerceOrder> {
+export async function submitMockCheckout(idempotencyKey: string, signal?: AbortSignal): Promise<CommerceOrder> {
   await ensureGuestSession(signal);
   const response = await fetch("/api/commerce/checkout", {
     method: "POST",
-    headers: { "content-type": "application/json", accept: "application/json" },
+    headers: {
+      "content-type": "application/json",
+      accept: "application/json",
+      "Idempotency-Key": idempotencyKey,
+    },
     credentials: "include",
     cache: "no-store",
     signal,
-    body: JSON.stringify({ items: requestLines(), paymentMethod: "mock" }),
+    body: JSON.stringify({ items: requestLines(), paymentMethod: "mock", idempotencyKey }),
   });
   const payload = await readJson(response);
   if (!response.ok || payload.ok !== true || !payload.order) {
     throw new Error(typeof payload.reason === "string" ? payload.reason : "checkout_failed");
   }
   return payload.order as CommerceOrder;
+}
+
+export async function getCommerceEntitlements(signal?: AbortSignal): Promise<CommerceEntitlements> {
+  await ensureGuestSession(signal);
+  const response = await fetch("/api/commerce/entitlements", {
+    headers: { accept: "application/json" },
+    credentials: "include",
+    cache: "no-store",
+    signal,
+  });
+  const payload = await readJson(response);
+  if (!response.ok || payload.ok !== true || !payload.entitlements) {
+    throw new Error(typeof payload.reason === "string" ? payload.reason : "entitlements_unavailable");
+  }
+  return payload.entitlements as CommerceEntitlements;
 }
 
 export async function getCommerceOrder(orderId: string, signal?: AbortSignal): Promise<CommerceOrder> {

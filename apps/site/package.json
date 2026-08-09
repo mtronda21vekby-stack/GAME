@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@blackcrown/assets": "workspace:*",
+    "@blackcrown/commerce": "workspace:*",
     "@blackcrown/core": "workspace:*",
     "@blackcrown/ui": "workspace:*",
     "react": "^18.3.1",
