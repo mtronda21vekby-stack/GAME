@@ -60,7 +60,7 @@ test("@off Home preserves key art, CTA and fast-scroll stability", async ({ page
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   await page.evaluate(() => window.scrollTo(0, 0));
   await expect(root).toBeVisible();
-  expect(requests.filter((url) => /NexusLabPage|ExperienceRuntime|nexus-three|nexus-gltf-loader|crown\.manifest\.json|candidate-a|\.glb(?:\?|$)|node_modules\/three/i.test(url))).toEqual([]);
+  expect(requests.filter((url) => /NexusLabPage|ExperienceRuntime|nexus-three|nexus-gltf-loader|crown\.manifest\.json|candidate-[ab]|\.glb(?:\?|$)|node_modules\/three/i.test(url))).toEqual([]);
   await expect(page.locator("canvas[data-bc-nexus-canvas]")).toHaveCount(0);
 });
 
@@ -71,7 +71,7 @@ test("@off Nexus route is inactive and unknown URLs render NotFound", async ({ p
   await page.goto("/nexus-lab");
   await expect(page.getByRole("heading", { name: "Маршрут не найден" })).toBeVisible();
   await expect(page.locator("canvas")).toHaveCount(0);
-  expect(requests.filter((url) => /ExperienceRuntime|nexus-gltf-loader|crown\.manifest\.json|candidate-a|\.glb(?:\?|$)|node_modules\/three/i.test(url))).toEqual([]);
+  expect(requests.filter((url) => /ExperienceRuntime|nexus-gltf-loader|crown\.manifest\.json|candidate-[ab]|\.glb(?:\?|$)|node_modules\/three/i.test(url))).toEqual([]);
   await page.goto("/unknown-test-route");
   await expect(page).toHaveTitle("Страница не найдена — BlackCrown");
   await expect(page.getByText("/unknown-test-route")).toBeVisible();
@@ -290,18 +290,77 @@ test("@lab Candidate A uses one allowlisted LOD and reverses its absolute pose",
   expect(errors).toEqual([]);
 });
 
-test("@lab Candidate A is not requested by Home or an invalid override", async ({ page }) => {
+test("@lab Candidate B uses one allowlisted LOD, drives its iris and reverses its absolute pose", async ({ page }) => {
+  const requests: string[] = [];
+  const errors: string[] = [];
+  page.on("request", (request) => requests.push(request.url()));
+  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
+  await installApiAdapter(page);
+  await page.goto("/nexus-lab?nexuscrown=candidate-b");
+  await enterNexus(page);
+  const runtime = page.locator('[data-bc-experience-runtime="active"]');
+  await expect(runtime).toHaveAttribute("data-bc-crown-backend", "glb", { timeout: 15_000 });
+  await expect(runtime).toHaveAttribute("data-bc-crown-asset-id", "blackcrown-digital-crown-candidate-b-v1");
+  await expect(page.locator("canvas[data-bc-nexus-canvas]")).toHaveCount(1);
+  const lod = await runtime.getAttribute("data-bc-crown-lod");
+  const candidateGlbs = requests.filter((url) => /crown-candidate-b-lod\d\.glb$/u.test(url));
+  expect(candidateGlbs).toHaveLength(1);
+  expect(candidateGlbs[0]).toContain(lod === "high" ? "lod0" : lod === "medium" ? "lod1" : "lod2");
+
+  await setNexusProgress(page, 0.68);
+  const portalPose = (await runtime.getAttribute("data-bc-crown-pose"))!.split(":").map(Number);
+  expect(portalPose[5]).toBeGreaterThan(0);
+  expect(Math.abs(portalPose[6])).toBeGreaterThan(0);
+  await setNexusProgress(page, 0.18);
+  const closedPose = (await runtime.getAttribute("data-bc-crown-pose"))!.split(":").map(Number);
+  expect(closedPose[5]).toBeLessThan(portalPose[5]);
+  expect(Math.abs(closedPose[6])).toBeLessThan(Math.abs(portalPose[6]));
+  await setNexusProgress(page, 0.68);
+  const restored = (await runtime.getAttribute("data-bc-crown-pose"))!.split(":").map(Number);
+  portalPose.forEach((value, index) => expect(restored[index]).toBeCloseTo(value, 2));
+  expect(errors).toEqual([]);
+});
+
+test("@lab local Crown selector disposes each A/B backend and keeps one renderer", async ({ page }) => {
+  const requests: string[] = [];
+  page.on("request", (request) => requests.push(request.url()));
+  await installApiAdapter(page);
+  await page.goto("/nexus-lab?bcdebug=1");
+  await enterNexus(page);
+  const runtime = page.locator('[data-bc-experience-runtime="active"]');
+  await page.locator(".bcNexusDebug").getByText("DEBUG", { exact: true }).click();
+  const selector = page.getByRole("radiogroup", { name: "Local Crown review candidate" });
+  await expect(selector).toBeVisible();
+
+  for (const [label, assetId] of [
+    ["CANDIDATE A", "blackcrown-digital-crown-candidate-a-v1"],
+    ["CANDIDATE B", "blackcrown-digital-crown-candidate-b-v1"],
+    ["PROCEDURAL", "procedural-digital-crown-v2"],
+    ["CANDIDATE A", "blackcrown-digital-crown-candidate-a-v1"],
+  ] as const) {
+    await selector.getByRole("radio", { name: label }).click();
+    await expect(runtime).toHaveAttribute("data-bc-crown-asset-id", assetId, { timeout: 15_000 });
+    await expect(page.locator("canvas[data-bc-nexus-canvas]")).toHaveCount(1);
+    await expect(page.locator('[data-bc-experience-runtime="active"]')).toHaveCount(1);
+  }
+
+  expect(requests.filter((url) => /crown-candidate-a-lod\d\.glb$/u.test(url))).toHaveLength(2);
+  expect(requests.filter((url) => /crown-candidate-b-lod\d\.glb$/u.test(url))).toHaveLength(1);
+});
+
+test("@lab review candidates are not requested by Home or an invalid override", async ({ page }) => {
   const requests: string[] = [];
   page.on("request", (request) => requests.push(request.url()));
   await installApiAdapter(page);
   await page.goto("/");
   await expect(page.locator(".bcCinematicExperience")).toBeVisible();
-  expect(requests.filter((url) => /candidate-a/iu.test(url))).toEqual([]);
+  expect(requests.filter((url) => /candidate-[ab]/iu.test(url))).toEqual([]);
   requests.length = 0;
   await page.goto("/nexus-lab?nexuscrown=https://example.test/crown.glb");
   await enterNexus(page);
   await expect(page.locator('[data-bc-experience-runtime="active"]')).toHaveAttribute("data-bc-crown-backend", "procedural");
-  expect(requests.filter((url) => url.startsWith("https://example.test") || /\/experience\/crown\/candidate-a\//iu.test(url))).toEqual([]);
+  expect(requests.filter((url) => url.startsWith("https://example.test") || /\/experience\/crown\/candidate-[ab]\//iu.test(url))).toEqual([]);
 });
 
 test("@lab context loss exposes DOM fallback and restores one canvas", async ({ page }) => {

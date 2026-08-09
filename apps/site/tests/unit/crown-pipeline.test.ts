@@ -52,12 +52,44 @@ describe("Crown manifest and backend selection", () => {
     expect(readCrownAssetRequest("auto", true, "?bcasset=procedural")).toBe("procedural");
     expect(readCrownAssetRequest("auto", true, "?bcasset=fixture")).toBe("fixture");
     expect(readCrownAssetRequest("auto", true, "?nexuscrown=candidate-a", null, "lab")).toBe("candidate-a");
+    expect(readCrownAssetRequest("auto", true, "?nexuscrown=candidate-b", null, "lab")).toBe("candidate-b");
     expect(readCrownAssetRequest("auto", true, "?nexuscrown=https://example.test/crown.glb", null, "lab")).toBe("auto");
     expect(readCrownAssetRequest("auto", true, "?nexuscrown=candidate-a", null, "off")).toBe("auto");
+    expect(readCrownAssetRequest("auto", true, "?nexuscrown=candidate-b", null, "off")).toBe("auto");
     expect(readCrownAssetRequest("auto", false, "", "candidate-a", "lab")).toBe("candidate-a");
+    expect(readCrownAssetRequest("auto", false, "", "candidate-b", "lab")).toBe("candidate-b");
     expect(selectCrownLod("high", capabilities)).toBe("high");
     expect(selectCrownLod("high", { ...capabilities, saveData: true })).toBe("low");
     expect(getLodFallbackOrder("high")).toEqual(["high", "medium", "low"]);
+  });
+
+  it("accepts bounded Candidate B presentation data and rejects unsafe tuning", () => {
+    const candidateB = {
+      ...productionManifest(true),
+      assetId: "blackcrown-digital-crown-candidate-b-v1",
+      presentation: {
+        baseScale: 0.98,
+        coreCenter: [0, 0.63, 0],
+        segmentOpenDistance: 0.3,
+        spireLift: 0.09,
+        portalDepthScale: 1.08,
+        cameraTargetOffset: [0, 0.025, 0],
+      },
+      features: { ktx2: false, meshopt: false, draco: false, skinnedShell: true, irisBones: 7 },
+    };
+    expect(parseCrownAssetManifest(candidateB)).toMatchObject({
+      assetId: "blackcrown-digital-crown-candidate-b-v1",
+      presentation: { baseScale: 0.98, portalDepthScale: 1.08 },
+      features: { irisBones: 7 },
+    });
+    expect(() => parseCrownAssetManifest({
+      ...candidateB,
+      presentation: { ...candidateB.presentation, segmentOpenDistance: 4 },
+    })).toThrow("manifest_presentation_segmentOpenDistance");
+    expect(() => parseCrownAssetManifest({
+      ...candidateB,
+      features: { ...candidateB.features, irisBones: 2 },
+    })).toThrow("manifest_iris_bones");
   });
 
   it("keeps procedural for disabled or missing manifests", async () => {
@@ -180,6 +212,30 @@ describe("GLB Crown runtime", () => {
     const bindings = bindGLBCrown(scene, createFixtureManifest());
     expect(bindings.segments.every((node) => (node as THREE.Bone).isBone)).toBe(true);
     expect(bindings.spires).toHaveLength(9);
+  });
+
+  it("binds the Candidate B mechanical iris without making it mandatory for Candidate A", () => {
+    const scene = new THREE.Group();
+    for (const name of ["BC_CROWN_ROOT", "BC_SHELL_ROOT", "BC_CORE_ROOT", "BC_PORTAL_ROOT", "BC_RING_INNER", "BC_RING_MIDDLE", "BC_RING_OUTER"]) {
+      scene.add(Object.assign(new THREE.Group(), { name }));
+    }
+    for (let index = 0; index < 9; index += 1) {
+      scene.add(Object.assign(new THREE.Bone(), { name: `BC_SEG_${String(index).padStart(2, "0")}` }));
+      scene.add(Object.assign(new THREE.Bone(), { name: `BC_SPIRE_${String(index).padStart(2, "0")}` }));
+    }
+    for (let index = 0; index < 7; index += 1) {
+      scene.add(Object.assign(new THREE.Bone(), { name: `BC_IRIS_BLADE_${String(index).padStart(2, "0")}` }));
+    }
+    scene.add(Object.assign(new THREE.Group(), { name: "BC_PORTAL_IRIS" }));
+    scene.add(Object.assign(new THREE.Group(), { name: "BC_PORTAL_CAVITY" }));
+
+    const bindings = bindGLBCrown(scene, {
+      ...createFixtureManifest(),
+      features: { ...createFixtureManifest().features, skinnedShell: true, irisBones: 7 },
+    });
+    expect(bindings.irisBlades).toHaveLength(7);
+    expect(bindings.iris?.name).toBe("BC_PORTAL_IRIS");
+    expect(bindings.portalCavity?.name).toBe("BC_PORTAL_CAVITY");
   });
 
   it("aborts pending fetch and disposes a parsed result before attachment", async () => {
