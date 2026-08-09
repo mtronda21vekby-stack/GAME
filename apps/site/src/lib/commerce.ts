@@ -39,6 +39,7 @@ export type CommerceOrder = {
 };
 
 const CART_KEY = "commerce.cart.v1";
+const CLIENT_ID_KEY = "bc.clientId.v1";
 const MAX_QUANTITY = 10;
 const MAX_LINES = 20;
 
@@ -91,6 +92,42 @@ function emitCartChanged(lines: CartLine[]) {
       detail: { count: lines.reduce((sum, line) => sum + line.quantity, 0) },
     })
   );
+}
+
+function createClientId() {
+  try {
+    if (crypto?.randomUUID) return crypto.randomUUID();
+  } catch {
+    // fall through
+  }
+  return `client_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
+}
+
+function getClientId() {
+  try {
+    const existing = localStorage.getItem(CLIENT_ID_KEY);
+    if (existing) return existing;
+    const created = createClientId();
+    localStorage.setItem(CLIENT_ID_KEY, created);
+    return created;
+  } catch {
+    return createClientId();
+  }
+}
+
+async function ensureGuestSession(signal?: AbortSignal) {
+  const response = await fetch("/api/auth/guest", {
+    method: "POST",
+    headers: { "content-type": "application/json", accept: "application/json" },
+    credentials: "include",
+    cache: "no-store",
+    signal,
+    body: JSON.stringify({ clientId: getClientId() }),
+  });
+  const payload = await readJson(response);
+  if (!response.ok || payload.ok !== true) {
+    throw new Error(typeof payload.reason === "string" ? payload.reason : "auth_unavailable");
+  }
 }
 
 export function getCartLines(): CartLine[] {
@@ -174,6 +211,7 @@ export async function requestCommerceQuote(signal?: AbortSignal): Promise<Commer
 }
 
 export async function submitMockCheckout(signal?: AbortSignal): Promise<CommerceOrder> {
+  await ensureGuestSession(signal);
   const response = await fetch("/api/commerce/checkout", {
     method: "POST",
     headers: { "content-type": "application/json", accept: "application/json" },
