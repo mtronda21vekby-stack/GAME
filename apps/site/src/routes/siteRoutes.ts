@@ -1,4 +1,5 @@
 import React from "react";
+import { experienceConfig, isNexusRouteEnabled } from "../experience/experienceConfig";
 import { HomeV3 } from "./HomeV3";
 
 const About = React.lazy(() => import("./pages/About").then((module) => ({ default: module.About })));
@@ -13,6 +14,9 @@ const CheckoutSuccess = React.lazy(() =>
 );
 const Account = React.lazy(() => import("./pages/Account").then((module) => ({ default: module.Account })));
 const Admin = React.lazy(() => import("./pages/Admin").then((module) => ({ default: module.Admin })));
+const NexusLab = React.lazy(() =>
+  import("../components/nexus/NexusLabPage").then((module) => ({ default: module.NexusLabPage })),
+);
 
 export const SITE_PATHS = [
   "/",
@@ -26,6 +30,7 @@ export const SITE_PATHS = [
   "/checkout/success",
   "/account",
   "/admin",
+  "/nexus-lab",
 ] as const;
 
 export type SitePath = (typeof SITE_PATHS)[number];
@@ -50,10 +55,10 @@ export type RouteDefinition = {
 const standardChrome: RouteChrome = { dock: true, footer: true, music: true };
 const focusedChrome: RouteChrome = { dock: false, footer: false, music: false };
 
-export const SITE_ROUTES: readonly RouteDefinition[] = [
+const coreRoutes: RouteDefinition[] = [
   {
     path: "/",
-    component: HomeV3,
+    component: experienceConfig.mode === "home" ? NexusLab : HomeV3,
     metadata: {
       title: "BlackCrown — Interactive Worlds",
       description: "BlackCrown объединяет игровые миры, Store и профиль игрока в единой интерактивной сети.",
@@ -156,6 +161,22 @@ export const SITE_ROUTES: readonly RouteDefinition[] = [
     },
   },
 ] as const;
+
+export const SITE_ROUTES: readonly RouteDefinition[] = isNexusRouteEnabled()
+  ? [
+      ...coreRoutes,
+      {
+        path: "/nexus-lab",
+        component: NexusLab,
+        metadata: {
+          title: "Digital Crown Nexus Lab — BlackCrown",
+          description: "Локальный WebGL-прототип BlackCrown Digital Crown Nexus.",
+          chrome: focusedChrome,
+          noIndex: true,
+        },
+      },
+    ]
+  : coreRoutes;
 
 const routeByPath = new Map<string, RouteDefinition>(SITE_ROUTES.map((route) => [route.path, route]));
 

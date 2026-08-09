@@ -1,0 +1,155 @@
+.bcNexusLab {
+  --bc-nexus-cyan: #65e9ff;
+  --bc-nexus-violet: #7e68ff;
+  position: relative;
+  min-height: 100svh;
+  overflow: clip;
+  color: #f3fbff;
+  background: #020407;
+  isolation: isolate;
+}
+
+.bcNexusLab__staticScene {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(38, 219, 255, .11), transparent 18%),
+    radial-gradient(circle at 50% 52%, rgba(111, 78, 255, .1), transparent 38%),
+    linear-gradient(180deg, #010204 0%, #030711 56%, #010204 100%);
+}
+
+.bcNexusLab__horizon {
+  position: absolute;
+  inset: 53% -20% auto;
+  height: 46%;
+  opacity: .38;
+  transform: perspective(700px) rotateX(64deg);
+  transform-origin: top;
+  background-image: linear-gradient(rgba(87, 222, 255, .12) 1px, transparent 1px), linear-gradient(90deg, rgba(87, 222, 255, .12) 1px, transparent 1px);
+  background-size: 54px 54px;
+  mask-image: linear-gradient(#000, transparent 78%);
+}
+
+.bcNexusLab__ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  aspect-ratio: 1;
+  border: 1px solid rgba(101, 233, 255, .2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 90px rgba(63, 220, 255, .08), inset 0 0 70px rgba(126, 104, 255, .08);
+}
+
+.bcNexusLab__ring--outer { width: min(68vw, 780px); }
+.bcNexusLab__ring--inner { width: min(42vw, 460px); border-style: dashed; }
+.bcNexusLab__core {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(16vw, 180px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, #efffff 0 2%, #5bedff 5%, #5450ff 24%, rgba(23, 23, 71, .45) 46%, transparent 72%);
+  box-shadow: 0 0 72px rgba(82, 230, 255, .4), 0 0 180px rgba(111, 76, 255, .24);
+}
+
+.bcNexusHud {
+  position: fixed;
+  z-index: 40;
+  top: max(14px, env(safe-area-inset-top));
+  left: max(16px, env(safe-area-inset-left));
+  right: max(16px, env(safe-area-inset-right));
+  min-height: 50px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 0 14px;
+  border: 1px solid rgba(113, 226, 255, .16);
+  border-radius: 6px;
+  background: rgba(2, 7, 12, .72);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, .35);
+  backdrop-filter: blur(16px);
+}
+
+.bcNexusHud__brand {
+  justify-self: start;
+  min-height: 44px;
+  border: 0;
+  color: #f4fbff;
+  background: none;
+  font: 900 13px/1 Inter, system-ui, sans-serif;
+}
+
+.bcNexusHud__chapters { display: flex; align-items: center; gap: 8px; }
+.bcNexusHud__chapters a {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: rgba(221, 241, 248, .46);
+  border-bottom: 1px solid transparent;
+  font: 700 10px/1 ui-monospace, monospace;
+}
+.bcNexusHud__chapters a[aria-current="step"] { color: var(--bc-nexus-cyan); border-color: var(--bc-nexus-cyan); }
+.bcNexusHud__status { justify-self: end; display: flex; gap: 16px; color: rgba(214, 238, 246, .5); font: 700 9px/1 ui-monospace, monospace; }
+
+.bcNexusStory { position: relative; min-height: 700svh; }
+.bcNexusChapter {
+  min-height: 100svh;
+  display: grid;
+  align-items: center;
+  padding: 96px clamp(24px, 7vw, 112px) 80px;
+}
+.bcNexusChapter__copy { width: min(640px, 86vw); }
+.bcNexusChapter__copy > span,
+.bcNexusChapter__development { color: var(--bc-nexus-cyan); font: 700 10px/1.3 ui-monospace, monospace; letter-spacing: .14em; }
+.bcNexusChapter h1 { margin: 18px 0 0; max-width: 10ch; font: 900 clamp(3rem, 7vw, 7rem)/.88 Inter, system-ui, sans-serif; letter-spacing: 0; text-transform: uppercase; text-wrap: balance; }
+.bcNexusChapter p { max-width: 44ch; margin: 24px 0 0; color: rgba(220, 238, 245, .7); font-size: clamp(1rem, 1.5vw, 1.2rem); line-height: 1.6; }
+.bcNexusChapter__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 28px; }
+.bcNexusAction {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 18px;
+  border: 1px solid rgba(123, 220, 242, .22);
+  border-radius: 4px;
+  color: #effbff;
+  background: rgba(4, 13, 21, .68);
+  font: 800 11px/1 Inter, system-ui, sans-serif;
+}
+.bcNexusAction--primary { border-color: transparent; color: #021016; background: #9df4ff; box-shadow: 0 0 40px rgba(83, 229, 255, .2); }
+.bcNexusAction--orange { border-color: rgba(255, 133, 52, .46); color: #ffd7ba; background: rgba(48, 15, 4, .74); }
+.bcNexusModules { display: grid; grid-template-columns: repeat(4, minmax(88px, 1fr)); gap: 8px; margin-top: 28px; }
+.bcNexusModules a { min-height: 48px; display: grid; place-items: center; border: 1px solid rgba(106, 225, 255, .16); color: rgba(229, 247, 252, .76); background: rgba(2, 9, 15, .5); font: 700 10px/1 ui-monospace, monospace; }
+.bcNexusChapterMeter { position: fixed; z-index: 35; right: max(22px, env(safe-area-inset-right)); bottom: max(22px, env(safe-area-inset-bottom)); display: grid; grid-template-columns: auto 68px auto; align-items: center; gap: 10px; color: rgba(222, 242, 248, .54); font: 700 9px/1 ui-monospace, monospace; }
+.bcNexusChapterMeter span { color: var(--bc-nexus-cyan); font-size: 13px; }
+.bcNexusChapterMeter i { height: 1px; background: linear-gradient(90deg, var(--bc-nexus-cyan), rgba(101, 233, 255, .1)); }
+
+.bcNexusLab a:focus-visible,
+.bcNexusLab button:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+@media (max-width: 720px), (pointer: coarse) {
+  .bcNexusHud { grid-template-columns: 1fr auto; min-height: 54px; }
+  .bcNexusHud__chapters { grid-column: 1 / -1; order: 3; justify-content: space-between; border-top: 1px solid rgba(113, 226, 255, .1); }
+  .bcNexusHud__chapters a { width: 38px; height: 38px; }
+  .bcNexusHud__status span:first-child { display: none; }
+  .bcNexusStory { min-height: 490svh; }
+  .bcNexusChapter { min-height: 70svh; padding: 126px 18px 96px; align-items: end; }
+  .bcNexusChapter h1 { max-width: 12ch; font-size: clamp(2.7rem, 14vw, 4.9rem); }
+  .bcNexusChapter p { max-width: 31ch; }
+  .bcNexusModules { grid-template-columns: repeat(2, minmax(110px, 1fr)); }
+  .bcNexusChapterMeter { right: 18px; bottom: max(14px, env(safe-area-inset-bottom)); }
+  .bcNexusLab__ring--outer { width: 110vw; }
+  .bcNexusLab__ring--inner { width: 72vw; }
+  .bcNexusLab__core { width: 34vw; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bcNexusStory { min-height: auto; }
+  .bcNexusChapter { min-height: max(72svh, 560px); }
+}
