@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "enabled": true,
+  "candidateOnly": true,
+  "assetId": "blackcrown-digital-crown-candidate-a-v1",
+  "frontAxis": "+Z",
+  "upAxis": "+Y",
+  "units": "meters",
+  "segmentCount": 9,
+  "spires": 9,
+  "dimensions": {
+    "width": 2.32,
+    "height": 1.98,
+    "depth": 0.78,
+    "coreY": 0.62
+  },
+  "lods": {
+    "high": {
+      "url": "/experience/crown/candidate-a/crown-candidate-a-lod0.glb",
+      "maxTriangles": 100000,
+      "maxBytes": 8388608,
+      "maxMaterials": 8,
+      "maxDrawCalls": 20,
+      "sha256": "b4281db7f10829860199cb8ef917b267140b0a63da2392e7d0adda3bc8e1c88d",
+      "bytes": 2563068
+    },
+    "medium": {
+      "url": "/experience/crown/candidate-a/crown-candidate-a-lod1.glb",
+      "maxTriangles": 50000,
+      "maxBytes": 5242880,
+      "maxMaterials": 6,
+      "maxDrawCalls": 14,
+      "sha256": "81f3d0ec8d4bc42b0a02351e3f77a06ce4697208d10e558246ed7df822079496",
+      "bytes": 1282496
+    },
+    "low": {
+      "url": "/experience/crown/candidate-a/crown-candidate-a-lod2.glb",
+      "maxTriangles": 20000,
+      "maxBytes": 2621440,
+      "maxMaterials": 4,
+      "maxDrawCalls": 8,
+      "sha256": "1a44ed732286101688eddd69e59ac99008b5923b98fa14f90674d908d87c1127",
+      "bytes": 785340
+    }
+  },
+  "features": {
+    "ktx2": false,
+    "meshopt": false,
+    "draco": false,
+    "skinnedShell": true
+  }
+}
