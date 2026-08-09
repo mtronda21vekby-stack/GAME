@@ -7,6 +7,8 @@
     "build": "vite build",
     "check:bundle": "node scripts/check-bundle-budget.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
     "test:assets": "node scripts/validate-key-art.mjs",
     "lint": "node -e \"process.exit(0)\""
   },
@@ -19,8 +21,10 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@vitejs/plugin-react": "^4.3.1",
     "typescript": "^5.6.3",
     "vite": "^6.0.7",
-    "@vitejs/plugin-react": "^4.3.1"
+    "vitest": "^4.1.10"
   }
 }

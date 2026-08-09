@@ -3,12 +3,8 @@ import { DockV2 } from "../components/DockV2";
 import { SiteFooter } from "../components/SiteFooter";
 import SiteMusic from "../components/SiteMusic";
 import { NotFound } from "./NotFound";
+import { normalizePath } from "./routeMetadata";
 import { getRouteDefinition, isExternalAppPath } from "./siteRoutes";
-
-export function normalizePath(pathname: string) {
-  const path = pathname.split("?")[0].split("#")[0] || "/";
-  return path.length > 1 && path.endsWith("/") ? path.slice(0, -1) : path;
-}
 
 function sameOrigin(url: URL) {
   return url.origin === window.location.origin;

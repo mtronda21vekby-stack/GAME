@@ -1,5 +1,5 @@
 import type React from "react";
-import type { SitePath } from "../routes/siteRoutes";
+import type { SitePath } from "../routes/routeMetadata";
 
 export type SceneId = "crown" | "gate" | "evofish" | "crown-front" | "network";
 export type KeyArtId = "hero" | "evofish" | "crown-front" | "network";

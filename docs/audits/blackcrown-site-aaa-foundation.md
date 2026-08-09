@@ -147,3 +147,85 @@ and typecheck are additional deletion proof.
 - `design-tokens.css` is UNCERTAIN at audit time and will not be deleted without
   a token ownership decision.
 
+## Final Implementation Evidence
+
+The cleanup was performed from the inventory above, not from filename age. Each
+deletion was checked against the import graph and repository references, then
+validated by site typecheck and production build. The final source graph has 67
+runtime-reachable TypeScript/TSX/CSS files. The only two files outside that
+runtime graph are intentionally retained: compile-time ambient declarations in
+`types/blackcrown-ui.d.ts` and the audited token reference
+`styles/design-tokens.css`.
+
+### Removed Legacy Surface
+
+- 70 unreachable files were deleted from `apps/site/src`: 42 TypeScript/TSX
+  modules and 28 historical stylesheets.
+- The deleted controller set includes all six competing global motion systems:
+  Hero, Mobile and Premium parallax directors, MotionDirector, MotionRevealV3
+  and MatrixDepthEngine.
+- The deleted stylesheet set includes the audited Hero/world/AAA generations,
+  matrix and parallax layers, emergency mobile duplication, historical
+  stability overrides and unused black-neon themes.
+- Live rules were migrated into feature owners before their historical files
+  were deleted. Legal/content compatibility remains route-scoped through
+  `content-pages.css`; it is not part of the Home entry CSS.
+- Protected `/game`, `/lobby`, `/games/crown-front` and Unity sources were not
+  changed.
+
+### Final Architecture
+
+- CSS is delivered as normal hashed Vite assets. There is no `?inline` full-site
+  stylesheet, no mobile JavaScript style injection and no raster key art data
+  URI in JavaScript.
+- Home owns one `useCinematicTimeline` runtime: one passive scroll listener, one
+  RAF scheduler and one resize/VisualViewport contract. It is never mounted on
+  Store, Cart, Checkout, Account or Admin routes.
+- Route metadata owns titles and chrome. Ten route components are lazy-loaded;
+  an explicit NotFound keeps the unknown URL visible instead of rendering Home.
+- Client and worker consume `@blackcrown/commerce` as the single typed catalog.
+  Server entitlements are authoritative, order reads retain ownership checks,
+  and checkout uses a user-scoped idempotency key and cart fingerprint.
+- Cinematic V2 uses five continuous scene ranges, inert inactive scenes,
+  progressive image formats and a static reduced-motion composition. WebGL was
+  deliberately omitted because no approved GLB exists and the 2.5D path meets
+  the performance and mobile-stability goals.
+
+### Metrics
+
+| Metric | Baseline | Final |
+| --- | ---: | ---: |
+| Initial JS | 613.25 kB | 200.99 kB |
+| Initial CSS | 214.05 kB | 55.22 kB |
+| Largest initial chunk | 613.25 kB | 200.99 kB |
+| Async route chunks | 0 | 10 |
+| Source CSS files | 40 | 21 |
+| Raw CSS bytes | 346,645 | 118,973 |
+| `!important` occurrences | 1,549 | 304 |
+| Duplicate selector names | 561 | 198 |
+| Extra duplicate definitions | 1,179 | 385 |
+| Scroll listeners | 6 | 1 |
+| Resize listeners | 10 | 3 |
+| Pointermove listeners | 4 | 0 |
+| Orientation listeners | 2 | 1 |
+| MutationObserver instances | 5 | 0 |
+| IntersectionObserver instances | 4 | 0 |
+| Files scheduling RAF | 7 | 2 |
+| Desktop Home DOM nodes | 364 | 379 |
+| Desktop nodes below `#root` | 300 | 318 |
+
+The second RAF owner is the shared viewport-height writer in `App`; the Home
+timeline is the only scroll-driven scheduler. Desktop Home has zero horizontal
+overflow. The modest DOM increase comes from semantic scene layers and inert
+accessibility structure, while six global runtime systems and their observers
+were removed.
+
+### Visual Proof
+
+Mobile, `390x844`:
+
+![BlackCrown mobile 390x844](screenshots/blackcrown-mobile-390x844.png)
+
+Desktop, `1440x900`:
+
+![BlackCrown desktop 1440x900](screenshots/blackcrown-desktop-1440x900.png)

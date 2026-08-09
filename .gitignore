@@ -6,6 +6,9 @@ apps/*/dist/
 packages/*/node_modules/
 packages/*/dist/
 
+apps/site/playwright-report/
+apps/site/test-results/
+
 # Unity cloud source caches and generated local output
 unity/**/[Ll]ibrary/
 unity/**/[Tt]emp/

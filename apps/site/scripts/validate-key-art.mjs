@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const assets = [
+export const KEY_ART_ASSETS = [
   { file: "public/art/hero-crown.avif", format: "avif", width: 600, height: 750, minBytes: 8_000 },
   { file: "public/art/hero-crown.webp", format: "webp", width: 600, height: 750, minBytes: 8_000 },
   { file: "public/art/hero-crown.jpg", format: "jpeg", width: 600, height: 750, minBytes: 20_000 },
@@ -86,7 +87,7 @@ function svgDimensions(buffer) {
   return [Number(viewBox[3]), Number(viewBox[4])];
 }
 
-function dimensions(buffer, format) {
+export function getAssetDimensions(buffer, format) {
   if (format === "webp") return webpDimensions(buffer);
   if (format === "jpeg") return jpegDimensions(buffer);
   if (format === "png") return pngDimensions(buffer);
@@ -95,14 +96,24 @@ function dimensions(buffer, format) {
   throw new Error(`unsupported format: ${format}`);
 }
 
-for (const asset of assets) {
-  const absolute = path.resolve(process.cwd(), asset.file);
+export function validateKeyArtAsset(asset, root = process.cwd()) {
+  const absolute = path.resolve(root, asset.file);
   if (!fs.existsSync(absolute)) throw new Error(`missing key art: ${asset.file}`);
   const buffer = fs.readFileSync(absolute);
   if (buffer.length < asset.minBytes) throw new Error(`key art too small: ${asset.file} (${buffer.length} bytes)`);
-  const [width, height] = dimensions(buffer, asset.format);
+  const [width, height] = getAssetDimensions(buffer, asset.format);
   if (width !== asset.width || height !== asset.height) {
     throw new Error(`invalid dimensions: ${asset.file}; expected ${asset.width}x${asset.height}, got ${width}x${height}`);
   }
-  console.log(`OK ${asset.file}: ${width}x${height} ${asset.format.toUpperCase()}`);
+  return { ...asset, width, height, bytes: buffer.length };
+}
+
+export function runKeyArtValidation(root = process.cwd()) {
+  return KEY_ART_ASSETS.map((asset) => validateKeyArtAsset(asset, root));
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  for (const asset of runKeyArtValidation()) {
+    console.log(`OK ${asset.file}: ${asset.width}x${asset.height} ${asset.format.toUpperCase()}`);
+  }
 }

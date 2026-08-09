@@ -143,3 +143,8 @@ export async function readCommerceJson<T>(kv: KVNamespace, key: string): Promise
     return null;
   }
 }
+
+export function normalizeEntitlementItemIds(userId: string, stored: EntitlementsV1 | null) {
+  if (!stored || stored.userId !== userId || !Array.isArray(stored.itemIds)) return [];
+  return Array.from(new Set(stored.itemIds.filter((itemId) => COMMERCE_CATALOG_BY_ID.has(itemId))));
+}
