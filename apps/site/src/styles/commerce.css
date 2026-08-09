@@ -1,0 +1,519 @@
+.bcCommercePage {
+  position: relative;
+  min-height: 100svh;
+  overflow: clip;
+  color: #f3fbff;
+  background:
+    radial-gradient(circle at 18% 8%, rgba(0, 224, 255, 0.11), transparent 34%),
+    radial-gradient(circle at 82% 28%, rgba(126, 82, 255, 0.12), transparent 36%),
+    linear-gradient(180deg, #02060b 0%, #030912 48%, #010307 100%);
+}
+
+.bcCommercePage::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.16;
+  background-image:
+    linear-gradient(rgba(112, 226, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(112, 226, 255, 0.035) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: linear-gradient(to bottom, #000, transparent 72%);
+}
+
+.bcCommerceHeader,
+.bcCommerceMain {
+  position: relative;
+  z-index: 1;
+  width: min(1180px, calc(100% - 36px));
+  margin-inline: auto;
+}
+
+.bcCommerceHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: max(18px, env(safe-area-inset-top, 0px)) 0 18px;
+  border-bottom: 1px solid rgba(140, 224, 255, 0.1);
+}
+
+.bcCommerceBrand {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  padding: 0;
+  color: #eefcff;
+  background: transparent;
+  font: 900 16px/1 Inter, system-ui, sans-serif;
+  letter-spacing: -0.035em;
+  cursor: pointer;
+}
+
+.bcCommerceBrand img {
+  width: 25px;
+  height: 25px;
+  filter: drop-shadow(0 0 14px rgba(0, 225, 255, 0.38));
+}
+
+.bcCommerceHeader__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.bcCommerceMain {
+  display: grid;
+  gap: 20px;
+  padding: 34px 0 calc(132px + env(safe-area-inset-bottom, 0px));
+}
+
+.bcCommerceHero {
+  display: grid;
+  gap: 15px;
+  padding: clamp(22px, 4vw, 44px);
+  overflow: hidden;
+  border: 1px solid rgba(129, 222, 255, 0.15);
+  border-radius: 30px;
+  background:
+    linear-gradient(130deg, rgba(9, 25, 38, 0.82), rgba(6, 9, 22, 0.76)),
+    radial-gradient(circle at 85% 20%, rgba(126, 82, 255, 0.16), transparent 34%);
+  box-shadow: 0 40px 120px rgba(0, 0, 0, 0.46), inset 0 1px rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(22px) saturate(1.18);
+  -webkit-backdrop-filter: blur(22px) saturate(1.18);
+}
+
+.bcCommerceEyebrow,
+.bcCommerceMeta {
+  color: #76e9ff;
+  font: 800 10px/1.25 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+}
+
+.bcCommerceHero h1,
+.bcCommerceSection h2,
+.bcCommerceCard h2,
+.bcCommerceCard h3 {
+  margin: 0;
+  font-family: Inter, system-ui, sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+
+.bcCommerceHero h1 {
+  max-width: 12ch;
+  font-size: clamp(3rem, 8vw, 7.2rem);
+  line-height: 0.88;
+  text-transform: uppercase;
+}
+
+.bcCommerceHero p,
+.bcCommerceCard p,
+.bcCommerceEmpty p {
+  margin: 0;
+  max-width: 62ch;
+  color: rgba(224, 241, 251, 0.7);
+  line-height: 1.55;
+}
+
+.bcCommerceToolbar,
+.bcCommerceActions,
+.bcCommercePills {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.bcCommerceToolbar {
+  justify-content: space-between;
+  padding: 14px;
+  border: 1px solid rgba(126, 220, 255, 0.11);
+  border-radius: 20px;
+  background: rgba(3, 12, 20, 0.72);
+}
+
+.bcCommerceInput,
+.bcCommerceSelect {
+  min-height: 46px;
+  border: 1px solid rgba(141, 222, 255, 0.14);
+  border-radius: 14px;
+  padding: 0 14px;
+  color: #effcff;
+  background: rgba(8, 18, 29, 0.78);
+  font: 750 14px/1 system-ui, sans-serif;
+  outline: none;
+}
+
+.bcCommerceInput {
+  flex: 1 1 260px;
+}
+
+.bcCommerceInput:focus,
+.bcCommerceSelect:focus {
+  border-color: rgba(92, 225, 255, 0.46);
+  box-shadow: 0 0 0 3px rgba(0, 225, 255, 0.08);
+}
+
+.bcCommerceGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.bcCommerceProduct,
+.bcCommerceCard,
+.bcCommerceLine,
+.bcCommerceEmpty {
+  border: 1px solid rgba(126, 220, 255, 0.12);
+  background: linear-gradient(160deg, rgba(9, 22, 34, 0.84), rgba(3, 8, 15, 0.9));
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.34), inset 0 1px rgba(255, 255, 255, 0.045);
+}
+
+.bcCommerceProduct {
+  display: grid;
+  grid-template-rows: 190px 1fr;
+  overflow: hidden;
+  border-radius: 24px;
+}
+
+.bcCommerceProduct__art {
+  position: relative;
+  overflow: hidden;
+  background-color: #07101a;
+}
+
+.bcCommerceProduct__art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 30%, rgba(0, 2, 7, 0.72));
+}
+
+.bcCommerceProduct__body {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 17px;
+}
+
+.bcCommerceProduct__body h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+}
+
+.bcCommerceProduct__body p {
+  min-height: 3.1em;
+  margin: 0;
+  color: rgba(220, 240, 249, 0.66);
+  line-height: 1.48;
+}
+
+.bcCommerceProduct__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+}
+
+.bcCommercePrice {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #eafbff;
+  font-weight: 900;
+}
+
+.bcCommercePrice img {
+  width: 17px;
+  height: 17px;
+}
+
+.bcCommercePill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 27px;
+  padding: 0 10px;
+  border: 1px solid rgba(134, 221, 255, 0.14);
+  border-radius: 999px;
+  color: rgba(222, 244, 252, 0.72);
+  background: rgba(13, 28, 40, 0.72);
+  font: 800 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bcCommercePill--accent {
+  color: #bdf8ff;
+  border-color: rgba(73, 227, 255, 0.28);
+  box-shadow: 0 0 24px rgba(0, 220, 255, 0.07);
+}
+
+.bcCommerceSplit {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(290px, 0.75fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.bcCommerceCard,
+.bcCommerceEmpty {
+  display: grid;
+  gap: 16px;
+  padding: clamp(18px, 3vw, 28px);
+  border-radius: 24px;
+}
+
+.bcCommerceCard--sticky {
+  position: sticky;
+  top: 20px;
+}
+
+.bcCommerceLines {
+  display: grid;
+  gap: 12px;
+}
+
+.bcCommerceLine {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr) auto;
+  gap: 15px;
+  align-items: center;
+  padding: 12px;
+  border-radius: 18px;
+}
+
+.bcCommerceLine__art {
+  width: 84px;
+  height: 72px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.bcCommerceLine__copy {
+  display: grid;
+  gap: 5px;
+}
+
+.bcCommerceLine__copy strong {
+  font-size: 1.05rem;
+}
+
+.bcCommerceQuantity {
+  display: inline-grid;
+  grid-template-columns: 38px 42px 38px;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(126, 220, 255, 0.14);
+  border-radius: 13px;
+  background: rgba(1, 8, 14, 0.75);
+}
+
+.bcCommerceQuantity button,
+.bcCommerceQuantity output {
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  color: #e9fbff;
+  background: transparent;
+  font-weight: 900;
+}
+
+.bcCommerceQuantity button {
+  cursor: pointer;
+}
+
+.bcCommerceQuantity button:active {
+  background: rgba(0, 225, 255, 0.08);
+}
+
+.bcCommerceSummary {
+  display: grid;
+  gap: 12px;
+}
+
+.bcCommerceSummary__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(126, 220, 255, 0.09);
+}
+
+.bcCommerceSummary__row--total {
+  padding-top: 4px;
+  border-bottom: 0;
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+.bcCommerceNotice {
+  padding: 14px;
+  border: 1px solid rgba(112, 226, 255, 0.13);
+  border-radius: 16px;
+  color: rgba(221, 242, 251, 0.72);
+  background: rgba(3, 14, 23, 0.72);
+  line-height: 1.48;
+}
+
+.bcCommerceNotice--warning {
+  border-color: rgba(255, 183, 84, 0.22);
+  color: rgba(255, 229, 191, 0.82);
+  background: rgba(34, 18, 5, 0.62);
+}
+
+.bcCommerceStatus {
+  display: grid;
+  justify-items: start;
+  gap: 18px;
+}
+
+.bcCommerceStatus__icon {
+  width: 76px;
+  height: 76px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(91, 255, 194, 0.3);
+  border-radius: 50%;
+  color: #8dffd0;
+  background: radial-gradient(circle, rgba(78, 255, 184, 0.18), transparent 70%);
+  box-shadow: 0 0 50px rgba(71, 255, 188, 0.1);
+  font-size: 2rem;
+  font-weight: 900;
+}
+
+.bcCommerceError {
+  padding: 13px 15px;
+  border: 1px solid rgba(255, 104, 122, 0.28);
+  border-radius: 15px;
+  color: #ffc6cf;
+  background: rgba(54, 7, 15, 0.62);
+}
+
+@media (max-width: 900px) {
+  .bcCommerceGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bcCommerceSplit {
+    grid-template-columns: 1fr;
+  }
+
+  .bcCommerceCard--sticky {
+    position: static;
+  }
+}
+
+@media (max-width: 820px) {
+  :root {
+    --bc-mobile-dock-clearance: 108px;
+  }
+
+  .bcCommerceHeader,
+  .bcCommerceMain {
+    width: min(100% - 24px, 680px);
+  }
+
+  .bcCommerceHeader {
+    align-items: flex-start;
+    padding-top: max(13px, env(safe-area-inset-top, 0px));
+  }
+
+  .bcCommerceHeader__actions > :not(:last-child) {
+    display: none;
+  }
+
+  .bcCommerceMain {
+    padding-top: 20px;
+    padding-bottom: calc(138px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .bcCommerceHero {
+    border-radius: 24px;
+    padding: 22px 18px;
+  }
+
+  .bcCommerceHero h1 {
+    font-size: clamp(2.8rem, 15vw, 5rem);
+  }
+
+  .bcCommerceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .bcCommerceProduct {
+    grid-template-rows: 164px 1fr;
+  }
+
+  .bcCommerceToolbar {
+    align-items: stretch;
+  }
+
+  .bcCommerceInput,
+  .bcCommerceSelect {
+    width: 100%;
+  }
+
+  .bcCommerceLine {
+    grid-template-columns: 68px minmax(0, 1fr);
+  }
+
+  .bcCommerceLine__art {
+    width: 68px;
+    height: 66px;
+  }
+
+  .bcCommerceLine__controls {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  html[data-bc-route="/checkout"] .bcMobileDock,
+  html[data-bc-route="/checkout/success"] .bcMobileDock,
+  html[data-bc-route="/checkout"] .bcSiteMusic,
+  html[data-bc-route="/checkout/success"] .bcSiteMusic {
+    display: none !important;
+  }
+
+  html[data-bc-route="/store"] .bcSiteMusic,
+  html[data-bc-route="/cart"] .bcSiteMusic {
+    top: calc(70px + env(safe-area-inset-top, 0px)) !important;
+    right: max(10px, env(safe-area-inset-right, 0px)) !important;
+    bottom: auto !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .bcCommerceProduct__footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .bcCommerceProduct__footer .bcCommerceActions {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bcCommercePage *,
+  .bcCommercePage *::before,
+  .bcCommercePage *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
