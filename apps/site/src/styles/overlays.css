@@ -32,5 +32,8 @@
 @media (max-height: 560px) and (orientation: landscape) {
   html .bcSiteMusic {
     top: calc(var(--bc-safe-top) + var(--bc-overlay-gap));
+    right: calc(var(--bc-safe-right) + var(--bc-overlay-gap));
+    bottom: auto;
+    height: auto;
   }
 }

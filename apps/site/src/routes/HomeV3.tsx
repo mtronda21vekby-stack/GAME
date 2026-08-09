@@ -1,7 +1,7 @@
 import React from "react";
 import { userStorage } from "@blackcrown/core";
 import AICoachV3 from "../components/AICoachV3";
-import CinematicExperience from "../components/CinematicExperience";
+import CinematicExperience from "../experience/CinematicExperience";
 import LiveFeedV3 from "../components/LiveFeedV3";
 import StoreV3 from "../components/StoreV3";
 import {
@@ -45,7 +45,7 @@ export function HomeV3() {
   return (
     <main
       className="bcHomeV3"
-      data-experience="blackcrown-cinematic-v1"
+      data-experience="blackcrown-cinematic-v2"
       data-status-source={statusSnapshot.source}
       data-player={playerName}
     >
