@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "enabled": false,
+  "assetId": "blackcrown-production-crown-v1",
+  "frontAxis": "+Z",
+  "upAxis": "+Y",
+  "units": "meters",
+  "segmentCount": 9,
+  "spires": 9,
+  "lods": {
+    "high": {
+      "url": "/experience/crown/lod0/blackcrown-crown-lod0.glb",
+      "maxTriangles": 100000,
+      "maxBytes": 8388608,
+      "maxMaterials": 8,
+      "maxDrawCalls": 20
+    },
+    "medium": {
+      "url": "/experience/crown/lod1/blackcrown-crown-lod1.glb",
+      "maxTriangles": 50000,
+      "maxBytes": 5242880,
+      "maxMaterials": 6,
+      "maxDrawCalls": 14
+    },
+    "low": {
+      "url": "/experience/crown/lod2/blackcrown-crown-lod2.glb",
+      "maxTriangles": 20000,
+      "maxBytes": 2621440,
+      "maxMaterials": 4,
+      "maxDrawCalls": 8
+    }
+  },
+  "features": {
+    "ktx2": false,
+    "meshopt": false,
+    "draco": false
+  }
+}
