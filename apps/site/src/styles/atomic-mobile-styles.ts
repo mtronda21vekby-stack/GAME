@@ -28,14 +28,8 @@ import criticalShellCss from "./critical-mobile-shell.css?inline";
 import heroPremiumCss from "./hero-premium-v1.css?inline";
 import heroConceptCss from "./hero-concept-v2.css?inline";
 import aaaExperienceCss from "./aaa-experience-v1.css?inline";
+import aaaArtV2Css from "./aaa-art-v2.css?inline";
 
-/**
- * Atomic mobile presentation bundle.
- *
- * Vite embeds all of these CSS strings into the JS chunk. Compact/coarse
- * pointer devices install the result before React mounts, so JSX and its
- * presentation can no longer come from different deployments.
- */
 export const atomicMobileStyles = [
   appCss,
   siteCss,
@@ -67,4 +61,5 @@ export const atomicMobileStyles = [
   heroPremiumCss,
   heroConceptCss,
   aaaExperienceCss,
+  aaaArtV2Css,
 ].join("\n");
