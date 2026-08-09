@@ -42,6 +42,10 @@ export function ExperienceProvider({ children }: { children: React.ReactNode }) 
     runtimeRef.current?.setQuality(quality);
   }, []);
 
+  const resetPerformanceSample = React.useCallback(() => {
+    runtimeRef.current?.resetPerformanceSample();
+  }, []);
+
   React.useEffect(() => {
     try {
       if (sessionStorage.getItem("bc.nexus.entered.v1") === "1") setEntered(true);
@@ -68,12 +72,14 @@ export function ExperienceProvider({ children }: { children: React.ReactNode }) 
     enter,
     setSoundEnabled,
     setRequestedQuality,
+    resetPerformanceSample,
   }), [
     bootStage,
     enter,
     entered,
     metrics,
     requestedQuality,
+    resetPerformanceSample,
     setRequestedQuality,
     setRuntime,
     setSoundEnabled,

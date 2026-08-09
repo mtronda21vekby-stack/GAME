@@ -41,7 +41,7 @@ export class GLBCrownAdapter implements CrownVisual {
     this.loaded = loaded;
     this.bindings = bindGLBCrown(loaded.scene, manifest);
     this.materials = applyGLBCrownMaterials(loaded.scene, quality, renderer);
-    this.shell = this.bindings.shell;
+    this.shell = this.bindings.shell as THREE.Group;
     this.core = this.bindings.core;
     this.rings = this.bindings.rings;
     this.root.name = `GLBDigitalCrown_${lod}`;

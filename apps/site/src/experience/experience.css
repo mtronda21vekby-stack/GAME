@@ -39,6 +39,8 @@
 }
 
 .bcExperienceCanvasHost[data-bc-experience-fallback="true"] { display: none; }
+.bcExperienceCanvasHost[data-bc-experience-context="lost"] { background: transparent; }
+.bcExperienceCanvasHost[data-bc-experience-context="lost"] .bcExperienceCanvas { opacity: 0; }
 
 .bcNexusLab__horizon {
   position: absolute;
@@ -241,6 +243,29 @@
 .bcNexusDebug dt { color: rgba(194, 220, 229, .42); }
 .bcNexusDebug dd { margin: 0; overflow-wrap: anywhere; }
 
+.bcNexusDeviceQa {
+  position: fixed;
+  z-index: 70;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  width: min(360px, calc(100vw - 36px));
+  max-height: min(70svh, 520px);
+  overflow: auto;
+  border: 1px solid rgba(255, 144, 72, .34);
+  border-radius: 4px;
+  color: rgba(238, 248, 252, .82);
+  background: rgba(2, 6, 9, .94);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .5);
+  font: 700 9px/1.4 ui-monospace, monospace;
+}
+.bcNexusDeviceQa summary { min-height: 44px; display: flex; align-items: center; padding: 0 12px; color: #ff9658; cursor: pointer; }
+.bcNexusDeviceQa output { display: block; padding: 0 12px 10px; color: var(--bc-nexus-cyan); }
+.bcNexusDeviceQa dl { display: grid; grid-template-columns: 74px 1fr; gap: 5px 10px; margin: 0; padding: 0 12px 12px; }
+.bcNexusDeviceQa dt { color: rgba(194, 220, 229, .45); }
+.bcNexusDeviceQa dd { margin: 0; overflow-wrap: anywhere; }
+.bcNexusDeviceQa > div { display: grid; gap: 4px; padding: 0 12px 12px; }
+.bcNexusDeviceQa button { min-height: 44px; border: 1px solid rgba(108, 226, 249, .2); border-radius: 3px; color: #eafaff; background: rgba(11, 26, 34, .92); font: inherit; }
+
 .bcNexusLab a:focus-visible,
 .bcNexusLab button:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 
@@ -289,6 +314,7 @@
   .bcNexusLab__ring--inner { width: 72vw; }
   .bcNexusLab__core { width: 34vw; }
   .bcNexusDebug { display: none; }
+  .bcNexusDeviceQa { right: max(10px, env(safe-area-inset-right)); bottom: max(10px, env(safe-area-inset-bottom)); width: min(340px, calc(100vw - 20px)); max-height: calc(100svh - 90px); }
 }
 
 @media (max-height: 520px) and (orientation: landscape) {

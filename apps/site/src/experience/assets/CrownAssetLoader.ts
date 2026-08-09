@@ -11,6 +11,9 @@ import { ProceduralCrownAdapter } from "./procedural/ProceduralCrownAdapter";
 
 function reasonFromError(error: unknown): CrownAssetReason {
   const message = error instanceof Error ? error.message : String(error);
+  if (message.includes("manifest_fetch_404")) return "asset_missing";
+  if (message.includes("manifest_fetch_")) return "fetch_failed";
+  if (message.includes("manifest_")) return "budget_failed";
   if (message.includes("binding_failed")) return "binding_failed";
   if (message.includes("budget_failed")) return "budget_failed";
   if (message.includes("asset_missing") || message.includes("404")) return "asset_missing";
@@ -71,7 +74,7 @@ export class CrownAssetManager implements CrownAssetAdapter {
     } catch (error) {
       combined.dispose();
       if (combined.signal.aborted) throw error;
-      return this.failedFallback(preferred, "asset_missing", error, options.debug);
+      return this.failedFallback(preferred, reasonFromError(error), error, options.debug);
     }
     if (!manifest.enabled) {
       combined.dispose();

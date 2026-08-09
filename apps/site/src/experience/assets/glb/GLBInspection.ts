@@ -19,7 +19,7 @@ export function inspectGlbContainer(buffer: ArrayBuffer) {
     if (end > buffer.byteLength) throw new Error("parse_failed:chunk_bounds");
     if (type === JSON_CHUNK) {
       const text = new TextDecoder().decode(new Uint8Array(buffer, start, length)).replace(/\u0000+$/u, "").trimEnd();
-      json = JSON.parse(text) as Record<string, unknown>;
+      try { json = JSON.parse(text) as Record<string, unknown>; } catch { throw new Error("parse_failed:invalid_json"); }
     }
     offset = end;
   }

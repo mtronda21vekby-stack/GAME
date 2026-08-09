@@ -15,6 +15,7 @@ export type LoadedCrownInstance = {
 async function createGLTFLoader(manifest: CrownAssetManifest, renderer: THREE.WebGLRenderer) {
   const { GLTFLoader } = await import("three/examples/jsm/loaders/GLTFLoader.js");
   const loader = new GLTFLoader();
+  const disposers: Array<() => void> = [];
   if (manifest.features.meshopt) {
     const { MeshoptDecoder } = await import("three/examples/jsm/libs/meshopt_decoder.module.js");
     loader.setMeshoptDecoder(MeshoptDecoder);
@@ -24,14 +25,16 @@ async function createGLTFLoader(manifest: CrownAssetManifest, renderer: THREE.We
     const { DRACOLoader } = await import("three/examples/jsm/loaders/DRACOLoader.js");
     const draco = new DRACOLoader().setDecoderPath(manifest.features.dracoDecoderPath);
     loader.setDRACOLoader(draco);
+    disposers.push(() => draco.dispose());
   }
   if (manifest.features.ktx2) {
     if (!manifest.features.ktx2TranscoderPath) throw new Error("parse_failed:missing_ktx2_transcoder_path");
     const { KTX2Loader } = await import("three/examples/jsm/loaders/KTX2Loader.js");
     const ktx2 = new KTX2Loader().setTranscoderPath(manifest.features.ktx2TranscoderPath).detectSupport(renderer);
     loader.setKTX2Loader(ktx2);
+    disposers.push(() => ktx2.dispose());
   }
-  return loader;
+  return { loader, dispose: () => { for (const dispose of disposers) dispose(); } };
 }
 
 export async function loadGLBCrown(
@@ -52,10 +55,15 @@ export async function loadGLBCrown(
     if (cacheSignal.aborted) throw new DOMException("Crown load aborted", "AbortError");
     if (buffer.byteLength > descriptor.maxBytes) throw new Error(`budget_failed:bytes:${buffer.byteLength}`);
     inspectGlbContainer(buffer);
-    const loader = await createGLTFLoader(manifest, renderer);
+    const configuredLoader = await createGLTFLoader(manifest, renderer);
     const parseStart = performance.now();
     recordCrownParse();
-    const gltf = await loader.parseAsync(buffer, "");
+    let gltf;
+    try {
+      gltf = await configuredLoader.loader.parseAsync(buffer, "");
+    } finally {
+      configuredLoader.dispose();
+    }
     if (cacheSignal.aborted) throw new DOMException("Crown parse aborted", "AbortError");
     if (!(gltf.scene as THREE.Group).isGroup) throw new Error("parse_failed:scene_root");
     return { scene: gltf.scene as THREE.Group, bytes: buffer.byteLength, parseTime: performance.now() - parseStart };

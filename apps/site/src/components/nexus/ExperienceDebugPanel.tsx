@@ -11,9 +11,14 @@ export function ExperienceDebugPanel() {
       <summary>DEBUG</summary>
       <dl>
         <dt>FPS</dt><dd>{metrics.fps}</dd>
-        <dt>FRAME</dt><dd>{metrics.frameTime} ms</dd>
+        <dt>FRAME</dt><dd>{metrics.frameP50} / {metrics.frameP95} / {metrics.worstFrame} ms</dd>
         <dt>DPR</dt><dd>{metrics.dpr}</dd>
         <dt>QUALITY</dt><dd>{metrics.quality}</dd>
+        <dt>CROWN</dt><dd>{metrics.crownBackend} / {metrics.crownLod}</dd>
+        <dt>ASSET</dt><dd>{metrics.crownStatus} / {metrics.crownReason}</dd>
+        <dt>BYTES</dt><dd>{metrics.crownAssetBytes}</dd>
+        <dt>PARSE</dt><dd>{metrics.crownParseTime} ms</dd>
+        <dt>MATERIALS</dt><dd>{metrics.crownMaterials} / {metrics.crownTextures}</dd>
         <dt>PROGRESS</dt><dd>{snapshot.progress.toFixed(3)} / {snapshot.targetProgress.toFixed(3)}</dd>
         <dt>CHAPTER</dt><dd>{snapshot.chapterId} {snapshot.chapterProgress.toFixed(2)}</dd>
         <dt>VELOCITY</dt><dd>{snapshot.velocity.toFixed(3)} / {snapshot.direction}</dd>
@@ -21,6 +26,7 @@ export function ExperienceDebugPanel() {
         <dt>RENDERER</dt><dd>{webglAvailable ? metrics.renderer : "fallback"}</dd>
         <dt>DRAW</dt><dd>{metrics.drawCalls} / {metrics.triangles}</dd>
         <dt>CONTEXT</dt><dd>{metrics.contextState}</dd>
+        <dt>LOST</dt><dd>{metrics.contextLostCount}</dd>
       </dl>
     </details>
   );

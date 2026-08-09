@@ -4,6 +4,7 @@ import { useExperience } from "../../experience/ExperienceContext";
 import { ScrollStory } from "../../experience/scroll/ScrollStory";
 import { ChapterProgress } from "./ChapterProgress";
 import { ExperienceDebugPanel } from "./ExperienceDebugPanel";
+import { DeviceQAPanel } from "./DeviceQAPanel";
 import { NexusBoot } from "./NexusBoot";
 import { NexusHUD } from "./NexusHUD";
 import "../../experience/experience.css";
@@ -30,6 +31,7 @@ function NexusExperienceShell() {
       <ScrollStory />
       <ChapterProgress />
       <ExperienceDebugPanel />
+      <DeviceQAPanel />
       <NexusBoot />
     </div>
   );

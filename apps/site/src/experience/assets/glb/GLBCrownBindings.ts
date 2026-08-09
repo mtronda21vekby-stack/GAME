@@ -9,8 +9,8 @@ export type TransformSnapshot = {
 };
 
 export type GLBCrownBindings = {
-  authoredRoot: THREE.Group;
-  shell: THREE.Group;
+  authoredRoot: THREE.Object3D;
+  shell: THREE.Object3D;
   core: THREE.Object3D;
   portal: THREE.Object3D;
   rings: [THREE.Object3D, THREE.Object3D, THREE.Object3D];
@@ -53,7 +53,6 @@ export function bindGLBCrown(scene: THREE.Group, manifest: CrownAssetManifest): 
 
   const authoredRoot = byName.get("BC_CROWN_ROOT")!;
   const shell = byName.get("BC_SHELL_ROOT")!;
-  if (!(authoredRoot instanceof THREE.Group) || !(shell instanceof THREE.Group)) throw new Error("binding_failed:root_group_contract");
   const segments = [...byName.entries()].filter(([name]) => /^BC_SEG_\d{2}$/u.test(name)).sort(([a], [b]) => a.localeCompare(b)).map(([, object]) => object);
   const spires = [...byName.entries()].filter(([name]) => /^BC_SPIRE_\d{2}$/u.test(name)).sort(([a], [b]) => a.localeCompare(b)).map(([, object]) => object);
   if (segments.length !== manifest.segmentCount) throw new Error(`binding_failed:segments:${segments.length}`);

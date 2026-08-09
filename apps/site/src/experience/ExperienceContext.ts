@@ -5,6 +5,7 @@ import type { ExperienceBootStage, ExperienceMetrics, ScrollSnapshot } from "./t
 export type ExperienceRuntimeControl = {
   setQuality: (quality: BlackCrownExperienceQuality) => void;
   setSoundEnabled: (enabled: boolean) => void;
+  resetPerformanceSample: () => void;
   dispose: () => void;
 };
 
@@ -26,6 +27,7 @@ export type ExperienceContextValue = {
   enter: () => void;
   setSoundEnabled: (enabled: boolean) => void;
   setRequestedQuality: (quality: BlackCrownExperienceQuality) => void;
+  resetPerformanceSample: () => void;
 };
 
 export const ExperienceContext = React.createContext<ExperienceContextValue | null>(null);
