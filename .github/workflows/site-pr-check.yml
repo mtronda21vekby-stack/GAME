@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - "apps/site/**"
+      - "functions/api/commerce/**"
+      - "functions/api/_lib/commerce.ts"
       - "packages/**"
       - "package.json"
       - "pnpm-lock.yaml"
@@ -47,6 +49,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Validate key art
+        run: pnpm --filter @blackcrown/site test:assets
 
       - name: Typecheck workspace
         id: typecheck

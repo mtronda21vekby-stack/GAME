@@ -7,6 +7,9 @@ import { Support } from "./pages/Support";
 import { Privacy } from "./pages/Privacy";
 import { Terms } from "./pages/Terms";
 import { Store } from "./pages/Store";
+import { Cart } from "./pages/Cart";
+import { Checkout } from "./pages/Checkout";
+import { CheckoutSuccess } from "./pages/CheckoutSuccess";
 import { Account } from "./pages/Account";
 import { Admin } from "./pages/Admin";
 
@@ -23,12 +26,14 @@ function isSiteRoute(path: string) {
     path === "/privacy" ||
     path === "/terms" ||
     path === "/store" ||
+    path === "/cart" ||
+    path === "/checkout" ||
+    path === "/checkout/success" ||
     path === "/account" ||
     path === "/admin"
   );
 }
 
-// These paths belong to separate applications and must receive a normal browser navigation.
 function isExternalApp(path: string) {
   return (
     path === "/game" ||
@@ -51,6 +56,9 @@ const routeTitles: Record<string, string> = {
   "/privacy": "Privacy — BlackCrown",
   "/terms": "Terms — BlackCrown",
   "/store": "Store — BlackCrown",
+  "/cart": "Корзина — BlackCrown",
+  "/checkout": "Оформление заказа — BlackCrown",
+  "/checkout/success": "Заказ выполнен — BlackCrown",
   "/account": "Аккаунт — BlackCrown",
   "/admin": "Admin — BlackCrown",
 };
@@ -69,6 +77,12 @@ function renderRoute(path: string) {
       return <Terms />;
     case "/store":
       return <Store />;
+    case "/cart":
+      return <Cart />;
+    case "/checkout":
+      return <Checkout />;
+    case "/checkout/success":
+      return <CheckoutSuccess />;
     case "/account":
       return <Account />;
     case "/admin":
@@ -102,7 +116,6 @@ export function Router() {
 
       const href = a.getAttribute("href") || "";
       if (!href) return;
-
       if (href.startsWith("mailto:") || href.startsWith("tel:")) return;
 
       if (href.startsWith("http://") || href.startsWith("https://")) {
@@ -122,12 +135,13 @@ export function Router() {
 
       if (!href.startsWith("/")) return;
 
-      const target = normPath(href);
+      const url = new URL(href, window.location.origin);
+      const target = normPath(url.pathname);
       if (isExternalApp(target)) return;
       if (!isSiteRoute(target)) return;
 
       e.preventDefault();
-      window.history.pushState(null, "", href);
+      window.history.pushState(null, "", url.pathname + url.search + url.hash);
       setPath(normPath(window.location.pathname));
       window.scrollTo({ top: 0, behavior: "auto" });
     };
@@ -137,10 +151,16 @@ export function Router() {
   }, []);
 
   const routePath = isSiteRoute(path) ? path : "/";
-  const showGlobalNavigation = routePath !== "/admin";
+  const checkoutRoute = routePath === "/checkout" || routePath === "/checkout/success";
+  const showFooter = routePath !== "/admin" && !checkoutRoute;
+  const showDock = routePath !== "/admin" && !checkoutRoute;
 
   React.useEffect(() => {
     document.title = routeTitles[routePath] ?? routeTitles["/"];
+    document.documentElement.dataset.bcRoute = routePath;
+    return () => {
+      delete document.documentElement.dataset.bcRoute;
+    };
   }, [routePath]);
 
   return (
@@ -149,8 +169,8 @@ export function Router() {
         {renderRoute(routePath)}
       </div>
 
-      {showGlobalNavigation ? <SiteFooter /> : null}
-      {showGlobalNavigation ? <DockV2 activePath={routePath} /> : null}
+      {showFooter ? <SiteFooter /> : null}
+      {showDock ? <DockV2 activePath={routePath} /> : null}
     </>
   );
 }

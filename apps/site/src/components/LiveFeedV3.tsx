@@ -5,6 +5,36 @@ import "../styles/live-feed-v3.css";
 type FeedCard = { title: string; desc?: string; tag?: string; href?: string };
 type FeedBlock = { id: string; title?: string; subtitle?: string; cards?: FeedCard[] };
 
+type FeedSource = "remote" | "fallback";
+
+const FALLBACK_BLOCKS: FeedBlock[] = [
+  {
+    id: "platform-fallback",
+    title: "BlackCrown Network",
+    subtitle: "Статические сигналы показываются, когда редакционный API временно пуст или недоступен.",
+    cards: [
+      {
+        tag: "STORE",
+        title: "Новый commerce-flow",
+        desc: "Корзина, серверная проверка цены, статус заказа и тестовая выдача предметов.",
+        href: "/store",
+      },
+      {
+        tag: "EVOFISH",
+        title: "Океанский мир доступен",
+        desc: "Запуск игрового прототипа и прогресс внутри общей экосистемы BlackCrown.",
+        href: "/game/",
+      },
+      {
+        tag: "CROWN//FRONT",
+        title: "Alpha-канал открыт",
+        desc: "Тактический WebGL-мир остаётся доступен через отдельное игровое приложение.",
+        href: "/games/crown-front/",
+      },
+    ],
+  },
+];
+
 function normalize(payload: unknown): FeedBlock[] {
   if (!payload || typeof payload !== "object") return [];
   const blocks = (payload as { blocks?: unknown }).blocks;
@@ -36,23 +66,29 @@ function normalize(payload: unknown): FeedBlock[] {
 }
 
 export function LiveFeedV3() {
-  const [blocks, setBlocks] = React.useState<FeedBlock[]>([]);
+  const [blocks, setBlocks] = React.useState<FeedBlock[]>(FALLBACK_BLOCKS);
+  const [source, setSource] = React.useState<FeedSource>("fallback");
 
   React.useEffect(() => {
     const controller = new AbortController();
     void fetch("/api/content", { signal: controller.signal, cache: "no-store", credentials: "include" })
       .then((response) => (response.ok ? response.json() : null))
-      .then((payload) => setBlocks(normalize(payload)))
+      .then((payload) => {
+        if (controller.signal.aborted) return;
+        const remote = normalize(payload);
+        if (remote.length) {
+          setBlocks(remote);
+          setSource("remote");
+        }
+      })
       .catch(() => undefined);
     return () => controller.abort();
   }, []);
 
-  if (!blocks.length) return null;
-
   return (
-    <section className="bcLiveFeedV3" aria-labelledby="bc-live-v3-title">
+    <section className="bcLiveFeedV3" data-source={source} aria-labelledby="bc-live-v3-title">
       <div className="bcLiveFeedV3__head">
-        <span>BLACKCROWN / LIVE FEED</span>
+        <span>BLACKCROWN / {source === "remote" ? "LIVE FEED" : "PLATFORM FEED"}</span>
         <h2 id="bc-live-v3-title">Последние сигналы платформы.</h2>
       </div>
       <div className="bcLiveFeedV3__grid">

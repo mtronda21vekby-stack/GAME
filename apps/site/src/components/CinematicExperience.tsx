@@ -79,7 +79,16 @@ export function CinematicExperience({
 
         <div className="bcCinematicExperience__layer bcCinematicExperience__layer--hero" aria-hidden="true">
           <div className="bcCinematicExperience__heroGlow" />
-          <img className="bcCinematicExperience__crown" src="/art/hero-crown.jpg" alt="" />
+          <img
+            className="bcCinematicExperience__crown"
+            src="/art/hero-crown.webp"
+            alt=""
+            width="600"
+            height="750"
+            loading="eager"
+            decoding="async"
+            fetchPriority="high"
+          />
         </div>
 
         <div className="bcCinematicExperience__layer bcCinematicExperience__layer--gate" aria-hidden="true">
@@ -89,7 +98,14 @@ export function CinematicExperience({
         </div>
 
         <div className="bcCinematicExperience__layer bcCinematicExperience__layer--ocean" aria-hidden="true">
-          <img src="/art/evofish-world.jpg" alt="" />
+          <img
+            src="/art/evofish-world.webp"
+            alt=""
+            width="800"
+            height="500"
+            loading="eager"
+            decoding="async"
+          />
           <div className="bcCinematicExperience__oceanLight" />
         </div>
 
