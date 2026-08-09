@@ -5,6 +5,7 @@ import { nav } from "../../lib/nav";
 import { formatCoins } from "../../lib/store";
 import {
   clearCart,
+  createCheckoutIdempotencyKey,
   getCartCount,
   getCartItems,
   requestCommerceQuote,
@@ -18,6 +19,7 @@ export function Checkout() {
   const [loading, setLoading] = React.useState(true);
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState("");
+  const idempotencyKeyRef = React.useRef(createCheckoutIdempotencyKey());
   const cartItems = React.useMemo(getCartItems, []);
   const cartCount = cartItems.reduce((sum, line) => sum + line.quantity, 0);
   const fallbackTotal = cartItems.reduce((sum, line) => sum + line.lineTotal, 0);
@@ -51,7 +53,7 @@ export function Checkout() {
     setError("");
 
     try {
-      const order = await submitMockCheckout();
+      const order = await submitMockCheckout(idempotencyKeyRef.current);
       clearCart();
       nav(`/checkout/success?order=${encodeURIComponent(order.id)}`);
     } catch (reason) {
