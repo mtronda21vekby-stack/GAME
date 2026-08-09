@@ -1,0 +1,3 @@
+.bcCinematicExperience .bcCinematicExperience__pillNav {
+  transform: translateY(var(--cx-nav-y, 0px));
+}
