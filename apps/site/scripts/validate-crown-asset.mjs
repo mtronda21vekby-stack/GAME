@@ -8,6 +8,7 @@ const candidateIndex = process.argv.indexOf("--candidate");
 const candidate = candidateIndex >= 0 ? process.argv[candidateIndex + 1] : null;
 const manifests = {
   "candidate-a": "public/experience/crown/candidate-a/crown-candidate-a.manifest.json",
+  "candidate-b": "public/experience/crown/candidate-b/crown-candidate-b.manifest.json",
 };
 if (candidate && !manifests[candidate]) {
   console.error(`Unknown Crown candidate: ${candidate}`);

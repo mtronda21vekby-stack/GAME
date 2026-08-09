@@ -66,6 +66,32 @@ export function validateCrownManifest(value) {
   if (isRecord(value.features) && value.features.skinnedShell !== undefined && typeof value.features.skinnedShell !== "boolean") {
     errors.push("features.skinnedShell must be boolean when provided.");
   }
+  if (isRecord(value.features) && value.features.irisBones !== undefined && !integerInRange(value.features.irisBones, 3, 12)) {
+    errors.push("features.irisBones must be an integer from 3 to 12 when provided.");
+  }
+  if (value.presentation !== undefined) {
+    const presentation = value.presentation;
+    if (!isRecord(presentation)) errors.push("presentation must be an object when provided.");
+    else {
+      const bounded = (name, min, max) => {
+        if (typeof presentation[name] !== "number" || !Number.isFinite(presentation[name]) || presentation[name] < min || presentation[name] > max) {
+          errors.push(`presentation.${name} must be between ${min} and ${max}.`);
+        }
+      };
+      const vector = (name, min, max) => {
+        const value = presentation[name];
+        if (!Array.isArray(value) || value.length !== 3 || value.some((entry) => typeof entry !== "number" || entry < min || entry > max)) {
+          errors.push(`presentation.${name} must be a bounded three-number vector.`);
+        }
+      };
+      bounded("baseScale", 0.75, 1.25);
+      bounded("segmentOpenDistance", 0.1, 0.6);
+      bounded("spireLift", 0.02, 0.3);
+      bounded("portalDepthScale", 0.5, 1.5);
+      vector("coreCenter", -2, 2);
+      vector("cameraTargetOffset", -0.5, 0.5);
+    }
+  }
   return { errors, manifest: errors.length ? null : value };
 }
 
@@ -241,7 +267,7 @@ function isIdentityRoot(node) {
 }
 
 function semanticNodeNames(names) {
-  return names.filter((name) => /^(BC_(CROWN_ROOT|SHELL_ROOT|CORE_ROOT|PORTAL_ROOT|RING_(INNER|MIDDLE|OUTER)|SEG_\d{2}|SPIRE_\d{2}|ENERGY_(CYAN|ORANGE)|CORE_(CONTAINMENT|VOLUME|NUCLEUS|CAGE)|PORTAL_(APERTURE|TUNNEL|SHUTTERS)|BASE_FIELD))$/u.test(name)).sort();
+  return names.filter((name) => /^(BC_(CROWN_ROOT|SHELL_ROOT|CORE_ROOT|PORTAL_ROOT|RING_(INNER|MIDDLE|OUTER)|SEG_\d{2}|SPIRE_\d{2}|IRIS_BLADE_\d{2}|ENERGY_(CYAN|ORANGE)|CORE_(CONTAINMENT|VOLUME|NUCLEUS|CAGE)|PORTAL_(APERTURE|TUNNEL|SHUTTERS|IRIS|BLADES|CAVITY)|BASE_FIELD))$/u.test(name)).sort();
 }
 
 export function inspectCrownGlb(buffer, manifest, tier) {
@@ -271,8 +297,17 @@ export function inspectCrownGlb(buffer, manifest, tier) {
   }
   const segments = names.filter((name) => /^BC_SEG_\d{2}$/u.test(name));
   const spires = names.filter((name) => /^BC_SPIRE_\d{2}$/u.test(name));
+  const irisBlades = names.filter((name) => /^BC_IRIS_BLADE_\d{2}$/u.test(name));
   if (segments.length !== manifest.segmentCount) errors.push(`Expected ${manifest.segmentCount} segments, found ${segments.length}.`);
   if (spires.length !== manifest.spires) errors.push(`Expected ${manifest.spires} spires, found ${spires.length}.`);
+  if (manifest.features.irisBones !== undefined) {
+    for (const name of ["BC_PORTAL_IRIS", "BC_PORTAL_BLADES", "BC_PORTAL_CAVITY"]) {
+      if (!seen.has(name)) errors.push(`Required iris node is missing: ${name}.`);
+    }
+    if (irisBlades.length !== manifest.features.irisBones) errors.push(`Expected ${manifest.features.irisBones} iris blades, found ${irisBlades.length}.`);
+  } else if (irisBlades.length) {
+    warnings.push("Iris blade bones are present without features.irisBones metadata.");
+  }
 
   const materialNames = (json.materials ?? []).map((material) => material.name ?? "");
   for (const name of materialNames) if (!ALLOWED_MATERIALS.has(name)) errors.push(`Material name is outside the contract: ${name || "<unnamed>"}.`);
@@ -301,10 +336,11 @@ export function inspectCrownGlb(buffer, manifest, tier) {
   if ((json.cameras?.length ?? 0) > 0) errors.push("Production cameras are forbidden.");
   if ((json.animations?.length ?? 0) > 0) errors.push("Baked animations are forbidden; scroll choreography uses node transforms.");
   if ((json.skins?.length ?? 0) > 0 && manifest.features.skinnedShell !== true) warnings.push("Skins are present without features.skinnedShell opt-in.");
-  if ((json.skins?.length ?? 0) > 1) errors.push("Only one draw-call-aware shell skin is allowed.");
+  const maximumSkins = manifest.features.irisBones ? 2 : 1;
+  if ((json.skins?.length ?? 0) > maximumSkins) errors.push(`Asset has ${json.skins.length} skins; maximum is ${maximumSkins}.`);
   if ((json.extensionsUsed ?? []).includes("KHR_lights_punctual")) errors.push("Production lights are forbidden.");
   if ((json.meshes ?? []).some((mesh) => (mesh.primitives ?? []).some((primitive) => (primitive.targets?.length ?? 0) > 0))) {
-    errors.push("Morph targets are forbidden for Candidate A.");
+    errors.push("Morph targets are forbidden for Crown candidates.");
   }
 
   const textures = inspectEmbeddedImages(parsed);
