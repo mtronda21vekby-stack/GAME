@@ -113,11 +113,12 @@ export class ExperienceRuntime {
     const timeline = this.chapterDirector.evaluate(this.snapshot);
     const pointer = this.pointer.update(deltaSeconds);
     const { viewportWidth, viewportHeight } = this.snapshot;
+    const compactViewport = viewportWidth <= 820 || viewportHeight <= 520;
     this.rendererHost.resize(viewportWidth, viewportHeight);
     this.camera.aspect = Math.max(1, viewportWidth) / Math.max(1, viewportHeight);
     this.cameraRig.update(this.snapshot, pointer, this.elapsedSeconds);
-    this.crown.root.position.x = viewportWidth > 820 ? 1.1 : 0;
-    this.crown.root.position.y = viewportWidth > 820 ? -0.15 : 1.55;
+    this.crown.root.position.x = compactViewport ? 0 : 1.1;
+    this.crown.root.position.y = compactViewport ? 1.55 : -0.15;
 
     this.crown.setAssemblyProgress(timeline.assembly);
     this.crown.setOpenProgress(timeline.open);
@@ -135,14 +136,15 @@ export class ExperienceRuntime {
     this.container.dataset.bcExperienceChapter = this.snapshot.chapterId;
     this.container.dataset.bcExperienceContext = this.contextState;
 
-    if (!this.firstFrameRendered) {
+    const firstUiUpdate = !this.firstFrameRendered;
+    if (firstUiUpdate) {
       this.firstFrameRendered = true;
       this.metricWindowStart = now;
       this.onBootStage("ready");
     }
 
     this.metricFrames += 1;
-    if (now - this.lastUiUpdate >= 125) {
+    if (firstUiUpdate || now - this.lastUiUpdate >= 125) {
       this.lastUiUpdate = now;
       this.onSnapshot({ ...this.snapshot });
       const elapsedWindow = Math.max(1, now - this.metricWindowStart);

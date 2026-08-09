@@ -1,8 +1,8 @@
-import { COMMERCE_CATALOG_BY_ID } from "../../../packages/commerce/src/catalog";
 import { getMetricsKV, getUserIdCookie, type Env } from "../_lib/auth";
 import {
   commerceEntitlementsKey,
   commerceJson,
+  normalizeEntitlementItemIds,
   readCommerceJson,
   type EntitlementsV1,
 } from "../_lib/commerce";
@@ -15,9 +15,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   if (!userId) return commerceJson({ ok: false, reason: "auth_required" }, 401);
 
   const stored = await readCommerceJson<EntitlementsV1>(kv, commerceEntitlementsKey(userId));
-  const itemIds = Array.from(
-    new Set((stored?.userId === userId ? stored.itemIds : []).filter((itemId) => COMMERCE_CATALOG_BY_ID.has(itemId))),
-  );
+  const itemIds = normalizeEntitlementItemIds(userId, stored);
 
   return commerceJson({
     ok: true,

@@ -20,6 +20,6 @@ export function readDeviceCapabilities(): DeviceCapabilities {
     saveData: Boolean(hints.connection?.saveData),
     memory: typeof hints.deviceMemory === "number" ? hints.deviceMemory : null,
     cores: Math.max(1, navigator.hardwareConcurrency || 2),
-    mobileViewport: window.innerWidth <= 820,
+    mobileViewport: window.innerWidth <= 820 || window.innerHeight <= 520,
   };
 }

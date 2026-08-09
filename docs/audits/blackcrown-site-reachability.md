@@ -149,3 +149,46 @@ an `off`-mode browser comparison must pass. Required active exceptions are the
 current Home cinematic, key-art health, LiveFeed fallback, server commerce flow,
 mobile overlay behavior and protected external routes.
 
+## Implemented Reachability Decisions
+
+All `DELETE` decisions above were applied only after the import/reference proof
+and were followed by green typecheck, build, off-mode screenshots and browser
+smoke tests. The final origin/main diff removes 68 files, adds 57 files and
+modifies 28 files; 166 tracked files remain under `apps/site`.
+
+Deleted component groups:
+
+- seven global/historic motion systems and their dead scene components;
+- duplicate root router, old Home/page generation and unused page layout;
+- unreachable feature previews, content clients, guest helpers and PWA helper;
+- duplicate error boundary/crash hooks and obsolete crown/transition visuals.
+
+Deleted stylesheet groups:
+
+- full `atomic-mobile-styles.ts` duplicate delivery contract;
+- historic hero, world, matrix, parallax, reactor and transition generations;
+- broad emergency/stability/theme layers after live selectors were moved to
+  explicit base, shell, chrome, Home, content, overlay and commerce owners.
+
+Intentionally retained:
+
+- `cinematic-experience-v1.css` and `CinematicExperience.tsx` as the measured
+  off-mode Home authority;
+- `design-tokens.css` as non-runtime design reference debt;
+- direct-owner Home service, store, feed, glass and commerce styles;
+- protected game/lobby/CROWN//FRONT runtime files;
+- current key-art, LiveFeed fallback, route overlay behavior and commerce flow.
+
+New ownership boundaries:
+
+- `routes/siteRoutes.ts` owns typed metadata, lazy loaders and route chrome;
+- `styles/tokens.css`, `base.css`, `shell.css`, `chrome.css`, `home.css`,
+  `content-pages.css` and `overlays.css` own the migrated shared cascade;
+- `@blackcrown/commerce` owns the single typed catalog consumed by the browser
+  and Cloudflare functions;
+- `GET /api/commerce/entitlements` returns bounded current-user ownership;
+- `experience/**` owns the nested-lazy renderer, scroll, camera, scene, quality,
+  audio, asset-adapter and disposal contracts;
+- tests own hard proof for catalog tampering, authentication, order ownership,
+  idempotency, entitlements, off-mode isolation, mobile hit targets, reverse
+  scroll, reduced motion and re-entry lifecycle.

@@ -156,3 +156,106 @@ no Nexus/Three chunk is requested. `lab` enables only `/nexus-lab`; `home` also
 allows the isolated experience shell on `/`. No production environment is
 changed by this local branch.
 
+## V4 Result
+
+The implementation was completed in the isolated worktree without changing the
+original checkout. The local `.env.local` enables `lab` only for this worktree,
+is ignored by Git and is not staged. Missing environment values still resolve
+to `off` in source.
+
+### Foundation Before And After
+
+| Metric | Before | After |
+| --- | ---: | ---: |
+| Site CSS source files | 40 | 22 |
+| Raw site CSS bytes | 346,645 | 120,803 |
+| `!important` occurrences | 1,549 | 307 |
+| Duplicate selector names | 558 | 206 |
+| Extra duplicate definitions | 1,176 | 391 |
+| Initial JavaScript | 613.25 kB | 195.80 kB |
+| Initial CSS | 214.05 kB | 48.89 kB |
+| Desktop Home DOM nodes | 364 | 315 |
+| Mobile Home DOM nodes | 330 | 315 |
+| Desktop stylesheet objects | 29 | 20 |
+| Mobile stylesheet objects | 30 | 20 |
+
+The after selector audit uses the same comment stripping, selector whitespace
+normalization and keyframe/at-rule exclusion described above. The full mobile
+stylesheet is no longer imported through `?inline`; no source module contains a
+CSS inline import or raster key-art data URI.
+
+### Final Bundle Graph
+
+The final `lab` build emits the following measured chunks:
+
+| Asset | Minified | Gzip | Loading |
+| --- | ---: | ---: | --- |
+| Site entry | 195.80 kB | 62.60 kB | initial |
+| Site entry CSS | 48.89 kB | 10.91 kB | initial |
+| Nexus route | 10.41 kB | 3.75 kB | route lazy |
+| Experience runtime | 22.07 kB | 7.31 kB | nested lazy |
+| Three.js | 478.94 kB | 120.65 kB | nested lazy |
+| Account | 19.28 kB | 6.11 kB | route lazy |
+| Admin | 22.88 kB | 5.59 kB | route lazy |
+
+About, Support, Privacy, Terms, Store, Cart, Checkout and CheckoutSuccess also
+emit independent route chunks. An automated off-mode request audit confirms
+that `/` requests neither the Nexus route/runtime nor Three.js and creates no
+canvas. The budget gate reports 191.21 KiB initial JavaScript, 47.74 KiB
+initial CSS, 21.56 KiB ExperienceRuntime and 467.71 KiB Three.js.
+
+### Runtime Ownership After Cleanup
+
+- Normal Home owns one scroll listener and one RAF scheduler in the preserved
+  `CinematicExperience`.
+- App owns only the shared viewport synchronization RAF plus resize,
+  orientation and VisualViewport listeners.
+- Nexus is route-scoped and adds one scroll director, one pointer controller
+  and one renderer RAF only while `/nexus-lab` or local `home` mode is active.
+- Source contains no MutationObserver or IntersectionObserver system.
+- The complete source graph contains two scroll, five resize/VisualViewport,
+  one pointer and one orientation listener registration; the two routes never
+  mount both cinematic runtimes together.
+- Route leave/re-entry testing proves zero canvas/runtime after disposal and one
+  clean canvas/runtime after re-entry.
+
+### Browser Proof
+
+| Surface | Viewport | DOM | Root | Scroll/client width | Height | Sheets |
+| --- | --- | ---: | ---: | --- | ---: | ---: |
+| Home off | `1440x900` | 315 | 259 | `1440/1440` | 9,446 | 20 |
+| Home off | `390x844` | 315 | 259 | `390/390` | 8,730 | 20 |
+| Nexus lab | `1440x900` | 170 | 113 | `1440/1440` | 6,300 | 21 |
+| Nexus lab | `390x844` | 170 | 113 | `390/390` | 4,425 | 21 |
+
+Home key art remained healthy at `600x750` and `800x500`; mobile and desktop
+had no horizontal overflow. The four required Nexus mobile sizes passed CTA
+center hit-testing, including `844x390`. Screenshots remain outside Git under
+`/tmp/blackcrown-experience-screens/`.
+
+### Nexus Runtime Measurements
+
+Measurements were taken at `1440x900` with separate fresh low, medium and high
+runtime initialization so geometry budgets were not inherited from another
+tier.
+
+| Tier | Draw calls | Triangles | Observed FPS | Frame time | Renderer |
+| --- | ---: | ---: | ---: | ---: | --- |
+| low | 50 | 6,604 | 120.0 | 8.6 ms | WebGL2 |
+| medium | 54 | 10,248 | 119.9 | 9.5 ms | WebGL2 |
+| high | 58 | 14,256 | 119.7 | 8.3 ms | WebGL2 |
+
+These are local automated-browser observations, not physical-device profiling.
+DPR caps are 1.0, 1.25 and 1.5. Compact landscape, coarse pointers, save-data,
+reduced motion and constrained hardware select the low path.
+
+### Final Validation Evidence
+
+- Key-art validator: PASS for nine canonical/semantic/PWA assets.
+- Site typecheck: PASS.
+- Vitest: 18/18 PASS.
+- Playwright: 16/16 PASS across Chromium and WebKit.
+- Lab site build and bundle budget: PASS with no site chunk warning.
+- `npm run build:prod`: PASS; the pre-existing protected-game missing runtime
+  asset and 625.98 kB game chunk warnings remain visible.
+- `git diff --check`: PASS.

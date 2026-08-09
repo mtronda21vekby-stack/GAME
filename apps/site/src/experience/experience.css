@@ -253,6 +253,44 @@
   .bcNexusDebug { display: none; }
 }
 
+@media (max-height: 520px) and (orientation: landscape) {
+  .bcNexusHud {
+    top: max(6px, env(safe-area-inset-top));
+    left: max(8px, env(safe-area-inset-left));
+    right: max(8px, env(safe-area-inset-right));
+    min-height: 46px;
+    grid-template-columns: auto 1fr auto;
+    padding: 0 8px;
+  }
+  .bcNexusHud__brand { min-height: 44px; }
+  .bcNexusHud__chapters {
+    grid-column: auto;
+    order: initial;
+    justify-content: center;
+    gap: 2px;
+    border-top: 0;
+  }
+  .bcNexusHud__chapters a { width: 38px; height: 44px; }
+  .bcNexusHud__mode,
+  .bcNexusQuality { display: none; }
+  .bcNexusSound { min-width: 66px; }
+  .bcNexusStory { min-height: 700svh; }
+  .bcNexusChapter {
+    min-height: 100svh;
+    padding: 64px max(24px, env(safe-area-inset-left)) 24px;
+    align-items: center;
+  }
+  .bcNexusChapter__copy { width: min(440px, 56vw); }
+  .bcNexusChapter h1,
+  .bcNexusChapter h2 { margin-top: 10px; max-width: 12ch; font-size: clamp(2.2rem, 7vw, 3.6rem); }
+  .bcNexusChapter p { margin-top: 12px; max-width: 42ch; font-size: .9rem; line-height: 1.4; }
+  .bcNexusChapter__actions { margin-top: 14px; }
+  .bcNexusAction { min-height: 44px; }
+  .bcNexusModules { margin-top: 14px; }
+  .bcNexusChapterMeter { right: max(10px, env(safe-area-inset-right)); bottom: max(8px, env(safe-area-inset-bottom)); }
+  .bcNexusDebug { display: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .bcNexusStory { min-height: auto; }
   .bcNexusChapter { min-height: max(72svh, 560px); }

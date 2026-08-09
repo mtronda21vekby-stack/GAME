@@ -126,6 +126,19 @@ export function commerceEntitlementsKey(userId: string) {
   return `commerce:entitlements:v1:${userId}`;
 }
 
+export function normalizeEntitlementItemIds(userId: string, stored: EntitlementsV1 | null | undefined) {
+  if (!stored || stored.userId !== userId || !Array.isArray(stored.itemIds)) return [];
+  const normalized: string[] = [];
+  const seen = new Set<string>();
+  for (const itemId of stored.itemIds) {
+    if (normalized.length >= 500) break;
+    if (typeof itemId !== "string" || seen.has(itemId) || !COMMERCE_CATALOG_BY_ID.has(itemId)) continue;
+    seen.add(itemId);
+    normalized.push(itemId);
+  }
+  return normalized;
+}
+
 export function commerceOrderIndexKey(userId: string) {
   return `commerce:orders:v1:${userId}`;
 }
