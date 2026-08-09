@@ -6,6 +6,7 @@
     "dev": "vite",
     "build": "vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test:assets": "node scripts/validate-key-art.mjs",
     "lint": "node -e \"process.exit(0)\""
   },
   "dependencies": {
