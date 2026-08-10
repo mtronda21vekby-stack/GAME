@@ -43,6 +43,8 @@ export class EvoFishAbyssScene extends SpatialSceneBase {
           vec4 source = texture2D(uMap, vUv);
           vec3 fallback = vec3(0.025, 0.19, 0.25);
           vec3 color = mix(fallback, source.rgb, uHasTexture);
+          float darkLift = 1.0 - smoothstep(0.045, 0.2, length(color));
+          color += vec3(0.012, 0.055, 0.07) * darkLift * uHasTexture;
           float edge = smoothstep(0.0, 0.2, vUv.x) * smoothstep(0.0, 0.2, 1.0 - vUv.x)
             * smoothstep(0.0, 0.18, vUv.y) * smoothstep(0.0, 0.18, 1.0 - vUv.y);
           float depthFade = 0.34 + smoothstep(0.015, 0.22, length(color)) * 0.66;

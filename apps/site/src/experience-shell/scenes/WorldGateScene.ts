@@ -9,6 +9,7 @@ export class WorldGateScene extends SpatialSceneBase {
   private readonly ribMesh: THREE.InstancedMesh;
   private readonly streaks: THREE.LineSegments;
   private readonly aperture: THREE.Mesh;
+  private readonly depthCore: THREE.Mesh;
   private readonly foreground = new ForegroundOcclusionSystem([
     { position: [-4.8, 0.2, 2.2], scale: [0.62, 5.8, 0.4], rotation: [0.08, 0.14, -0.24], travel: [1.5, 0.15, 0.9] },
     { position: [5.1, -0.35, 2.5], scale: [0.48, 6.4, 0.38], rotation: [-0.06, -0.12, 0.2], travel: [-1.2, -0.1, 1.1] },
@@ -86,6 +87,11 @@ export class WorldGateScene extends SpatialSceneBase {
     this.aperture.position.set(0.35, 0.08, -5.65);
     this.aperture.rotation.x = Math.PI / 2;
     this.aperture.rotation.z = 0.26;
+    this.depthCore = new THREE.Mesh(
+      new THREE.OctahedronGeometry(0.24, 0),
+      this.material(energyMaterial(0x8177e9, 0.34), 0.34),
+    );
+    this.depthCore.position.set(0.35, 0.08, -6.45);
 
     const linePositions: number[] = [];
     for (let index = 0; index < 18; index += 1) {
@@ -97,7 +103,7 @@ export class WorldGateScene extends SpatialSceneBase {
     streakGeometry.setAttribute("position", new THREE.Float32BufferAttribute(linePositions, 3));
     this.streaks = new THREE.LineSegments(streakGeometry, this.material(new THREE.LineBasicMaterial({ color: 0x4c7bd5, transparent: true, opacity: 0.2 }), 0.2));
 
-    this.tunnel.add(tunnelWall, this.ribMesh, this.aperture, this.streaks);
+    this.tunnel.add(tunnelWall, this.ribMesh, this.aperture, this.depthCore, this.streaks);
     this.root.add(this.tunnel, this.arcs, this.foreground.root);
   }
 
@@ -114,7 +120,10 @@ export class WorldGateScene extends SpatialSceneBase {
     });
     this.tunnel.position.z = snapshot.localProgress * 0.7;
     this.tunnel.scale.z = 0.86 + snapshot.localProgress * 0.34;
-    this.aperture.scale.setScalar(0.82 + snapshot.localProgress * 0.28);
+    const apertureScale = 0.82 + snapshot.localProgress * 0.28;
+    this.aperture.scale.set(apertureScale * 1.16, apertureScale * 0.84, 1);
+    this.depthCore.scale.setScalar(0.72 + snapshot.localProgress * 0.32);
+    this.depthCore.rotation.z = snapshot.reducedMotion ? 0 : motion * -4;
     if (this.foreground.root.visible) this.foreground.evaluate(snapshot.localProgress, snapshot.quality, snapshot.reducedMotion);
   }
 }
