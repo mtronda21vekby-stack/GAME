@@ -7,8 +7,9 @@ export const EXPERIENCE_ASSET_SLOT_IDS = [
   "evofish-subject",
   "crown-front-environment",
   "network-environment",
-  "collection-items",
+  "collection-item-housings",
   "identity-core",
+  "foreground-occluders",
 ] as const;
 
 export type ExperienceAssetSlotId = (typeof EXPERIENCE_ASSET_SLOT_IDS)[number];
@@ -42,8 +43,9 @@ export class AssetSlotRegistry {
     }, "procedural-evofish-volume");
     this.register("crown-front-environment", {}, "procedural-reactor");
     this.register("network-environment", {}, "procedural-network");
-    this.register("collection-items", {}, "procedural-vault-capsules");
+    this.register("collection-item-housings", {}, "procedural-category-vault-housings");
     this.register("identity-core", {}, "procedural-identity-ring");
+    this.register("foreground-occluders", {}, "procedural-scene-occlusion");
   }
 
   private register(id: ExperienceAssetSlotId, variants: Partial<Record<QualityTier, string>>, fallback: string) {
@@ -119,4 +121,3 @@ export class AssetSlotRegistry {
     this.slots.clear();
   }
 }
-

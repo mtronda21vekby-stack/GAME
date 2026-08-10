@@ -1,47 +1,109 @@
 import * as THREE from "three";
 import type { SceneEvaluationSnapshot } from "../core/SceneLifecycle";
-import { SpatialSceneBase, energyMaterial, metalMaterial } from "./SpatialSceneBase";
+import { ForegroundOcclusionSystem } from "./ForegroundOcclusionSystem";
+import { SpatialSceneBase, energyMaterial } from "./SpatialSceneBase";
+
+const NODE_POSITIONS = [
+  [0.2, 2.35, -0.2], [2.45, 1.35, -0.75], [2.9, -1.2, -0.4], [-0.1, -2.35, -1.2], [-3.15, 1.65, -1.1],
+  [4.0, 2.6, -2.1], [4.25, -2.35, -2.4], [-2.2, 3.15, -2.65], [-4.45, -1.55, -2.3],
+] as const;
 
 export class NetworkCoreScene extends SpatialSceneBase {
-  private readonly core = new THREE.Mesh(new THREE.IcosahedronGeometry(1.05, 2), this.material(energyMaterial(0x61e4ef, 0.5), 0.5));
-  private readonly arcs = new THREE.Group();
-  private readonly nodes: THREE.InstancedMesh;
+  private readonly commandCore = new THREE.Group();
+  private readonly nodes: THREE.Group[] = [];
+  private readonly dataPaths: THREE.LineSegments;
+  private readonly city: THREE.InstancedMesh;
+  private readonly foreground = new ForegroundOcclusionSystem([
+    { position: [-5.2, 0.4, 1.85], scale: [0.28, 6.8, 0.3], rotation: [0.04, 0.1, -0.2], travel: [0.85, 0.1, 0.6] },
+    { position: [5.35, -0.3, 2.0], scale: [0.25, 6.2, 0.3], rotation: [-0.04, -0.08, 0.18], travel: [-0.72, 0.15, 0.65] },
+    { position: [1.8, 3.65, 1.3], scale: [4.2, 0.22, 0.3], rotation: [0.05, 0.09, -0.08], travel: [-0.5, -0.65, 0.55] },
+    { position: [-2.2, -3.5, 1.35], scale: [3.6, 0.2, 0.28], rotation: [-0.04, -0.07, 0.1], travel: [0.45, 0.6, 0.55] },
+  ], 0x071319, 0x0a3840);
 
   constructor() {
     super("network-core");
-    [2.3, 3.45, 4.65].forEach((radius, index) => {
-      const arc = new THREE.Mesh(
-        new THREE.TorusGeometry(radius, 0.035 + index * 0.012, 5, 48, Math.PI * (1.25 + index * 0.08)),
-        this.material(index === 1 ? energyMaterial(0x65e9f5, 0.36) : metalMaterial(0x0d1b21, 0x0a3b43, 0.55), index === 1 ? 0.36 : 0.55),
-      );
-      arc.position.z = -0.5 - index * 0.7;
-      arc.rotation.z = -1.9 + index * 0.35;
-      this.arcs.add(arc);
+    const housingMaterial = this.solid(new THREE.MeshStandardMaterial({
+      color: 0x17323a,
+      emissive: 0x0d3b44,
+      emissiveIntensity: 0.28,
+      metalness: 0.7,
+      roughness: 0.46,
+    }));
+    const innerMaterial = this.solid(new THREE.MeshStandardMaterial({
+      color: 0x0b171c,
+      emissive: 0x082b32,
+      emissiveIntensity: 0.22,
+      metalness: 0.66,
+      roughness: 0.58,
+    }));
+    const cyan = this.material(energyMaterial(0x62e4ec, 0.46), 0.46);
+
+    const coreHousing = new THREE.Mesh(new THREE.DodecahedronGeometry(0.78, 0), housingMaterial);
+    const coreEnergy = new THREE.Mesh(new THREE.OctahedronGeometry(0.38, 1), cyan);
+    coreEnergy.position.z = 0.72;
+    this.commandCore.position.set(-1.65, 0.2, 0.35);
+    this.commandCore.add(coreHousing, coreEnergy);
+    [[-1.05, 0], [1.05, 0], [0, -1.05], [0, 1.05]].forEach(([x, y], index) => {
+      const bracket = new THREE.Mesh(new THREE.BoxGeometry(index > 1 ? 0.9 : 0.18, index > 1 ? 0.18 : 0.9, 0.22), innerMaterial);
+      bracket.position.set(x, y, -0.08);
+      bracket.rotation.z = index * 0.06;
+      this.commandCore.add(bracket);
     });
-    const nodeMaterial = this.material(metalMaterial(0x14252b, 0x0b6b74, 0.82), 0.82);
-    this.nodes = new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.25, 1), nodeMaterial, 9);
+
+    NODE_POSITIONS.forEach((position, index) => {
+      const node = new THREE.Group();
+      const geometry = index % 3 === 0
+        ? new THREE.OctahedronGeometry(index < 5 ? 0.3 : 0.22, 0)
+        : index % 3 === 1
+          ? new THREE.BoxGeometry(index < 5 ? 0.48 : 0.34, index < 5 ? 0.34 : 0.26, 0.28)
+          : new THREE.DodecahedronGeometry(index < 5 ? 0.28 : 0.2, 0);
+      const body = new THREE.Mesh(geometry, housingMaterial);
+      const core = new THREE.Mesh(new THREE.OctahedronGeometry(index < 5 ? 0.11 : 0.075, 0), cyan);
+      core.position.z = index < 5 ? 0.28 : 0.2;
+      const bracket = new THREE.Mesh(new THREE.BoxGeometry(index % 2 ? 0.78 : 0.16, index % 2 ? 0.13 : 0.72, 0.12), innerMaterial);
+      node.position.fromArray(position);
+      node.add(body, core, bracket);
+      this.nodes.push(node);
+      this.root.add(node);
+    });
+
+    const pathPositions: number[] = [];
+    NODE_POSITIONS.forEach(([x, y, z]) => {
+      pathPositions.push(-1.55, 0.15, 0, x, y, z - 0.2);
+    });
+    const paths = new THREE.BufferGeometry();
+    paths.setAttribute("position", new THREE.Float32BufferAttribute(pathPositions, 3));
+    this.dataPaths = new THREE.LineSegments(paths, this.material(new THREE.LineBasicMaterial({ color: 0x4fadb8, transparent: true, opacity: 0.24 }), 0.24));
+
+    this.city = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), innerMaterial, 18);
     const marker = new THREE.Object3D();
-    for (let index = 0; index < 9; index += 1) {
-      const band = index % 3;
-      const angle = (index / 9) * Math.PI * 2 + band * 0.34;
-      const radius = 2.15 + band * 1.05;
-      marker.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius * 0.64, -0.4 - band * 0.75);
-      marker.scale.setScalar(index < 3 ? 1.2 : index < 6 ? 0.92 : 0.68);
+    for (let index = 0; index < 18; index += 1) {
+      const lane = index % 9;
+      const side = index < 9 ? -1 : 1;
+      marker.position.set(-4.8 + lane * 1.18, side * 3.2, -3.6 - (lane % 3) * 0.4);
+      marker.scale.set(0.09 + (lane % 2) * 0.05, 0.35 + (lane % 4) * 0.22, 0.16);
       marker.updateMatrix();
-      this.nodes.setMatrixAt(index, marker.matrix);
+      this.city.setMatrixAt(index, marker.matrix);
     }
-    this.nodes.instanceMatrix.needsUpdate = true;
-    this.root.add(this.core, this.arcs, this.nodes);
+    this.city.instanceMatrix.needsUpdate = true;
+    this.root.add(this.commandCore, this.dataPaths, this.city, this.foreground.root);
   }
 
   evaluate(snapshot: SceneEvaluationSnapshot) {
     this.resetPose();
-    this.root.position.set(0.45, 0.3, 0);
-    const idle = snapshot.reducedMotion ? 0 : snapshot.elapsedSeconds * 0.018;
-    this.core.rotation.set(idle * 0.7, -idle, 0);
-    this.core.scale.setScalar(0.78 + snapshot.localProgress * 0.25);
-    this.arcs.children.forEach((arc, index) => { arc.rotation.z = -1.9 + index * 0.35 + idle * (index % 2 ? -1 : 1); });
-    this.nodes.rotation.z = snapshot.reducedMotion ? 0 : -idle * 0.3;
+    this.root.position.set(0.2, 0.2, 0);
+    const idle = snapshot.reducedMotion ? 0 : snapshot.elapsedSeconds;
+    this.commandCore.rotation.set(idle * 0.012, -idle * 0.018, snapshot.localProgress * 0.08);
+    this.commandCore.scale.setScalar(0.82 + snapshot.localProgress * 0.16);
+    const visibleNodes = snapshot.quality === "low" ? 5 : this.nodes.length;
+    this.nodes.forEach((node, index) => {
+      node.visible = index < visibleNodes;
+      node.rotation.y = snapshot.reducedMotion ? 0 : idle * (index % 2 ? -0.018 : 0.014);
+      const reveal = Math.min(1, Math.max(0, snapshot.localProgress * 1.4 - index * 0.055));
+      node.scale.setScalar(reveal * (index < 5 ? 1 : 0.82));
+    });
+    this.dataPaths.position.z = -0.3 + snapshot.localProgress * 0.22;
+    this.city.position.y = (1 - snapshot.localProgress) * 0.24;
+    this.foreground.evaluate(snapshot.localProgress, snapshot.quality, snapshot.reducedMotion);
   }
 }
-

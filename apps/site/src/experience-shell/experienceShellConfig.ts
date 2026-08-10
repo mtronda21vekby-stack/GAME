@@ -23,6 +23,7 @@ export const EXPERIENCE_SCENE_IDS = [
 
 export type ExperienceSceneId = (typeof EXPERIENCE_SCENE_IDS)[number];
 export type ExperienceTone = "boot" | "crown" | "gate" | "ocean" | "tactical" | "network" | "vault" | "identity";
+export type ExperienceLayout = "entry" | "hero-left" | "system-minimal" | "editorial-low-left" | "tactical-right" | "network-right" | "vault-left" | "final-center";
 
 export type ExperienceActionConfig = {
   label: string;
@@ -43,6 +44,7 @@ export type ExperienceChapterConfig = {
   range: readonly [number, number];
   sceneId: ExperienceSceneId;
   tone: ExperienceTone;
+  layout: ExperienceLayout;
   mobile?: {
     hideBody?: boolean;
     compactTitle?: boolean;
@@ -62,6 +64,7 @@ export const EXPERIENCE_CHAPTERS: readonly ExperienceChapterConfig[] = [
     range: [0, 0.05],
     sceneId: "crown-chamber",
     tone: "boot",
+    layout: "entry",
   },
   {
     id: "crown-chamber",
@@ -78,6 +81,7 @@ export const EXPERIENCE_CHAPTERS: readonly ExperienceChapterConfig[] = [
     range: [0.05, 0.23],
     sceneId: "crown-chamber",
     tone: "crown",
+    layout: "hero-left",
   },
   {
     id: "world-gate",
@@ -90,6 +94,7 @@ export const EXPERIENCE_CHAPTERS: readonly ExperienceChapterConfig[] = [
     range: [0.23, 0.36],
     sceneId: "world-gate",
     tone: "gate",
+    layout: "system-minimal",
     mobile: { hideBody: true, compactTitle: true },
   },
   {
@@ -104,6 +109,7 @@ export const EXPERIENCE_CHAPTERS: readonly ExperienceChapterConfig[] = [
     range: [0.36, 0.52],
     sceneId: "evofish-abyss",
     tone: "ocean",
+    layout: "editorial-low-left",
   },
   {
     id: "crown-front-reactor",
@@ -117,6 +123,7 @@ export const EXPERIENCE_CHAPTERS: readonly ExperienceChapterConfig[] = [
     range: [0.52, 0.68],
     sceneId: "crown-front-reactor",
     tone: "tactical",
+    layout: "tactical-right",
   },
   {
     id: "network-core",
@@ -130,6 +137,7 @@ export const EXPERIENCE_CHAPTERS: readonly ExperienceChapterConfig[] = [
     range: [0.68, 0.81],
     sceneId: "network-core",
     tone: "network",
+    layout: "network-right",
   },
   {
     id: "collection-vault",
@@ -146,6 +154,7 @@ export const EXPERIENCE_CHAPTERS: readonly ExperienceChapterConfig[] = [
     range: [0.81, 0.92],
     sceneId: "collection-vault",
     tone: "vault",
+    layout: "vault-left",
   },
   {
     id: "identity-enter",
@@ -163,6 +172,7 @@ export const EXPERIENCE_CHAPTERS: readonly ExperienceChapterConfig[] = [
     range: [0.92, 1],
     sceneId: "identity",
     tone: "identity",
+    layout: "final-center",
   },
 ] as const;
 
@@ -184,4 +194,3 @@ export const EXPERIENCE_TRANSITION_RANGES = {
 
 export const CHAPTER_BY_ID = new Map(EXPERIENCE_CHAPTERS.map((chapter) => [chapter.id, chapter]));
 export const CHAPTER_BY_HASH = new Map(EXPERIENCE_CHAPTERS.map((chapter) => [chapter.hash, chapter]));
-

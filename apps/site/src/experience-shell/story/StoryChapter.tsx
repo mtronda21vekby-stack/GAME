@@ -11,6 +11,9 @@ export function StoryChapter({ chapter, active }: { chapter: ExperienceChapterCo
       data-chapter={chapter.id}
       data-scene={chapter.sceneId}
       data-tone={chapter.tone}
+      data-layout={chapter.layout}
+      data-range-start={chapter.range[0]}
+      data-range-end={chapter.range[1]}
       data-active={active ? "true" : "false"}
       aria-hidden={active ? undefined : true}
       aria-label={`${chapter.index} ${chapter.label}`}
