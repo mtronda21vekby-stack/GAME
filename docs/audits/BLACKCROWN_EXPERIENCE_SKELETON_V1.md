@@ -64,32 +64,114 @@ WebGL provider is not permitted.
 7. The current mobile story is 490svh and desktop story is 700svh; the requested shell needs
    config-driven 600-760svh mobile and 900-1200svh desktop.
 
+## Implemented Architecture
+
+- `BlackCrownExperienceShell` owns a semantic eight-chapter DOM spine while the existing
+  `ExperienceRuntime` remains the sole renderer, camera, RAF and scroll owner.
+- `SceneRegistry` creates each scene root once per route session. `SceneLifecycle` permits
+  one fully active scene and one transition partner; inactive roots are hidden and their
+  updates stop.
+- `TransitionDirector` evaluates absolute, reversible transition windows. It does not use
+  timers, cumulative transforms or independent tweens.
+- `SpatialRouter` maps `#crown`, `#gate`, `#evofish`, `#crown-front`, `#network`, `#store`
+  and `#profile` to native scroll positions and browser history.
+- `AssetSlotRegistry` only accepts local paths and supplies deterministic fallbacks. The
+  approved EvoFish key art is one lazy midground plane, not a fullscreen page background.
+- High-frequency progress is written to CSS variables and runtime datasets. React updates
+  only when the active chapter, boot stage, menu state or debug sample changes.
+
 ## Visual Review Matrix
 
-This matrix is completed after deterministic captures. `PLACEHOLDER` means the chapter has
-not yet been implemented or captured; it is not a pass claim.
+Captures were made at deterministic normalized progress values in Chromium. The desktop
+review used Candidate B LOD0 at DPR 1.0; mobile used AUTO and selected LOD2/LOW.
 
-| Chapter | Focal point | Depth / transition | DOM / mobile | Performance | Status |
-| --- | --- | --- | --- | --- | --- |
-| Boot | Readiness signal | Static overlay over persistent scene | Real Enter control | Pending | PLACEHOLDER |
-| Crown Chamber | Digital Crown | Chamber, supports, levitation field | Brand and two actions | Pending | PLACEHOLDER |
-| World Gate | Crown core aperture | Rings, tunnel and shutters | Minimal label | Pending | PLACEHOLDER |
-| EvoFish | Subject depth plane | Gate rays become water/caustics | Separate world action | Pending | PLACEHOLDER |
-| CROWN//FRONT | Tactical reactor | Water collapses into shutters | Operation action and honest alpha status | Pending | PLACEHOLDER |
-| Network | Command core | Nodes and structural arcs | DOM world equivalents | Pending | PLACEHOLDER |
-| Collection | Featured catalog slots | Network paths become vault rails | Store and collection actions | Pending | PLACEHOLDER |
-| Identity | Crown identity core | Vault converges into final portal | Profile, Store, Lobby, legal | Pending | PLACEHOLDER |
+| Chapter | Focal point / depth / camera continuity | DOM hierarchy and mobile crop | Performance | Status |
+| --- | --- | --- | --- | --- |
+| Boot | Readiness signal over the already initialized chamber; no fake delay | One real `ENTER` control; reduced motion skips the hold after readiness | One canvas, no overflow | PASS |
+| Crown Chamber | Candidate B silhouette inside radial supports, levitation plane and far structure; the camera begins the core approach | Brand, single headline and two actions remain left/bottom of the art; mobile keeps the central spire visible | 28 calls, 17,642 triangles, p95 25.5 ms | PASS |
+| World Gate | Nested aperture, tunnel rings and shutters replace the Crown after the shell-to-core transition; no flat image circle | Minimal label; mobile removes competing body copy | 18 calls, 4,644 triangles, p95 25.3 ms | PASS |
+| EvoFish Abyss | Approved subject art is a lazy midground plane between fog, caustic arcs and foreground silhouettes; camera exits the cyan gate into depth | Copy sits outside the subject on desktop and below it on mobile | 17 calls, 3,568 triangles, p95 25.1 ms | PASS |
+| CROWN//FRONT Reactor | Ocean silhouettes become shutters while cyan cools into a local orange reactor and tactical rings | Operation CTA is real DOM and alpha status is honest | 52 calls, 9,304 triangles, p95 25.1 ms | WEAK: approved environment art is still absent |
+| Network Core | Central command volume, depth-banded nodes and linking arcs; camera pulls back after the reactor | Primary worlds have DOM equivalents and remain keyboard reachable; mobile shows a reduced set | 56 calls, 7,152 triangles, p95 25.1 ms | PASS |
+| Collection Vault | Network arcs align into vault rails and 3D collection housings; no checkout inside canvas | Shared catalog supplies labels and real prices; Store and Account remain ordinary authoritative routes | 17 calls, 2,988 triangles, p95 25.1 ms | WEAK: capsules are presentation placeholders |
+| Identity Enter | Candidate B returns behind the identity core and final portal; camera recenters and the footer is integrated into the frame | Profile, Store, Lobby and legal actions are real DOM; mobile keeps all targets above the safe area | 60 calls, 25,054 triangles, p95 25.1 ms | PASS |
 
-## Required Final Questions
+Mobile 390x844 stayed at 13-54 draw calls, 2,976-15,872 triangles, p95 10.2 ms,
+one canvas and zero horizontal overflow in the local headless sample. Chromium/WebKit tests
+also cover 393x852, 430x932 and 844x390. These are local measurements, not physical iPhone
+Safari approval.
 
-- Does the experience feel like one place?
-- Are any ordinary section boundaries visible?
-- Does the Crown become a portal instead of fading out?
-- Does EvoFish emerge from the gate?
-- Does CROWN//FRONT emerge from the ocean transition?
-- Does Network read as a spatial command center?
-- Does Collection feel integrated instead of pasted on as a Store card?
-- Does Identity complete the story?
-- Does any scene look like a glass card over a canvas?
-- Does the site remain navigable without WebGL?
+## Transition Review
 
+- Crown to Gate: shell opens and the core aligns with the aperture before Crown detail is
+  culled. The Gate continues spatially; it is not an opacity-only swap. PASS.
+- Gate to EvoFish: ring depth stretches into caustic arcs while the subject plane arrives
+  from behind the aperture. PASS.
+- EvoFish to CROWN//FRONT: water darkens, silhouettes become shutters and orange rises from
+  depth. The authored CROWN//FRONT environment remains a future asset slot. WEAK.
+- Reactor to Network: tactical energy cools, camera pulls back and nodes assemble into
+  depth bands. PASS.
+- Network to Collection: node paths align into rails and housings without introducing a
+  Store card. PASS.
+- Collection to Identity: featured housings recede, Candidate B returns and the identity
+  portal becomes the final CTA composition. PASS.
+
+Every transform is evaluated from absolute global/local progress; reverse-scroll tests
+compare repeat poses and no state accumulates.
+
+## Final Questions
+
+- Does it feel like one place? **Yes.** The same background, camera, particles and structural
+  language continue across the full route.
+- Are visible ordinary section boundaries present? **No.** Semantic sections occupy the
+  document spine but do not render as stacked panels.
+- Does Crown become a portal rather than simply fading? **Yes.** The core alignment, shell
+  opening, occluding shutters and independent Gate geometry bridge the scenes.
+- Does EvoFish emerge from the Gate? **Yes.** Its subject is revealed behind the aperture as
+  mechanical rings become underwater depth layers.
+- Does CROWN//FRONT emerge from the ocean? **Yes, procedurally.** The final authored art is
+  still missing and is not being disguised as approved art.
+- Does Network feel spatial? **Yes.** Nodes occupy multiple depth bands around a central
+  command volume and have matching accessible DOM controls.
+- Does Store feel integrated? **Yes at skeleton level.** Catalog-backed housings and rails
+  lead to the existing Store rather than embedding fake commerce in WebGL.
+- Does Identity complete the story? **Yes.** Crown, profile, collection, portal, CTA and legal
+  navigation converge in one final frame without redirecting automatically.
+- Does any scene look like a glass card pasted on top? **No.** Copy is unframed system chrome;
+  no full-scene glass container is used.
+- Does the site work without WebGL? **Yes.** The semantic spine, headings, links and CSS
+  fallback remain available, and context loss does not reload the page.
+
+## Capture Evidence
+
+- Directory: `/tmp/blackcrown-experience-skeleton-v1/`
+- Desktop: boot plus seven chapter frames at 1440x900
+- Mobile: seven chapter frames at 390x844
+- Reduced motion: Crown, Network and final frames
+- Additional: full-page, desktop/mobile debug and contact sheet
+- Contact sheet: `/tmp/blackcrown-experience-skeleton-v1/blackcrown-experience-skeleton-contact-sheet.png`
+
+No capture artifact is tracked by Git.
+
+## Final Validation
+
+| Check | Result |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | PASS, lockfile unchanged |
+| `test:assets` | PASS, 9/9 key-art assets |
+| `test:crown-asset` | PASS, canonical manifest remains disabled |
+| Site typecheck | PASS |
+| Unit tests | PASS, 45/45 |
+| Playwright Chromium | PASS, mode-off and lab suites |
+| Playwright WebKit | PASS, mode-off and lab suites |
+| Playwright total | PASS, 33 passed; one desktop-only Crown selector test skipped on WebKit |
+| Mode-off build | PASS, initial JS 187.53 KB and CSS 47.74 KB by bundle gate |
+| Lab build | PASS |
+| Bundle budget | PASS; shell, Three and GLTF loader remain async |
+| `npm run build:prod` | PASS; site, existing game, existing lobby and assembly completed |
+| `git diff --check` | PASS |
+
+The emitted lazy route is 24.74 KB minified, the runtime 79.35 KB, GLTFLoader 135.35 KB,
+Three core 214.99 KB and renderer 357.34 KB. None is part of the mode-off initial entry.
+The pre-existing `apps/game` build reports its own 500 KB chunk warning; that protected
+application was not changed by this branch.
