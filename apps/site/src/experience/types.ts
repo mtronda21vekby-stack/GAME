@@ -6,6 +6,22 @@ export type ScrollChapterId = ExperienceChapterId;
 export type ScrollDirection = -1 | 0 | 1;
 export type QualityTier = Exclude<BlackCrownExperienceQuality, "auto">;
 
+export type SceneLightingProfile = {
+  exposure: number;
+  background: number;
+  fogColor: number;
+  fogDensity: number;
+  keyColor: number;
+  keyIntensity: number;
+  rimColor: number;
+  rimIntensity: number;
+  fillColor: number;
+  fillIntensity: number;
+  coreColor: number;
+  coreIntensity: number;
+  bloomStrength: number;
+};
+
 export type ScrollSnapshot = {
   targetProgress: number;
   progress: number;

@@ -1,48 +1,116 @@
 import * as THREE from "three";
 import type { SceneEvaluationSnapshot } from "../core/SceneLifecycle";
-import { SpatialSceneBase, energyMaterial, metalMaterial } from "./SpatialSceneBase";
+import { ForegroundOcclusionSystem } from "./ForegroundOcclusionSystem";
+import { SpatialSceneBase, energyMaterial } from "./SpatialSceneBase";
 
 export class WorldGateScene extends SpatialSceneBase {
-  private readonly rings = new THREE.Group();
-  private readonly shutters = new THREE.Group();
+  private readonly arcs = new THREE.Group();
+  private readonly tunnel = new THREE.Group();
+  private readonly ribMesh: THREE.InstancedMesh;
+  private readonly streaks: THREE.LineSegments;
   private readonly aperture: THREE.Mesh;
+  private readonly foreground = new ForegroundOcclusionSystem([
+    { position: [-4.8, 0.2, 2.2], scale: [0.62, 5.8, 0.4], rotation: [0.08, 0.14, -0.24], travel: [1.5, 0.15, 0.9] },
+    { position: [5.1, -0.35, 2.5], scale: [0.48, 6.4, 0.38], rotation: [-0.06, -0.12, 0.2], travel: [-1.2, -0.1, 1.1] },
+    { position: [-2.2, 3.55, 1.45], scale: [3.5, 0.34, 0.35], rotation: [0.06, 0.1, 0.13], travel: [0.55, -0.9, 0.75] },
+    { position: [2.7, -3.45, 1.65], scale: [3.1, 0.3, 0.38], rotation: [-0.05, -0.08, -0.1], travel: [-0.45, 0.75, 0.85] },
+  ], 0x080d15, 0x22255f);
 
   constructor() {
     super("world-gate");
-    [1.45, 2.1, 2.85, 3.6].forEach((radius, index) => {
-      const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(radius, 0.055 + index * 0.014, 6, 52),
-        this.material(index === 1 ? energyMaterial(0x68eaf4, 0.58) : metalMaterial(0x102129, 0x0b6771, 0.64), index === 1 ? 0.58 : 0.64),
+    const containment = this.solid(new THREE.MeshStandardMaterial({
+      color: 0x111b23,
+      emissive: 0x142a3e,
+      emissiveIntensity: 0.28,
+      metalness: 0.74,
+      roughness: 0.42,
+    }));
+    [
+      [1.7, 0.64, -0.7, 0.72, -0.72, 0.2],
+      [2.55, 0.48, -1.45, -1.02, 1.02, -0.26],
+      [3.45, 0.68, -2.35, 1.28, -1.3, 0.42],
+      [4.25, 0.4, -3.25, -1.5, 1.62, -0.52],
+    ].forEach(([radius, arcRatio, z, rotation, x, y], index) => {
+      const arc = new THREE.Mesh(
+        new THREE.TorusGeometry(radius, 0.07 + index * 0.012, 6, 52, Math.PI * arcRatio),
+        index === 1
+          ? this.material(energyMaterial(0x725fe0, 0.34), 0.34)
+          : containment,
       );
-      ring.position.z = -index * 0.72;
-      this.rings.add(ring);
+      arc.position.set(x, y, z);
+      arc.rotation.set(index * 0.025, index * -0.035, rotation);
+      this.arcs.add(arc);
     });
-    const shutterGeometry = new THREE.BoxGeometry(0.18, 1.45, 0.14);
-    for (let index = 0; index < 6; index += 1) {
-      const angle = (index / 6) * Math.PI * 2;
-      const shutter = new THREE.Mesh(shutterGeometry, this.material(metalMaterial(0x111c21, 0x0a3338, 0.8), 0.8));
-      shutter.position.set(Math.cos(angle) * 3.15, Math.sin(angle) * 3.15, 0.35);
-      shutter.rotation.z = angle;
-      this.shutters.add(shutter);
+
+    const tunnelWall = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.06, 2.25, 6.4, 12, 1, true),
+      this.solid(new THREE.MeshStandardMaterial({
+        color: 0x071018,
+        emissive: 0x132044,
+        emissiveIntensity: 0.22,
+        metalness: 0.62,
+        roughness: 0.6,
+        side: THREE.BackSide,
+      })),
+    );
+    tunnelWall.rotation.x = Math.PI / 2;
+    tunnelWall.position.set(0.35, 0.08, -2.8);
+
+    const ribGeometry = new THREE.BoxGeometry(1, 1, 1);
+    this.ribMesh = new THREE.InstancedMesh(ribGeometry, containment, 12);
+    const marker = new THREE.Object3D();
+    for (let index = 0; index < 12; index += 1) {
+      const band = Math.floor(index / 4);
+      const side = index % 4;
+      const angle = side * Math.PI * 0.5 + band * 0.18;
+      const radius = 1.55 + band * 0.46;
+      marker.position.set(Math.cos(angle) * radius + 0.35, Math.sin(angle) * radius, -0.9 - band * 1.55);
+      marker.rotation.set(0.04 * band, 0, angle);
+      marker.scale.set(0.12 + band * 0.025, 1.25 + band * 0.34, 0.22);
+      marker.updateMatrix();
+      this.ribMesh.setMatrixAt(index, marker.matrix);
     }
-    this.aperture = new THREE.Mesh(new THREE.CircleGeometry(1.25, 48), this.material(energyMaterial(0x48dce9, 0.3), 0.3));
-    this.aperture.position.z = -2.9;
-    this.root.add(this.rings, this.shutters, this.aperture);
+    this.ribMesh.instanceMatrix.needsUpdate = true;
+
+    this.aperture = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.58, 1.08, 0.52, 8, 1, true),
+      this.solid(new THREE.MeshStandardMaterial({
+        color: 0x0b1822,
+        emissive: 0x35668f,
+        emissiveIntensity: 0.5,
+        metalness: 0.46,
+        roughness: 0.35,
+        side: THREE.DoubleSide,
+      })),
+    );
+    this.aperture.position.set(0.35, 0.08, -5.65);
+    this.aperture.rotation.x = Math.PI / 2;
+    this.aperture.rotation.z = 0.26;
+
+    const linePositions: number[] = [];
+    for (let index = 0; index < 18; index += 1) {
+      const side = index % 2 ? 1 : -1;
+      const lane = Math.floor(index / 2) - 4;
+      linePositions.push(side * (0.7 + Math.abs(lane) * 0.34), lane * 0.23, -1.4, side * (1.15 + Math.abs(lane) * 0.42), lane * 0.34, -6.2);
+    }
+    const streakGeometry = new THREE.BufferGeometry();
+    streakGeometry.setAttribute("position", new THREE.Float32BufferAttribute(linePositions, 3));
+    this.streaks = new THREE.LineSegments(streakGeometry, this.material(new THREE.LineBasicMaterial({ color: 0x4c7bd5, transparent: true, opacity: 0.2 }), 0.2));
+
+    this.tunnel.add(tunnelWall, this.ribMesh, this.aperture, this.streaks);
+    this.root.add(this.tunnel, this.arcs, this.foreground.root);
   }
 
   evaluate(snapshot: SceneEvaluationSnapshot) {
     this.resetPose();
-    this.root.position.set(0.65, 0.4, 0);
-    const motion = snapshot.reducedMotion ? 0 : snapshot.elapsedSeconds * 0.035;
-    this.rings.children.forEach((ring, index) => { ring.rotation.z = motion * (index % 2 ? -1 : 1) + snapshot.localProgress * (0.24 + index * 0.07); });
-    this.shutters.children.forEach((shutter, index) => {
-      const angle = (index / 6) * Math.PI * 2;
-      const radius = 3.15 + snapshot.localProgress * 0.72;
-      shutter.position.x = Math.cos(angle) * radius;
-      shutter.position.y = Math.sin(angle) * radius;
-      shutter.rotation.z = angle + snapshot.localProgress * 0.16;
+    this.root.position.set(0.4, 0.2, 0);
+    const motion = snapshot.reducedMotion ? 0 : snapshot.elapsedSeconds * 0.018;
+    this.arcs.children.forEach((arc, index) => {
+      arc.rotation.z = (index % 2 ? -1.02 : 0.72) + motion * (index % 2 ? -1 : 1) + snapshot.localProgress * (0.08 + index * 0.025);
     });
-    this.aperture.scale.setScalar(0.72 + snapshot.localProgress * 0.52);
+    this.tunnel.position.z = snapshot.localProgress * 0.7;
+    this.tunnel.scale.z = 0.86 + snapshot.localProgress * 0.34;
+    this.aperture.scale.setScalar(0.82 + snapshot.localProgress * 0.28);
+    this.foreground.evaluate(snapshot.localProgress, snapshot.quality, snapshot.reducedMotion);
   }
 }
-

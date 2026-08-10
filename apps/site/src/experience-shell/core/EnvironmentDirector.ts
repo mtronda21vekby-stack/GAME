@@ -3,37 +3,39 @@ import type { CrownVisual } from "../../experience/assets/CrownAssetAdapter";
 import type { EcosystemNodes } from "../../experience/scene/EcosystemNodes";
 import type { ParticleField } from "../../experience/scene/ParticleField";
 import type { PortalField } from "../../experience/scene/PortalField";
-import { clamp, smoothstep } from "../../experience/core/math";
+import type { QualityTier, SceneLightingProfile } from "../../experience/types";
+import type { SceneLifecycleSnapshot } from "./SceneLifecycle";
+import { resolveSceneLightingProfile, SCENE_LIGHTING_PROFILES } from "./SceneLightingProfiles";
 
 export class EnvironmentDirector {
-  private readonly baseColor = new THREE.Color(0x010205);
-  private readonly oceanColor = new THREE.Color(0x01131d);
-  private readonly tacticalColor = new THREE.Color(0x100603);
-  private readonly networkColor = new THREE.Color(0x02080d);
-  private readonly workingColor = new THREE.Color();
+  private readonly profile: SceneLightingProfile = { ...SCENE_LIGHTING_PROFILES["crown-chamber"] };
 
   constructor(private readonly scene: THREE.Scene) {}
 
   update(
     progress: number,
+    lifecycle: SceneLifecycleSnapshot,
+    quality: QualityTier,
+    reducedMotion: boolean,
     crown: CrownVisual,
     particles: ParticleField,
     portal: PortalField,
     ecosystem: EcosystemNodes,
   ) {
-    const ocean = smoothstep(clamp((progress - 0.32) / 0.1)) * (1 - smoothstep(clamp((progress - 0.5) / 0.08)));
-    const tactical = smoothstep(clamp((progress - 0.49) / 0.09)) * (1 - smoothstep(clamp((progress - 0.67) / 0.08)));
-    const network = smoothstep(clamp((progress - 0.64) / 0.12));
-    this.workingColor.copy(this.baseColor).lerp(this.oceanColor, ocean).lerp(this.tacticalColor, tactical).lerp(this.networkColor, network * 0.72);
-    if (this.scene.background instanceof THREE.Color) this.scene.background.copy(this.workingColor);
+    resolveSceneLightingProfile(lifecycle, quality, reducedMotion, this.profile);
+    if (this.scene.background instanceof THREE.Color) this.scene.background.setHex(this.profile.background);
     if (this.scene.fog instanceof THREE.FogExp2) {
-      this.scene.fog.color.copy(this.workingColor);
-      this.scene.fog.density = 0.038 + ocean * 0.03 + tactical * 0.012 - network * 0.008;
+      this.scene.fog.color.setHex(this.profile.fogColor);
+      this.scene.fog.density = this.profile.fogDensity;
     }
 
     crown.root.visible = progress < 0.285 || progress > 0.885;
-    portal.root.visible = (progress > 0.17 && progress < 0.285) || (progress > 0.48 && progress < 0.71) || progress > 0.88;
-    ecosystem.root.visible = progress > 0.64 && progress < 0.84;
+    portal.root.visible = (progress > 0.18 && progress < 0.275)
+      || (progress > 0.49 && progress < 0.565)
+      || (progress > 0.65 && progress < 0.715);
+    ecosystem.root.visible = false;
     particles.root.visible = true;
   }
+
+  get lightingProfile() { return this.profile; }
 }

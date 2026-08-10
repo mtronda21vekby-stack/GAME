@@ -51,7 +51,7 @@ export class ExperienceShellRuntime {
     ecosystem: EcosystemNodes,
   ) {
     const lifecycle = this.registry.evaluate(progress, elapsedSeconds, reducedMotion, quality);
-    this.environment.update(progress, crown, particles, portal, ecosystem);
+    this.environment.update(progress, lifecycle, quality, reducedMotion, crown, particles, portal, ecosystem);
     return lifecycle;
   }
 
@@ -59,10 +59,10 @@ export class ExperienceShellRuntime {
   get activeSceneIds() { return this.registry.activeSceneIds; }
   get textureCount() { return this.assets.textureCount; }
   get evofishAssetStatus() { return this.assets.getStatus("evofish-subject").status; }
+  get lightingProfile() { return this.environment.lightingProfile; }
 
   dispose() {
     this.registry.dispose();
     this.assets.dispose();
   }
 }
-

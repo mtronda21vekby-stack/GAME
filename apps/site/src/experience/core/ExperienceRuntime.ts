@@ -214,19 +214,19 @@ export class ExperienceRuntime {
     const glbComposition = this.crownAssets.result.backend === "glb";
     const identityReturn = Math.max(0, Math.min(1, (this.snapshot.progress - 0.89) / 0.08));
     const gateCentering = Math.max(0, Math.min(1, (this.snapshot.progress - 0.18) / 0.12));
-    const crownX = compactViewport ? 0 : 1.15 - gateCentering * 0.5 + identityReturn * 0.05;
-    const crownY = narrowViewport ? (glbComposition ? 0.9 : 1.25) : viewportHeight <= 520 ? 0.3 : glbComposition ? -0.12 : 0;
+    const crownX = compactViewport ? 0 : 1.72 - gateCentering * 0.82 - identityReturn * 0.9;
+    const crownY = narrowViewport
+      ? (glbComposition ? 1.28 : 1.45)
+      : viewportHeight <= 520 ? 0.35 : (glbComposition ? -0.04 + identityReturn * 0.76 : identityReturn * 0.7);
     this.rendererHost.resize(viewportWidth, viewportHeight);
     this.camera.aspect = Math.max(1, viewportWidth) / Math.max(1, viewportHeight);
     this.cameraRig.update(this.snapshot, pointer, this.elapsedSeconds);
     this.crown.root.position.set(crownX, crownY, 0);
-    const crownScale = identityReturn > 0 ? 0.72 + identityReturn * 0.12 : 0.88 + gateCentering * 0.18;
-    this.crown.root.scale.setScalar(narrowViewport ? crownScale * 0.7 : compactViewport ? crownScale * 0.78 : crownScale);
+    const crownScale = identityReturn > 0 ? 0.72 + identityReturn * 0.16 : 1.05 + gateCentering * 0.1;
+    this.crown.root.scale.setScalar(narrowViewport ? crownScale * 0.76 : compactViewport ? crownScale * 0.82 : crownScale);
     this.architecture.root.position.set(crownX, crownY, 0);
     this.ecosystem.root.position.set(crownX, crownY, -0.4);
     this.portal.root.position.set(crownX, crownY - 0.12, -0.1);
-    this.sceneRoot.updateLighting(timeline, crownX, crownY);
-
     const shell = this.shellRuntime.update(
       this.snapshot.progress,
       this.elapsedSeconds,
@@ -237,6 +237,8 @@ export class ExperienceRuntime {
       this.portal,
       this.ecosystem,
     );
+    this.rendererHost.setExposure(this.shellRuntime.lightingProfile.exposure);
+    this.sceneRoot.updateLighting(timeline, crownX, crownY, this.shellRuntime.lightingProfile);
 
     this.crown.setAssemblyProgress(timeline.assembly);
     this.crown.setOpenProgress(timeline.open);

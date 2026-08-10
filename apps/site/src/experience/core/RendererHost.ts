@@ -53,6 +53,10 @@ export class RendererHost {
     this.resize(this.width || window.innerWidth, this.height || window.innerHeight, true);
   }
 
+  setExposure(exposure: number) {
+    this.renderer.toneMappingExposure = Math.min(1.06, Math.max(0.78, exposure));
+  }
+
   resize(width: number, height: number, force = false) {
     const safeWidth = Math.max(1, Math.round(width));
     const safeHeight = Math.max(1, Math.round(height));

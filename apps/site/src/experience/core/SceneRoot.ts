@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { ExperienceTimelineState } from "../types";
+import type { ExperienceTimelineState, SceneLightingProfile } from "../types";
 import { NexusLightingRig } from "../scene/NexusLightingRig";
 
 export class SceneRoot {
@@ -17,8 +17,8 @@ export class SceneRoot {
     this.scene.add(this.lighting.root);
   }
 
-  updateLighting(state: ExperienceTimelineState, objectX: number, objectY: number) {
-    this.lighting.update(state, objectX, objectY);
+  updateLighting(state: ExperienceTimelineState, objectX: number, objectY: number, profile: Readonly<SceneLightingProfile>) {
+    this.lighting.update(state, objectX, objectY, profile);
   }
 
   dispose() {

@@ -10,7 +10,7 @@ export abstract class SpatialSceneBase implements ExperienceScene {
   readonly root = new THREE.Group();
   protected readonly detail = new THREE.Group();
   private readonly opacity = new Map<THREE.Material, number>();
-  private quality: QualityTier = "low";
+  protected quality: QualityTier = "low";
 
   constructor(readonly id: ExperienceSceneId) {
     this.root.name = `BlackCrownScene:${id}`;
@@ -22,6 +22,12 @@ export abstract class SpatialSceneBase implements ExperienceScene {
     material.transparent = true;
     material.opacity = baseOpacity;
     this.opacity.set(material, baseOpacity);
+    return material;
+  }
+
+  protected solid<T extends THREE.Material>(material: T): T {
+    material.transparent = false;
+    material.opacity = 1;
     return material;
   }
 
