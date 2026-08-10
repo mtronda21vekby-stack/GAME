@@ -11,6 +11,7 @@
     "test:e2e": "playwright test",
     "test:assets": "node scripts/validate-key-art.mjs",
     "test:crown-asset": "node scripts/validate-crown-asset.mjs",
+    "capture:experience": "node scripts/capture-experience-skeleton.mjs",
     "lint": "node -e \"process.exit(0)\""
   },
   "dependencies": {

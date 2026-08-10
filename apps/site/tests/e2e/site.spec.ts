@@ -13,7 +13,7 @@ async function seedCart(page: Page, itemId = "skin_aurora", quantity = 1) {
 
 async function enterNexus(page: Page) {
   await expect.poll(async () => page.locator(".bcNexusLab").getAttribute("data-boot-stage")).toMatch(/ready|fallback/);
-  const enter = page.getByRole("button", { name: "ENTER THE NEXUS" });
+  const enter = page.getByRole("button", { name: /^ENTER(?: THE NEXUS)?$/u });
   if (await enter.isVisible()) await enter.click();
   await expect(page.locator(".bcNexusBoot")).toHaveCount(0);
 }
@@ -138,17 +138,19 @@ test("@lab Nexus boots one runtime and scroll is reversible", async ({ page }) =
 
   const runtime = page.locator('[data-bc-experience-runtime="active"]');
   for (const [progress, chapter] of [
-    [0, "awakening"],
-    [0.18, "assembly"],
-    [0.34, "inspection"],
-    [0.52, "core-reveal"],
-    [0.68, "crown-front"],
-    [0.84, "ecosystem"],
-    [0.96, "enter"],
+    [0, "boot"],
+    [0.1, "crown-chamber"],
+    [0.25, "world-gate"],
+    [0.42, "evofish-abyss"],
+    [0.58, "crown-front-reactor"],
+    [0.74, "network-core"],
+    [0.86, "collection-vault"],
+    [0.96, "identity-enter"],
   ] as const) {
     await setNexusProgress(page, progress);
     await expect(runtime).toHaveAttribute("data-bc-experience-chapter", chapter);
     await expect(page.locator(`[data-chapter="${chapter}"]`)).toHaveAttribute("data-active", "true");
+    expect(Number(await runtime.getAttribute("data-bc-experience-active-scenes"))).toBeLessThanOrEqual(2);
   }
 
   if (test.info().project.name === "chromium-lab") {
@@ -160,8 +162,33 @@ test("@lab Nexus boots one runtime and scroll is reversible", async ({ page }) =
   }
 
   await setNexusProgress(page, 0);
-  await expect(runtime).toHaveAttribute("data-bc-experience-chapter", "awakening");
+  await expect(runtime).toHaveAttribute("data-bc-experience-chapter", "boot");
+  expect(await page.locator('[data-chapter]:not([data-active="true"]) a').evaluateAll((anchors) => anchors.every((anchor) => anchor.getAttribute("tabindex") === "-1"))).toBe(true);
   expect(errors).toEqual([]);
+});
+
+test("@lab spatial deep-links and browser history stay inside the experience", async ({ page }) => {
+  await installApiAdapter(page);
+  await page.goto("/nexus-lab#network");
+  await enterNexus(page);
+  const runtime = page.locator('[data-bc-experience-runtime="active"]');
+  await expect(runtime).toHaveAttribute("data-bc-experience-chapter", "network-core");
+  await page.getByRole("button", { name: "MENU" }).click();
+  const spatialMenu = page.getByRole("dialog", { name: "BlackCrown worlds menu" });
+  await expect(spatialMenu).toBeVisible();
+  await spatialMenu.getByRole("link", { name: /COLLECTION/u }).click();
+  await expect(page).toHaveURL(/\/nexus-lab#store$/u);
+  await expect(runtime).toHaveAttribute("data-bc-experience-chapter", "collection-vault");
+  await page.goBack();
+  await expect(page).toHaveURL(/\/nexus-lab#network$/u);
+  await expect(runtime).toHaveAttribute("data-bc-experience-chapter", "network-core");
+
+  const menuButton = page.getByRole("button", { name: "MENU" });
+  await menuButton.click();
+  await expect(page.getByRole("dialog", { name: "BlackCrown worlds menu" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog", { name: "BlackCrown worlds menu" })).toHaveCount(0);
+  await expect(menuButton).toBeFocused();
 });
 
 test("@lab Nexus mobile layouts keep native scroll and CTA hit targets", async ({ page }) => {
@@ -177,7 +204,7 @@ test("@lab Nexus mobile layouts keep native scroll and CTA hit targets", async (
   ]) {
     await page.setViewportSize(viewport);
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-    await expect(page.locator('[data-bc-experience-runtime="active"]')).toHaveAttribute("data-bc-experience-chapter", "enter", { timeout: 5_000 });
+    await expect(page.locator('[data-bc-experience-runtime="active"]')).toHaveAttribute("data-bc-experience-chapter", "identity-enter", { timeout: 5_000 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
     const cta = page.locator('[data-nexus-primary-cta="true"]');
     await expect(cta).toBeVisible();
@@ -212,7 +239,7 @@ test("@lab reduced motion remains accessible and idles the RAF", async ({ page }
   await expect.poll(async () => page.locator(".bcNexusLab").getAttribute("data-boot-stage")).toMatch(/ready|fallback/);
   await expect(page.locator(".bcNexusBoot")).toHaveCount(0);
   expect(await page.locator(".bcNexusStory").evaluate((element) => element.getBoundingClientRect().height)).toBeLessThan(5_000);
-  await expect(page.getByRole("heading", { name: "BLACKCROWN SYSTEM ONLINE" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "NEXUS READY" })).toBeVisible();
   const runtime = page.locator('[data-bc-experience-runtime="active"]');
   if (await runtime.count()) {
     await expect(runtime).toHaveAttribute("data-bc-experience-raf", "0", { timeout: 5_000 });
@@ -372,7 +399,7 @@ test("@lab context loss exposes DOM fallback and restores one canvas", async ({ 
   const canvas = page.locator("canvas[data-bc-nexus-canvas]");
   await canvas.dispatchEvent("webglcontextlost", { cancelable: true });
   await expect(runtime).toHaveAttribute("data-bc-experience-context", "lost");
-  await expect(page.getByRole("heading", { name: "BLACKCROWN SYSTEM ONLINE" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "NEXUS READY" })).toBeVisible();
   await canvas.dispatchEvent("webglcontextrestored");
   await expect(runtime).toHaveAttribute("data-bc-experience-context", "ready");
   await expect(canvas).toHaveCount(1);
