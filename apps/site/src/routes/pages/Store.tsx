@@ -2,6 +2,7 @@ import React from "react";
 import { Button } from "@blackcrown/ui";
 import { Icons } from "@blackcrown/assets";
 import CommerceHeader from "../../components/CommerceHeader";
+import { nav } from "../../lib/nav";
 import {
   ensureStoreInit,
   formatCoins,
@@ -14,7 +15,7 @@ import {
   type StoreItem,
   type StoreState,
 } from "../../lib/store";
-import { addToCart, getCartCount } from "../../lib/commerce";
+import { addToCart, getCartCount, getCommerceEntitlements } from "../../lib/commerce";
 import "../../styles/commerce.css";
 
 type StoreView = "all" | "wishlist" | "owned";
@@ -90,6 +91,8 @@ export function Store() {
     return getStoreItems();
   });
   const [storeState, setStoreState] = React.useState<StoreState>(() => getStoreState());
+  const [ownedIds, setOwnedIds] = React.useState<string[]>([]);
+  const [entitlementsState, setEntitlementsState] = React.useState<"loading" | "ready" | "error">("loading");
   const [cartCount, setCartCount] = React.useState(getCartCount);
   const [query, setQuery] = React.useState("");
   const [filter, setFilter] = React.useState<StoreFilter>("all");
@@ -105,7 +108,20 @@ export function Store() {
     return () => window.removeEventListener("bc:cart-changed", onCartChanged);
   }, []);
 
-  const owned = React.useMemo(() => new Set(storeState.owned), [storeState.owned]);
+  React.useEffect(() => {
+    const controller = new AbortController();
+    void getCommerceEntitlements(controller.signal)
+      .then((entitlements) => {
+        setOwnedIds(entitlements.itemIds);
+        setEntitlementsState("ready");
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setEntitlementsState("error");
+      });
+    return () => controller.abort();
+  }, []);
+
+  const owned = React.useMemo(() => new Set(ownedIds), [ownedIds]);
   const wishlist = React.useMemo(() => new Set(storeState.wishlist), [storeState.wishlist]);
 
   const visible = React.useMemo(() => {
@@ -144,8 +160,11 @@ export function Store() {
           </p>
           <div className="bcCommercePills">
             <span className="bcCommercePill bcCommercePill--accent">Корзина: {cartCount}</span>
-            <span className="bcCommercePill">Коллекция: {storeState.owned.length}</span>
+            <span className="bcCommercePill">Коллекция: {ownedIds.length}</span>
             <span className="bcCommercePill">Избранное: {storeState.wishlist.length}</span>
+            <span className="bcCommercePill" data-entitlements-state={entitlementsState}>
+              {entitlementsState === "ready" ? "SERVER OWNERSHIP" : entitlementsState === "loading" ? "SYNCING OWNERSHIP" : "OWNERSHIP OFFLINE"}
+            </span>
           </div>
           {notice ? <div className="bcCommerceNotice" role="status">{notice}</div> : null}
         </section>
@@ -188,11 +207,7 @@ export function Store() {
               <span className="bcCommerceMeta">CATALOG / {visible.length} ITEMS</span>
               <h2 id="store-items-title" style={{ marginTop: 7 }}>Витрина BlackCrown</h2>
             </div>
-            <Button variant="primary" onClick={() => {
-              window.history.pushState(null, "", "/cart");
-              window.dispatchEvent(new PopStateEvent("popstate"));
-              window.scrollTo({ top: 0, behavior: "auto" });
-            }}>
+            <Button variant="primary" onClick={() => nav("/cart")}>
               Открыть корзину · {cartCount}
             </Button>
           </div>

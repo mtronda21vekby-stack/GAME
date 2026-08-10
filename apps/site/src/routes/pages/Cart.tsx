@@ -2,6 +2,7 @@ import React from "react";
 import { Button } from "@blackcrown/ui";
 import { Icons } from "@blackcrown/assets";
 import CommerceHeader from "../../components/CommerceHeader";
+import { nav } from "../../lib/nav";
 import { formatCoins } from "../../lib/store";
 import {
   getCartCount,
@@ -12,12 +13,6 @@ import {
   type CartItem,
 } from "../../lib/commerce";
 import "../../styles/commerce.css";
-
-function navigate(path: string) {
-  window.history.pushState(null, "", path);
-  window.dispatchEvent(new PopStateEvent("popstate"));
-  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-}
 
 export function Cart() {
   const [items, setItems] = React.useState<CartItem[]>(getCartItems);
@@ -53,8 +48,8 @@ export function Cart() {
             <h2>Корзина пуста</h2>
             <p>Добавь предметы из Store. Локальная покупка в один клик больше не используется.</p>
             <div className="bcCommerceActions">
-              <Button variant="primary" onClick={() => navigate("/store")}>Открыть Store</Button>
-              <Button variant="secondary" onClick={() => navigate("/")}>На главную</Button>
+              <Button variant="primary" onClick={() => nav("/store")}>Открыть Store</Button>
+              <Button variant="secondary" onClick={() => nav("/")}>На главную</Button>
             </div>
           </section>
         ) : (
@@ -134,8 +129,8 @@ export function Cart() {
                 На следующем шаге сервер заново проверит ID предметов, количество и цену. Данные из браузера не считаются доверенными.
               </div>
 
-              <Button variant="primary" onClick={() => navigate("/checkout")}>Перейти к оформлению</Button>
-              <Button variant="secondary" onClick={() => navigate("/store")}>Вернуться в Store</Button>
+              <Button variant="primary" onClick={() => nav("/checkout")}>Перейти к оформлению</Button>
+              <Button variant="secondary" onClick={() => nav("/store")}>Вернуться в Store</Button>
             </aside>
           </div>
         )}

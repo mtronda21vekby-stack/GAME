@@ -2,6 +2,8 @@ import React from "react";
 import { Button } from "@blackcrown/ui";
 import { Icons } from "@blackcrown/assets";
 import { userStorage } from "@blackcrown/core";
+import { nav as navSite, navExternal } from "../lib/nav";
+import type { SitePath } from "../routes/routeMetadata";
 
 type ActiveKey = "home" | "about" | "store" | "support" | "privacy" | "terms" | "account";
 type SiteHeaderProps = {
@@ -11,30 +13,11 @@ type SiteHeaderProps = {
   showAccountPill?: boolean;
 };
 
-function scrollToTop() {
-  const scroller = document.querySelector(".bcScroll") as HTMLElement | null;
-  if (scroller) {
-    scroller.scrollTo({ top: 0, behavior: "auto" });
-    return;
-  }
-  window.scrollTo({ top: 0, behavior: "auto" });
-}
-
-function navSite(path: string) {
-  window.history.pushState(null, "", path);
-  window.dispatchEvent(new PopStateEvent("popstate"));
-  scrollToTop();
-}
-
-function navExternal(path: string) {
-  window.location.assign(path);
-}
-
 function getName() {
   return userStorage.getString("nickname", "") || "Игрок";
 }
 
-function NavLink(props: { href: string; label: string; active?: boolean }) {
+function NavLink(props: { href: SitePath; label: string; active?: boolean }) {
   return (
     <a
       className="bcLink"

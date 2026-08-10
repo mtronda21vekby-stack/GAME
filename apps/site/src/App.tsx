@@ -1,13 +1,5 @@
 import React from "react";
-import HeroParallaxDirector from "./components/HeroParallaxDirector";
-import MatrixDepthEngine from "./components/MatrixDepthEngine";
-import MobileParallaxDirector from "./components/MobileParallaxDirector";
-import MotionDirector from "./components/MotionDirector";
-import MotionRevealV3 from "./components/MotionRevealV3";
-import PremiumParallaxDirector from "./components/PremiumParallaxDirector";
-import SiteMusic from "./components/SiteMusic";
 import { Router } from "./routes/Router";
-import "./styles/mobile-scroll-stability.css";
 
 let lastAppVh = 0;
 
@@ -16,23 +8,6 @@ function syncAppVh() {
   if (Math.abs(h - lastAppVh) < 2) return;
   lastAppVh = h;
   document.documentElement.style.setProperty("--app-vh", `${h}px`);
-}
-
-function useMobileStabilityProfile() {
-  const query = "(max-width: 820px), (pointer: coarse)";
-  const [enabled, setEnabled] = React.useState(() => window.matchMedia?.(query).matches ?? false);
-
-  React.useEffect(() => {
-    const media = window.matchMedia?.(query);
-    if (!media) return;
-
-    const sync = () => setEnabled(media.matches);
-    sync();
-    media.addEventListener?.("change", sync);
-    return () => media.removeEventListener?.("change", sync);
-  }, []);
-
-  return enabled;
 }
 
 function safeId() {
@@ -76,8 +51,6 @@ async function ensureGuestUser() {
 }
 
 export function App() {
-  const mobileStabilityProfile = useMobileStabilityProfile();
-
   React.useEffect(() => {
     syncAppVh();
 
@@ -116,14 +89,7 @@ export function App() {
   }, []);
 
   return (
-    <div className="bcAppShell" data-mobile-stability={mobileStabilityProfile ? "true" : "false"}>
-      {!mobileStabilityProfile ? <MatrixDepthEngine quality="auto" intensity={1} /> : null}
-      <MotionDirector />
-      <MotionRevealV3 />
-      {mobileStabilityProfile ? <MobileParallaxDirector /> : <PremiumParallaxDirector />}
-      <HeroParallaxDirector />
-      <SiteMusic />
-
+    <div className="bcAppShell">
       <div className="bcAppContent">
         <Router />
       </div>

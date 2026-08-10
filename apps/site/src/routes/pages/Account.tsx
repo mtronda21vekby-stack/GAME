@@ -5,13 +5,12 @@ import { userStorage } from "@blackcrown/core";
 import { openTelegramBot } from "../../lib/telegram";
 import { getReducedMotion, setReducedMotion } from "../../lib/prefs";
 import { nav, navExternal } from "../../lib/nav";
+import { getCommerceEntitlements } from "../../lib/commerce";
 import { SiteHeader } from "../../components/SiteHeader";
+import "../../styles/content-pages.css";
 import {
   StoreItem,
-  ensureStoreInit,
   getStoreItems,
-  getStoreState,
-  formatCoins,
   rarityAccent,
   rarityLabel,
 } from "../../lib/store";
@@ -393,10 +392,8 @@ export function Account() {
 
   // --- store ---
   const [items] = React.useState<StoreItem[]>(() => getStoreItems());
-  const [store, setStore] = React.useState(() => {
-    ensureStoreInit();
-    return getStoreState();
-  });
+  const [ownedIds, setOwnedIds] = React.useState<string[]>([]);
+  const [entitlementsState, setEntitlementsState] = React.useState<"loading" | "ready" | "error">("loading");
 
   // --- progress ---
   const [progress, setProgress] = React.useState<Progress>(() => buildProgress(getXp()));
@@ -407,7 +404,7 @@ export function Account() {
 
   const [savedPulse, setSavedPulse] = React.useState(0);
 
-  const ownedSet = React.useMemo(() => new Set(store.owned), [store.owned]);
+  const ownedSet = React.useMemo(() => new Set(ownedIds), [ownedIds]);
   const ownedItems = React.useMemo(() => items.filter((x) => ownedSet.has(x.id)), [items, ownedSet]);
 
   const avatar = React.useMemo(() => AVATARS.find((a) => a.id === avatarId) ?? AVATARS[0], [avatarId]);
@@ -434,8 +431,16 @@ export function Account() {
 
   const pulseSaved = React.useCallback(() => setSavedPulse((x) => x + 1), []);
 
-  const refreshStore = React.useCallback(() => {
-    setStore(getStoreState());
+  const refreshEntitlements = React.useCallback((signal?: AbortSignal) => {
+    setEntitlementsState("loading");
+    void getCommerceEntitlements(signal)
+      .then((entitlements) => {
+        setOwnedIds(entitlements.itemIds);
+        setEntitlementsState("ready");
+      })
+      .catch(() => {
+        if (!signal?.aborted) setEntitlementsState("error");
+      });
   }, []);
 
   const refreshProgressLocal = React.useCallback(() => {
@@ -483,13 +488,15 @@ export function Account() {
   }, [adminUnlocked]);
 
   React.useEffect(() => {
-    window.addEventListener("focus", refreshStore);
-    window.addEventListener("popstate", refreshStore);
+    const controller = new AbortController();
+    const onFocus = () => refreshEntitlements();
+    refreshEntitlements(controller.signal);
+    window.addEventListener("focus", onFocus);
     return () => {
-      window.removeEventListener("focus", refreshStore);
-      window.removeEventListener("popstate", refreshStore);
+      controller.abort();
+      window.removeEventListener("focus", onFocus);
     };
-  }, [refreshStore]);
+  }, [refreshEntitlements]);
 
   React.useEffect(() => {
     let alive = true;
@@ -617,7 +624,10 @@ export function Account() {
               <Pill>Коллекция</Pill>
               <Pill>Настройки</Pill>
               <Pill>
-                <span style={{ opacity: 0.82 }}>Баланс:</span> {formatCoins(store.balance)}
+                <span style={{ opacity: 0.82 }}>Серверная коллекция:</span> {ownedIds.length}
+              </Pill>
+              <Pill tone={entitlementsState === "ready" ? "accent" : undefined}>
+                {entitlementsState === "ready" ? "OWNERSHIP SYNCED" : entitlementsState === "loading" ? "OWNERSHIP SYNC" : "OWNERSHIP OFFLINE"}
               </Pill>
 
               <Pill tone="accent">
@@ -881,13 +891,17 @@ export function Account() {
                   <Button variant="secondary" onClick={() => nav("/store")}>
                     В магазин
                   </Button>
-                  <Button variant="ghost" onClick={refreshStore}>
+                  <Button variant="ghost" onClick={() => refreshEntitlements()}>
                     Обновить
                   </Button>
                 </div>
               }
             >
-              {ownedItems.length === 0 ? (
+              {entitlementsState === "error" ? (
+                <div style={{ opacity: 0.86, lineHeight: 1.55, fontWeight: 850 }} role="status">
+                  Серверная коллекция временно недоступна. Локальные покупки не используются как источник владения.
+                </div>
+              ) : ownedItems.length === 0 ? (
                 <div style={{ opacity: 0.86, lineHeight: 1.55, fontWeight: 850 }}>
                   Коллекция пуста. Открой магазин и получи предметы — они появятся здесь.
                 </div>

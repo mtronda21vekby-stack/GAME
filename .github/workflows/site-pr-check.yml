@@ -26,7 +26,7 @@ permissions:
 jobs:
   validate-site:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -53,14 +53,32 @@ jobs:
       - name: Validate key art
         run: pnpm --filter @blackcrown/site test:assets
 
-      - name: Typecheck workspace
-        id: typecheck
+      - name: Typecheck site
+        run: pnpm --filter @blackcrown/site typecheck
+
+      - name: Run site unit tests
+        run: pnpm --filter @blackcrown/site test
+
+      - name: Install Playwright browsers
+        run: pnpm --filter @blackcrown/site exec playwright install --with-deps chromium webkit
+
+      - name: Run site smoke tests
+        run: pnpm --filter @blackcrown/site test:e2e
+
+      - name: Build site
+        run: pnpm --filter @blackcrown/site build
+
+      - name: Enforce bundle budget
+        run: node apps/site/scripts/check-bundle-budget.mjs
+
+      - name: Build production bundle
+        run: npm run build:prod
+
+      - name: Check workspace type debt
+        id: workspace-typecheck
         continue-on-error: true
         run: pnpm typecheck
 
-      - name: Build site
-        run: pnpm build:site
-
-      - name: Report typecheck debt
-        if: steps.typecheck.outcome == 'failure'
-        run: echo "::warning::Workspace typecheck still contains legacy errors. The production-like site build completed separately."
+      - name: Report workspace type debt
+        if: steps.workspace-typecheck.outcome == 'failure'
+        run: echo "::warning::Workspace typecheck contains errors outside the hard-gated site scope."

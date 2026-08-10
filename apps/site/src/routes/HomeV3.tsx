@@ -1,7 +1,6 @@
 import React from "react";
 import { userStorage } from "@blackcrown/core";
 import AICoachV3 from "../components/AICoachV3";
-import CinematicExperience from "../components/CinematicExperience";
 import LiveFeedV3 from "../components/LiveFeedV3";
 import StoreV3 from "../components/StoreV3";
 import {
@@ -10,9 +9,15 @@ import {
   type BlackCrownWorldStatusSnapshot,
 } from "../lib/blackcrownWorldStatus";
 import { openTelegramBot } from "../lib/telegram";
+import { nav, navExternal } from "../lib/nav";
+import "../styles/home.css";
 import "../styles/services-v3.css";
 import "../styles/home-v3-services.css";
 import "../styles/v3-4-services-visual.css";
+
+const CinematicExperience = React.lazy(() =>
+  import("../experience/CinematicExperience").then((module) => ({ default: module.CinematicExperience })),
+);
 
 const FALLBACK_STATUS_SNAPSHOT: BlackCrownWorldStatusSnapshot = {
   statuses: BLACKCROWN_WORLD_STATUS_FALLBACK,
@@ -24,14 +29,12 @@ function getPlayerName() {
   return userStorage.getString("nickname", "") || "Игрок";
 }
 
-function navigateSite(path: string) {
-  window.history.pushState(null, "", path);
-  window.dispatchEvent(new PopStateEvent("popstate"));
-  window.scrollTo({ top: 0, behavior: "auto" });
-}
-
-function navigateExternal(path: string) {
-  window.location.assign(path);
+function CinematicFallback() {
+  return (
+    <section className="bcCinematicFallback" aria-busy="true" aria-label="BlackCrown">
+      <span>BLACKCROWN</span>
+    </section>
+  );
 }
 
 export function HomeV3() {
@@ -53,23 +56,25 @@ export function HomeV3() {
   return (
     <main
       className="bcHomeV3"
-      data-experience="blackcrown-cinematic-v1"
+      data-experience="blackcrown-cinematic-v2"
       data-status-source={statusSnapshot.source}
       data-player={playerName}
     >
-      <CinematicExperience
-        evofish={evofish}
-        crownFront={crownFront}
-        network={network}
-        statusSource={statusSnapshot.source}
-        onNavigate={navigateSite}
-        onPlay={() => navigateExternal("/game/")}
-        onOpenCrownFront={() => navigateExternal("/games/crown-front/")}
-        onOpenLobby={() => navigateExternal("/lobby/")}
-      />
+      <React.Suspense fallback={<CinematicFallback />}>
+        <CinematicExperience
+          evofish={evofish}
+          crownFront={crownFront}
+          network={network}
+          statusSource={statusSnapshot.source}
+          onNavigate={nav}
+          onPlay={() => navExternal("/game/")}
+          onOpenCrownFront={() => navExternal("/games/crown-front/")}
+          onOpenLobby={() => navExternal("/lobby/")}
+        />
+      </React.Suspense>
 
-      <StoreV3 onOpenStore={() => navigateSite("/store")} onOpenAccount={() => navigateSite("/account")} />
-      <AICoachV3 onOpenCoach={openTelegramBot} onOpenSupport={() => navigateSite("/support")} />
+      <StoreV3 onOpenStore={() => nav("/store")} onOpenAccount={() => nav("/account")} />
+      <AICoachV3 onOpenCoach={openTelegramBot} onOpenSupport={() => nav("/support")} />
       <LiveFeedV3 />
     </main>
   );
