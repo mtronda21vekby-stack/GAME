@@ -105,7 +105,7 @@
   white-space: nowrap;
 }
 
-.bcExperienceChapterRail { display: flex; align-items: center; justify-content: center; gap: 3px; }
+.bcExperienceChapterRail { display: none; align-items: center; justify-content: center; gap: 3px; }
 .bcExperienceChapterRail a { width: 38px; height: 44px; display: grid; place-items: center; color: rgba(205, 234, 237, .38); border-bottom: 1px solid transparent; }
 .bcExperienceChapterRail a span { font: 700 9px/1 ui-monospace, monospace; }
 .bcExperienceChapterRail a[aria-current="step"] { color: var(--bc-shell-cyan); border-color: var(--bc-shell-cyan); }
@@ -157,17 +157,32 @@
 }
 
 .bcExperienceStoryChapter[data-active="true"] .bcExperienceSceneCopy { opacity: 1; visibility: visible; pointer-events: auto; }
-.bcExperienceStoryChapter[data-tone="ocean"] .bcExperienceSceneCopy,
-.bcExperienceStoryChapter[data-tone="network"] .bcExperienceSceneCopy { right: clamp(24px, 7vw, 112px); left: auto; }
-.bcExperienceStoryChapter[data-tone="gate"] .bcExperienceSceneCopy { top: auto; bottom: 10vh; width: min(520px, 44vw); transform: none; }
-.bcExperienceStoryChapter[data-tone="gate"] .bcExperienceSceneCopy h2 { max-width: 14ch; font-size: clamp(2.5rem, 4.3vw, 4.9rem); }
+.bcExperienceStoryChapter[data-layout="hero-left"] .bcExperienceSceneCopy { top: 48%; width: min(520px, 37vw); }
+.bcExperienceStoryChapter[data-layout="system-minimal"] .bcExperienceSceneCopy { top: auto; bottom: 11vh; width: min(410px, 32vw); transform: none; }
+.bcExperienceStoryChapter[data-layout="system-minimal"] .bcExperienceSceneCopy h2 { max-width: 14ch; font-size: clamp(2.2rem, 3.2vw, 3.7rem); line-height: .94; }
+.bcExperienceStoryChapter[data-layout="editorial-low-left"] .bcExperienceSceneCopy { top: auto; bottom: 9vh; width: min(510px, 38vw); transform: none; }
+.bcExperienceStoryChapter[data-layout="tactical-right"] .bcExperienceSceneCopy { top: auto; right: clamp(24px, 7vw, 112px); bottom: 10vh; left: auto; width: min(470px, 34vw); transform: none; text-align: right; }
+.bcExperienceStoryChapter[data-layout="tactical-right"] .bcExperienceSceneActions { justify-content: flex-end; }
+.bcExperienceStoryChapter[data-layout="network-right"] .bcExperienceSceneCopy { right: clamp(24px, 7vw, 112px); left: auto; width: min(500px, 36vw); }
+.bcExperienceStoryChapter[data-layout="vault-left"] .bcExperienceSceneCopy { top: 46%; width: min(490px, 35vw); }
+.bcExperienceStoryChapter[data-layout="final-center"] .bcExperienceSceneCopy { top: auto; right: 18vw; bottom: 5.5vh; left: 18vw; width: auto; text-align: center; transform: none; }
+.bcExperienceStoryChapter[data-layout="final-center"] .bcExperienceSceneCopy h2,
+.bcExperienceStoryChapter[data-layout="final-center"] .bcExperienceSceneCopy p { margin-right: auto; margin-left: auto; }
+.bcExperienceStoryChapter[data-layout="final-center"] .bcExperienceSceneActions,
+.bcExperienceStoryChapter[data-layout="final-center"] .bcExperienceFooter { justify-content: center; }
 
 .bcExperienceSceneCopy > span,
 .bcExperienceSceneCopy > small { color: var(--bc-shell-cyan); font: 700 10px/1.35 ui-monospace, monospace; }
 .bcExperienceStoryChapter[data-tone="tactical"] .bcExperienceSceneCopy > span,
 .bcExperienceStoryChapter[data-tone="tactical"] .bcExperienceSceneCopy > small { color: var(--bc-shell-orange); }
 .bcExperienceSceneCopy h1,
-.bcExperienceSceneCopy h2 { max-width: 11ch; margin: 18px 0 0; font: 900 clamp(3rem, 6.6vw, 6.8rem)/.9 Inter, system-ui, sans-serif; letter-spacing: 0; text-wrap: balance; }
+.bcExperienceSceneCopy h2 { max-width: 11ch; margin: 18px 0 0; font: 900 clamp(3rem, 5.5vw, 5.9rem)/.9 Inter, system-ui, sans-serif; letter-spacing: 0; text-wrap: balance; }
+.bcExperienceStoryChapter[data-layout="hero-left"] .bcExperienceSceneCopy h1 { font-size: clamp(3.2rem, 5.25vw, 5.7rem); }
+.bcExperienceStoryChapter[data-layout="editorial-low-left"] .bcExperienceSceneCopy h2 { font-size: clamp(3rem, 4.8vw, 5.2rem); }
+.bcExperienceStoryChapter[data-layout="tactical-right"] .bcExperienceSceneCopy h2 { max-width: 10ch; margin-left: auto; font-size: clamp(2.8rem, 4.1vw, 4.7rem); }
+.bcExperienceStoryChapter[data-layout="network-right"] .bcExperienceSceneCopy h2 { font-size: clamp(3rem, 4.7vw, 5.1rem); }
+.bcExperienceStoryChapter[data-layout="vault-left"] .bcExperienceSceneCopy h2 { font-size: clamp(3rem, 4.8vw, 5.2rem); }
+.bcExperienceStoryChapter[data-layout="final-center"] .bcExperienceSceneCopy h2 { max-width: 13ch; font-size: clamp(2.8rem, 4.3vw, 4.8rem); }
 .bcExperienceSceneCopy p { max-width: 43ch; margin: 22px 0 0; color: rgba(218, 237, 239, .7); font: 400 clamp(1rem, 1.35vw, 1.15rem)/1.55 Inter, system-ui, sans-serif; }
 .bcExperienceSceneCopy > small { display: block; margin-top: 14px; color: rgba(255, 166, 108, .66); }
 
@@ -181,8 +196,12 @@
 .bcExperienceWorldIndex a[data-priority="primary"] { color: #effdff; border-color: rgba(105, 233, 245, .42); }
 .bcExperienceWorldIndex a[data-priority="tertiary"] { opacity: .54; }
 
-.bcExperienceCollectionIndex { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 24px; color: rgba(212, 238, 240, .56); font: 700 9px/1.4 ui-monospace, monospace; }
-.bcExperienceCollectionIndex span::before { content: "/ "; color: var(--bc-shell-cyan); }
+.bcExperienceCollectionIndex { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 22px; }
+.bcExperienceCollectionIndex > span { min-width: 0; padding: 9px 0 8px; border-top: 1px solid rgba(105, 233, 245, .18); color: rgba(226, 243, 245, .76); }
+.bcExperienceCollectionIndex strong,
+.bcExperienceCollectionIndex small { display: block; overflow: hidden; font: 700 9px/1.25 ui-monospace, monospace; text-overflow: ellipsis; white-space: nowrap; }
+.bcExperienceCollectionIndex small { margin-top: 5px; color: rgba(174, 208, 212, .44); font-size: 8px; text-transform: uppercase; }
+.bcExperienceCollectionIndex > span[data-rarity="legendary"] { border-color: rgba(240, 182, 91, .5); }
 
 .bcExperienceFooter { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin-top: 24px; padding-top: 14px; border-top: 1px solid rgba(116, 208, 216, .12); }
 .bcExperienceFooter a,
@@ -239,9 +258,7 @@
   .bcExperienceChrome__menuButton { min-width: 52px; }
   .bcExperienceStoryChapter { min-height: calc(var(--bc-chapter-mobile-vh) * 1svh); padding: 88px 18px 92px; }
   .bcExperienceSceneCopy,
-  .bcExperienceStoryChapter[data-tone="ocean"] .bcExperienceSceneCopy,
-  .bcExperienceStoryChapter[data-tone="network"] .bcExperienceSceneCopy,
-  .bcExperienceStoryChapter[data-tone="gate"] .bcExperienceSceneCopy {
+  .bcExperienceStoryChapter[data-layout] .bcExperienceSceneCopy {
     position: fixed;
     top: auto;
     right: max(18px, env(safe-area-inset-right));
@@ -253,7 +270,14 @@
     overflow-y: auto;
     background: linear-gradient(180deg, transparent, rgba(1, 4, 7, .78) 24%, rgba(1, 4, 7, .96) 68%);
     transform: translate3d(0, calc((1 - var(--bc-chapter-progress)) * 12px), 0);
+    text-align: left;
   }
+  .bcExperienceStoryChapter[data-layout="system-minimal"] .bcExperienceSceneCopy { bottom: max(70px, calc(env(safe-area-inset-bottom) + 52px)); padding-top: 20px; }
+  .bcExperienceStoryChapter[data-layout="system-minimal"] .bcExperienceSceneCopy p,
+  .bcExperienceStoryChapter[data-layout="system-minimal"] .bcExperienceSceneActions { display: none; }
+  .bcExperienceStoryChapter[data-layout="tactical-right"] .bcExperienceSceneActions,
+  .bcExperienceStoryChapter[data-layout="final-center"] .bcExperienceSceneActions,
+  .bcExperienceStoryChapter[data-layout="final-center"] .bcExperienceFooter { justify-content: flex-start; }
   .bcExperienceSceneCopy h1,
   .bcExperienceSceneCopy h2 { max-width: 12ch; margin-top: 12px; font-size: clamp(2.25rem, 10.4vw, 3.45rem); overflow-wrap: anywhere; }
   .bcExperienceSceneCopy p { max-width: 32ch; margin-top: 14px; font-size: .95rem; line-height: 1.45; }
@@ -263,6 +287,8 @@
   .bcExperienceWorldIndex { grid-template-columns: repeat(2, minmax(98px, 1fr)); margin-top: 16px; }
   .bcExperienceWorldIndex a[data-mobile-hidden="true"] { display: none; }
   .bcExperienceFooter { margin-top: 14px; }
+  .bcExperienceCollectionIndex { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 14px; }
+  .bcExperienceCollectionIndex > span:nth-child(3) { display: none; }
   .bcExperienceShell__fallbackCore { left: 50%; width: 52vw; }
   .bcExperienceSkeletonDebug,
   .bcExperienceShell .bcNexusDebug { display: none; }
@@ -275,9 +301,7 @@
   .bcExperienceChapterRail a { width: 34px; }
   .bcExperienceStoryChapter { min-height: calc(var(--bc-chapter-landscape-vh) * 1svh); }
   .bcExperienceSceneCopy,
-  .bcExperienceStoryChapter[data-tone="ocean"] .bcExperienceSceneCopy,
-  .bcExperienceStoryChapter[data-tone="network"] .bcExperienceSceneCopy,
-  .bcExperienceStoryChapter[data-tone="gate"] .bcExperienceSceneCopy { top: 54px; right: auto; bottom: auto; left: max(24px, env(safe-area-inset-left)); width: min(440px, 54vw); max-height: calc(100svh - 62px); padding: 10px 20px 12px 0; background: linear-gradient(90deg, rgba(1, 4, 7, .94), rgba(1, 4, 7, .54) 78%, transparent); transform: none; }
+  .bcExperienceStoryChapter[data-layout] .bcExperienceSceneCopy { top: 54px; right: auto; bottom: auto; left: max(24px, env(safe-area-inset-left)); width: min(440px, 54vw); max-height: calc(100svh - 62px); padding: 10px 20px 12px 0; background: linear-gradient(90deg, rgba(1, 4, 7, .94), rgba(1, 4, 7, .54) 78%, transparent); text-align: left; transform: none; }
   .bcExperienceSceneCopy h1,
   .bcExperienceSceneCopy h2 { margin-top: 8px; font-size: clamp(2rem, 6.6vw, 3.2rem); }
   .bcExperienceSceneCopy p { margin-top: 9px; font-size: .84rem; line-height: 1.35; }
@@ -288,5 +312,5 @@
 @media (prefers-reduced-motion: reduce) {
   .bcExperienceStoryChapter { min-height: calc(var(--bc-chapter-reduced-vh) * 1svh); }
   .bcExperienceSceneCopy { transition: none; transform: translateY(-50%); }
-  .bcExperienceStoryChapter[data-tone="gate"] .bcExperienceSceneCopy { transform: none; }
+  .bcExperienceStoryChapter[data-layout="system-minimal"] .bcExperienceSceneCopy { transform: none; }
 }

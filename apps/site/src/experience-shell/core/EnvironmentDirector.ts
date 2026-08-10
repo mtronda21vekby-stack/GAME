@@ -30,9 +30,7 @@ export class EnvironmentDirector {
     }
 
     crown.root.visible = progress < 0.285 || progress > 0.885;
-    portal.root.visible = (progress > 0.18 && progress < 0.275)
-      || (progress > 0.49 && progress < 0.565)
-      || (progress > 0.65 && progress < 0.715);
+    portal.root.visible = false;
     ecosystem.root.visible = false;
     particles.root.visible = true;
   }

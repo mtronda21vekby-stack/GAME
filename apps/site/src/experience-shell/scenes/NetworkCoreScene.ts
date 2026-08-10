@@ -7,6 +7,9 @@ const NODE_POSITIONS = [
   [0.2, 2.35, -0.2], [2.45, 1.35, -0.75], [2.9, -1.2, -0.4], [-0.1, -2.35, -1.2], [-3.15, 1.65, -1.1],
   [4.0, 2.6, -2.1], [4.25, -2.35, -2.4], [-2.2, 3.15, -2.65], [-4.45, -1.55, -2.3],
 ] as const;
+const COMPACT_NODE_POSITIONS = [
+  [0, 2.35, -0.2], [1.35, 1.45, -0.75], [1.45, 0.05, -0.4], [-0.15, 0.45, -1.2], [-1.45, 1.25, -1.1],
+] as const;
 
 export class NetworkCoreScene extends SpatialSceneBase {
   private readonly commandCore = new THREE.Group();
@@ -98,6 +101,10 @@ export class NetworkCoreScene extends SpatialSceneBase {
     const visibleNodes = snapshot.quality === "low" ? 5 : this.nodes.length;
     this.nodes.forEach((node, index) => {
       node.visible = index < visibleNodes;
+      const position = snapshot.quality === "low" && index < COMPACT_NODE_POSITIONS.length
+        ? COMPACT_NODE_POSITIONS[index]
+        : NODE_POSITIONS[index];
+      node.position.fromArray(position);
       node.rotation.y = snapshot.reducedMotion ? 0 : idle * (index % 2 ? -0.018 : 0.014);
       const reveal = Math.min(1, Math.max(0, snapshot.localProgress * 1.4 - index * 0.055));
       node.scale.setScalar(reveal * (index < 5 ? 1 : 0.82));

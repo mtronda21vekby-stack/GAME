@@ -86,12 +86,19 @@ export class CollectionVaultScene extends SpatialSceneBase {
 
   evaluate(snapshot: SceneEvaluationSnapshot) {
     this.resetPose();
-    this.root.position.set(0.55, 0.15, 0);
+    const compact = snapshot.quality === "low";
+    this.root.position.set(compact ? -0.25 : 0.55, compact ? 0.45 : 0.15, 0);
     this.rails.position.x = (1 - snapshot.localProgress) * 0.45;
     this.rails.scale.y = 0.78 + snapshot.localProgress * 0.22;
     const visible = snapshot.quality === "low" ? 2 : this.housings.length;
     this.housings.forEach((housing, index) => {
       housing.visible = index < visible;
+      housing.position.x = compact
+        ? (index === 0 ? 0.72 : -1.2)
+        : (index === 0 ? 1.55 : index === 1 ? 3.4 : -1.05);
+      housing.position.y = compact
+        ? (index === 0 ? 1.15 : 1.8)
+        : (index === 0 ? 0.55 : index === 1 ? -1.1 : 1.55);
       const reveal = Math.min(1, Math.max(0, snapshot.localProgress * 1.5 - index * 0.16));
       const baseScale = index === 0 ? 1.18 : 0.88;
       housing.scale.setScalar(baseScale * (0.72 + reveal * 0.28));

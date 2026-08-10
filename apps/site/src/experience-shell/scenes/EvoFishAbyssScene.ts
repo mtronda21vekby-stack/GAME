@@ -45,7 +45,7 @@ export class EvoFishAbyssScene extends SpatialSceneBase {
           vec3 color = mix(fallback, source.rgb, uHasTexture);
           float edge = smoothstep(0.0, 0.2, vUv.x) * smoothstep(0.0, 0.2, 1.0 - vUv.x)
             * smoothstep(0.0, 0.18, vUv.y) * smoothstep(0.0, 0.18, 1.0 - vUv.y);
-          float depthFade = smoothstep(0.0, 0.22, length(color));
+          float depthFade = 0.34 + smoothstep(0.015, 0.22, length(color)) * 0.66;
           gl_FragColor = vec4(color, edge * mix(0.72, source.a, uHasTexture) * depthFade * uOpacity);
         }
       `,
@@ -116,6 +116,10 @@ export class EvoFishAbyssScene extends SpatialSceneBase {
   evaluate(snapshot: SceneEvaluationSnapshot) {
     this.resetPose();
     this.root.position.set(snapshot.reducedMotion ? 0 : -0.2 + snapshot.localProgress * 0.42, 0, 0);
+    const compact = snapshot.quality === "low";
+    this.subject.position.x = compact ? 0 : 1.25;
+    this.subject.position.y = compact ? 1.12 : 0.55;
+    this.subject.scale.setScalar(compact ? 0.9 : 1);
     this.subject.position.z = -1.55 + snapshot.localProgress * 0.58;
     this.subject.rotation.y = snapshot.reducedMotion ? 0 : (snapshot.localProgress - 0.5) * -0.075;
     this.subjectMaterial.uniforms.uOpacity.value = (0.72 + snapshot.localProgress * 0.18) * snapshot.weight;
