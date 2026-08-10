@@ -260,6 +260,7 @@ export class ExperienceRuntime {
     this.container.dataset.bcExperienceChapter = this.snapshot.chapterId;
     this.container.dataset.bcExperienceScene = shell.primary;
     this.container.dataset.bcExperienceActiveScenes = String(this.shellRuntime.activeSceneCount);
+    this.container.dataset.bcExperienceAuthoredModels = String(this.shellRuntime.authoredModelCount);
     this.container.dataset.bcExperienceEvofishAsset = this.shellRuntime.evofishAssetStatus;
     this.container.dataset.bcExperienceContext = this.contextState;
     this.container.style.setProperty("--bc-shell-progress", this.snapshot.progress.toFixed(4));
@@ -460,6 +461,7 @@ export class ExperienceRuntime {
     delete this.container.dataset.bcExperienceChapter;
     delete this.container.dataset.bcExperienceScene;
     delete this.container.dataset.bcExperienceActiveScenes;
+    delete this.container.dataset.bcExperienceAuthoredModels;
     delete this.container.dataset.bcExperienceEvofishAsset;
     delete this.container.dataset.bcExperienceFrameP50;
     delete this.container.dataset.bcExperienceFrameP95;

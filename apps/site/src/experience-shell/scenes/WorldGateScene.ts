@@ -1,9 +1,11 @@
 import * as THREE from "three";
 import type { SceneEvaluationSnapshot } from "../core/SceneLifecycle";
+import type { AssetSlotRegistry } from "../core/AssetSlotRegistry";
 import { ForegroundOcclusionSystem } from "./ForegroundOcclusionSystem";
 import { SpatialSceneBase, energyMaterial } from "./SpatialSceneBase";
 
 export class WorldGateScene extends SpatialSceneBase {
+  private authored: THREE.Group | null = null;
   private readonly arcs = new THREE.Group();
   private readonly tunnel = new THREE.Group();
   private readonly ribMesh: THREE.InstancedMesh;
@@ -17,7 +19,7 @@ export class WorldGateScene extends SpatialSceneBase {
     { position: [2.7, -3.45, 1.65], scale: [3.1, 0.3, 0.38], rotation: [-0.05, -0.08, -0.1], travel: [-0.45, 0.75, 0.85] },
   ], 0x080d15, 0x22255f);
 
-  constructor() {
+  constructor(private readonly assets: AssetSlotRegistry) {
     super("world-gate");
     const containment = this.solid(new THREE.MeshStandardMaterial({
       color: 0x111b23,
@@ -107,10 +109,23 @@ export class WorldGateScene extends SpatialSceneBase {
     this.root.add(this.tunnel, this.arcs, this.foreground.root);
   }
 
+  async preload() {
+    const model = await this.assets.loadModel("world-gate", this.quality);
+    if (!model || this.authored) return;
+    this.authored = model;
+    model.position.set(-0.2, 0.05, -0.65);
+    model.scale.setScalar(0.92);
+    this.root.add(model);
+  }
+
   evaluate(snapshot: SceneEvaluationSnapshot) {
     this.resetPose();
     const dominant = snapshot.weight > 0.5;
-    this.arcs.visible = dominant;
+    const authored = Boolean(this.authored && snapshot.quality !== "low");
+    if (this.authored) this.authored.visible = authored;
+    this.arcs.visible = dominant && !authored;
+    this.ribMesh.visible = !authored;
+    this.aperture.visible = !authored;
     this.streaks.visible = snapshot.weight >= 0.45;
     this.foreground.root.visible = snapshot.weight > 0.65;
     this.root.position.set(0.4, 0.2, 0);
@@ -120,6 +135,10 @@ export class WorldGateScene extends SpatialSceneBase {
     });
     this.tunnel.position.z = snapshot.localProgress * 0.7;
     this.tunnel.scale.z = 0.86 + snapshot.localProgress * 0.34;
+    if (this.authored?.visible) {
+      this.authored.position.z = -0.65 + snapshot.localProgress * 0.48;
+      this.authored.rotation.z = (snapshot.localProgress - 0.5) * 0.025;
+    }
     const apertureScale = 0.82 + snapshot.localProgress * 0.28;
     this.aperture.scale.set(apertureScale * 1.16, apertureScale * 0.84, 1);
     this.depthCore.scale.setScalar(0.72 + snapshot.localProgress * 0.32);

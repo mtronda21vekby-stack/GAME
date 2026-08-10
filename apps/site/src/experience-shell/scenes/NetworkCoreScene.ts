@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { SceneEvaluationSnapshot } from "../core/SceneLifecycle";
+import type { AssetSlotRegistry } from "../core/AssetSlotRegistry";
 import { ForegroundOcclusionSystem } from "./ForegroundOcclusionSystem";
 import { SpatialSceneBase, energyMaterial } from "./SpatialSceneBase";
 
@@ -12,6 +13,7 @@ const COMPACT_NODE_POSITIONS = [
 ] as const;
 
 export class NetworkCoreScene extends SpatialSceneBase {
+  private authored: THREE.Group | null = null;
   private readonly commandCore = new THREE.Group();
   private readonly nodes: THREE.Group[] = [];
   private readonly dataPaths: THREE.LineSegments;
@@ -23,7 +25,7 @@ export class NetworkCoreScene extends SpatialSceneBase {
     { position: [-2.2, -3.5, 1.35], scale: [3.6, 0.2, 0.28], rotation: [-0.04, -0.07, 0.1], travel: [0.45, 0.6, 0.55] },
   ], 0x071319, 0x0a3840);
 
-  constructor() {
+  constructor(private readonly assets: AssetSlotRegistry) {
     super("network-core");
     const housingMaterial = this.solid(new THREE.MeshStandardMaterial({
       color: 0x17323a,
@@ -92,16 +94,28 @@ export class NetworkCoreScene extends SpatialSceneBase {
     this.root.add(this.commandCore, this.dataPaths, this.city, this.foreground.root);
   }
 
+  async preload() {
+    const model = await this.assets.loadModel("network-environment", this.quality);
+    if (!model || this.authored) return;
+    this.authored = model;
+    model.position.set(0.0, 0.2, -0.9);
+    model.scale.setScalar(0.9);
+    this.root.add(model);
+  }
+
   evaluate(snapshot: SceneEvaluationSnapshot) {
     this.resetPose();
     const dominant = snapshot.weight > 0.5;
+    const authored = Boolean(this.authored && snapshot.quality !== "low");
+    if (this.authored) this.authored.visible = authored;
     this.root.position.set(0.2, 0.2, 0);
     const idle = snapshot.reducedMotion ? 0 : snapshot.elapsedSeconds;
+    this.commandCore.visible = !authored;
     this.commandCore.rotation.set(idle * 0.012, -idle * 0.018, snapshot.localProgress * 0.08);
     this.commandCore.scale.setScalar(0.82 + snapshot.localProgress * 0.16);
     const visibleNodes = dominant ? (snapshot.quality === "low" ? 5 : this.nodes.length) : 3;
     this.nodes.forEach((node, index) => {
-      node.visible = index < visibleNodes;
+      node.visible = !authored && index < visibleNodes;
       const position = snapshot.quality === "low" && index < COMPACT_NODE_POSITIONS.length
         ? COMPACT_NODE_POSITIONS[index]
         : NODE_POSITIONS[index];
@@ -111,7 +125,12 @@ export class NetworkCoreScene extends SpatialSceneBase {
       node.scale.setScalar(reveal * (index < 5 ? 1 : 0.82));
     });
     this.dataPaths.position.z = -0.3 + snapshot.localProgress * 0.22;
-    this.city.visible = dominant;
+    this.city.visible = dominant && !authored;
+    if (this.authored?.visible) {
+      const reveal = Math.min(1, snapshot.localProgress * 1.5);
+      this.authored.scale.setScalar(0.82 + reveal * 0.08);
+      this.authored.position.z = -1.25 + reveal * 0.35;
+    }
     this.foreground.root.visible = snapshot.weight > 0.65;
     this.city.position.y = (1 - snapshot.localProgress) * 0.24;
     if (this.foreground.root.visible) this.foreground.evaluate(snapshot.localProgress, snapshot.quality, snapshot.reducedMotion);

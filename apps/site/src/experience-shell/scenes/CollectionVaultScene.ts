@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import type { CommerceCatalogItem } from "@blackcrown/commerce";
 import type { SceneEvaluationSnapshot } from "../core/SceneLifecycle";
+import type { AssetSlotRegistry } from "../core/AssetSlotRegistry";
 import { getCollectionHousingKind, getFeaturedCollectionItems } from "../featuredCatalog";
 import { ForegroundOcclusionSystem } from "./ForegroundOcclusionSystem";
 import { SpatialSceneBase, energyMaterial, metalMaterial } from "./SpatialSceneBase";
@@ -8,6 +9,7 @@ import { SpatialSceneBase, energyMaterial, metalMaterial } from "./SpatialSceneB
 const RARITY_COLORS = { common: 0xcbd5db, rare: 0x58c9ed, epic: 0xa982f0, legendary: 0xf0b65b } as const;
 
 export class CollectionVaultScene extends SpatialSceneBase {
+  private authored: THREE.Group | null = null;
   private readonly rails: THREE.InstancedMesh;
   private readonly housings: THREE.Group[] = [];
   private readonly featured = getFeaturedCollectionItems(3);
@@ -18,7 +20,7 @@ export class CollectionVaultScene extends SpatialSceneBase {
     { position: [-2.5, -3.35, 1.25], scale: [3.5, 0.23, 0.3], rotation: [-0.04, -0.07, 0.08], travel: [0.5, 0.48, 0.52] },
   ], 0x0b1418, 0x14333a);
 
-  constructor() {
+  constructor(private readonly assets: AssetSlotRegistry) {
     super("collection-vault");
     const railMaterial = this.solid(metalMaterial(0x142128, 0x0c3138));
     this.rails = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), railMaterial, 8);
@@ -51,6 +53,15 @@ export class CollectionVaultScene extends SpatialSceneBase {
       this.root.add(housing);
     });
     this.root.add(this.rails, this.foreground.root);
+  }
+
+  async preload() {
+    const model = await this.assets.loadModel("collection-item-housings", this.quality);
+    if (!model || this.authored) return;
+    this.authored = model;
+    model.position.set(0.0, 0.15, -0.9);
+    model.scale.setScalar(0.9);
+    this.root.add(model);
   }
 
   private createHousing(item: CommerceCatalogItem) {
@@ -88,12 +99,15 @@ export class CollectionVaultScene extends SpatialSceneBase {
     this.resetPose();
     const dominant = snapshot.weight > 0.5;
     const compact = snapshot.quality === "low";
+    const authored = Boolean(this.authored && !compact);
+    if (this.authored) this.authored.visible = authored;
     this.root.position.set(compact ? -0.25 : 0.55, compact ? 0.45 : 0.15, 0);
+    this.rails.visible = !authored;
     this.rails.position.x = (1 - snapshot.localProgress) * 0.45;
     this.rails.scale.y = 0.78 + snapshot.localProgress * 0.22;
     const visible = dominant ? (snapshot.quality === "low" ? 2 : this.housings.length) : 1;
     this.housings.forEach((housing, index) => {
-      housing.visible = index < visible;
+      housing.visible = !authored && index < visible;
       housing.position.x = compact
         ? (index === 0 ? 0.72 : -1.2)
         : (index === 0 ? 1.55 : index === 1 ? 3.4 : -1.05);
@@ -108,6 +122,11 @@ export class CollectionVaultScene extends SpatialSceneBase {
       housing.rotation.y = baseRotation + (snapshot.reducedMotion ? 0 : Math.sin(snapshot.elapsedSeconds * 0.16 + index) * 0.025);
     });
     this.foreground.root.visible = snapshot.weight > 0.65;
+    if (this.authored?.visible) {
+      const reveal = Math.min(1, snapshot.localProgress * 1.4);
+      this.authored.position.z = -1.45 + reveal * 0.55;
+      this.authored.scale.setScalar(0.82 + reveal * 0.08);
+    }
     if (this.foreground.root.visible) this.foreground.evaluate(snapshot.localProgress, snapshot.quality, snapshot.reducedMotion);
   }
 }

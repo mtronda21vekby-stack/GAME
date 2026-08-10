@@ -32,12 +32,12 @@ export class ExperienceShellRuntime {
     this.registry = new SceneRegistry(options.parent, options.requestFrame);
     this.environment = new EnvironmentDirector(options.scene);
     this.registry.register(new CrownChamberScene());
-    this.registry.register(new WorldGateScene());
+    this.registry.register(new WorldGateScene(this.assets));
     this.registry.register(new EvoFishAbyssScene(this.assets));
-    this.registry.register(new CrownFrontReactorScene());
-    this.registry.register(new NetworkCoreScene());
-    this.registry.register(new CollectionVaultScene());
-    this.registry.register(new IdentityScene());
+    this.registry.register(new CrownFrontReactorScene(this.assets));
+    this.registry.register(new NetworkCoreScene(this.assets));
+    this.registry.register(new CollectionVaultScene(this.assets));
+    this.registry.register(new IdentityScene(this.assets));
   }
 
   update(
@@ -58,6 +58,7 @@ export class ExperienceShellRuntime {
   get activeSceneCount() { return this.registry.activeSceneCount; }
   get activeSceneIds() { return this.registry.activeSceneIds; }
   get textureCount() { return this.assets.textureCount; }
+  get authoredModelCount() { return this.assets.modelCount; }
   get evofishAssetStatus() { return this.assets.getStatus("evofish-subject").status; }
   get lightingProfile() { return this.environment.lightingProfile; }
 

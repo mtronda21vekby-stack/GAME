@@ -1,9 +1,11 @@
 import * as THREE from "three";
 import type { SceneEvaluationSnapshot } from "../core/SceneLifecycle";
+import type { AssetSlotRegistry } from "../core/AssetSlotRegistry";
 import { ForegroundOcclusionSystem } from "./ForegroundOcclusionSystem";
 import { SpatialSceneBase, energyMaterial } from "./SpatialSceneBase";
 
 export class IdentityScene extends SpatialSceneBase {
+  private authored: THREE.Group | null = null;
   private readonly profileArcs = new THREE.Group();
   private readonly core = new THREE.Mesh(new THREE.OctahedronGeometry(0.24, 0), this.material(energyMaterial(0x91f0f2, 0.34), 0.34));
   private readonly dataColumns: THREE.InstancedMesh;
@@ -15,7 +17,7 @@ export class IdentityScene extends SpatialSceneBase {
     { position: [-2.9, -3.35, 1.3], scale: [3.4, 0.2, 0.28], rotation: [-0.04, -0.06, 0.08], travel: [0.5, 0.52, 0.5] },
   ], 0x091318, 0x0c333a);
 
-  constructor() {
+  constructor(private readonly assets: AssetSlotRegistry) {
     super("identity");
     const shell = this.solid(new THREE.MeshStandardMaterial({
       color: 0x172b31,
@@ -54,10 +56,24 @@ export class IdentityScene extends SpatialSceneBase {
     this.root.add(this.profileArcs, this.core, this.axis, this.dataColumns, this.foreground.root);
   }
 
+  async preload() {
+    const model = await this.assets.loadModel("identity-core", this.quality);
+    if (!model || this.authored) return;
+    this.authored = model;
+    model.position.set(0.0, 0.05, -1.1);
+    model.scale.setScalar(0.9);
+    this.root.add(model);
+  }
+
   evaluate(snapshot: SceneEvaluationSnapshot) {
     this.resetPose();
     const dominant = snapshot.weight > 0.5;
-    this.dataColumns.visible = dominant;
+    const authored = Boolean(this.authored && snapshot.quality !== "low");
+    if (this.authored) this.authored.visible = authored;
+    this.profileArcs.visible = !authored;
+    this.core.visible = !authored;
+    this.axis.visible = !authored;
+    this.dataColumns.visible = dominant && !authored;
     this.foreground.root.visible = snapshot.weight > 0.65;
     this.root.position.set(0.2, 0.42, 0);
     const motion = snapshot.reducedMotion ? 0 : snapshot.elapsedSeconds;
@@ -70,6 +86,10 @@ export class IdentityScene extends SpatialSceneBase {
     this.core.scale.setScalar(0.76 + snapshot.localProgress * 0.2);
     this.dataColumns.position.y = (1 - snapshot.localProgress) * -0.48;
     this.axis.scale.y = 0.65 + snapshot.localProgress * 0.35;
+    if (this.authored?.visible) {
+      this.authored.position.z = -1.35 + snapshot.localProgress * 0.25;
+      this.authored.scale.setScalar(0.84 + snapshot.localProgress * 0.06);
+    }
     if (this.foreground.root.visible) this.foreground.evaluate(snapshot.localProgress, snapshot.quality, snapshot.reducedMotion);
   }
 }

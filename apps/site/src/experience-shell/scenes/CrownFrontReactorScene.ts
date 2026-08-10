@@ -1,9 +1,11 @@
 import * as THREE from "three";
 import type { SceneEvaluationSnapshot } from "../core/SceneLifecycle";
+import type { AssetSlotRegistry } from "../core/AssetSlotRegistry";
 import { ForegroundOcclusionSystem } from "./ForegroundOcclusionSystem";
 import { SpatialSceneBase, energyMaterial, metalMaterial } from "./SpatialSceneBase";
 
 export class CrownFrontReactorScene extends SpatialSceneBase {
+  private authored: THREE.Group | null = null;
   private readonly chamber = new THREE.Group();
   private readonly containment = new THREE.Group();
   private readonly shutters: THREE.InstancedMesh;
@@ -18,7 +20,7 @@ export class CrownFrontReactorScene extends SpatialSceneBase {
     { position: [2.9, -3.5, 1.7], scale: [3.8, 0.36, 0.46], rotation: [-0.07, -0.1, -0.1], travel: [-0.65, 0.7, 0.76] },
   ], 0x100d0c, 0x401408);
 
-  constructor() {
+  constructor(private readonly assets: AssetSlotRegistry) {
     super("crown-front-reactor");
     const shellMaterial = this.solid(new THREE.MeshStandardMaterial({
       color: 0x211d1a,
@@ -152,9 +154,21 @@ export class CrownFrontReactorScene extends SpatialSceneBase {
     this.root.add(this.chamber, this.containment, reactorHousing, this.energyVolume, this.coreCage, this.nucleus, this.shutters, this.foreground.root);
   }
 
+  async preload() {
+    const model = await this.assets.loadModel("crown-front-environment", this.quality);
+    if (!model || this.authored) return;
+    this.authored = model;
+    model.position.set(-0.35, 0.0, -1.1);
+    model.scale.setScalar(0.92);
+    this.root.add(model);
+  }
+
   evaluate(snapshot: SceneEvaluationSnapshot) {
     this.resetPose();
-    this.chamber.visible = snapshot.weight > 0.5;
+    const authored = Boolean(this.authored && snapshot.quality !== "low");
+    if (this.authored) this.authored.visible = authored;
+    this.chamber.visible = snapshot.weight > 0.5 && !authored;
+    this.containment.visible = !authored;
     this.foreground.root.visible = snapshot.weight > 0.65;
     this.root.position.set(0.8, 0.18, 0);
     const motion = snapshot.reducedMotion ? 0 : snapshot.elapsedSeconds;
@@ -177,6 +191,10 @@ export class CrownFrontReactorScene extends SpatialSceneBase {
     }
     this.shutters.instanceMatrix.needsUpdate = true;
     this.chamber.position.z = -0.25 - snapshot.localProgress * 0.25;
+    if (this.authored?.visible) {
+      this.authored.position.z = -1.1 - snapshot.localProgress * 0.2;
+      this.authored.rotation.z = snapshot.localProgress * 0.018;
+    }
     if (this.foreground.root.visible) this.foreground.evaluate(snapshot.localProgress, snapshot.quality, snapshot.reducedMotion);
   }
 }
