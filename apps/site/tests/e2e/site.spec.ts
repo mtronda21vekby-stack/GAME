@@ -153,6 +153,17 @@ test("@lab Nexus boots one runtime and scroll is reversible", async ({ page }) =
     expect(Number(await runtime.getAttribute("data-bc-experience-active-scenes"))).toBeLessThanOrEqual(2);
   }
 
+  for (const progress of [0.235, 0.365, 0.525, 0.685, 0.81, 0.92]) {
+    await setNexusProgress(page, progress);
+    expect(Number(await runtime.getAttribute("data-bc-experience-active-scenes"))).toBe(2);
+    await expect(page.locator("canvas[data-bc-nexus-canvas]")).toBeVisible();
+  }
+
+  await setNexusProgress(page, 0.865);
+  await expect(page.locator(".bcExperienceCollectionIndex")).toContainText("Aurora Skin");
+  await expect(page.locator(".bcExperienceCollectionIndex")).toContainText("Founder Badge");
+  await expect(page.locator(".bcExperienceCollectionIndex")).toContainText("Starter Bundle");
+
   if (test.info().project.name === "chromium-lab") {
     await page.getByTitle("low quality").click();
     await expect(page.getByTitle("low quality")).toHaveAttribute("aria-checked", "true");
@@ -205,6 +216,10 @@ test("@lab Nexus mobile layouts keep native scroll and CTA hit targets", async (
     await page.setViewportSize(viewport);
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
     await expect(page.locator('[data-bc-experience-runtime="active"]')).toHaveAttribute("data-bc-experience-chapter", "identity-enter", { timeout: 5_000 });
+    if (test.info().project.name === "webkit-lab") {
+      await expect(page.locator('[data-bc-experience-runtime="active"]')).toHaveAttribute("data-bc-crown-lod", "low");
+    }
+    expect(Number(await page.locator('[data-bc-experience-runtime="active"]').getAttribute("data-bc-experience-draw-calls"))).toBeLessThanOrEqual(70);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
     const cta = page.locator('[data-nexus-primary-cta="true"]');
     await expect(cta).toBeVisible();
@@ -357,6 +372,8 @@ test("@lab local Crown selector disposes each A/B backend and keeps one renderer
   await page.goto("/nexus-lab?bcdebug=1");
   await enterNexus(page);
   const runtime = page.locator('[data-bc-experience-runtime="active"]');
+  await page.getByTitle("high quality").click();
+  await expect(page.getByTitle("high quality")).toHaveAttribute("aria-checked", "true");
   await page.locator(".bcNexusDebug").getByText("DEBUG", { exact: true }).click();
   const selector = page.getByRole("radiogroup", { name: "Local Crown review candidate" });
   await expect(selector).toBeVisible();
