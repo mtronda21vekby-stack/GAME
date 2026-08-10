@@ -202,6 +202,28 @@ test("@lab spatial deep-links and browser history stay inside the experience", a
   await expect(menuButton).toBeFocused();
 });
 
+test("@lab authored Blender environments lazy-load without replacing the runtime", async ({ page }) => {
+  test.skip(test.info().project.name === "webkit-lab", "WebKit lab uses the LOW mobile policy and keeps procedural environments.");
+  const requests: string[] = [];
+  page.on("request", (request) => requests.push(request.url()));
+  await installApiAdapter(page);
+  await page.goto("/nexus-lab?nexuscrown=candidate-b&bcdebug=1&bcenv=blender");
+  await enterNexus(page);
+  const runtime = page.locator('[data-bc-experience-runtime="active"]');
+  await expect(page.locator("canvas[data-bc-nexus-canvas]")).toHaveCount(1);
+
+  for (const [progress, expectedModels] of [[0.295, 1], [0.6, 2], [0.745, 3], [0.865, 4], [0.97, 5]] as const) {
+    await setNexusProgress(page, progress);
+    await expect.poll(async () => Number(await runtime.getAttribute("data-bc-experience-authored-models"))).toBe(expectedModels);
+    expect(Number(await runtime.getAttribute("data-bc-experience-active-scenes"))).toBeLessThanOrEqual(2);
+  }
+
+  expect(requests.filter((url) => /\/experience\/environments\/blender-v1\/[^/]+\.glb$/u.test(url))).toHaveLength(5);
+  expect(Number(await runtime.getAttribute("data-bc-experience-draw-calls"))).toBeLessThanOrEqual(75);
+  await page.evaluate(() => { history.pushState(null, "", "/about"); dispatchEvent(new PopStateEvent("popstate")); });
+  await expect(page.locator("canvas[data-bc-nexus-canvas]")).toHaveCount(0);
+});
+
 test("@lab Nexus mobile layouts keep native scroll and CTA hit targets", async ({ page }) => {
   await installApiAdapter(page);
   await page.goto("/nexus-lab");
