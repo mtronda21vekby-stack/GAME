@@ -74,4 +74,124 @@ Only presentation modules, bounded scene helpers, tests and local capture toolin
 
 ## Final Review
 
-This section will be completed after the implementation and identical after-capture pass.
+The final deterministic set is stored outside Git at:
+
+- `/tmp/blackcrown-experience-art-direction-v3/after/`
+- `/tmp/blackcrown-experience-art-direction-v3/after/blackcrown-art-direction-v3-after-contact-sheet.png`
+- `/tmp/blackcrown-experience-art-direction-v3/comparisons/blackcrown-art-direction-v3-before-after.png`
+
+Performance comparison uses the same prewarmed capture harness on the detached `86ee009`
+baseline and V3. Prewarm traverses the requested progress points before resetting the sampler,
+so first shader compilation is excluded from steady chapter and transition values.
+
+| Chapter | Baseline median / p95 | V3 median / p95 | Calls before -> after | Triangles before -> after | Result |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Crown Chamber | 16.6 / 26.0 ms | 16.0 / 26.0 ms | 28 -> 27 | 17,642 -> 18,018 | PASS |
+| World Gate | 16.4 / 25.9 ms | 15.7 / 26.0 ms | 18 -> 21 | 4,644 -> 4,812 | PASS |
+| EvoFish | 16.4 / 25.9 ms | 15.7 / 26.0 ms | 17 -> 22 | 3,568 -> 3,684 | PASS |
+| CROWN//FRONT | 16.4 / 25.9 ms | 15.7 / 26.0 ms | 52 -> 24 | 9,304 -> 4,948 | PASS |
+| Network | 16.4 / 25.9 ms | 15.7 / 26.0 ms | 56 -> 47 | 7,152 -> 2,804 | PASS |
+| Collection | 16.4 / 25.9 ms | 15.7 / 26.0 ms | 17 -> 23 | 2,988 -> 2,812 | PASS |
+| Identity | 16.4 / 25.9 ms | 15.7 / 26.0 ms | 60 -> 30 | 25,054 -> 19,458 | PASS |
+
+All six transition midpoints report median `8.7 ms`, p95 `24.9 ms`, one current scene plus
+one transition partner, and 20-54 total draw calls. Baseline transition p95 was 33.4-33.9 ms.
+The improvement comes from removing the obsolete shared portal overlay and rendering only the
+semantic silhouette/core of the non-dominant partner. It does not change the single renderer,
+RAF, camera, ScrollDirector or absolute transition progress.
+
+Mobile Candidate B AUTO resolves LOW/LOD2. The 390x844 final set reports p95 `10.1 ms`,
+18-32 draw calls, 2,576-10,420 triangles, no horizontal overflow and about 4 MiB estimated
+Crown texture memory. Desktop reports 8 MiB.
+
+## World Review
+
+### Crown Chamber - PASS
+
+- Focal point and silhouette: Candidate B occupies the center-right hero zone; central spire,
+  side spires, lower arc and core read on the first ready frame.
+- Environment: asymmetric containment supports, levitation plane and near shell edges frame the
+  Crown without creating a card.
+- Lighting: cold key, cyan rim, neutral fill and localized core light expose black-titanium
+  curvature without full-shell emission.
+- DOM: left editorial composition leaves the core clear. Mobile puts the Crown above copy and
+  preserves both 44 px actions.
+
+### World Gate - PASS
+
+- Focal point: an asymmetric polygonal aperture with a separate deep nucleus.
+- Environment grammar: broken arcs, axial tunnel wall, radial ribs, streaks and edge shutters;
+  the aperture is deliberately non-circular and non-uniformly scaled.
+- Transition: the Crown moves behind the camera by progress `0.23`; Gate geometry continues the
+  core axis instead of crossfading a disc.
+- Remaining weakness: this is procedural geometry, so authored surface detail is intentionally
+  restrained.
+
+### EvoFish - PASS with asset limitation
+
+- Depth: one approved key-art texture is embedded among a far water volume, caustic planes,
+  seeded bubbles, midground silhouettes and sparse organic foreground occluders.
+- Material: dark-tone lift reveals the subject body without duplicating the texture or exposing
+  a hard rectangular plane.
+- Composition: desktop copy is low-left; mobile keeps the fish above copy and CTA.
+- Limitation: true separated fish/background layers require an approved layered source later.
+
+### CROWN//FRONT - PASS as procedural environment
+
+- The former orange sphere is replaced by a faceted containment cage, open axial energy volume,
+  separate nucleus, eight shutters, mechanical ribs, bridge planes, chamber walls and tactical
+  light bars.
+- Orange remains local to reactor energy. Black/gunmetal structure and residual cyan system
+  lights keep BlackCrown identity.
+- The right/bottom-right tactical DOM block avoids the brightest core and remains an explicit
+  link to the existing game route.
+
+### Network - PASS
+
+- The command core is offset; nine non-identical housings occupy asymmetric positions across
+  multiple depth bands, connected by data paths and sparse city structures.
+- LOW uses five compact primary nodes; secondary destinations remain available in accessible DOM.
+- The scene no longer depends on a flat central ring or identical spheres.
+
+### Collection - PASS
+
+- Data source: authoritative shared `COMMERCE_CATALOG`; deterministic subset is Aurora Skin,
+  Founder Badge and Starter Bundle.
+- Housings: armor display, radial medallion and multi-cell vault map directly from real categories;
+  rarity drives only the controlled accent.
+- DOM exposes real title/category/rarity and routes to `/store` and `/account`. No canvas purchase
+  or fake price was introduced.
+
+### Identity - PASS
+
+- Candidate B returns as the identity symbol; broken profile arcs, a small bound core, vertical
+  data columns and central axis replace the previous Network-like orb.
+- Final copy is centered with integrated legal/footer DOM and free CTA space.
+- No automatic redirect is present.
+
+## Explicit Answers
+
+1. Crown is visible immediately: **YES**.
+2. Gate reads as a passage: **YES**, through axial depth, asymmetric aperture and camera penetration.
+3. EvoFish is organically distinct: **YES**, with water absorption and organic depth layers.
+4. CROWN//FRONT is no longer an orange sphere: **YES**.
+5. Network is no longer a flat ring: **YES**.
+6. Collection is no longer two placeholder capsules: **YES**.
+7. Identity differs from Network: **YES**.
+8. Foreground occlusion exists: **YES**, scene-owned and quality-capped.
+9. Text layout repeats: **NO**; seven explicit layout contracts are tested.
+10. Black materials read: **YES**, via bounded fill, key/rim highlights and restrained emissive accents.
+11. Visible ordinary section boundaries: **NO**.
+12. One camera and one world: **YES**; one canvas/renderer/RAF/ScrollDirector remain.
+13. Procedural placeholders remaining: Gate surface art, reactor chamber, Network architecture,
+    vault housings, Identity framing and all foreground occluders.
+14. Approved art still needed: layered EvoFish source and final authored CROWN//FRONT environment.
+15. Physical iPhone Safari performed: **NO**.
+
+## Final Classification
+
+- PASS: architecture preservation, Crown first frame, world differentiation, DOM rhythm,
+  foreground depth, shared catalog integration, mobile composition, transition performance.
+- WEAK: procedural environments do not yet carry authored texture/surface language; EvoFish remains
+  a single approved raster source.
+- BLOCKER: none in automated desktop/mobile review.
