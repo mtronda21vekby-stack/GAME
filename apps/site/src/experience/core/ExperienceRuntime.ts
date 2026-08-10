@@ -22,6 +22,7 @@ import { RendererHost } from "./RendererHost";
 import { SceneRoot } from "./SceneRoot";
 import { AudioController } from "../audio/AudioController";
 import { getRuntimeLifecycleCounters, recordRuntimeDispose, recordRuntimeEntry } from "./RuntimeDiagnostics";
+import { ExperienceShellRuntime } from "../../experience-shell/core/ExperienceShellRuntime";
 
 export type ExperienceRuntimeOptions = {
   container: HTMLElement;
@@ -34,6 +35,7 @@ export type ExperienceRuntimeOptions = {
 
 export class ExperienceRuntime {
   private readonly container: HTMLElement;
+  private readonly story: HTMLElement;
   private readonly onBootStage: (stage: ExperienceBootStage) => void;
   private readonly onSnapshot: (snapshot: ScrollSnapshot) => void;
   private readonly onMetrics: (metrics: ExperienceMetrics) => void;
@@ -53,6 +55,7 @@ export class ExperienceRuntime {
   private readonly architecture: NexusArchitecture;
   private readonly ecosystem: EcosystemNodes;
   private readonly portal: PortalField;
+  private readonly shellRuntime: ExperienceShellRuntime;
   private readonly audio = new AudioController();
   private snapshot = INITIAL_SCROLL_SNAPSHOT;
   private raf = 0;
@@ -75,6 +78,7 @@ export class ExperienceRuntime {
 
   constructor(options: ExperienceRuntimeOptions) {
     this.container = options.container;
+    this.story = options.story;
     this.onBootStage = options.onBootStage;
     this.onSnapshot = options.onSnapshot;
     this.onMetrics = options.onMetrics;
@@ -109,6 +113,12 @@ export class ExperienceRuntime {
     this.ecosystem = new EcosystemNodes(preset.ecosystemNodes);
     this.portal = new PortalField(preset.radialSegments);
     this.sceneRoot.root.add(this.architecture.root, this.particles.root, this.crown.root, this.ecosystem.root, this.portal.root);
+    this.shellRuntime = new ExperienceShellRuntime({
+      parent: this.sceneRoot.root,
+      scene: this.sceneRoot.scene,
+      signal: this.routeAbort.signal,
+      requestFrame: this.requestFrame,
+    });
     this.onBootStage("materials");
 
     this.container.dataset.bcExperienceRuntime = "active";
@@ -198,27 +208,43 @@ export class ExperienceRuntime {
     const compactViewport = viewportWidth <= 820 || viewportHeight <= 520;
     const narrowViewport = viewportWidth <= 820 && viewportHeight > 520;
     const glbComposition = this.crownAssets.result.backend === "glb";
-    const crownX = compactViewport ? 0 : 1.15;
+    const identityReturn = Math.max(0, Math.min(1, (this.snapshot.progress - 0.89) / 0.08));
+    const gateCentering = Math.max(0, Math.min(1, (this.snapshot.progress - 0.18) / 0.12));
+    const crownX = compactViewport ? 0 : 1.15 - gateCentering * 0.5 + identityReturn * 0.05;
     const crownY = narrowViewport ? (glbComposition ? 0.9 : 1.25) : viewportHeight <= 520 ? 0.3 : glbComposition ? -0.12 : 0;
     this.rendererHost.resize(viewportWidth, viewportHeight);
     this.camera.aspect = Math.max(1, viewportWidth) / Math.max(1, viewportHeight);
     this.cameraRig.update(this.snapshot, pointer, this.elapsedSeconds);
     this.crown.root.position.set(crownX, crownY, 0);
-    this.crown.root.scale.setScalar(narrowViewport ? 0.62 : compactViewport ? 0.7 : 0.88);
+    const crownScale = identityReturn > 0 ? 0.72 + identityReturn * 0.12 : 0.88 + gateCentering * 0.18;
+    this.crown.root.scale.setScalar(narrowViewport ? crownScale * 0.7 : compactViewport ? crownScale * 0.78 : crownScale);
     this.architecture.root.position.set(crownX, crownY, 0);
     this.ecosystem.root.position.set(crownX, crownY, -0.4);
     this.portal.root.position.set(crownX, crownY - 0.12, -0.1);
     this.sceneRoot.updateLighting(timeline, crownX, crownY);
 
-    this.crown.setAssemblyProgress(timeline.assembly);
-    this.crown.setOpenProgress(timeline.open);
-    this.crown.setCoreIntensity(timeline.coreIntensity);
-    this.crown.setPortalProgress(timeline.portal);
-    this.crown.update(deltaSeconds, { ...timeline, elapsedSeconds: this.elapsedSeconds, reducedMotion: this.snapshot.reducedMotion });
+    const shell = this.shellRuntime.update(
+      this.snapshot.progress,
+      this.elapsedSeconds,
+      this.snapshot.reducedMotion,
+      this.quality.preset.tier,
+      this.crown,
+      this.particles,
+      this.portal,
+      this.ecosystem,
+    );
+
+    if (this.crown.root.visible) {
+      this.crown.setAssemblyProgress(timeline.assembly);
+      this.crown.setOpenProgress(timeline.open);
+      this.crown.setCoreIntensity(timeline.coreIntensity);
+      this.crown.setPortalProgress(timeline.portal);
+      this.crown.update(deltaSeconds, { ...timeline, elapsedSeconds: this.elapsedSeconds, reducedMotion: this.snapshot.reducedMotion });
+    }
     this.particles.update(this.elapsedSeconds, this.snapshot.progress, this.snapshot.reducedMotion);
     this.architecture.update(this.elapsedSeconds, this.snapshot.progress, this.snapshot.reducedMotion);
-    this.ecosystem.update(this.elapsedSeconds, timeline.ecosystem, timeline.enter, this.snapshot.reducedMotion);
-    this.portal.update(this.elapsedSeconds, timeline.portal, timeline.tacticalOrange, timeline.enter, this.snapshot.reducedMotion);
+    if (this.ecosystem.root.visible) this.ecosystem.update(this.elapsedSeconds, timeline.ecosystem, timeline.enter, this.snapshot.reducedMotion);
+    if (this.portal.root.visible) this.portal.update(this.elapsedSeconds, timeline.portal, timeline.tacticalOrange, timeline.enter, this.snapshot.reducedMotion);
 
     this.rendererHost.renderer.render(this.sceneRoot.scene, this.camera);
     if (this.awaitingCrownFirstFrame) {
@@ -228,7 +254,12 @@ export class ExperienceRuntime {
     this.container.dataset.bcExperienceProgress = this.snapshot.progress.toFixed(4);
     this.container.dataset.bcExperienceTarget = this.snapshot.targetProgress.toFixed(4);
     this.container.dataset.bcExperienceChapter = this.snapshot.chapterId;
+    this.container.dataset.bcExperienceScene = shell.primary;
+    this.container.dataset.bcExperienceActiveScenes = String(this.shellRuntime.activeSceneCount);
+    this.container.dataset.bcExperienceEvofishAsset = this.shellRuntime.evofishAssetStatus;
     this.container.dataset.bcExperienceContext = this.contextState;
+    this.container.style.setProperty("--bc-shell-progress", this.snapshot.progress.toFixed(4));
+    this.story.style.setProperty("--bc-chapter-progress", this.snapshot.chapterProgress.toFixed(4));
     if (experienceConfig.debug || import.meta.env.DEV) {
       this.container.dataset.bcCrownPose = String(this.crown.root.userData.bcPoseSignature ?? "procedural");
     }
@@ -292,6 +323,7 @@ export class ExperienceRuntime {
         crownDrawCalls: crown.drawCalls,
         estimatedTextureMemory: crown.estimatedTextureMemory,
         loader: getCrownLoaderCounters(),
+        activeSceneCount: this.shellRuntime.activeSceneCount,
         warnings,
       });
       const lowAttention = this.snapshot.progress < 0.1 || this.snapshot.progress > 0.92;
@@ -400,6 +432,7 @@ export class ExperienceRuntime {
     this.audio.dispose();
     this.portal.dispose();
     this.ecosystem.dispose();
+    this.shellRuntime.dispose();
     this.crownAssets.dispose();
     this.particles.dispose();
     this.architecture.dispose();
@@ -411,11 +444,16 @@ export class ExperienceRuntime {
     delete this.container.dataset.bcExperienceProgress;
     delete this.container.dataset.bcExperienceTarget;
     delete this.container.dataset.bcExperienceChapter;
+    delete this.container.dataset.bcExperienceScene;
+    delete this.container.dataset.bcExperienceActiveScenes;
+    delete this.container.dataset.bcExperienceEvofishAsset;
     delete this.container.dataset.bcExperienceContext;
     delete this.container.dataset.bcCrownBackend;
     delete this.container.dataset.bcCrownLod;
     delete this.container.dataset.bcCrownStatus;
     delete this.container.dataset.bcCrownReason;
     delete this.container.dataset.bcQualityDowngrade;
+    this.container.style.removeProperty("--bc-shell-progress");
+    this.story.style.removeProperty("--bc-chapter-progress");
   }
 }

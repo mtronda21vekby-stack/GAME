@@ -65,6 +65,7 @@ export function Router() {
 
       const url = new URL(href, window.location.origin);
       if (!sameOrigin(url) || isExternalAppPath(normalizePath(url.pathname))) return;
+      if (normalizePath(url.pathname) === path && url.hash) return;
 
       event.preventDefault();
       window.history.pushState(null, "", url.pathname + url.search + url.hash);
@@ -74,7 +75,7 @@ export function Router() {
 
     document.addEventListener("click", onClick);
     return () => document.removeEventListener("click", onClick);
-  }, []);
+  }, [path]);
 
   const route = getRouteDefinition(path);
   const metadata = route?.metadata ?? {

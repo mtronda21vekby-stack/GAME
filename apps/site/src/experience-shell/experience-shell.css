@@ -1,0 +1,291 @@
+.bcExperienceShell {
+  --bc-shell-cyan: #69e9f5;
+  --bc-shell-orange: #ff8a45;
+  --bc-shell-progress: 0;
+  --bc-chapter-progress: 0;
+  position: relative;
+  min-height: 100svh;
+  overflow: clip;
+  color: #f4fbfc;
+  background: #010305;
+  isolation: isolate;
+}
+
+.bcExperienceShell__fallback {
+  position: fixed;
+  z-index: -2;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 58% 46%, rgba(58, 209, 224, .12), transparent 17%),
+    linear-gradient(180deg, #010204 0%, #03080d 58%, #010204 100%);
+}
+
+.bcExperienceShell__fallbackGrid {
+  position: absolute;
+  inset: 54% -20% auto;
+  height: 48%;
+  opacity: .22;
+  transform: perspective(760px) rotateX(65deg);
+  transform-origin: top;
+  background-image:
+    linear-gradient(rgba(92, 216, 227, .13) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(92, 216, 227, .13) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(#000, transparent 78%);
+}
+
+.bcExperienceShell__fallbackCore {
+  position: absolute;
+  left: 58%;
+  top: 46%;
+  width: min(21vw, 260px);
+  aspect-ratio: 1;
+  border: 1px solid rgba(107, 232, 243, .22);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 90px rgba(70, 221, 236, .14), inset 0 0 70px rgba(93, 96, 188, .1);
+}
+
+.bcExperienceSkip {
+  position: fixed;
+  z-index: 130;
+  top: 8px;
+  left: 8px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  color: #021014;
+  background: #dffcff;
+  font: 800 10px/1 Inter, system-ui, sans-serif;
+  transform: translateY(-140%);
+}
+
+.bcExperienceSkip:focus { transform: translateY(0); }
+
+.bcExperienceChrome {
+  position: fixed;
+  z-index: 40;
+  top: 0;
+  right: 0;
+  left: 0;
+  min-height: calc(66px + env(safe-area-inset-top));
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto minmax(220px, 1fr);
+  align-items: end;
+  gap: 20px;
+  padding: max(10px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) 10px max(18px, env(safe-area-inset-left));
+  border-bottom: 1px solid rgba(134, 225, 233, .12);
+  background: linear-gradient(180deg, rgba(1, 4, 7, .9), rgba(1, 4, 7, .32) 76%, transparent);
+}
+
+.bcExperienceChrome__identity {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.bcExperienceChrome__identity button,
+.bcExperienceChrome__menuButton {
+  min-height: 44px;
+  border: 0;
+  color: #f4fbfc;
+  background: transparent;
+  font: 900 13px/1 Inter, system-ui, sans-serif;
+}
+
+.bcExperienceChrome__identity span {
+  overflow: hidden;
+  color: rgba(177, 218, 223, .62);
+  font: 700 9px/1 ui-monospace, monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bcExperienceChapterRail { display: flex; align-items: center; justify-content: center; gap: 3px; }
+.bcExperienceChapterRail a { width: 38px; height: 44px; display: grid; place-items: center; color: rgba(205, 234, 237, .38); border-bottom: 1px solid transparent; }
+.bcExperienceChapterRail a span { font: 700 9px/1 ui-monospace, monospace; }
+.bcExperienceChapterRail a[aria-current="step"] { color: var(--bc-shell-cyan); border-color: var(--bc-shell-cyan); }
+
+.bcExperienceChrome__controls { justify-self: end; display: flex; align-items: center; gap: 4px; }
+.bcExperienceChrome__menuButton { min-width: 58px; font-size: 9px; font-family: ui-monospace, monospace; }
+.bcExperienceChrome .bcNexusQuality button,
+.bcExperienceChrome .bcNexusSound { min-height: 44px; }
+
+.bcExperienceMenu { position: fixed; z-index: 120; inset: 0; display: grid; justify-items: end; }
+.bcExperienceMenu__backdrop { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: rgba(0, 2, 4, .76); }
+.bcExperienceMenu__panel {
+  position: relative;
+  width: min(460px, 100%);
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding: max(18px, env(safe-area-inset-top)) max(22px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) 28px;
+  border-left: 1px solid rgba(105, 233, 245, .2);
+  background: #04090d;
+}
+.bcExperienceMenu__panel header { min-height: 58px; display: flex; align-items: center; justify-content: space-between; gap: 18px; color: var(--bc-shell-cyan); font: 700 10px/1 ui-monospace, monospace; }
+.bcExperienceMenu__panel button { min-width: 64px; min-height: 44px; border: 0; color: #effbfc; background: transparent; font: 700 9px/1 ui-monospace, monospace; }
+.bcExperienceMenu__panel nav { display: grid; align-content: center; }
+.bcExperienceMenu__panel nav a { min-height: 58px; display: grid; grid-template-columns: 42px 1fr; align-items: center; border-bottom: 1px solid rgba(114, 204, 212, .11); color: rgba(235, 248, 249, .82); font: 800 14px/1 Inter, system-ui, sans-serif; }
+.bcExperienceMenu__panel nav a span { color: rgba(105, 233, 245, .56); font: 700 9px/1 ui-monospace, monospace; }
+.bcExperienceMenu__panel footer { min-height: 54px; display: flex; align-items: center; gap: 22px; }
+.bcExperienceMenu__panel footer a { min-height: 44px; display: flex; align-items: center; color: rgba(213, 235, 238, .62); font: 700 9px/1 ui-monospace, monospace; }
+
+.bcExperienceStory { position: relative; z-index: 4; }
+.bcExperienceStoryChapter {
+  min-height: calc(var(--bc-chapter-desktop-vh) * 1svh);
+  display: grid;
+  align-items: center;
+  padding: 92px clamp(24px, 7vw, 112px) 78px;
+}
+
+.bcExperienceSceneCopy {
+  position: fixed;
+  z-index: 6;
+  top: 50%;
+  left: clamp(24px, 7vw, 112px);
+  width: min(600px, 43vw);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate3d(0, calc((1 - var(--bc-chapter-progress)) * 20px), 0) translateY(-50%);
+  transition: opacity .18s linear, visibility .18s linear;
+}
+
+.bcExperienceStoryChapter[data-active="true"] .bcExperienceSceneCopy { opacity: 1; visibility: visible; pointer-events: auto; }
+.bcExperienceStoryChapter[data-tone="ocean"] .bcExperienceSceneCopy,
+.bcExperienceStoryChapter[data-tone="network"] .bcExperienceSceneCopy { right: clamp(24px, 7vw, 112px); left: auto; }
+.bcExperienceStoryChapter[data-tone="gate"] .bcExperienceSceneCopy { top: auto; bottom: 10vh; width: min(520px, 44vw); transform: none; }
+
+.bcExperienceSceneCopy > span,
+.bcExperienceSceneCopy > small { color: var(--bc-shell-cyan); font: 700 10px/1.35 ui-monospace, monospace; }
+.bcExperienceStoryChapter[data-tone="tactical"] .bcExperienceSceneCopy > span,
+.bcExperienceStoryChapter[data-tone="tactical"] .bcExperienceSceneCopy > small { color: var(--bc-shell-orange); }
+.bcExperienceSceneCopy h1,
+.bcExperienceSceneCopy h2 { max-width: 11ch; margin: 18px 0 0; font: 900 clamp(3rem, 6.6vw, 6.8rem)/.9 Inter, system-ui, sans-serif; letter-spacing: 0; text-wrap: balance; }
+.bcExperienceSceneCopy p { max-width: 43ch; margin: 22px 0 0; color: rgba(218, 237, 239, .7); font: 400 clamp(1rem, 1.35vw, 1.15rem)/1.55 Inter, system-ui, sans-serif; }
+.bcExperienceSceneCopy > small { display: block; margin-top: 14px; color: rgba(255, 166, 108, .66); }
+
+.bcExperienceSceneActions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 26px; }
+.bcExperienceAction { min-height: 46px; display: inline-flex; align-items: center; padding: 0 17px; border: 1px solid rgba(127, 218, 226, .22); border-radius: 4px; color: #effbfc; background: rgba(2, 9, 13, .66); font: 800 10px/1 Inter, system-ui, sans-serif; }
+.bcExperienceAction[data-kind="primary"] { border-color: transparent; color: #021014; background: #a5f4f8; }
+.bcExperienceAction[data-kind="tactical"] { border-color: rgba(255, 138, 69, .5); color: #ffd6bb; background: rgba(35, 12, 4, .72); }
+
+.bcExperienceWorldIndex { display: grid; grid-template-columns: repeat(3, minmax(92px, 1fr)); gap: 5px; margin-top: 24px; }
+.bcExperienceWorldIndex a { min-height: 44px; display: grid; place-items: center; border-bottom: 1px solid rgba(105, 233, 245, .18); color: rgba(224, 242, 244, .64); font: 700 9px/1 ui-monospace, monospace; }
+.bcExperienceWorldIndex a[data-priority="primary"] { color: #effdff; border-color: rgba(105, 233, 245, .42); }
+.bcExperienceWorldIndex a[data-priority="tertiary"] { opacity: .54; }
+
+.bcExperienceCollectionIndex { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 24px; color: rgba(212, 238, 240, .56); font: 700 9px/1.4 ui-monospace, monospace; }
+.bcExperienceCollectionIndex span::before { content: "/ "; color: var(--bc-shell-cyan); }
+
+.bcExperienceFooter { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin-top: 24px; padding-top: 14px; border-top: 1px solid rgba(116, 208, 216, .12); }
+.bcExperienceFooter a,
+.bcExperienceFooter span { min-height: 36px; display: inline-flex; align-items: center; color: rgba(198, 222, 225, .5); font: 700 8px/1 ui-monospace, monospace; }
+
+.bcExperienceBoot {
+  position: fixed;
+  z-index: 140;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 18px;
+  padding: 24px;
+  color: #e9fbfc;
+  background: #010406;
+  font: 700 10px/1.3 ui-monospace, monospace;
+  text-align: center;
+}
+.bcExperienceBoot__mark { height: 32px; display: flex; align-items: end; gap: 8px; }
+.bcExperienceBoot__mark i { width: 3px; height: 14px; background: var(--bc-shell-cyan); box-shadow: 0 0 16px rgba(105, 233, 245, .5); }
+.bcExperienceBoot__mark i:nth-child(2) { height: 30px; }
+.bcExperienceBoot__mark i:nth-child(3) { height: 20px; }
+.bcExperienceBoot__progress { width: min(280px, 74vw); height: 1px; background: rgba(105, 233, 245, .12); }
+.bcExperienceBoot__progress i { display: block; width: 18%; height: 100%; background: var(--bc-shell-cyan); }
+.bcExperienceBoot__progress i[data-stage="scene"] { width: 38%; }
+.bcExperienceBoot__progress i[data-stage="geometry"] { width: 56%; }
+.bcExperienceBoot__progress i[data-stage="materials"] { width: 72%; }
+.bcExperienceBoot__progress i[data-stage="first-frame"] { width: 88%; }
+.bcExperienceBoot__progress i[data-stage="ready"], .bcExperienceBoot__progress i[data-stage="fallback"] { width: 100%; }
+.bcExperienceBoot button { min-width: 108px; min-height: 48px; border: 1px solid rgba(105, 233, 245, .5); border-radius: 4px; color: #021014; background: #a5f4f8; font: 900 10px/1 Inter, system-ui, sans-serif; }
+.bcExperienceBoot small { color: rgba(208, 234, 236, .48); }
+
+.bcExperienceSkeletonDebug { position: fixed; z-index: 62; left: max(18px, env(safe-area-inset-left)); bottom: max(18px, env(safe-area-inset-bottom)); width: 230px; border: 1px solid rgba(105, 233, 245, .16); border-radius: 4px; color: rgba(222, 243, 245, .72); background: rgba(1, 6, 9, .9); font: 700 9px/1.35 ui-monospace, monospace; }
+.bcExperienceSkeletonDebug summary { min-height: 44px; display: flex; align-items: center; padding: 0 12px; color: var(--bc-shell-cyan); cursor: pointer; }
+.bcExperienceSkeletonDebug dl { display: grid; grid-template-columns: 74px 1fr; gap: 5px 10px; margin: 0; padding: 0 12px 12px; }
+.bcExperienceSkeletonDebug dt { color: rgba(190, 216, 219, .44); }
+.bcExperienceSkeletonDebug dd { margin: 0; overflow-wrap: anywhere; }
+.bcExperienceShell .bcNexusDebug { left: auto; right: max(18px, env(safe-area-inset-right)); }
+
+.bcExperienceShell a:focus-visible,
+.bcExperienceShell button:focus-visible,
+.bcExperienceShell summary:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+@media (max-width: 720px), (pointer: coarse) {
+  .bcExperienceChrome { min-height: calc(58px + env(safe-area-inset-top)); grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 6px; padding: max(6px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) 5px max(14px, env(safe-area-inset-left)); }
+  .bcExperienceChrome__identity { display: grid; align-content: center; gap: 4px; }
+  .bcExperienceChrome__identity button { min-height: 24px; padding: 0; text-align: left; }
+  .bcExperienceChrome__identity span { color: var(--bc-shell-cyan); }
+  .bcExperienceChapterRail,
+  .bcExperienceChrome .bcNexusQuality { display: none; }
+  .bcExperienceChrome__controls { gap: 0; }
+  .bcExperienceChrome .bcNexusSound { min-width: 62px; }
+  .bcExperienceChrome__menuButton { min-width: 52px; }
+  .bcExperienceStoryChapter { min-height: calc(var(--bc-chapter-mobile-vh) * 1svh); padding: 88px 18px 92px; }
+  .bcExperienceSceneCopy,
+  .bcExperienceStoryChapter[data-tone="ocean"] .bcExperienceSceneCopy,
+  .bcExperienceStoryChapter[data-tone="network"] .bcExperienceSceneCopy,
+  .bcExperienceStoryChapter[data-tone="gate"] .bcExperienceSceneCopy {
+    position: fixed;
+    top: auto;
+    right: max(18px, env(safe-area-inset-right));
+    bottom: max(58px, calc(env(safe-area-inset-bottom) + 42px));
+    left: max(18px, env(safe-area-inset-left));
+    width: auto;
+    max-height: calc(100svh - 142px);
+    padding-top: 40px;
+    overflow-y: auto;
+    background: linear-gradient(180deg, transparent, rgba(1, 4, 7, .78) 24%, rgba(1, 4, 7, .96) 68%);
+    transform: translate3d(0, calc((1 - var(--bc-chapter-progress)) * 12px), 0);
+  }
+  .bcExperienceSceneCopy h1,
+  .bcExperienceSceneCopy h2 { max-width: 12ch; margin-top: 12px; font-size: clamp(2.25rem, 10.4vw, 3.45rem); overflow-wrap: anywhere; }
+  .bcExperienceSceneCopy p { max-width: 32ch; margin-top: 14px; font-size: .95rem; line-height: 1.45; }
+  .bcExperienceSceneCopy p[data-mobile-hide="true"] { display: none; }
+  .bcExperienceSceneActions { margin-top: 16px; }
+  .bcExperienceAction { min-height: 44px; }
+  .bcExperienceWorldIndex { grid-template-columns: repeat(2, minmax(98px, 1fr)); margin-top: 16px; }
+  .bcExperienceWorldIndex a[data-mobile-hidden="true"] { display: none; }
+  .bcExperienceFooter { margin-top: 14px; }
+  .bcExperienceShell__fallbackCore { left: 50%; width: 52vw; }
+  .bcExperienceSkeletonDebug,
+  .bcExperienceShell .bcNexusDebug { display: none; }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .bcExperienceChrome { min-height: 48px; grid-template-columns: auto 1fr auto; padding: max(3px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) 2px max(8px, env(safe-area-inset-left)); }
+  .bcExperienceChrome__identity span { display: none; }
+  .bcExperienceChapterRail { display: flex; }
+  .bcExperienceChapterRail a { width: 34px; }
+  .bcExperienceStoryChapter { min-height: calc(var(--bc-chapter-landscape-vh) * 1svh); }
+  .bcExperienceSceneCopy,
+  .bcExperienceStoryChapter[data-tone="ocean"] .bcExperienceSceneCopy,
+  .bcExperienceStoryChapter[data-tone="network"] .bcExperienceSceneCopy,
+  .bcExperienceStoryChapter[data-tone="gate"] .bcExperienceSceneCopy { top: 54px; right: auto; bottom: auto; left: max(24px, env(safe-area-inset-left)); width: min(440px, 54vw); max-height: calc(100svh - 62px); padding: 10px 20px 12px 0; background: linear-gradient(90deg, rgba(1, 4, 7, .94), rgba(1, 4, 7, .54) 78%, transparent); transform: none; }
+  .bcExperienceSceneCopy h1,
+  .bcExperienceSceneCopy h2 { margin-top: 8px; font-size: clamp(2rem, 6.6vw, 3.2rem); }
+  .bcExperienceSceneCopy p { margin-top: 9px; font-size: .84rem; line-height: 1.35; }
+  .bcExperienceSceneActions { margin-top: 10px; }
+  .bcExperienceWorldIndex { margin-top: 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bcExperienceStoryChapter { min-height: calc(var(--bc-chapter-reduced-vh) * 1svh); }
+  .bcExperienceSceneCopy { transition: none; transform: translateY(-50%); }
+  .bcExperienceStoryChapter[data-tone="gate"] .bcExperienceSceneCopy { transform: none; }
+}

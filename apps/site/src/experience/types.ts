@@ -1,17 +1,8 @@
 import type { BlackCrownExperienceQuality } from "./experienceConfig";
 import type { CrownAssetReason, CrownBackend, CrownLOD, CrownLoaderCounters } from "./assets/CrownAssetAdapter";
+import type { ExperienceChapterId } from "../experience-shell/experienceShellConfig";
 
-export const SCROLL_CHAPTER_IDS = [
-  "awakening",
-  "assembly",
-  "inspection",
-  "core-reveal",
-  "crown-front",
-  "ecosystem",
-  "enter",
-] as const;
-
-export type ScrollChapterId = (typeof SCROLL_CHAPTER_IDS)[number];
+export type ScrollChapterId = ExperienceChapterId;
 export type ScrollDirection = -1 | 0 | 1;
 export type QualityTier = Exclude<BlackCrownExperienceQuality, "auto">;
 
@@ -69,6 +60,7 @@ export type ExperienceMetrics = {
   crownDrawCalls: number;
   estimatedTextureMemory: number;
   loader: CrownLoaderCounters;
+  activeSceneCount: number;
   warnings: string[];
 };
 
@@ -90,7 +82,7 @@ export const INITIAL_SCROLL_SNAPSHOT: ScrollSnapshot = {
   previousProgress: 0,
   velocity: 0,
   direction: 0,
-  chapterId: "awakening",
+  chapterId: "boot",
   chapterProgress: 0,
   viewportWidth: 0,
   viewportHeight: 0,
@@ -136,5 +128,6 @@ export const INITIAL_EXPERIENCE_METRICS: ExperienceMetrics = {
   crownDrawCalls: 0,
   estimatedTextureMemory: 0,
   loader: { fetch: 0, parse: 0, attach: 0, dispose: 0, activeReferences: 0 },
+  activeSceneCount: 0,
   warnings: [],
 };

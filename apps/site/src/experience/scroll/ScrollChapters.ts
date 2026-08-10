@@ -1,3 +1,4 @@
+import { EXPERIENCE_CHAPTERS } from "../../experience-shell/experienceShellConfig";
 import type { ScrollChapterId } from "../types";
 import { clamp, inverseLerp } from "../core/math";
 
@@ -7,15 +8,11 @@ export type ScrollChapter = {
   end: number;
 };
 
-export const SCROLL_CHAPTERS: readonly ScrollChapter[] = [
-  { id: "awakening", start: 0, end: 0.12 },
-  { id: "assembly", start: 0.12, end: 0.3 },
-  { id: "inspection", start: 0.3, end: 0.45 },
-  { id: "core-reveal", start: 0.45, end: 0.62 },
-  { id: "crown-front", start: 0.62, end: 0.78 },
-  { id: "ecosystem", start: 0.78, end: 0.9 },
-  { id: "enter", start: 0.9, end: 1 },
-];
+export const SCROLL_CHAPTERS: readonly ScrollChapter[] = EXPERIENCE_CHAPTERS.map((chapter) => ({
+  id: chapter.id,
+  start: chapter.range[0],
+  end: chapter.range[1],
+}));
 
 export function getChapterAtProgress(progress: number) {
   const normalized = clamp(progress);
