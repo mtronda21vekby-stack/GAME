@@ -103,6 +103,10 @@ export class WorldGateScene extends SpatialSceneBase {
 
   evaluate(snapshot: SceneEvaluationSnapshot) {
     this.resetPose();
+    const dominant = snapshot.weight > 0.5;
+    this.arcs.visible = dominant;
+    this.streaks.visible = snapshot.weight >= 0.45;
+    this.foreground.root.visible = snapshot.weight > 0.65;
     this.root.position.set(0.4, 0.2, 0);
     const motion = snapshot.reducedMotion ? 0 : snapshot.elapsedSeconds * 0.018;
     this.arcs.children.forEach((arc, index) => {
@@ -111,6 +115,6 @@ export class WorldGateScene extends SpatialSceneBase {
     this.tunnel.position.z = snapshot.localProgress * 0.7;
     this.tunnel.scale.z = 0.86 + snapshot.localProgress * 0.34;
     this.aperture.scale.setScalar(0.82 + snapshot.localProgress * 0.28);
-    this.foreground.evaluate(snapshot.localProgress, snapshot.quality, snapshot.reducedMotion);
+    if (this.foreground.root.visible) this.foreground.evaluate(snapshot.localProgress, snapshot.quality, snapshot.reducedMotion);
   }
 }

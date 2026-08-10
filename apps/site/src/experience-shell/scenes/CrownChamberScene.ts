@@ -64,11 +64,15 @@ export class CrownChamberScene extends SpatialSceneBase {
 
   evaluate(snapshot: SceneEvaluationSnapshot) {
     this.resetPose();
+    const dominant = snapshot.weight > 0.5;
+    this.chamber.visible = dominant;
+    this.field.visible = dominant;
+    this.foreground.root.visible = snapshot.weight > 0.65;
     const idle = snapshot.reducedMotion ? 0 : Math.sin(snapshot.elapsedSeconds * 0.18) * 0.022;
     this.chamber.rotation.z = -snapshot.localProgress * 0.028 + idle;
     const compact = snapshot.quality === "low";
     this.field.scale.setScalar((0.94 + snapshot.localProgress * 0.1) * (compact ? 0.72 : 1));
     (this.field.material as THREE.MeshBasicMaterial).opacity = (0.07 + snapshot.localProgress * 0.04) * snapshot.weight * (compact ? 0.6 : 1);
-    this.foreground.evaluate(snapshot.localProgress, snapshot.quality, snapshot.reducedMotion);
+    if (this.foreground.root.visible) this.foreground.evaluate(snapshot.localProgress, snapshot.quality, snapshot.reducedMotion);
   }
 }

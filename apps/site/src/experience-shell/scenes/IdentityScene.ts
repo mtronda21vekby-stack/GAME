@@ -56,6 +56,9 @@ export class IdentityScene extends SpatialSceneBase {
 
   evaluate(snapshot: SceneEvaluationSnapshot) {
     this.resetPose();
+    const dominant = snapshot.weight > 0.5;
+    this.dataColumns.visible = dominant;
+    this.foreground.root.visible = snapshot.weight > 0.65;
     this.root.position.set(0.2, 0.42, 0);
     const motion = snapshot.reducedMotion ? 0 : snapshot.elapsedSeconds;
     this.profileArcs.children.forEach((arc, index) => {
@@ -67,6 +70,6 @@ export class IdentityScene extends SpatialSceneBase {
     this.core.scale.setScalar(0.76 + snapshot.localProgress * 0.2);
     this.dataColumns.position.y = (1 - snapshot.localProgress) * -0.48;
     this.axis.scale.y = 0.65 + snapshot.localProgress * 0.35;
-    this.foreground.evaluate(snapshot.localProgress, snapshot.quality, snapshot.reducedMotion);
+    if (this.foreground.root.visible) this.foreground.evaluate(snapshot.localProgress, snapshot.quality, snapshot.reducedMotion);
   }
 }

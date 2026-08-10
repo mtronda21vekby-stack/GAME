@@ -115,6 +115,11 @@ export class EvoFishAbyssScene extends SpatialSceneBase {
 
   evaluate(snapshot: SceneEvaluationSnapshot) {
     this.resetPose();
+    const dominant = snapshot.weight > 0.5;
+    this.caustics.visible = dominant;
+    this.silhouettes.visible = dominant;
+    this.bubbles.visible = dominant;
+    this.foreground.root.visible = snapshot.weight > 0.65;
     this.root.position.set(snapshot.reducedMotion ? 0 : -0.2 + snapshot.localProgress * 0.42, 0, 0);
     const compact = snapshot.quality === "low";
     this.subject.position.x = compact ? 0 : 1.25;
@@ -127,7 +132,7 @@ export class EvoFishAbyssScene extends SpatialSceneBase {
     this.caustics.rotation.z = snapshot.reducedMotion ? 0 : Math.sin(snapshot.elapsedSeconds * 0.12) * 0.025;
     this.bubbles.position.y = snapshot.reducedMotion ? 0 : (snapshot.elapsedSeconds * 0.045) % 0.8;
     this.silhouettes.position.x = -snapshot.localProgress * 0.28;
-    this.foreground.evaluate(snapshot.localProgress, snapshot.quality, snapshot.reducedMotion);
+    if (this.foreground.root.visible) this.foreground.evaluate(snapshot.localProgress, snapshot.quality, snapshot.reducedMotion);
   }
 
   override dispose() {

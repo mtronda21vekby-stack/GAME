@@ -86,11 +86,12 @@ export class CollectionVaultScene extends SpatialSceneBase {
 
   evaluate(snapshot: SceneEvaluationSnapshot) {
     this.resetPose();
+    const dominant = snapshot.weight > 0.5;
     const compact = snapshot.quality === "low";
     this.root.position.set(compact ? -0.25 : 0.55, compact ? 0.45 : 0.15, 0);
     this.rails.position.x = (1 - snapshot.localProgress) * 0.45;
     this.rails.scale.y = 0.78 + snapshot.localProgress * 0.22;
-    const visible = snapshot.quality === "low" ? 2 : this.housings.length;
+    const visible = dominant ? (snapshot.quality === "low" ? 2 : this.housings.length) : 1;
     this.housings.forEach((housing, index) => {
       housing.visible = index < visible;
       housing.position.x = compact
@@ -106,6 +107,7 @@ export class CollectionVaultScene extends SpatialSceneBase {
       const baseRotation = index === 0 ? -0.12 : index === 1 ? 0.18 : -0.2;
       housing.rotation.y = baseRotation + (snapshot.reducedMotion ? 0 : Math.sin(snapshot.elapsedSeconds * 0.16 + index) * 0.025);
     });
-    this.foreground.evaluate(snapshot.localProgress, snapshot.quality, snapshot.reducedMotion);
+    this.foreground.root.visible = snapshot.weight > 0.65;
+    if (this.foreground.root.visible) this.foreground.evaluate(snapshot.localProgress, snapshot.quality, snapshot.reducedMotion);
   }
 }

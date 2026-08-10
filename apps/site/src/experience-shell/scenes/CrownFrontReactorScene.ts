@@ -154,6 +154,8 @@ export class CrownFrontReactorScene extends SpatialSceneBase {
 
   evaluate(snapshot: SceneEvaluationSnapshot) {
     this.resetPose();
+    this.chamber.visible = snapshot.weight > 0.5;
+    this.foreground.root.visible = snapshot.weight > 0.65;
     this.root.position.set(0.8, 0.18, 0);
     const motion = snapshot.reducedMotion ? 0 : snapshot.elapsedSeconds;
     this.containment.rotation.z = snapshot.localProgress * 0.08 + motion * 0.008;
@@ -175,6 +177,6 @@ export class CrownFrontReactorScene extends SpatialSceneBase {
     }
     this.shutters.instanceMatrix.needsUpdate = true;
     this.chamber.position.z = -0.25 - snapshot.localProgress * 0.25;
-    this.foreground.evaluate(snapshot.localProgress, snapshot.quality, snapshot.reducedMotion);
+    if (this.foreground.root.visible) this.foreground.evaluate(snapshot.localProgress, snapshot.quality, snapshot.reducedMotion);
   }
 }
