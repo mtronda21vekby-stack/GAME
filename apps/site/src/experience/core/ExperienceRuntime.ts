@@ -153,6 +153,10 @@ export class ExperienceRuntime {
         if (result.visual !== this.crown) result.visual.dispose();
         return;
       }
+      if (requestedMode !== this.crownRequest) {
+        if (result.visual !== this.crown) result.visual.dispose();
+        return;
+      }
       if (downgrade && result.backend !== "glb") return;
       this.activateCrownResult(result);
     } catch (error) {
@@ -399,6 +403,7 @@ export class ExperienceRuntime {
   }
 
   private async switchCrownAsset(request: BlackCrownCrownReviewSelection) {
+    this.crownRequest = request;
     try {
       const fallback = await this.crownAssets.load({
         requestedMode: "procedural",
@@ -414,7 +419,6 @@ export class ExperienceRuntime {
         return;
       }
       this.activateCrownResult(fallback);
-      this.crownRequest = request;
       if (request !== "procedural") await this.loadCrownBackend(undefined, false, request);
     } catch (error) {
       if (!this.disposed && !(error instanceof DOMException && error.name === "AbortError")) {
