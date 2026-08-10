@@ -460,6 +460,26 @@ def render_previews(roots: dict[str, bpy.types.Object], output_dir: Path) -> Non
         bpy.ops.render.render(write_still=True)
 
 
+def arrange_master_gallery(roots: dict[str, bpy.types.Object]) -> None:
+    positions = {
+        "world-gate": (-16.0, 0.0, 0.0),
+        "crown-front-reactor": (-8.0, 0.0, 0.0),
+        "network-architecture": (0.0, 0.0, 0.0),
+        "collection-vault": (8.0, 0.0, 0.0),
+        "identity-frame": (16.0, 0.0, 0.0),
+    }
+    for asset_id, root in roots.items():
+        root.location = positions[asset_id]
+        for obj in hierarchy(root):
+            obj.hide_render = False
+            obj.hide_viewport = False
+    camera = bpy.data.objects.get("BC_PREVIEW_CAMERA")
+    if camera:
+        camera.location = (0.0, -38.0, 13.0)
+        camera.data.lens = 58
+        look_at(camera, (0.0, 0.8, 0.0))
+
+
 def save_master(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     bpy.ops.wm.save_as_mainfile(filepath=str(path))
@@ -521,6 +541,7 @@ def main() -> None:
         "externalAssets": [],
     }, indent=2) + "\n", encoding="utf-8")
     render_previews(roots, preview_dir)
+    arrange_master_gallery(roots)
     save_master(source_dir / "blackcrown-site-elements-v1.blend")
     (preview_dir / "generation-report.json").write_text(json.dumps({
         "blenderVersion": bpy.app.version_string,
