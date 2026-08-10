@@ -63,7 +63,7 @@ export function Router() {
       const href = anchor.getAttribute("href") || "";
       if (!href || href.startsWith("mailto:") || href.startsWith("tel:")) return;
 
-      const url = new URL(href, window.location.origin);
+      const url = new URL(href, window.location.href);
       if (!sameOrigin(url) || isExternalAppPath(normalizePath(url.pathname))) return;
       if (normalizePath(url.pathname) === path && url.hash) return;
 

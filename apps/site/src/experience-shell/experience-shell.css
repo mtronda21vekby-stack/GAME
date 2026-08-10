@@ -160,6 +160,7 @@
 .bcExperienceStoryChapter[data-tone="ocean"] .bcExperienceSceneCopy,
 .bcExperienceStoryChapter[data-tone="network"] .bcExperienceSceneCopy { right: clamp(24px, 7vw, 112px); left: auto; }
 .bcExperienceStoryChapter[data-tone="gate"] .bcExperienceSceneCopy { top: auto; bottom: 10vh; width: min(520px, 44vw); transform: none; }
+.bcExperienceStoryChapter[data-tone="gate"] .bcExperienceSceneCopy h2 { max-width: 14ch; font-size: clamp(2.5rem, 4.3vw, 4.9rem); }
 
 .bcExperienceSceneCopy > span,
 .bcExperienceSceneCopy > small { color: var(--bc-shell-cyan); font: 700 10px/1.35 ui-monospace, monospace; }

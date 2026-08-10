@@ -11,7 +11,7 @@ export function BlackCrownExperienceShell() {
   const { bootStage, entered, snapshot, webglAvailable } = useExperience();
   return (
     <div
-      className="bcExperienceShell"
+      className="bcNexusLab bcExperienceShell"
       data-bc-nexus-shell="ready"
       data-active-chapter={snapshot.chapterId}
       data-boot-stage={bootStage}
@@ -32,4 +32,3 @@ export function BlackCrownExperienceShell() {
     </div>
   );
 }
-

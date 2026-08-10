@@ -5,7 +5,7 @@ import { SceneActions } from "./SceneActions";
 import { WorldIndex } from "./WorldIndex";
 
 export function SceneCopy({ chapter, active }: { chapter: ExperienceChapterConfig; active: boolean }) {
-  const Heading = chapter.id === "crown-chamber" ? "h1" : "h2";
+  const Heading = chapter.id === "boot" || chapter.id === "crown-chamber" ? "h1" : "h2";
   return (
     <div className="bcExperienceSceneCopy" data-compact-title={chapter.mobile?.compactTitle ? "true" : undefined}>
       <span>{chapter.eyebrow}</span>
@@ -18,9 +18,7 @@ export function SceneCopy({ chapter, active }: { chapter: ExperienceChapterConfi
         </div>
       ) : null}
       <SceneActions actions={chapter.actions} active={active} />
-      {chapter.id === "crown-front-reactor" ? <small>APPROVED ENVIRONMENT ART / PENDING</small> : null}
       {chapter.id === "identity-enter" ? <ExperienceFooter active={active} /> : null}
     </div>
   );
 }
-

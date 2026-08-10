@@ -6,7 +6,7 @@ import { StoryNavigation } from "./StoryNavigation";
 export function StorySpine() {
   const { snapshot, storyRef } = useExperience();
   return (
-    <main ref={storyRef} className="bcExperienceStory" id="bc-experience-story">
+    <main ref={storyRef} className="bcNexusStory bcExperienceStory" id="bc-experience-story">
       <StoryNavigation />
       {EXPERIENCE_CHAPTERS.map((chapter) => (
         <StoryChapter key={chapter.id} chapter={chapter} active={snapshot.chapterId === chapter.id} />
@@ -14,4 +14,3 @@ export function StorySpine() {
     </main>
   );
 }
-

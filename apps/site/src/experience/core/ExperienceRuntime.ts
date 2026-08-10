@@ -234,13 +234,11 @@ export class ExperienceRuntime {
       this.ecosystem,
     );
 
-    if (this.crown.root.visible) {
-      this.crown.setAssemblyProgress(timeline.assembly);
-      this.crown.setOpenProgress(timeline.open);
-      this.crown.setCoreIntensity(timeline.coreIntensity);
-      this.crown.setPortalProgress(timeline.portal);
-      this.crown.update(deltaSeconds, { ...timeline, elapsedSeconds: this.elapsedSeconds, reducedMotion: this.snapshot.reducedMotion });
-    }
+    this.crown.setAssemblyProgress(timeline.assembly);
+    this.crown.setOpenProgress(timeline.open);
+    this.crown.setCoreIntensity(timeline.coreIntensity);
+    this.crown.setPortalProgress(timeline.portal);
+    this.crown.update(this.crown.root.visible ? deltaSeconds : 0, { ...timeline, elapsedSeconds: this.elapsedSeconds, reducedMotion: this.snapshot.reducedMotion });
     this.particles.update(this.elapsedSeconds, this.snapshot.progress, this.snapshot.reducedMotion);
     this.architecture.update(this.elapsedSeconds, this.snapshot.progress, this.snapshot.reducedMotion);
     if (this.ecosystem.root.visible) this.ecosystem.update(this.elapsedSeconds, timeline.ecosystem, timeline.enter, this.snapshot.reducedMotion);
@@ -286,6 +284,12 @@ export class ExperienceRuntime {
       const warnings = [...crown.warnings];
       if (renderInfo.calls > this.quality.preset.maxDrawCalls) warnings.push(`draw_calls_over_${this.quality.preset.tier}_target`);
       if (renderInfo.triangles > this.quality.preset.maxTriangles) warnings.push(`triangles_over_${this.quality.preset.tier}_target`);
+      this.container.dataset.bcExperienceFrameP50 = sample.p50.toFixed(1);
+      this.container.dataset.bcExperienceFrameP95 = sample.p95.toFixed(1);
+      this.container.dataset.bcExperienceWorstFrame = sample.worst.toFixed(1);
+      this.container.dataset.bcExperienceDrawCalls = String(renderInfo.calls);
+      this.container.dataset.bcExperienceTriangles = String(renderInfo.triangles);
+      this.container.dataset.bcExperienceTextures = String(memoryInfo.textures);
       this.onMetrics({
         fps: Math.round(fps * 10) / 10,
         frameTime: Math.round(deltaSeconds * 10000) / 10,
@@ -374,8 +378,12 @@ export class ExperienceRuntime {
   };
 
   setQuality(requested: BlackCrownExperienceQuality) {
+    const previousTier = this.quality.preset.tier;
     const preset = this.quality.setRequested(requested);
     this.rendererHost.setPreset(preset);
+    if (preset.tier !== previousTier && this.crownRequest !== "procedural") {
+      void this.loadCrownBackend(preset.tier);
+    }
     this.requestFrame();
   }
 
@@ -447,6 +455,12 @@ export class ExperienceRuntime {
     delete this.container.dataset.bcExperienceScene;
     delete this.container.dataset.bcExperienceActiveScenes;
     delete this.container.dataset.bcExperienceEvofishAsset;
+    delete this.container.dataset.bcExperienceFrameP50;
+    delete this.container.dataset.bcExperienceFrameP95;
+    delete this.container.dataset.bcExperienceWorstFrame;
+    delete this.container.dataset.bcExperienceDrawCalls;
+    delete this.container.dataset.bcExperienceTriangles;
+    delete this.container.dataset.bcExperienceTextures;
     delete this.container.dataset.bcExperienceContext;
     delete this.container.dataset.bcCrownBackend;
     delete this.container.dataset.bcCrownLod;

@@ -24,7 +24,7 @@ export function ExperienceBoot() {
 
   if (entered) return null;
   return (
-    <div className="bcExperienceBoot" role="dialog" aria-modal="true" aria-label="BlackCrown readiness">
+    <div className="bcNexusBoot bcExperienceBoot" role="dialog" aria-modal="true" aria-label="BlackCrown readiness">
       <div className="bcExperienceBoot__mark" aria-hidden="true"><i /><i /><i /></div>
       <span>{BOOT_LABELS[bootStage]}</span>
       <div className="bcExperienceBoot__progress" aria-hidden="true"><i data-stage={bootStage} /></div>
@@ -33,4 +33,3 @@ export function ExperienceBoot() {
     </div>
   );
 }
-

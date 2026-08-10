@@ -31,10 +31,9 @@ export class EnvironmentDirector {
       this.scene.fog.density = 0.038 + ocean * 0.03 + tactical * 0.012 - network * 0.008;
     }
 
-    crown.root.visible = progress < 0.375 || progress > 0.885;
-    portal.root.visible = (progress > 0.17 && progress < 0.4) || (progress > 0.48 && progress < 0.71) || progress > 0.88;
+    crown.root.visible = progress < 0.285 || progress > 0.885;
+    portal.root.visible = (progress > 0.17 && progress < 0.285) || (progress > 0.48 && progress < 0.71) || progress > 0.88;
     ecosystem.root.visible = progress > 0.64 && progress < 0.84;
     particles.root.visible = true;
   }
 }
-

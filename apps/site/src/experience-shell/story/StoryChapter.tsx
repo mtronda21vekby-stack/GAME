@@ -6,7 +6,7 @@ export function StoryChapter({ chapter, active }: { chapter: ExperienceChapterCo
   const span = chapter.range[1] - chapter.range[0];
   return (
     <section
-      id={`bc-experience-${chapter.hash}`}
+      id={chapter.hash}
       className="bcExperienceStoryChapter"
       data-chapter={chapter.id}
       data-scene={chapter.sceneId}
