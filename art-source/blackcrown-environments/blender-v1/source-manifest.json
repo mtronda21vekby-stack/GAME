@@ -1,0 +1,47 @@
+{
+  "generator": "tools/blender/blackcrown-environments/generate_site_elements.py",
+  "blenderVersion": "5.1.2",
+  "generatedAssets": {
+    "world-gate": {
+      "triangles": 4880,
+      "drawCalls": 4,
+      "materials": 4,
+      "bytes": 176680,
+      "sha256": "b21405660815212636f4135927b3ef8c0e597c2482a7e1aa9b2f5ab57f81bc85",
+      "file": "world-gate.glb"
+    },
+    "crown-front-reactor": {
+      "triangles": 7424,
+      "drawCalls": 4,
+      "materials": 4,
+      "bytes": 336600,
+      "sha256": "154806a02a2cdfefae2d2f14163c4e3413eba9e810d97210a02b80a8123c9770",
+      "file": "crown-front-reactor.glb"
+    },
+    "network-architecture": {
+      "triangles": 4356,
+      "drawCalls": 4,
+      "materials": 4,
+      "bytes": 189240,
+      "sha256": "63cdeb1a681c9a32bc8c668e8ec5015be622d43c33d5c047e32c0f4fa238b8cb",
+      "file": "network-architecture.glb"
+    },
+    "collection-vault": {
+      "triangles": 1564,
+      "drawCalls": 5,
+      "materials": 5,
+      "bytes": 77204,
+      "sha256": "0af2e57569e85bebe815157386909f37f64126a387f9dbf0313fc4d328f98f7a",
+      "file": "collection-vault.glb"
+    },
+    "identity-frame": {
+      "triangles": 3344,
+      "drawCalls": 4,
+      "materials": 4,
+      "bytes": 117028,
+      "sha256": "7d970de5b3bd29cfc68014531627d998ab4e443bd1be9ccc3de17b4798792f8e",
+      "file": "identity-frame.glb"
+    }
+  },
+  "externalAssets": []
+}
