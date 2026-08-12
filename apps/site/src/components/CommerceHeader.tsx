@@ -2,7 +2,7 @@ import React from "react";
 import { Button } from "@blackcrown/ui";
 import { Icons } from "@blackcrown/assets";
 import { nav } from "../lib/nav";
-import type { SitePath } from "../routes/siteRoutes";
+import type { SitePath } from "../routes/routeMetadata";
 
 export type CommerceHeaderProps = {
   cartCount?: number;

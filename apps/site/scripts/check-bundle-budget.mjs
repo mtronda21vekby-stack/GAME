@@ -93,7 +93,7 @@ export function validateBundle(report) {
       errors.push(`Initial chunk ${asset.asset} is ${formatBytes(asset.bytes)}; limit is ${formatBytes(BUNDLE_BUDGETS.initialChunk)}.`);
     }
   }
-  for (const asset of report.allJsMetrics.filter((candidate) => /^(?:ExperienceRuntime|nexus-three|nexus-gltf-loader)-/.test(candidate.file))) {
+  for (const asset of (report.allJsMetrics ?? []).filter((candidate) => /^(?:ExperienceRuntime|nexus-three|nexus-gltf-loader)-/.test(candidate.file))) {
     if (asset.bytes > BUNDLE_BUDGETS.nexusAsyncChunk) {
       errors.push(`Nexus async chunk ${asset.file} is ${formatBytes(asset.bytes)}; limit is ${formatBytes(BUNDLE_BUDGETS.nexusAsyncChunk)}.`);
     }
@@ -104,7 +104,7 @@ export function validateBundle(report) {
   if (report.initialContainsGltfLoader) errors.push("The mode=off initial entry references GLTFLoader.");
   if (report.initialContainsCrownAsset) errors.push("The mode=off initial entry references a Crown manifest or GLB asset.");
 
-  for (const routeName of ["Account", "Admin", "Checkout"]) {
+  for (const routeName of ["CinematicExperience", "Account", "Admin", "Checkout"]) {
     if (!report.allJsFiles.some((file) => file.startsWith(`${routeName}-`))) {
       errors.push(`Expected lazy route chunk ${routeName}-*.js was not emitted.`);
     }
@@ -126,7 +126,7 @@ async function main() {
   console.log("BlackCrown site bundle budget");
   console.log(`- initial JS: ${formatBytes(result.initialJs)} (${report.js.map((asset) => asset.asset).join(", ")})`);
   console.log(`- initial CSS: ${formatBytes(result.initialCss)} (${report.css.map((asset) => asset.asset).join(", ")})`);
-  console.log(`- lazy route chunks: ${report.allJsFiles.filter((file) => /^(?:Account|Admin|Checkout)-/.test(file)).join(", ")}`);
+  console.log(`- lazy route chunks: ${report.allJsFiles.filter((file) => /^(?:CinematicExperience|Account|Admin|Checkout)-/.test(file)).join(", ")}`);
   console.log(`- Nexus async chunks: ${report.allJsMetrics.filter((asset) => /^(?:ExperienceRuntime|nexus-three|nexus-gltf-loader)-/.test(asset.file)).map((asset) => `${asset.file} ${formatBytes(asset.bytes)}`).join(", ") || "not emitted in this mode"}`);
 
   if (result.errors.length) {

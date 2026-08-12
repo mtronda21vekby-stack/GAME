@@ -26,7 +26,7 @@ permissions:
 jobs:
   validate-site:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     env:
       VITE_BC_EXPERIENCE_MODE: off
       VITE_BC_EXPERIENCE_DEBUG: 0
@@ -60,6 +60,9 @@ jobs:
       - name: Validate production Crown slot
         run: pnpm --filter @blackcrown/site test:crown-asset
 
+      - name: Validate authored environment slots
+        run: pnpm --filter @blackcrown/site test:environment-assets
+
       - name: Typecheck site
         run: pnpm --filter @blackcrown/site typecheck
 
@@ -80,3 +83,12 @@ jobs:
 
       - name: Build production package
         run: npm run build:prod
+
+      - name: Check workspace type debt
+        id: workspace-typecheck
+        continue-on-error: true
+        run: pnpm typecheck
+
+      - name: Report workspace type debt
+        if: steps.workspace-typecheck.outcome == 'failure'
+        run: echo "::warning::Workspace typecheck contains errors outside the hard-gated site scope."

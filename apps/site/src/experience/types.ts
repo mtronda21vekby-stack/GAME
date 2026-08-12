@@ -1,3 +1,5 @@
+import type React from "react";
+import type { SitePath } from "../routes/routeMetadata";
 import type { BlackCrownExperienceQuality } from "./experienceConfig";
 import type { CrownAssetReason, CrownBackend, CrownLOD, CrownLoaderCounters } from "./assets/CrownAssetAdapter";
 import type { ExperienceChapterId } from "../experience-shell/experienceShellConfig";
@@ -146,4 +148,26 @@ export const INITIAL_EXPERIENCE_METRICS: ExperienceMetrics = {
   loader: { fetch: 0, parse: 0, attach: 0, dispose: 0, activeReferences: 0 },
   activeSceneCount: 0,
   warnings: [],
+};
+
+export type SceneId = "crown" | "gate" | "evofish" | "crown-front" | "network";
+export type KeyArtId = "hero" | "evofish" | "crown-front" | "network";
+export type WorldStatus = { status: string };
+
+export type KeyArtHandler = (event: React.SyntheticEvent<HTMLImageElement>, id: KeyArtId) => void;
+
+export type CinematicExperienceProps = {
+  evofish: WorldStatus;
+  crownFront: WorldStatus;
+  network: WorldStatus;
+  statusSource: string;
+  onNavigate: (path: SitePath) => void;
+  onPlay: () => void;
+  onOpenCrownFront: () => void;
+  onOpenLobby: () => void;
+};
+
+export type SceneRuntimeProps = {
+  active: boolean;
+  reducedMotion: boolean;
 };

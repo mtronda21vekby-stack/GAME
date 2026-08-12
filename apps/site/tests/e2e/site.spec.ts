@@ -40,16 +40,16 @@ async function setNexusProgress(page: Page, progress: number) {
   await expect.poll(async () => Math.abs(Number(await runtime.getAttribute("data-bc-experience-progress")) - progress)).toBeLessThan(0.0005);
 }
 
-test("@off Home preserves key art, CTA and fast-scroll stability", async ({ page }) => {
+test("@off Home preserves the current cinematic, key art, CTA and fast-scroll stability", async ({ page }) => {
   const requests: string[] = [];
   page.on("request", (request) => requests.push(request.url()));
   await installApiAdapter(page);
   await page.goto("/");
-  const root = page.locator(".bcCinematicExperience");
+  const root = page.locator(".bcCinematic");
   await expect(root).toBeVisible();
   await expect.poll(() => root.getAttribute("data-key-art-status")).toBe("ready");
-  expect(await page.locator('.bcCinematicExperience img[data-key-art-status="ready"]').count()).toBe(2);
-  expect(await page.locator(".bcCinematicExperience img").evaluateAll((images) => images.every((image) => (image as HTMLImageElement).naturalWidth > 0))).toBe(true);
+  expect(await page.locator('.bcCinematic img[data-key-art-status="ready"]').count()).toBe(4);
+  expect(await page.locator(".bcCinematic img").evaluateAll((images) => images.every((image) => (image as HTMLImageElement).naturalWidth > 0))).toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
   const cta = page.getByRole("button", { name: "Играть", exact: true });
   await cta.click({ trial: true });
@@ -64,6 +64,18 @@ test("@off Home preserves key art, CTA and fast-scroll stability", async ({ page
   await expect(page.locator("canvas[data-bc-nexus-canvas]")).toHaveCount(0);
 });
 
+test("@off reduced motion exposes the current cinematic without a long scroll stage", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await installApiAdapter(page);
+  await page.goto("/");
+  const root = page.locator(".bcCinematic");
+  await expect(root).toHaveAttribute("data-reduced-motion", "true");
+  await expect(root).toHaveAttribute("data-progress", "reduced");
+  expect(await root.evaluate((element) => element.getBoundingClientRect().height)).toBeLessThan(5_000);
+  expect(await page.locator(".bcCinematic__scene[inert]").count()).toBe(0);
+  expect(await page.locator(".bcCinematic button").count()).toBeGreaterThan(5);
+});
+
 test("@off Nexus route is inactive and unknown URLs render NotFound", async ({ page }) => {
   const requests: string[] = [];
   page.on("request", (request) => requests.push(request.url()));
@@ -75,7 +87,7 @@ test("@off Nexus route is inactive and unknown URLs render NotFound", async ({ p
   await page.goto("/unknown-test-route");
   await expect(page).toHaveTitle("Страница не найдена — BlackCrown");
   await expect(page.getByText("/unknown-test-route")).toBeVisible();
-  await expect(page.locator(".bcCinematicExperience")).toHaveCount(0);
+  await expect(page.locator(".bcCinematic")).toHaveCount(0);
 });
 
 test("@off Store, Cart and mock Checkout remain authoritative and idempotent", async ({ page }) => {
@@ -106,6 +118,13 @@ test("@off Store, Cart and mock Checkout remain authoritative and idempotent", a
   expect(api.orders.size).toBe(1);
 });
 
+test("@off Checkout blocks an empty cart", async ({ page }) => {
+  await installApiAdapter(page);
+  await page.goto("/checkout");
+  await expect(page.getByRole("heading", { name: "Нечего оформлять" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Оплатить/u })).toHaveCount(0);
+});
+
 test("@off Order ownership states and Account entitlements are explicit", async ({ page }) => {
   await installApiAdapter(page, { entitlements: ["skin_aurora"], orders: [makeOrder()] });
   await page.goto("/checkout/success?order=ord-valid");
@@ -115,6 +134,11 @@ test("@off Order ownership states and Account entitlements are explicit", async 
   await page.goto("/account");
   await expect(page.getByText("OWNERSHIP SYNCED")).toBeVisible();
   await expect(page.getByText("Aurora Skin")).toBeVisible();
+
+  await page.unroute("**/api/**");
+  await installApiAdapter(page, { entitlementsError: true });
+  await page.reload();
+  await expect(page.getByText("Локальные покупки не используются как источник владения.", { exact: false })).toBeVisible();
 });
 
 test("@lab Nexus boots one runtime and scroll is reversible", async ({ page }) => {
@@ -421,7 +445,7 @@ test("@lab review candidates are not requested by Home or an invalid override", 
   page.on("request", (request) => requests.push(request.url()));
   await installApiAdapter(page);
   await page.goto("/");
-  await expect(page.locator(".bcCinematicExperience")).toBeVisible();
+  await expect(page.locator(".bcCinematic")).toBeVisible();
   expect(requests.filter((url) => /candidate-[ab]/iu.test(url))).toEqual([]);
   requests.length = 0;
   await page.goto("/nexus-lab?nexuscrown=https://example.test/crown.glb");

@@ -3,7 +3,7 @@ import { Button } from "@blackcrown/ui";
 import { Icons } from "@blackcrown/assets";
 import { userStorage } from "@blackcrown/core";
 import { nav as navSite, navExternal } from "../lib/nav";
-import type { SitePath } from "../routes/siteRoutes";
+import type { SitePath } from "../routes/routeMetadata";
 
 type ActiveKey = "home" | "about" | "store" | "support" | "privacy" | "terms" | "account";
 type SiteHeaderProps = {

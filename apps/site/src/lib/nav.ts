@@ -1,4 +1,4 @@
-import type { SitePath } from "../routes/siteRoutes";
+import type { SitePath } from "../routes/routeMetadata";
 
 export type SiteHref = SitePath | `${SitePath}?${string}` | `${SitePath}#${string}`;
 
