@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { disposeObject3D } from "../../experience/core/Lifecycle";
+import { experienceConfig } from "../../experience/experienceConfig";
 import type { QualityTier } from "../../experience/types";
 
 export const EXPERIENCE_ASSET_SLOT_IDS = [
@@ -89,11 +90,12 @@ export class AssetSlotRegistry {
     });
   }
 
-  private get authoredReviewEnabled() {
-    if (typeof window === "undefined") return false;
+  private get authoredEnvironmentEnabled() {
+    if (typeof window === "undefined" || experienceConfig.mode === "off") return false;
+    if (experienceConfig.environmentAssetMode === "blender") return true;
     const query = new URLSearchParams(window.location.search);
-    const localDebug = import.meta.env.DEV || import.meta.env.VITE_BC_EXPERIENCE_DEBUG === "1";
-    return localDebug && import.meta.env.VITE_BC_EXPERIENCE_MODE !== "off" && query.get("bcenv") === "blender";
+    const localDebug = import.meta.env.DEV || experienceConfig.debug;
+    return localDebug && query.get("bcenv") === "blender";
   }
 
   async loadTexture(id: ExperienceAssetSlotId, quality: QualityTier) {
@@ -146,7 +148,7 @@ export class AssetSlotRegistry {
   async loadModel(id: ExperienceAssetSlotId, quality: QualityTier) {
     const slot = this.slots.get(id);
     const assetId = MODEL_SLOT_IDS[id];
-    if (!slot || !assetId || this.disposed || quality === "low" || !this.authoredReviewEnabled) return null;
+    if (!slot || !assetId || this.disposed || quality === "low" || !this.authoredEnvironmentEnabled) return null;
     if (slot.model) return slot.model;
     if (slot.modelPromise) return slot.modelPromise;
     slot.status = "loading";
