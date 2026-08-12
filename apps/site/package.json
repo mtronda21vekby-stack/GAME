@@ -10,6 +10,11 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:assets": "node scripts/validate-key-art.mjs",
+    "test:crown-asset": "node scripts/validate-crown-asset.mjs",
+    "test:environment-assets": "node scripts/validate-environment-assets.mjs",
+    "capture:experience": "node scripts/capture-experience-skeleton.mjs",
+    "capture:art-direction": "node scripts/capture-art-direction-v3.mjs",
+    "capture:blender-elements": "node scripts/capture-blender-site-elements.mjs",
     "lint": "node -e \"process.exit(0)\""
   },
   "dependencies": {
@@ -18,13 +23,16 @@
     "@blackcrown/core": "workspace:*",
     "@blackcrown/ui": "workspace:*",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "three": "^0.170.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.62.1",
+    "@playwright/test": "1.62.1",
+    "@types/three": "^0.170.0",
     "@vitejs/plugin-react": "^4.3.1",
+    "terser": "^5.36.0",
     "typescript": "^5.6.3",
     "vite": "^6.0.7",
-    "vitest": "^4.1.10"
+    "vitest": "4.1.10"
   }
 }

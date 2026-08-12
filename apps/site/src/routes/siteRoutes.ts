@@ -1,4 +1,5 @@
 import React from "react";
+import { experienceConfig, isNexusRouteEnabled } from "../experience/experienceConfig";
 import { HomeV3 } from "./HomeV3";
 import { SITE_ROUTE_METADATA, type SitePath } from "./routeMetadata";
 
@@ -14,9 +15,12 @@ const CheckoutSuccess = React.lazy(() =>
 );
 const Account = React.lazy(() => import("./pages/Account").then((module) => ({ default: module.Account })));
 const Admin = React.lazy(() => import("./pages/Admin").then((module) => ({ default: module.Admin })));
+const NexusLab = React.lazy(() =>
+  import("../components/nexus/NexusLabPage").then((module) => ({ default: module.NexusLabPage })),
+);
 
 const components: Record<SitePath, React.ComponentType> = {
-  "/": HomeV3,
+  "/": experienceConfig.mode === "home" ? NexusLab : HomeV3,
   "/about": About,
   "/support": Support,
   "/privacy": Privacy,
@@ -29,7 +33,23 @@ const components: Record<SitePath, React.ComponentType> = {
   "/admin": Admin,
 };
 
-export const SITE_ROUTES = SITE_ROUTE_METADATA.map((route) => ({ ...route, component: components[route.path] }));
+const coreRoutes = SITE_ROUTE_METADATA.map((route) => ({ ...route, component: components[route.path] }));
+
+export const SITE_ROUTES = isNexusRouteEnabled()
+  ? [
+      ...coreRoutes,
+      {
+        path: "/nexus-lab" as const,
+        component: NexusLab,
+        metadata: {
+          title: "Digital Crown Nexus Lab — BlackCrown",
+          description: "Локальный WebGL-прототип BlackCrown Digital Crown Nexus.",
+          chrome: { dock: false, footer: false, music: false },
+          noIndex: true,
+        },
+      },
+    ]
+  : coreRoutes;
 const routeByPath = new Map<string, (typeof SITE_ROUTES)[number]>(SITE_ROUTES.map((route) => [route.path, route]));
 
 export function getRouteDefinition(path: string) {

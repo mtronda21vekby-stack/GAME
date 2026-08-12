@@ -27,6 +27,10 @@ jobs:
   validate-site:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      VITE_BC_EXPERIENCE_MODE: off
+      VITE_BC_EXPERIENCE_DEBUG: 0
+      VITE_BC_CROWN_ASSET_MODE: auto
 
     steps:
       - name: Checkout
@@ -53,25 +57,31 @@ jobs:
       - name: Validate key art
         run: pnpm --filter @blackcrown/site test:assets
 
+      - name: Validate production Crown slot
+        run: pnpm --filter @blackcrown/site test:crown-asset
+
+      - name: Validate authored environment slots
+        run: pnpm --filter @blackcrown/site test:environment-assets
+
       - name: Typecheck site
         run: pnpm --filter @blackcrown/site typecheck
 
-      - name: Run site unit tests
+      - name: Unit tests
         run: pnpm --filter @blackcrown/site test
 
       - name: Install Playwright browsers
         run: pnpm --filter @blackcrown/site exec playwright install --with-deps chromium webkit
 
-      - name: Run site smoke tests
+      - name: Chromium and WebKit smoke tests
         run: pnpm --filter @blackcrown/site test:e2e
 
-      - name: Build site
-        run: pnpm --filter @blackcrown/site build
+      - name: Build site with lazy Nexus chunks
+        run: VITE_BC_EXPERIENCE_MODE=lab pnpm --filter @blackcrown/site build
 
-      - name: Enforce bundle budget
+      - name: Enforce bundle budgets
         run: node apps/site/scripts/check-bundle-budget.mjs
 
-      - name: Build production bundle
+      - name: Build production package
         run: npm run build:prod
 
       - name: Check workspace type debt

@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "assetId": "blackcrown-digital-crown-candidate-b-v1",
+  "status": "local-review-candidate",
+  "sourceBlend": {
+    "path": "/tmp/blackcrown-production-crown-candidate-b/BlackCrown_Crown_Candidate_B.blend",
+    "bytes": 435389,
+    "sha256": "e424fcdee0ac7c0a037ad0312492f4a30093e68067cfa63735c16eaf4ede693f"
+  },
+  "authoring": {
+    "blenderVersion": "5.1.2",
+    "blenderBinary": "/Applications/Blender.app/Contents/MacOS/Blender",
+    "generationScript": "tools/blender/blackcrown-crown/generate_candidate_b.py",
+    "exportScript": "tools/blender/blackcrown-crown/export_candidate_b.py",
+    "renderScript": "tools/blender/blackcrown-crown/render_candidate_b.py",
+    "config": "tools/blender/blackcrown-crown/config/candidate-b.json",
+    "seed": 240817,
+    "externalAssetsUsed": false,
+    "determinism": "Scene statistics and exported GLB bytes are stable. Blender .blend serialization metadata may change between saves."
+  },
+  "textures": {
+    "sourceDirectory": "/tmp/blackcrown-production-crown-candidate-b/texture-source",
+    "dimensions": [512, 512],
+    "procedurallyGenerated": true,
+    "ktx2": false
+  },
+  "lods": {
+    "lod0": {
+      "path": "apps/site/public/experience/crown/candidate-b/crown-candidate-b-lod0.glb",
+      "bytes": 1453888,
+      "sha256": "7eb4542acbb0e0b727174c8e5a761647efbb62c908b53841a67cb35d3a9d759c",
+      "triangles": 15574,
+      "drawCalls": 12
+    },
+    "lod1": {
+      "path": "apps/site/public/experience/crown/candidate-b/crown-candidate-b-lod1.glb",
+      "bytes": 1104092,
+      "sha256": "52c1047e35e3981c0be5ee03497da962b02a93e00e4aa1767e8cbadca7032bc1",
+      "triangles": 14440,
+      "drawCalls": 9
+    },
+    "lod2": {
+      "path": "apps/site/public/experience/crown/candidate-b/crown-candidate-b-lod2.glb",
+      "bytes": 669088,
+      "sha256": "4e30edd4796661098c09ac701d94bf2ab1c83c12ae913c9f819b032b398957dc",
+      "triangles": 6416,
+      "drawCalls": 8
+    }
+  }
+}

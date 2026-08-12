@@ -4,6 +4,7 @@ import {
   commerceOrderIndexKey,
   commerceOrderKey,
   normalizeEntitlementItemIds,
+  safeIdempotencyKey,
   validateCommerceItems,
   type CommerceOrderV1,
   type EntitlementsV1,
@@ -14,14 +15,8 @@ import { onRequestGet as getOrder } from "../../../../functions/api/commerce/ord
 
 class FakeKV {
   readonly values = new Map<string, string>();
-
-  async get(key: string) {
-    return this.values.get(key) ?? null;
-  }
-
-  async put(key: string, value: string) {
-    this.values.set(key, value);
-  }
+  async get(key: string) { return this.values.get(key) ?? null; }
+  async put(key: string, value: string) { this.values.set(key, value); }
 }
 
 function context(request: Request, kv: FakeKV, params: Record<string, string> = {}) {
@@ -29,10 +24,7 @@ function context(request: Request, kv: FakeKV, params: Record<string, string> = 
 }
 
 function checkoutRequest(userId: string | null, key: string, items: unknown) {
-  const headers = new Headers({
-    "content-type": "application/json",
-    "Idempotency-Key": key,
-  });
+  const headers = new Headers({ "content-type": "application/json", "Idempotency-Key": key });
   if (userId) headers.set("cookie", `bc_uid=${userId}`);
   return new Request("https://blackcrown.test/api/commerce/checkout", {
     method: "POST",
@@ -42,7 +34,7 @@ function checkoutRequest(userId: string | null, key: string, items: unknown) {
 }
 
 async function json(response: Response) {
-  return response.json() as Promise<Record<string, any>>;
+  return response.json() as Promise<Record<string, unknown>>;
 }
 
 describe("catalog validation", () => {
@@ -56,6 +48,7 @@ describe("catalog validation", () => {
     expect(validateCommerceItems([])).toEqual({ ok: false, reason: "empty_cart" });
     expect(validateCommerceItems([{ itemId: "unknown", quantity: 1 }])).toEqual({ ok: false, reason: "unknown_item" });
     expect(validateCommerceItems([{ itemId: "skin_aurora", quantity: 0 }])).toEqual({ ok: false, reason: "invalid_quantity" });
+    expect(validateCommerceItems([{ itemId: "skin_aurora", quantity: 11 }])).toEqual({ ok: false, reason: "invalid_quantity" });
   });
 
   it("normalizes duplicate lines", () => {
@@ -66,14 +59,17 @@ describe("catalog validation", () => {
     expect(result).toMatchObject({ ok: true, total: 3600 });
     if (result.ok) expect(result.items).toHaveLength(1);
   });
+
+  it("bounds and validates idempotency keys", () => {
+    expect(safeIdempotencyKey("short")).toBe("");
+    expect(safeIdempotencyKey("checkout:valid-key_1")).toBe("checkout:valid-key_1");
+    expect(safeIdempotencyKey("bad key with spaces")).toBe("");
+  });
 });
 
 describe("checkout and ownership", () => {
   let kv: FakeKV;
-
-  beforeEach(() => {
-    kv = new FakeKV();
-  });
+  beforeEach(() => { kv = new FakeKV(); });
 
   it("rejects an unauthenticated checkout", async () => {
     const response = await checkout(context(checkoutRequest(null, "checkout:key-1", [{ itemId: "skin_aurora", quantity: 1 }]), kv));
@@ -83,10 +79,9 @@ describe("checkout and ownership", () => {
 
   it("replays one order for a duplicate idempotency key and grants once", async () => {
     const firstResponse = await checkout(context(checkoutRequest("user-a", "checkout:key-2", [{ itemId: "skin_aurora", quantity: 1 }]), kv));
-    const first = await json(firstResponse);
+    const first = await json(firstResponse) as { order: CommerceOrderV1 };
     const secondResponse = await checkout(context(checkoutRequest("user-a", "checkout:key-2", [{ itemId: "skin_aurora", quantity: 1 }]), kv));
-    const second = await json(secondResponse);
-
+    const second = await json(secondResponse) as { order: CommerceOrderV1; idempotentReplay: boolean };
     expect(first.order.id).toBe(second.order.id);
     expect(second.idempotentReplay).toBe(true);
     const owned = JSON.parse(kv.values.get(commerceEntitlementsKey("user-a")) || "{}") as EntitlementsV1;
@@ -97,15 +92,8 @@ describe("checkout and ownership", () => {
 
   it("does not expose a foreign order", async () => {
     const order: CommerceOrderV1 = {
-      v: 1,
-      id: "ord_private",
-      userId: "user-a",
-      status: "fulfilled",
-      paymentMethod: "mock",
-      currency: "BC",
-      items: [],
-      total: 720,
-      createdAt: 1,
+      v: 1, id: "ord_private", userId: "user-a", status: "fulfilled", paymentMethod: "mock",
+      currency: "BC", items: [], total: 720, createdAt: 1,
     };
     kv.values.set(commerceOrderKey(order.id), JSON.stringify(order));
     const request = new Request(`https://blackcrown.test/api/commerce/orders/${order.id}`, { headers: { cookie: "bc_uid=user-b" } });
@@ -114,13 +102,10 @@ describe("checkout and ownership", () => {
     expect(await json(response)).toMatchObject({ reason: "order_not_found" });
   });
 
-  it("returns only normalized entitlements for the current user", async () => {
-    kv.values.set(
-      commerceEntitlementsKey("user-a"),
-      JSON.stringify({ v: 1, userId: "user-a", itemIds: ["skin_aurora", "skin_aurora", "unknown"], updatedAt: 2 }),
-    );
+  it("returns only bounded normalized entitlements for the current user", async () => {
+    const oversized = Array.from({ length: 800 }, (_, index) => index % 2 ? "skin_aurora" : "unknown");
+    kv.values.set(commerceEntitlementsKey("user-a"), JSON.stringify({ v: 1, userId: "user-a", itemIds: oversized, updatedAt: 2 }));
     expect(normalizeEntitlementItemIds("user-b", JSON.parse(kv.values.get(commerceEntitlementsKey("user-a"))!))).toEqual([]);
-
     const request = new Request("https://blackcrown.test/api/commerce/entitlements", { headers: { cookie: "bc_uid=user-a" } });
     const response = await entitlements(context(request, kv));
     expect(await json(response)).toMatchObject({ entitlements: { userId: "user-a", itemIds: ["skin_aurora"], source: "server" } });

@@ -1,0 +1,57 @@
+{
+  "assetId": "blackcrown-digital-crown-candidate-b-v1",
+  "seed": 240817,
+  "segmentCount": 9,
+  "spireCount": 9,
+  "irisBladeCount": 7,
+  "frontAxis": "+Z",
+  "upAxis": "+Y",
+  "units": "meters",
+  "textureSize": 512,
+  "dimensions": {
+    "width": 2.36,
+    "height": 1.99,
+    "depth": 0.82,
+    "coreY": 0.63
+  },
+  "presentation": {
+    "baseScale": 0.98,
+    "coreCenter": [0.0, 0.63, 0.0],
+    "segmentOpenDistance": 0.3,
+    "spireLift": 0.09,
+    "portalDepthScale": 1.08,
+    "cameraTargetOffset": [0.0, 0.025, 0.0]
+  },
+  "lods": {
+    "lod0": {
+      "crossSamples": 7,
+      "bodyLevels": 8,
+      "spireLevels": 9,
+      "bevelSegments": 1,
+      "ringSections": 52,
+      "irisDetail": 1,
+      "channelHousing": true,
+      "coreLayers": 4
+    },
+    "lod1": {
+      "crossSamples": 7,
+      "bodyLevels": 7,
+      "spireLevels": 8,
+      "bevelSegments": 2,
+      "ringSections": 52,
+      "irisDetail": 1,
+      "channelHousing": false,
+      "coreLayers": 2
+    },
+    "lod2": {
+      "crossSamples": 5,
+      "bodyLevels": 5,
+      "spireLevels": 6,
+      "bevelSegments": 1,
+      "ringSections": 30,
+      "irisDetail": 0,
+      "channelHousing": false,
+      "coreLayers": 2
+    }
+  }
+}

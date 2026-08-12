@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "assetId": "blackcrown-digital-crown-candidate-a-v1",
+  "status": "local-review-candidate",
+  "sourceBlend": {
+    "path": "/tmp/blackcrown-production-crown-candidate-a/BlackCrown_Crown_Candidate_A.blend",
+    "bytes": 373507,
+    "sha256": "c7e412a67bb63ea83a26b63f3cde36b6d891e324cd18f3305293ddc4e853b89c"
+  },
+  "authoring": {
+    "blenderVersion": "5.1.2",
+    "blenderBinary": "/Applications/Blender.app/Contents/MacOS/Blender",
+    "generationScript": "tools/blender/blackcrown-crown/generate_candidate_a.py",
+    "exportScript": "tools/blender/blackcrown-crown/export_candidate_a.py",
+    "config": "tools/blender/blackcrown-crown/config/candidate-a.json",
+    "seed": 240809,
+    "externalAssetsUsed": false
+  },
+  "textures": {
+    "sourceDirectory": "/tmp/blackcrown-production-crown-candidate-a/texture-source",
+    "dimensions": [512, 512],
+    "procedurallyGenerated": true,
+    "ktx2": false
+  },
+  "lods": {
+    "lod0": {
+      "path": "apps/site/public/experience/crown/candidate-a/crown-candidate-a-lod0.glb",
+      "bytes": 2563068,
+      "sha256": "b4281db7f10829860199cb8ef917b267140b0a63da2392e7d0adda3bc8e1c88d",
+      "triangles": 14212,
+      "drawCalls": 12
+    },
+    "lod1": {
+      "path": "apps/site/public/experience/crown/candidate-a/crown-candidate-a-lod1.glb",
+      "bytes": 1282496,
+      "sha256": "81f3d0ec8d4bc42b0a02351e3f77a06ce4697208d10e558246ed7df822079496",
+      "triangles": 6880,
+      "drawCalls": 9
+    },
+    "lod2": {
+      "path": "apps/site/public/experience/crown/candidate-a/crown-candidate-a-lod2.glb",
+      "bytes": 785340,
+      "sha256": "1a44ed732286101688eddd69e59ac99008b5923b98fa14f90674d908d87c1127",
+      "triangles": 3324,
+      "drawCalls": 8
+    }
+  }
+}

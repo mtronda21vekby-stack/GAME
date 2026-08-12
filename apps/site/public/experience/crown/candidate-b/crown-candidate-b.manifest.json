@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "enabled": true,
+  "candidateOnly": true,
+  "assetId": "blackcrown-digital-crown-candidate-b-v1",
+  "frontAxis": "+Z",
+  "upAxis": "+Y",
+  "units": "meters",
+  "segmentCount": 9,
+  "spires": 9,
+  "dimensions": {
+    "width": 2.36,
+    "height": 1.99,
+    "depth": 0.82,
+    "coreY": 0.63
+  },
+  "presentation": {
+    "baseScale": 0.98,
+    "coreCenter": [
+      0.0,
+      0.63,
+      0.0
+    ],
+    "segmentOpenDistance": 0.3,
+    "spireLift": 0.09,
+    "portalDepthScale": 1.08,
+    "cameraTargetOffset": [
+      0.0,
+      0.025,
+      0.0
+    ]
+  },
+  "lods": {
+    "high": {
+      "url": "/experience/crown/candidate-b/crown-candidate-b-lod0.glb",
+      "maxTriangles": 100000,
+      "maxBytes": 8388608,
+      "maxMaterials": 8,
+      "maxDrawCalls": 20,
+      "sha256": "7eb4542acbb0e0b727174c8e5a761647efbb62c908b53841a67cb35d3a9d759c",
+      "bytes": 1453888
+    },
+    "medium": {
+      "url": "/experience/crown/candidate-b/crown-candidate-b-lod1.glb",
+      "maxTriangles": 50000,
+      "maxBytes": 5242880,
+      "maxMaterials": 6,
+      "maxDrawCalls": 14,
+      "sha256": "52c1047e35e3981c0be5ee03497da962b02a93e00e4aa1767e8cbadca7032bc1",
+      "bytes": 1104092
+    },
+    "low": {
+      "url": "/experience/crown/candidate-b/crown-candidate-b-lod2.glb",
+      "maxTriangles": 20000,
+      "maxBytes": 2621440,
+      "maxMaterials": 4,
+      "maxDrawCalls": 8,
+      "sha256": "4e30edd4796661098c09ac701d94bf2ab1c83c12ae913c9f819b032b398957dc",
+      "bytes": 669088
+    }
+  },
+  "features": {
+    "ktx2": false,
+    "meshopt": false,
+    "draco": false,
+    "skinnedShell": true,
+    "irisBones": 7
+  }
+}

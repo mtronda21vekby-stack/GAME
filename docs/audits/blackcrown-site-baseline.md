@@ -138,4 +138,3 @@ Known route defects:
 
 The CROWN//FRONT WebGL directory under `apps/site/public/games/crown-front/**`
 is protected and was not modified or used as an art source.
-

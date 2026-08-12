@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "enabled": false,
+  "reviewOnly": true,
+  "assetId": "blackcrown-blender-site-elements-v1",
+  "override": "bcenv=blender",
+  "assets": {
+    "world-gate": {
+      "url": "/experience/environments/blender-v1/world-gate.glb",
+      "maxBytes": 1572864,
+      "maxTriangles": 30000,
+      "sha256": "b21405660815212636f4135927b3ef8c0e597c2482a7e1aa9b2f5ab57f81bc85",
+      "bytes": 176680,
+      "triangles": 4880,
+      "drawCalls": 4,
+      "materials": 4
+    },
+    "crown-front-reactor": {
+      "url": "/experience/environments/blender-v1/crown-front-reactor.glb",
+      "maxBytes": 1572864,
+      "maxTriangles": 30000,
+      "sha256": "154806a02a2cdfefae2d2f14163c4e3413eba9e810d97210a02b80a8123c9770",
+      "bytes": 336600,
+      "triangles": 7424,
+      "drawCalls": 4,
+      "materials": 4
+    },
+    "network-architecture": {
+      "url": "/experience/environments/blender-v1/network-architecture.glb",
+      "maxBytes": 1572864,
+      "maxTriangles": 30000,
+      "sha256": "63cdeb1a681c9a32bc8c668e8ec5015be622d43c33d5c047e32c0f4fa238b8cb",
+      "bytes": 189240,
+      "triangles": 4356,
+      "drawCalls": 4,
+      "materials": 4
+    },
+    "collection-vault": {
+      "url": "/experience/environments/blender-v1/collection-vault.glb",
+      "maxBytes": 1572864,
+      "maxTriangles": 30000,
+      "sha256": "0af2e57569e85bebe815157386909f37f64126a387f9dbf0313fc4d328f98f7a",
+      "bytes": 77204,
+      "triangles": 1564,
+      "drawCalls": 5,
+      "materials": 5
+    },
+    "identity-frame": {
+      "url": "/experience/environments/blender-v1/identity-frame.glb",
+      "maxBytes": 1572864,
+      "maxTriangles": 30000,
+      "sha256": "7d970de5b3bd29cfc68014531627d998ab4e443bd1be9ccc3de17b4798792f8e",
+      "bytes": 117028,
+      "triangles": 3344,
+      "drawCalls": 4,
+      "materials": 4
+    }
+  }
+}
