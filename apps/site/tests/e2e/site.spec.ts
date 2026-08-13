@@ -361,9 +361,9 @@ test("@lab test-only GLB fixture activates lazy bindings and disposes on route e
   await expect(runtime).toHaveAttribute("data-bc-crown-backend", "glb", { timeout: 10_000 });
   await expect(runtime).toHaveAttribute("data-bc-crown-status", "ready");
   expect(fixtureRequests()).toBe(1);
-  await setNexusProgress(page, 0.315);
+  await setNexusProgress(page, 0.56);
   await setNexusProgress(page, 0.18);
-  await setNexusProgress(page, 0.315);
+  await setNexusProgress(page, 0.56);
   await page.evaluate(() => { history.pushState(null, "", "/about"); dispatchEvent(new PopStateEvent("popstate")); });
   await expect(page.locator("canvas[data-bc-nexus-canvas]")).toHaveCount(0);
 });
