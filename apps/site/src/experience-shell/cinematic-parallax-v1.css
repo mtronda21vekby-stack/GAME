@@ -1,0 +1,218 @@
+.bcExperienceShell {
+  --bc-cinematic-edge: rgba(174, 239, 244, .16);
+  --bc-cinematic-glass: rgba(3, 8, 11, .56);
+  background: #010203;
+}
+
+/* Premium floating chrome: no full-width HUD bar. */
+.bcExperienceChrome {
+  top: max(12px, env(safe-area-inset-top));
+  right: clamp(14px, 2vw, 30px);
+  left: clamp(14px, 2vw, 30px);
+  min-height: 52px;
+  grid-template-columns: minmax(180px, 1fr) auto minmax(180px, 1fr);
+  align-items: center;
+  padding: 4px 10px 4px 14px;
+  border: 1px solid rgba(150, 226, 233, .12);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(5, 9, 12, .72), rgba(2, 5, 7, .5));
+  box-shadow: 0 16px 60px rgba(0, 0, 0, .26);
+  backdrop-filter: blur(14px) saturate(112%);
+}
+
+.bcExperienceChrome__identity { gap: 11px; }
+.bcExperienceChrome__identity button { letter-spacing: .06em; }
+.bcExperienceChrome__identity span { opacity: .72; }
+.bcExperienceChapterRail { opacity: .72; }
+.bcExperienceChapterRail a { width: 28px; }
+.bcExperienceChrome__controls { gap: 0; }
+
+/* The DOM barely moves; the camera and depth layers carry the parallax. */
+.bcExperienceSceneCopy {
+  transform: translate3d(0, calc((1 - var(--bc-chapter-progress)) * 8px), 0) translateY(-50%);
+  transition: opacity .16s linear, visibility .16s linear;
+}
+
+.bcExperienceSceneCopy > span,
+.bcExperienceSceneCopy > small {
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.bcExperienceSceneCopy h1,
+.bcExperienceSceneCopy h2 {
+  max-width: 12ch;
+  margin-top: 14px;
+  font-size: clamp(2.7rem, 4.65vw, 5.15rem);
+  line-height: .92;
+  letter-spacing: -.035em;
+}
+
+.bcExperienceSceneCopy p {
+  max-width: 37ch;
+  margin-top: 17px;
+  color: rgba(224, 238, 239, .62);
+  font-size: clamp(.94rem, 1.05vw, 1.08rem);
+  line-height: 1.5;
+}
+
+/* Crown: clean luxury hero with a restrained text footprint. */
+.bcExperienceStoryChapter[data-layout="hero-left"] .bcExperienceSceneCopy {
+  top: 50%;
+  width: min(470px, 34vw);
+}
+.bcExperienceStoryChapter[data-layout="hero-left"] .bcExperienceSceneCopy h1,
+.bcExperienceStoryChapter[data-layout="hero-left"] .bcExperienceSceneCopy h2 {
+  font-size: clamp(3rem, 4.9vw, 5.35rem);
+}
+
+/* Gate: almost no interface. */
+.bcExperienceStoryChapter[data-layout="system-minimal"] .bcExperienceSceneCopy {
+  top: auto;
+  bottom: clamp(42px, 7vh, 86px);
+  left: 50%;
+  width: min(460px, 58vw);
+  text-align: center;
+  transform: translateX(-50%);
+}
+.bcExperienceStoryChapter[data-layout="system-minimal"] .bcExperienceSceneCopy h2 {
+  max-width: none;
+  margin-top: 9px;
+  font-size: clamp(1.35rem, 2.2vw, 2.25rem);
+  letter-spacing: .02em;
+}
+
+/* EvoFish: editorial caption low-left, leaving the subject unobstructed. */
+.bcExperienceStoryChapter[data-layout="editorial-low-left"] .bcExperienceSceneCopy {
+  bottom: clamp(48px, 7.5vh, 92px);
+  width: min(455px, 34vw);
+}
+.bcExperienceStoryChapter[data-layout="editorial-low-left"] .bcExperienceSceneCopy h2 {
+  font-size: clamp(2.55rem, 4vw, 4.35rem);
+}
+
+/* CROWN//FRONT: compact military system block, not another giant headline. */
+.bcExperienceStoryChapter[data-layout="tactical-right"] .bcExperienceSceneCopy {
+  right: clamp(24px, 6vw, 96px);
+  bottom: clamp(46px, 8vh, 96px);
+  width: min(410px, 31vw);
+}
+.bcExperienceStoryChapter[data-layout="tactical-right"] .bcExperienceSceneCopy h2 {
+  max-width: 11ch;
+  font-size: clamp(2.25rem, 3.25vw, 3.65rem);
+}
+
+/* Network: deliberate negative space. */
+.bcExperienceStoryChapter[data-layout="network-right"] .bcExperienceSceneCopy {
+  right: clamp(26px, 8vw, 128px);
+  width: min(420px, 31vw);
+}
+.bcExperienceStoryChapter[data-layout="network-right"] .bcExperienceSceneCopy h2 {
+  font-size: clamp(2.4rem, 3.55vw, 3.9rem);
+}
+
+/* Collection: product/editorial scale rather than another world-title screen. */
+.bcExperienceStoryChapter[data-layout="vault-left"] .bcExperienceSceneCopy {
+  top: 51%;
+  width: min(430px, 32vw);
+}
+.bcExperienceStoryChapter[data-layout="vault-left"] .bcExperienceSceneCopy h2 {
+  font-size: clamp(2.25rem, 3.45vw, 3.7rem);
+}
+
+/* Final state: minimal BLACKCROWN lock-up after the camera passes through. */
+.bcExperienceStoryChapter[data-layout="final-center"] .bcExperienceSceneCopy {
+  right: 14vw;
+  bottom: max(5vh, env(safe-area-inset-bottom));
+  left: 14vw;
+}
+.bcExperienceStoryChapter[data-layout="final-center"] .bcExperienceSceneCopy h2 {
+  max-width: 15ch;
+  font-size: clamp(2.5rem, 4.2vw, 4.55rem);
+}
+.bcExperienceStoryChapter[data-layout="final-center"] .bcExperienceSceneCopy p {
+  max-width: 30ch;
+}
+
+.bcExperienceSceneActions { gap: 8px; margin-top: 21px; }
+.bcExperienceAction {
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: rgba(3, 9, 12, .54);
+  letter-spacing: .05em;
+  backdrop-filter: blur(10px);
+}
+.bcExperienceAction[data-kind="primary"] {
+  color: #031013;
+  background: #c5fbfd;
+}
+.bcExperienceAction[data-kind="tactical"] {
+  color: #ffe1ce;
+  background: rgba(27, 10, 4, .68);
+}
+
+@media (max-width: 820px) {
+  .bcExperienceChrome {
+    top: max(8px, env(safe-area-inset-top));
+    right: 10px;
+    left: 10px;
+    min-height: 48px;
+    grid-template-columns: 1fr auto;
+    padding: 2px 7px 2px 12px;
+  }
+  .bcExperienceChapterRail { display: none; }
+  .bcExperienceChrome__identity span { display: none; }
+
+  .bcExperienceSceneCopy,
+  .bcExperienceStoryChapter[data-layout="hero-left"] .bcExperienceSceneCopy,
+  .bcExperienceStoryChapter[data-layout="editorial-low-left"] .bcExperienceSceneCopy,
+  .bcExperienceStoryChapter[data-layout="tactical-right"] .bcExperienceSceneCopy,
+  .bcExperienceStoryChapter[data-layout="network-right"] .bcExperienceSceneCopy,
+  .bcExperienceStoryChapter[data-layout="vault-left"] .bcExperienceSceneCopy {
+    right: 20px;
+    bottom: max(26px, calc(env(safe-area-inset-bottom) + 18px));
+    left: 20px;
+    width: auto;
+    text-align: left;
+    transform: none;
+  }
+
+  .bcExperienceStoryChapter[data-layout="system-minimal"] .bcExperienceSceneCopy {
+    right: 20px;
+    bottom: max(26px, calc(env(safe-area-inset-bottom) + 18px));
+    left: 20px;
+    width: auto;
+    transform: none;
+  }
+
+  .bcExperienceStoryChapter[data-layout="tactical-right"] .bcExperienceSceneActions { justify-content: flex-start; }
+  .bcExperienceSceneCopy h1,
+  .bcExperienceSceneCopy h2,
+  .bcExperienceStoryChapter[data-layout="hero-left"] .bcExperienceSceneCopy h1,
+  .bcExperienceStoryChapter[data-layout="hero-left"] .bcExperienceSceneCopy h2,
+  .bcExperienceStoryChapter[data-layout="editorial-low-left"] .bcExperienceSceneCopy h2,
+  .bcExperienceStoryChapter[data-layout="tactical-right"] .bcExperienceSceneCopy h2,
+  .bcExperienceStoryChapter[data-layout="network-right"] .bcExperienceSceneCopy h2,
+  .bcExperienceStoryChapter[data-layout="vault-left"] .bcExperienceSceneCopy h2 {
+    max-width: 11ch;
+    font-size: clamp(2.15rem, 10vw, 3.45rem);
+  }
+
+  .bcExperienceStoryChapter[data-layout="system-minimal"] .bcExperienceSceneCopy h2 {
+    max-width: none;
+    font-size: clamp(1.2rem, 5.5vw, 1.65rem);
+  }
+
+  .bcExperienceStoryChapter[data-layout="final-center"] .bcExperienceSceneCopy {
+    right: 20px;
+    bottom: max(28px, calc(env(safe-area-inset-bottom) + 20px));
+    left: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bcExperienceChrome,
+  .bcExperienceAction { backdrop-filter: none; }
+  .bcExperienceSceneCopy { transform: translateY(-50%); }
+}
