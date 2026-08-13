@@ -37,20 +37,20 @@ describe("Experience Skeleton story", () => {
   });
 
   it("maps progress and spatial hashes deterministically", () => {
-    expect(getStoryProgress(0.24)).toMatchObject({ chapterId: "world-gate", localProgress: expect.closeTo(0.0769, 3) });
-    expect(getStoryProgress(0.74).chapterId).toBe("network-core");
+    expect(getStoryProgress(0.31)).toMatchObject({ chapterId: "world-gate", localProgress: expect.closeTo(0.0769, 3) });
+    expect(getStoryProgress(0.86).chapterId).toBe("network-core");
     expect(chapterFromHash("#crown-front")).toBe("crown-front-reactor");
     expect(chapterFromHash("#unknown")).toBeNull();
     expect(hashForChapter("collection-vault")).toBe("#store");
-    expect(getTransitionProgress(0.235, [0.2, 0.27])).toBeCloseTo(0.5, 5);
+    expect(getTransitionProgress(0.3325, [0.30, 0.365])).toBeCloseTo(0.5, 5);
   });
 
   it("keeps one scene active outside transitions and at most two inside", () => {
     expect(resolveSceneLifecycle(0.1).activeSceneIds).toEqual(["crown-chamber"]);
-    const transition = resolveSceneLifecycle(0.235);
+    const transition = resolveSceneLifecycle(0.3325);
     expect(transition.activeSceneIds).toHaveLength(2);
     expect(transition.transition).toMatchObject({ from: "crown-chamber", to: "world-gate", amount: expect.closeTo(0.5, 5) });
-    expect(resolveSceneLifecycle(0.45).activeSceneIds).toEqual(["evofish-abyss"]);
+    expect(resolveSceneLifecycle(0.5).activeSceneIds).toEqual(["evofish-abyss"]);
   });
 
   it("evaluates registry transitions from absolute progress without drift", () => {
@@ -60,10 +60,10 @@ describe("Experience Skeleton story", () => {
     const gate = new TestScene("world-gate");
     registry.register(crown);
     registry.register(gate);
-    registry.evaluate(0.235, 1, false, "high");
+    registry.evaluate(0.3325, 1, false, "high");
     const first = { crownZ: crown.root.position.z, gateZ: gate.root.position.z, crownScale: crown.root.scale.x };
     registry.evaluate(0.1, 2, false, "high");
-    registry.evaluate(0.235, 3, false, "high");
+    registry.evaluate(0.3325, 3, false, "high");
     expect({ crownZ: crown.root.position.z, gateZ: gate.root.position.z, crownScale: crown.root.scale.x }).toEqual(first);
     expect(registry.activeSceneCount).toBe(2);
     registry.dispose();

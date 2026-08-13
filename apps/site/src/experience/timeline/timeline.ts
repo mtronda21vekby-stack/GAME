@@ -1,30 +1,31 @@
 import { clamp, smoothstep, smootherstep } from "../core/math";
 import { getRangeProgress } from "../scroll/ScrollChapters";
 import type { ExperienceTimelineState } from "../types";
+import { EXPERIENCE_PHASE_RANGES } from "../../experience-shell/experienceShellConfig";
 
 export function evaluateExperienceTimeline(progress: number, reducedMotion = false): ExperienceTimelineState {
   const p = clamp(progress);
-  const assembly = reducedMotion ? 1 : smootherstep(getRangeProgress(p, 0.055, 0.22));
-  const inspectionIn = smoothstep(getRangeProgress(p, 0.18, 0.22));
-  const inspectionOut = 1 - smoothstep(getRangeProgress(p, 0.285, 0.315));
-  const transitOpen = smootherstep(getRangeProgress(p, 0.27, 0.35))
-    * (1 - smoothstep(getRangeProgress(p, 0.39, 0.43)));
-  const finalOpen = smootherstep(getRangeProgress(p, 0.965, 0.995));
+  const assembly = reducedMotion ? 1 : smootherstep(getRangeProgress(p, ...EXPERIENCE_PHASE_RANGES.nanoAssembly));
+  const inspectionIn = smoothstep(getRangeProgress(p, 0.18, EXPERIENCE_PHASE_RANGES.blackcrownHero[0]));
+  const inspectionOut = 1 - smoothstep(getRangeProgress(p, 0.285, EXPERIENCE_PHASE_RANGES.blackcrownHero[1]));
+  const transitOpen = smootherstep(getRangeProgress(p, EXPERIENCE_PHASE_RANGES.crownToOcean[0], 0.365))
+    * (1 - smoothstep(getRangeProgress(p, 0.39, EXPERIENCE_PHASE_RANGES.crownToOcean[1])));
+  const finalOpen = smootherstep(getRangeProgress(p, EXPERIENCE_PHASE_RANGES.finalCrownPass[0], 0.995));
   const open = reducedMotion
-    ? Math.max(smoothstep(getRangeProgress(p, 0.29, 0.34)) * 0.35, finalOpen * 0.58)
+    ? Math.max(smoothstep(getRangeProgress(p, EXPERIENCE_PHASE_RANGES.crownToOcean[0], 0.35)) * 0.35, finalOpen * 0.58)
     : Math.max(transitOpen, finalOpen);
-  const crownPortal = smoothstep(getRangeProgress(p, 0.30, 0.43))
+  const crownPortal = smoothstep(getRangeProgress(p, ...EXPERIENCE_PHASE_RANGES.crownToOcean))
     * (1 - smoothstep(getRangeProgress(p, 0.44, 0.49)));
-  const tacticalPortal = smoothstep(getRangeProgress(p, 0.60, 0.70))
-    * (1 - smoothstep(getRangeProgress(p, 0.82, 0.87)));
-  const finalPortal = smoothstep(getRangeProgress(p, 0.965, 1));
+  const tacticalPortal = smoothstep(getRangeProgress(p, 0.60, EXPERIENCE_PHASE_RANGES.oceanToVault[1]))
+    * (1 - smoothstep(getRangeProgress(p, ...EXPERIENCE_PHASE_RANGES.vaultToNetwork)));
+  const finalPortal = smoothstep(getRangeProgress(p, EXPERIENCE_PHASE_RANGES.finalCrownPass[0], 1));
   const portal = Math.max(crownPortal, tacticalPortal, finalPortal);
-  const ecosystem = smoothstep(getRangeProgress(p, 0.82, 0.91));
-  const enter = smoothstep(getRangeProgress(p, 0.96, 1));
-  const tacticalIn = smoothstep(getRangeProgress(p, 0.57, 0.70));
-  const tacticalOut = 1 - smoothstep(getRangeProgress(p, 0.82, 0.87));
+  const ecosystem = smoothstep(getRangeProgress(p, ...EXPERIENCE_PHASE_RANGES.vaultToNetwork));
+  const enter = smoothstep(getRangeProgress(p, ...EXPERIENCE_PHASE_RANGES.finalCrownPass));
+  const tacticalIn = smoothstep(getRangeProgress(p, ...EXPERIENCE_PHASE_RANGES.oceanToVault));
+  const tacticalOut = 1 - smoothstep(getRangeProgress(p, ...EXPERIENCE_PHASE_RANGES.vaultToNetwork));
   const tacticalOrange = tacticalIn * tacticalOut;
-  const awakening = smoothstep(getRangeProgress(p, 0.01, 0.08));
+  const awakening = smoothstep(getRangeProgress(p, ...EXPERIENCE_PHASE_RANGES.coreAwakening));
   const coreIntensity = 0.16
     + awakening * 0.32
     + assembly * 0.18

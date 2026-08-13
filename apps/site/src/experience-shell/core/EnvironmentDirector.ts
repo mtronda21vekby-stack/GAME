@@ -6,6 +6,7 @@ import type { PortalField } from "../../experience/scene/PortalField";
 import type { QualityTier, SceneLightingProfile } from "../../experience/types";
 import type { SceneLifecycleSnapshot } from "./SceneLifecycle";
 import { resolveSceneLightingProfile, SCENE_LIGHTING_PROFILES } from "./SceneLightingProfiles";
+import { EXPERIENCE_PHASE_RANGES } from "../experienceShellConfig";
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 const smooth = (value: number) => {
@@ -36,16 +37,21 @@ export class EnvironmentDirector {
     }
 
     const crownExit = smooth((progress - 0.30) / 0.13);
-    const finalReturn = smooth((progress - 0.945) / 0.035);
-    crown.root.visible = progress < 0.43 || (progress > 0.945 && progress < 0.998);
+    const finalPassStart = EXPERIENCE_PHASE_RANGES.finalCrownPass[0];
+    const finalArrival = (finalPassStart + EXPERIENCE_PHASE_RANGES.finalCrownPass[1]) * 0.5;
+    const finalReturn = smooth((progress - finalPassStart) / (finalArrival - finalPassStart));
+    let crownRotationZOffset = 0;
+    crown.root.visible = progress < EXPERIENCE_PHASE_RANGES.crownToOcean[1]
+      || (progress >= finalPassStart && progress < 0.998);
     if (crown.root.visible) {
-      if (progress >= 0.30 && progress < 0.43) {
+      if (progress >= EXPERIENCE_PHASE_RANGES.crownToOcean[0]
+        && progress < EXPERIENCE_PHASE_RANGES.crownToOcean[1]) {
         const travelScale = reducedMotion ? 0.28 : 1;
         crown.root.position.y += crownExit * 3.1 * travelScale;
         crown.root.position.z -= crownExit * 4.2 * travelScale;
-        crown.root.rotation.z -= crownExit * 0.12 * travelScale;
+        crownRotationZOffset = -crownExit * 0.12 * travelScale;
         crown.root.scale.multiplyScalar(1 - crownExit * 0.16 * travelScale);
-      } else if (progress > 0.945) {
+      } else if (progress >= finalPassStart) {
         const entryOffset = (1 - finalReturn) * (reducedMotion ? 0.35 : 1);
         crown.root.position.y += entryOffset * 1.25;
         crown.root.position.z -= entryOffset * 3.6;
@@ -55,7 +61,10 @@ export class EnvironmentDirector {
 
     portal.root.visible = false;
     ecosystem.root.visible = false;
-    particles.root.visible = progress < 0.992;
+    // The final pass is Crown-only: the network/collection field has already
+    // receded and the DOM identity arrives after the camera crosses the core.
+    particles.root.visible = progress < finalPassStart;
+    return { crownRotationZOffset };
   }
 
   get lightingProfile() { return this.profile; }

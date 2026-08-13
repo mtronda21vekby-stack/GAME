@@ -144,7 +144,7 @@ export class GLBCrownAdapter implements CrownVisual {
     this.root.rotation.set(
       -0.025 + state.open * 0.025,
       -0.07 + state.inspection * 0.13 - state.portal * 0.06 + (state.reducedMotion ? 0 : Math.sin(state.elapsedSeconds * 0.3) * 0.018 * state.idleAmount),
-      state.reducedMotion ? 0 : Math.sin(state.elapsedSeconds * 0.18) * 0.006,
+      (state.reducedMotion ? 0 : Math.sin(state.elapsedSeconds * 0.18) * 0.006) + (state.rootRotationZOffset ?? 0),
     );
 
     const coreBase = this.bindings.baseTransforms.get(this.core)!;

@@ -1,8 +1,21 @@
+import * as THREE from "three";
 import { describe, expect, it } from "vitest";
-import { EXPERIENCE_CHAPTERS } from "../../src/experience-shell/experienceShellConfig";
+import { EXPERIENCE_CHAPTERS, EXPERIENCE_PHASE_RANGES } from "../../src/experience-shell/experienceShellConfig";
 import { getCollectionHousingKind, getFeaturedCollectionItems } from "../../src/experience-shell/featuredCatalog";
-import { interpolateLightingProfiles, SCENE_LIGHTING_PROFILES } from "../../src/experience-shell/core/SceneLightingProfiles";
+import {
+  interpolateLightingProfiles,
+  OCEAN_TO_VAULT_NEUTRAL_PROFILE,
+  resolveSceneLightingProfile,
+  SCENE_LIGHTING_PROFILES,
+} from "../../src/experience-shell/core/SceneLightingProfiles";
 import { foregroundActivation, getForegroundVisibleCount } from "../../src/experience-shell/scenes/ForegroundOcclusionSystem";
+import { CAMERA_KEYFRAMES } from "../../src/experience/camera/CameraKeyframes";
+import { CameraRig } from "../../src/experience/camera/CameraRig";
+import { INITIAL_SCROLL_SNAPSHOT } from "../../src/experience/types";
+import {
+  getAssemblyFragmentSourceIndex,
+  shouldShowAssemblyFragments,
+} from "../../src/experience-shell/scenes/CrownChamberScene";
 
 describe("Experience art direction V3", () => {
   it("interpolates bounded lighting profiles deterministically in both directions", () => {
@@ -57,5 +70,84 @@ describe("Experience art direction V3", () => {
       "final-center",
     ]);
     expect(new Set(visualChapters.map((chapter) => chapter.layout)).size).toBe(visualChapters.length);
+  });
+
+  it("keeps the approved ten-phase directing spine contiguous", () => {
+    const phases = Object.values(EXPERIENCE_PHASE_RANGES);
+    expect(phases).toHaveLength(10);
+    expect(phases[0][0]).toBe(0);
+    expect(phases.at(-1)?.[1]).toBe(1);
+    phases.slice(1).forEach((phase, index) => expect(phase[0]).toBe(phases[index][1]));
+  });
+
+  it("shows assembly fragments only during the 6–22 percent assembly beat", () => {
+    expect(shouldShowAssemblyFragments(0, false, true)).toBe(false);
+    expect(shouldShowAssemblyFragments(0.059, false, true)).toBe(false);
+    expect(shouldShowAssemblyFragments(0.061, false, true)).toBe(true);
+    expect(shouldShowAssemblyFragments(0.14, false, true)).toBe(true);
+    expect(shouldShowAssemblyFragments(0.22, false, true)).toBe(false);
+    expect(shouldShowAssemblyFragments(0.14, true, true)).toBe(false);
+  });
+
+  it("samples quality-tier assembly fragments across the full Crown width", () => {
+    const lowTierSources = Array.from({ length: 56 }, (_, index) =>
+      getAssemblyFragmentSourceIndex(index, 56, 168));
+
+    expect(lowTierSources[0]).toBe(0);
+    expect(lowTierSources.at(-1)).toBe(167);
+    expect(new Set(lowTierSources).size).toBe(56);
+    expect(lowTierSources.some((index) => index >= 80 && index <= 87)).toBe(true);
+    const closeFlyingSources = lowTierSources.filter((index) => index % 8 === 0);
+    expect(closeFlyingSources.some((index) => index < 84)).toBe(true);
+    expect(closeFlyingSources.some((index) => index >= 84)).toBe(true);
+  });
+
+  it("passes ocean-to-vault lighting through a cold-white midpoint", () => {
+    const profile = resolveSceneLightingProfile({
+      primary: "crown-front-reactor",
+      partner: "evofish-abyss",
+      activeSceneIds: ["crown-front-reactor", "evofish-abyss"],
+      weights: new Map([["evofish-abyss", 0.5], ["crown-front-reactor", 0.5]]),
+      transition: {
+        id: "ocean-to-reactor",
+        from: "evofish-abyss",
+        to: "crown-front-reactor",
+        amount: 0.5,
+      },
+    }, "high", false);
+    expect(profile.coreColor).toBe(OCEAN_TO_VAULT_NEUTRAL_PROFILE.coreColor);
+    expect(profile.keyColor).toBe(OCEAN_TO_VAULT_NEUTRAL_PROFILE.keyColor);
+  });
+
+  it("locks the camera path to the directed chapter boundaries and crosses the final Crown", () => {
+    const progress = CAMERA_KEYFRAMES.map((keyframe) => keyframe.progress);
+    for (const boundary of [0.06, 0.22, 0.30, 0.43, 0.57, 0.70, 0.82, 0.91, 0.96, 1]) {
+      expect(progress).toContain(boundary);
+    }
+    progress.slice(1).forEach((value, index) => expect(value).toBeGreaterThan(progress[index]));
+    CAMERA_KEYFRAMES.forEach((keyframe) => {
+      expect([...keyframe.position, ...keyframe.target, keyframe.fov].every(Number.isFinite)).toBe(true);
+    });
+    expect(CAMERA_KEYFRAMES.find((keyframe) => keyframe.progress === 0.975)?.position[2]).toBeGreaterThan(0);
+    expect(CAMERA_KEYFRAMES.at(-1)?.position[2]).toBeLessThan(0);
+  });
+
+  it("locks the final mobile camera ray to the live Crown core", () => {
+    const camera = new THREE.PerspectiveCamera(36, 1, 0.05, 100);
+    const core = new THREE.Vector3(1.18, 1.86, 0.04);
+    new CameraRig(camera).update({
+      ...INITIAL_SCROLL_SNAPSHOT,
+      progress: 0.99,
+      targetProgress: 0.99,
+      viewportWidth: 390,
+      viewportHeight: 844,
+    }, { x: 0.5, y: -0.5 }, 3, core);
+
+    const direction = camera.getWorldDirection(new THREE.Vector3());
+    const travel = core.clone().sub(camera.position).dot(direction);
+    const closestPoint = camera.position.clone().addScaledVector(direction, travel);
+    expect(camera.position.x).toBeCloseTo(core.x, 5);
+    expect(camera.position.y).toBeCloseTo(core.y, 5);
+    expect(closestPoint.distanceTo(core)).toBeLessThan(0.0001);
   });
 });

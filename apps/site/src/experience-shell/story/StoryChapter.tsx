@@ -1,9 +1,22 @@
 import React from "react";
-import { EXPERIENCE_STORY_HEIGHT, type ExperienceChapterConfig } from "../experienceShellConfig";
+import {
+  EXPERIENCE_STORY_HEIGHT,
+  isExperienceRangeActive,
+  type ExperienceChapterConfig,
+} from "../experienceShellConfig";
 import { SceneCopy } from "../dom/SceneCopy";
 
-export function StoryChapter({ chapter, active }: { chapter: ExperienceChapterConfig; active: boolean }) {
+export function StoryChapter({
+  chapter,
+  active,
+  progress,
+}: {
+  chapter: ExperienceChapterConfig;
+  active: boolean;
+  progress: number;
+}) {
   const span = chapter.range[1] - chapter.range[0];
+  const copyActive = active && isExperienceRangeActive(progress, chapter.copyRange ?? chapter.range);
   return (
     <section
       id={chapter.hash}
@@ -15,7 +28,8 @@ export function StoryChapter({ chapter, active }: { chapter: ExperienceChapterCo
       data-range-start={chapter.range[0]}
       data-range-end={chapter.range[1]}
       data-active={active ? "true" : "false"}
-      aria-hidden={active ? undefined : true}
+      data-copy-active={copyActive ? "true" : "false"}
+      aria-hidden={copyActive ? undefined : true}
       aria-label={`${chapter.index} ${chapter.label}`}
       style={{
         "--bc-chapter-desktop-vh": span * EXPERIENCE_STORY_HEIGHT.desktopVh,
@@ -24,10 +38,10 @@ export function StoryChapter({ chapter, active }: { chapter: ExperienceChapterCo
         "--bc-chapter-reduced-vh": span * EXPERIENCE_STORY_HEIGHT.reducedVh,
       } as React.CSSProperties}
       ref={(node) => {
-        if (node) (node as HTMLElement & { inert: boolean }).inert = !active;
+        if (node) (node as HTMLElement & { inert: boolean }).inert = !copyActive;
       }}
     >
-      <SceneCopy chapter={chapter} active={active} />
+      <SceneCopy chapter={chapter} active={copyActive} />
     </section>
   );
 }

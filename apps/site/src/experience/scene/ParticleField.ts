@@ -1,6 +1,10 @@
 import * as THREE from "three";
-import { createSeededRandom } from "../core/math";
+import { clamp, createSeededRandom, smoothstep } from "../core/math";
 import { disposeObject3D } from "../core/Lifecycle";
+import { EXPERIENCE_PHASE_RANGES } from "../../experience-shell/experienceShellConfig";
+
+const COLLECTION_FADE_START = EXPERIENCE_PHASE_RANGES.networkCollection[0]
+  + (EXPERIENCE_PHASE_RANGES.networkCollection[1] - EXPERIENCE_PHASE_RANGES.networkCollection[0]) * 0.6;
 
 export class ParticleField {
   readonly root = new THREE.Group();
@@ -52,9 +56,13 @@ export class ParticleField {
 
   update(elapsedSeconds: number, progress: number, reducedMotion: boolean) {
     const reducedFactor = reducedMotion ? 0.2 : 1;
-    (this.far.material as THREE.PointsMaterial).opacity = reducedMotion ? 0.14 : 0.3;
-    (this.mid.material as THREE.PointsMaterial).opacity = (0.22 + progress * 0.18) * reducedFactor;
-    (this.foreground.material as THREE.PointsMaterial).opacity = (0.12 + progress * 0.2) * reducedFactor;
+    const finalFade = 1 - smoothstep(clamp(
+      (progress - COLLECTION_FADE_START)
+      / (EXPERIENCE_PHASE_RANGES.finalCrownPass[0] - COLLECTION_FADE_START),
+    ));
+    (this.far.material as THREE.PointsMaterial).opacity = (reducedMotion ? 0.14 : 0.3) * finalFade;
+    (this.mid.material as THREE.PointsMaterial).opacity = (0.22 + progress * 0.18) * reducedFactor * finalFade;
+    (this.foreground.material as THREE.PointsMaterial).opacity = (0.12 + progress * 0.2) * reducedFactor * finalFade;
     if (reducedMotion) return;
     this.far.rotation.y = elapsedSeconds * 0.004 + progress * 0.035;
     this.mid.rotation.y = elapsedSeconds * -0.009 + progress * 0.12;

@@ -3,6 +3,10 @@ import type { PointerState } from "../input/PointerParallax";
 import type { ScrollSnapshot } from "../types";
 import { clamp, smoothstep } from "../core/math";
 import { CAMERA_KEYFRAMES } from "./CameraKeyframes";
+import { EXPERIENCE_PHASE_RANGES } from "../../experience-shell/experienceShellConfig";
+
+const FINAL_CROWN_FOCUS_LOCK = EXPERIENCE_PHASE_RANGES.finalCrownPass[0]
+  + (EXPERIENCE_PHASE_RANGES.finalCrownPass[1] - EXPERIENCE_PHASE_RANGES.finalCrownPass[0]) * 0.375;
 
 export class CameraRig {
   private readonly directedPosition = new THREE.Vector3();
@@ -15,7 +19,7 @@ export class CameraRig {
 
   constructor(private readonly camera: THREE.PerspectiveCamera) {}
 
-  update(snapshot: ScrollSnapshot, pointer: PointerState, elapsedSeconds: number) {
+  update(snapshot: ScrollSnapshot, pointer: PointerState, elapsedSeconds: number, finalCoreTarget?: THREE.Vector3) {
     const progress = snapshot.progress;
     let left = CAMERA_KEYFRAMES[0];
     let right = CAMERA_KEYFRAMES[CAMERA_KEYFRAMES.length - 1];
@@ -44,19 +48,40 @@ export class CameraRig {
       this.directedTarget.set(0.5 + progress * 0.16, 0.48, -progress * 0.12);
     }
 
-    const mobileViewport = snapshot.viewportWidth <= 820;
+    const mobileViewport = snapshot.viewportWidth <= 820 || snapshot.viewportHeight <= 520;
+    const finalFocus = snapshot.reducedMotion ? 0 : smoothstep(clamp(
+      (progress - EXPERIENCE_PHASE_RANGES.finalCrownPass[0])
+      / (FINAL_CROWN_FOCUS_LOCK - EXPERIENCE_PHASE_RANGES.finalCrownPass[0]),
+    ));
     const mobileScale = mobileViewport ? 0.25 : 1;
-    const pointerX = pointer.x * 0.62 * mobileScale;
-    const pointerY = pointer.y * 0.35 * mobileScale;
-    const idleY = snapshot.reducedMotion ? 0 : Math.sin(elapsedSeconds * 0.22) * 0.035;
+    const pointerX = pointer.x * 0.62 * mobileScale * (1 - finalFocus);
+    const pointerY = pointer.y * 0.35 * mobileScale * (1 - finalFocus);
+    const idleY = snapshot.reducedMotion ? 0 : Math.sin(elapsedSeconds * 0.22) * 0.035 * (1 - finalFocus);
 
     this.camera.position.copy(this.directedPosition);
-    if (mobileViewport) this.camera.position.z += snapshot.viewportHeight <= 520 ? 0.9 : 1.8;
+    if (mobileViewport) {
+      // Keep the wider mobile composition until the final pass, then converge on
+      // the same core-crossing trajectory as desktop instead of stopping outside it.
+      const finalPass = smoothstep(clamp(
+        (progress - EXPERIENCE_PHASE_RANGES.finalCrownPass[0])
+        / ((EXPERIENCE_PHASE_RANGES.finalCrownPass[1] - EXPERIENCE_PHASE_RANGES.finalCrownPass[0]) * 0.95),
+      ));
+      this.camera.position.z += (snapshot.viewportHeight <= 520 ? 0.9 : 1.8) * (1 - finalPass);
+    }
     this.camera.position.x += pointerX;
     this.camera.position.y += pointerY + idleY;
     this.finalTarget.copy(this.directedTarget);
     this.finalTarget.x += pointerX * 0.18;
     this.finalTarget.y -= pointerY * 0.12;
+    if (finalCoreTarget && finalFocus > 0) {
+      // Lock the last approach to the live world-space core for every Crown LOD
+      // and viewport. Matching camera/core X/Y makes the ray cross the core,
+      // while aiming beyond it prevents a 180° flip after the crossing plane.
+      this.camera.position.x += (finalCoreTarget.x - this.camera.position.x) * finalFocus;
+      this.camera.position.y += (finalCoreTarget.y - this.camera.position.y) * finalFocus;
+      this.toTarget.set(finalCoreTarget.x, finalCoreTarget.y, finalCoreTarget.z - 6);
+      this.finalTarget.lerp(this.toTarget, finalFocus);
+    }
     this.camera.fov = left.fov + (right.fov - left.fov) * amount;
     this.camera.updateProjectionMatrix();
     this.camera.lookAt(this.finalTarget);

@@ -1,7 +1,7 @@
 import React from "react";
 import { experienceConfig, isNexusRouteEnabled } from "../experience/experienceConfig";
 import { HomeV3 } from "./HomeV3";
-import { SITE_ROUTE_METADATA, type SitePath } from "./routeMetadata";
+import { resolveRouteChrome, SITE_ROUTE_METADATA, type SitePath } from "./routeMetadata";
 
 const About = React.lazy(() => import("./pages/About").then((module) => ({ default: module.About })));
 const Support = React.lazy(() => import("./pages/Support").then((module) => ({ default: module.Support })));
@@ -33,7 +33,14 @@ const components: Record<SitePath, React.ComponentType> = {
   "/admin": Admin,
 };
 
-const coreRoutes = SITE_ROUTE_METADATA.map((route) => ({ ...route, component: components[route.path] }));
+const coreRoutes = SITE_ROUTE_METADATA.map((route) => ({
+  ...route,
+  component: components[route.path],
+  metadata: {
+    ...route.metadata,
+    chrome: resolveRouteChrome(route.path, route.metadata.chrome, experienceConfig.mode === "home"),
+  },
+}));
 
 export const SITE_ROUTES = isNexusRouteEnabled()
   ? [

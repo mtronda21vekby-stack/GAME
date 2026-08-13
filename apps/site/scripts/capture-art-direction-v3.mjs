@@ -9,22 +9,23 @@ const output = `${rootOutput}/${phase}`;
 const baseUrl = process.env.BC_CAPTURE_URL || "http://127.0.0.1:5194";
 
 const chapters = [
-  ["crown", 0.14],
-  ["gate", 0.295],
-  ["evofish", 0.44],
-  ["crown-front", 0.6],
-  ["network", 0.745],
-  ["collection", 0.865],
-  ["identity", 0.97],
+  ["crown", 0.26],
+  ["gate", 0.365],
+  ["evofish", 0.5],
+  ["crown-front", 0.76],
+  ["network", 0.865],
+  ["collection", 0.935],
+  ["final-pass", 0.98],
+  ["identity", 0.999],
 ];
 
 const transitions = [
-  ["crown-to-gate", 0.235],
-  ["gate-to-evofish", 0.365],
-  ["evofish-to-crown-front", 0.525],
-  ["reactor-to-network", 0.685],
-  ["network-to-collection", 0.81],
-  ["collection-to-identity", 0.92],
+  ["crown-to-gate", 0.3325],
+  ["gate-to-evofish", 0.3975],
+  ["evofish-to-crown-front", 0.635],
+  ["reactor-to-network", 0.865],
+  ["network-to-collection", 0.935],
+  ["collection-to-identity", 0.98],
 ];
 
 await mkdir(output, { recursive: true });
@@ -141,11 +142,11 @@ const mobile = captureScope === "all"
 if (captureScope === "all") {
   await captureSet(browser, "mobile430", { width: 430, height: 932 }, chapters, { autoQuality: true });
   await captureSet(browser, "landscape", { width: 844, height: 390 }, chapters, { autoQuality: true });
-  await captureSet(browser, "reduced", { width: 1440, height: 900 }, [chapters[0], chapters[3], chapters[6]], { reducedMotion: true, autoQuality: true });
+  await captureSet(browser, "reduced", { width: 1440, height: 900 }, [chapters[0], chapters[3], chapters[7]], { reducedMotion: true, autoQuality: true });
 
   const debugSession = await openExperience(browser, { width: 1440, height: 900 });
   await debugSession.hiddenDebug.evaluate((element) => element.remove());
-  for (const [label, progress] of [["performance-crown-front", 0.6], ["performance-collection", 0.865]]) {
+  for (const [label, progress] of [["performance-crown-front", 0.76], ["performance-collection", 0.935]]) {
     await setProgress(debugSession.page, progress);
     for (const panel of await debugSession.page.locator(".bcExperienceSkeletonDebug,.bcNexusDebug,.bcNexusDeviceQa").all()) {
       await panel.evaluate((element) => { element.open = true; });

@@ -5,9 +5,10 @@ export const VaultToIdentityTransition: ExperienceTransition = {
   evaluate(amount, from, to, reducedMotion) {
     from.root.position.z = amount * (reducedMotion ? 0.3 : 2.8);
     from.root.scale.setScalar(1 + amount * 0.18);
+    // CollectionVaultScene fades its own materials from the start of this
+    // transition, so there is no visibility cut at the core-crossing midpoint.
     to.root.position.z = -(1 - amount) * (reducedMotion ? 0.45 : 4.8);
     to.root.scale.setScalar(0.7 + amount * 0.3);
     to.root.rotation.z = (1 - amount) * -0.08;
   },
 };
-

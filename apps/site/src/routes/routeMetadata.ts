@@ -38,6 +38,10 @@ export type RouteMetadataDefinition = {
 const standardChrome: RouteChrome = { dock: true, footer: true, music: true };
 const focusedChrome: RouteChrome = { dock: false, footer: false, music: false };
 
+export function resolveRouteChrome(path: string, chrome: RouteChrome, experienceHomeActive: boolean): RouteChrome {
+  return experienceHomeActive && path === "/" ? focusedChrome : chrome;
+}
+
 export const SITE_ROUTE_METADATA: readonly RouteMetadataDefinition[] = [
   {
     path: "/",

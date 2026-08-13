@@ -27,7 +27,7 @@ export function getTransitionProgress(progress: number, range: readonly [number,
 
 export function getChapterTargetProgress(chapterId: ExperienceChapterId) {
   const chapter = EXPERIENCE_CHAPTERS.find((candidate) => candidate.id === chapterId) ?? EXPERIENCE_CHAPTERS[0];
-  const lead = Math.min(0.018, (chapter.range[1] - chapter.range[0]) * 0.18);
-  return clamp(chapter.range[0] + lead);
+  const targetRange = chapter.copyRange ?? chapter.range;
+  const lead = Math.min(0.018, (targetRange[1] - targetRange[0]) * 0.18);
+  return clamp(targetRange[0] + lead);
 }
-
