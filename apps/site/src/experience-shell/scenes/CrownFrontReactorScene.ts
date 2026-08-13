@@ -4,6 +4,12 @@ import type { AssetSlotRegistry } from "../core/AssetSlotRegistry";
 import { ForegroundOcclusionSystem } from "./ForegroundOcclusionSystem";
 import { SpatialSceneBase, energyMaterial, metalMaterial } from "./SpatialSceneBase";
 
+const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
+const smooth = (value: number) => {
+  const t = clamp01(value);
+  return t * t * (3 - 2 * t);
+};
+
 export class CrownFrontReactorScene extends SpatialSceneBase {
   private authored: THREE.Group | null = null;
   private readonly chamber = new THREE.Group();
@@ -166,35 +172,47 @@ export class CrownFrontReactorScene extends SpatialSceneBase {
   evaluate(snapshot: SceneEvaluationSnapshot) {
     this.resetPose();
     const authored = Boolean(this.authored && snapshot.quality !== "low");
+    const vaultReveal = smooth(snapshot.localProgress / 0.52);
+    const vaultHold = smooth((snapshot.localProgress - 0.52) / 0.48);
     if (this.authored) this.authored.visible = authored;
-    this.chamber.visible = snapshot.weight > 0.5 && !authored;
+    this.chamber.visible = snapshot.weight > 0.36 && !authored;
     this.containment.visible = !authored;
-    this.foreground.root.visible = snapshot.weight > 0.65;
+    this.foreground.root.visible = snapshot.weight > 0.52 && vaultReveal > 0.32;
     this.root.position.set(0.8, 0.18, 0);
     const motion = snapshot.reducedMotion ? 0 : snapshot.elapsedSeconds;
-    this.containment.rotation.z = snapshot.localProgress * 0.08 + motion * 0.008;
-    this.energyVolume.rotation.z = snapshot.localProgress * 0.24 - motion * 0.05;
-    this.energyVolume.scale.setScalar(0.58 + snapshot.localProgress * 0.08);
-    this.coreCage.rotation.set(0.08, -0.12 + snapshot.localProgress * 0.06, motion * 0.004);
-    this.nucleus.rotation.set(motion * 0.08, -motion * 0.11, snapshot.localProgress * 0.18);
-    const nucleusScale = 0.76 + snapshot.localProgress * 0.2;
+
+    this.containment.rotation.z = -0.06 * (1 - vaultReveal) + vaultHold * 0.08 + motion * 0.006;
+    this.energyVolume.rotation.z = vaultHold * 0.24 - motion * 0.045;
+    this.energyVolume.scale.setScalar(0.46 + vaultReveal * 0.12 + vaultHold * 0.08);
+    this.coreCage.rotation.set(0.08, -0.16 + vaultReveal * 0.04 + vaultHold * 0.06, motion * 0.004);
+    this.nucleus.rotation.set(motion * 0.07, -motion * 0.095, vaultHold * 0.18);
+    const nucleusScale = 0.58 + vaultReveal * 0.18 + vaultHold * 0.2;
     this.nucleus.scale.set(nucleusScale, nucleusScale * 1.18, nucleusScale);
-    const opening = 0.72 + snapshot.localProgress * 0.46;
+
+    // During the long 57–70% transition, the shutter radius expands from a
+    // compressed scan-line silhouette into a full armored military aperture.
+    const opening = 0.38 + vaultReveal * 0.62 + vaultHold * 0.26;
     for (let index = 0; index < 8; index += 1) {
       const angle = (index / 8) * Math.PI * 2 + 0.12;
-      const radius = 1.16 + opening * 0.62;
-      this.shutterMarker.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius, 0.3 + (index % 2) * 0.18);
+      const radius = 1.02 + opening * 0.76;
+      this.shutterMarker.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius, 0.22 + (index % 2) * 0.22);
       this.shutterMarker.rotation.set(0.04 * (index % 2), 0, angle);
-      this.shutterMarker.scale.set(0.22, 0.95 - opening * 0.18, 0.28);
+      this.shutterMarker.scale.set(0.22, 1.05 - opening * 0.22, 0.3);
       this.shutterMarker.updateMatrix();
       this.shutters.setMatrixAt(index, this.shutterMarker.matrix);
     }
     this.shutters.instanceMatrix.needsUpdate = true;
-    this.chamber.position.z = -0.25 - snapshot.localProgress * 0.25;
+
+    this.chamber.position.z = -3.15 * (1 - vaultReveal) - vaultHold * 0.32;
+    this.chamber.position.y = -1.05 * (1 - vaultReveal);
+    this.chamber.scale.setScalar(0.72 + vaultReveal * 0.28);
+
     if (this.authored?.visible) {
-      this.authored.position.z = -1.1 - snapshot.localProgress * 0.2;
-      this.authored.rotation.z = snapshot.localProgress * 0.018;
+      this.authored.position.z = -5.0 + vaultReveal * 3.9 - vaultHold * 0.22;
+      this.authored.position.y = -0.85 * (1 - vaultReveal);
+      this.authored.scale.setScalar(0.7 + vaultReveal * 0.22);
+      this.authored.rotation.z = (1 - vaultReveal) * -0.025 + vaultHold * 0.012;
     }
-    if (this.foreground.root.visible) this.foreground.evaluate(snapshot.localProgress, snapshot.quality, snapshot.reducedMotion);
+    if (this.foreground.root.visible) this.foreground.evaluate(Math.max(vaultReveal, vaultHold), snapshot.quality, snapshot.reducedMotion);
   }
 }
