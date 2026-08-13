@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - preview/blackcrown-pr-67
     paths:
       - ".github/workflows/auto-deploy-cloudflare-pages.yml"
       - "apps/**"
@@ -32,12 +33,12 @@ env:
   VITE_BC_ENVIRONMENT_ASSET_MODE: blender
 
 concurrency:
-  group: blackcrown-production-pages
+  group: blackcrown-preview-pr-67
   cancel-in-progress: true
 
 jobs:
   build:
-    name: Build production bundle
+    name: Build preview bundle
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -69,7 +70,7 @@ jobs:
           retention-days: 3
 
   deploy:
-    name: Deploy to Cloudflare Pages
+    name: Deploy preview to Cloudflare Pages
     needs: build
     runs-on: ubuntu-latest
     env:
@@ -98,10 +99,10 @@ jobs:
           name: blackcrown-dist
           path: dist
 
-      - name: Deploy production bundle to siteblcrown
+      - name: Deploy PR 67 preview to siteblcrown
         if: steps.cloudflare.outputs.enabled == 'true'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=${{ env.CLOUDFLARE_PROJECT_NAME }} --branch=main --commit-dirty=true
+          command: pages deploy dist --project-name=${{ env.CLOUDFLARE_PROJECT_NAME }} --branch=pr-67 --commit-dirty=true
