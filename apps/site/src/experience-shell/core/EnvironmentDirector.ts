@@ -40,7 +40,7 @@ export class EnvironmentDirector {
     // on a chapter boundary, then returns for the final camera pass-through.
     const crownExit = smooth((progress - 0.30) / 0.13);
     const finalReturn = smooth((progress - 0.945) / 0.035);
-    crown.root.visible = progress < 0.43 || progress > 0.945;
+    crown.root.visible = progress < 0.43 || (progress > 0.945 && progress < 0.998);
     if (crown.root.visible) {
       if (progress >= 0.30 && progress < 0.43) {
         const travelScale = reducedMotion ? 0.28 : 1;
@@ -58,7 +58,7 @@ export class EnvironmentDirector {
 
     portal.root.visible = false;
     ecosystem.root.visible = false;
-    particles.root.visible = true;
+    particles.root.visible = progress < 0.992;
   }
 
   get lightingProfile() { return this.profile; }
