@@ -1,5 +1,4 @@
 import { EXPERIENCE_PHASE_RANGES } from "../../experience-shell/experienceShellConfig";
-import { BLACKCROWN_MUSIC_SRC } from "../../audio/blackcrownMusic";
 
 const MIX_EPSILON = 0.00005;
 const FINAL_CROWN_PASS_MIDPOINT = (
@@ -7,14 +6,13 @@ const FINAL_CROWN_PASS_MIDPOINT = (
 ) / 2;
 
 export type ExperienceAudioMix = {
-  music: number;
   crown: number;
   ocean: number;
   vault: number;
   network: number;
 };
 
-type AmbienceKey = Exclude<keyof ExperienceAudioMix, "music">;
+type AmbienceKey = keyof ExperienceAudioMix;
 
 function clamp01(value: number) {
   return Math.max(0, Math.min(1, value));
@@ -40,7 +38,6 @@ export function evaluateExperienceAudioMix(progress: number, reducedMotion: bool
     * (1 - smoothRange(value, ...EXPERIENCE_PHASE_RANGES.finalCrownPass));
 
   return {
-    music: 0.22,
     crown: Math.max(crownOpening, crownFinal) * 0.012 * ambienceScale,
     ocean: ocean * 0.014 * ambienceScale,
     vault: vault * 0.016 * ambienceScale,
@@ -67,9 +64,6 @@ function connectSpatially(context: AudioContext, source: AudioNode, destination:
 export class AudioController {
   private context: AudioContext | null = null;
   private master: GainNode | null = null;
-  private music: HTMLAudioElement | null = null;
-  private musicGain: GainNode | null = null;
-  private musicSource: MediaElementAudioSourceNode | null = null;
   private readonly ambienceGains: Partial<Record<AmbienceKey, GainNode>> = {};
   private sources: AudioScheduledSourceNode[] = [];
   private enabled = false;
@@ -91,7 +85,6 @@ export class AudioController {
       return;
     }
     if (this.context) {
-      void this.music?.play().catch(() => undefined);
       await this.context.resume().catch(() => undefined);
       return;
     }
@@ -106,7 +99,6 @@ export class AudioController {
       this.buildGraph(context);
       // Called directly by SOUND ON, so resume happens inside the user gesture.
       const resumePromise = context.resume();
-      this.startMusic(context, generation);
       this.applyMix();
       await resumePromise;
       if (!this.enabled || this.disposed || generation !== this.generation) return;
@@ -180,38 +172,11 @@ export class AudioController {
     });
   }
 
-  private startMusic(context: AudioContext, generation: number) {
-    const music = document.createElement("audio");
-    // The canonical Suno asset sends Access-Control-Allow-Origin: *. Route it
-    // through WebAudio so the same master/compressor controls music on iOS,
-    // where HTMLMediaElement.volume is otherwise device-controlled.
-    music.crossOrigin = "anonymous";
-    music.src = BLACKCROWN_MUSIC_SRC;
-    music.loop = true;
-    music.preload = "metadata";
-    music.setAttribute("playsinline", "");
-    music.volume = 1;
-    const source = context.createMediaElementSource(music);
-    const gain = context.createGain();
-    gain.gain.value = 0;
-    source.connect(gain);
-    gain.connect(this.master!);
-    this.music = music;
-    this.musicSource = source;
-    this.musicGain = gain;
-    void music.play().catch((error) => {
-      if (this.enabled && !this.disposed && generation === this.generation) {
-        console.warn("BlackCrown experience music did not start:", error instanceof Error ? error.message : error);
-      }
-    });
-  }
-
   private applyMix() {
     const context = this.context;
     if (!context) return;
     const now = context.currentTime;
     const applied = this.appliedMix ?? {
-      music: Number.NaN,
       crown: Number.NaN,
       ocean: Number.NaN,
       vault: Number.NaN,
@@ -224,11 +189,6 @@ export class AudioController {
       node.gain.setTargetAtTime(value, now, 0.14);
       applied[key] = value;
     };
-    if (this.musicGain && (!Number.isFinite(applied.music) || Math.abs(this.mix.music - applied.music) > MIX_EPSILON)) {
-      this.musicGain.gain.cancelScheduledValues(now);
-      this.musicGain.gain.setTargetAtTime(clamp01(this.mix.music), now, 0.08);
-      applied.music = this.mix.music;
-    }
     schedule("crown", this.ambienceGains.crown);
     schedule("ocean", this.ambienceGains.ocean);
     schedule("vault", this.ambienceGains.vault);
@@ -244,21 +204,11 @@ export class AudioController {
       source.disconnect();
     });
     this.sources = [];
-    this.music?.pause();
-    if (this.music) {
-      this.music.removeAttribute("src");
-      this.music.load();
-    }
-    this.musicSource?.disconnect();
-    this.musicGain?.disconnect();
     Object.values(this.ambienceGains).forEach((gain) => gain?.disconnect());
     this.master?.disconnect();
     if (context) void context.close().catch(() => undefined);
     this.context = null;
     this.master = null;
-    this.music = null;
-    this.musicSource = null;
-    this.musicGain = null;
     this.appliedMix = null;
     for (const key of Object.keys(this.ambienceGains) as AmbienceKey[]) delete this.ambienceGains[key];
   }

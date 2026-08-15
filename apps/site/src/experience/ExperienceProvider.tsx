@@ -1,4 +1,5 @@
 import React from "react";
+import { setBlackCrownMusicEnabled } from "../audio/blackcrownMusic";
 import { experienceConfig, type BlackCrownCrownReviewSelection, type BlackCrownExperienceQuality } from "./experienceConfig";
 import { ExperienceContext, type ExperienceRuntimeControl } from "./ExperienceContext";
 import { INITIAL_EXPERIENCE_METRICS, INITIAL_SCROLL_SNAPSHOT, type ExperienceBootStage } from "./types";
@@ -33,6 +34,7 @@ export function ExperienceProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   const setSoundEnabled = React.useCallback((enabled: boolean) => {
+    setBlackCrownMusicEnabled(enabled);
     setSoundEnabledState(enabled);
     runtimeRef.current?.setSoundEnabled(enabled);
   }, []);
