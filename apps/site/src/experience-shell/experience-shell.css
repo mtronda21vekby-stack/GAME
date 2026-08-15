@@ -115,6 +115,17 @@
 .bcExperienceChrome .bcNexusQuality button,
 .bcExperienceChrome .bcNexusSound { min-height: 44px; }
 
+.bcExperienceShell[data-hero-phase="true"] .bcExperienceChrome {
+  border-bottom-color: transparent;
+  background: linear-gradient(180deg, rgba(1, 4, 7, .72), transparent);
+}
+
+.bcExperienceShell[data-hero-phase="true"] .bcExperienceChapterRail,
+.bcExperienceShell[data-hero-phase="true"] .bcExperienceChrome__identity span {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .bcExperienceMenu { position: fixed; z-index: 120; inset: 0; display: grid; justify-items: end; }
 .bcExperienceMenu__backdrop { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: rgba(0, 2, 4, .76); }
 .bcExperienceMenu__panel {
@@ -280,6 +291,17 @@
   .bcExperienceStoryChapter[data-layout="final-center"] .bcExperienceFooter { justify-content: flex-start; }
   .bcExperienceSceneCopy h1,
   .bcExperienceSceneCopy h2 { max-width: 12ch; margin-top: 12px; font-size: clamp(2.25rem, 10.4vw, 3.45rem); overflow-wrap: anywhere; }
+  .bcExperienceStoryChapter[data-layout="hero-left"] .bcExperienceSceneCopy h1 {
+    max-width: none;
+    font-size: clamp(2.2rem, 10vw, 2.75rem);
+    letter-spacing: -.045em;
+    white-space: nowrap;
+  }
+  .bcExperienceStoryChapter[data-layout="tactical-right"] .bcExperienceSceneCopy h2 {
+    max-width: none;
+    font-size: clamp(2.2rem, 9.6vw, 2.7rem);
+    overflow-wrap: normal;
+  }
   .bcExperienceSceneCopy p { max-width: 32ch; margin-top: 14px; font-size: .95rem; line-height: 1.45; }
   .bcExperienceSceneCopy p[data-mobile-hide="true"] { display: none; }
   .bcExperienceSceneActions { margin-top: 16px; }

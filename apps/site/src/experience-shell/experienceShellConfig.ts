@@ -100,8 +100,8 @@ export const EXPERIENCE_CHAPTERS: readonly ExperienceChapterConfig[] = [
     hash: "crown",
     index: "01",
     label: "CROWN",
-    eyebrow: "BLACKCROWN",
-    title: "DIGITAL CROWN NEXUS",
+    eyebrow: "DIGITAL CROWN NEXUS",
+    title: "BLACKCROWN",
     body: "ONE CROWN CONNECTS EVERY WORLD.",
     actions: [{ label: "EXPLORE", href: "#gate", kind: "primary" }],
     range: [EXPERIENCE_PHASE_RANGES.nanoAssembly[0], EXPERIENCE_PHASE_RANGES.blackcrownHero[1]],
@@ -119,6 +119,7 @@ export const EXPERIENCE_CHAPTERS: readonly ExperienceChapterConfig[] = [
     title: "BEYOND THE CROWN",
     actions: [],
     range: EXPERIENCE_PHASE_RANGES.crownToOcean,
+    copyRange: [EXPERIENCE_PHASE_RANGES.crownToOcean[0], EXPERIENCE_PHASE_RANGES.crownToOcean[0]],
     sceneId: "world-gate",
     tone: "gate",
     layout: "system-minimal",
@@ -200,10 +201,10 @@ export const EXPERIENCE_CHAPTERS: readonly ExperienceChapterConfig[] = [
 ] as const;
 
 export const EXPERIENCE_STORY_HEIGHT = {
-  desktopVh: 940,
-  mobileVh: 760,
-  landscapeVh: 880,
-  reducedVh: 410,
+  desktopVh: 2500,
+  mobileVh: 2100,
+  landscapeVh: 2350,
+  reducedVh: 520,
 } as const;
 
 export const EXPERIENCE_TRANSITION_RANGES = {
