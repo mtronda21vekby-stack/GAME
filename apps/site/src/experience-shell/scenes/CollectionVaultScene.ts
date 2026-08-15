@@ -2,13 +2,19 @@ import * as THREE from "three";
 import type { CommerceCatalogItem } from "@blackcrown/commerce";
 import { inverseLerp, smootherstep } from "../../experience/core/math";
 import type { SceneEvaluationSnapshot } from "../core/SceneLifecycle";
-import type { AssetSlotRegistry } from "../core/AssetSlotRegistry";
+import type { AssetSlotRegistry, ExperienceAssetSlotId } from "../core/AssetSlotRegistry";
 import { EXPERIENCE_PHASE_RANGES } from "../experienceShellConfig";
 import { getCollectionHousingKind, getFeaturedCollectionItems } from "../featuredCatalog";
+import { createCinematicArtPlane, setCinematicArtTexture } from "./CinematicArtPlane";
 import { ForegroundOcclusionSystem } from "./ForegroundOcclusionSystem";
 import { SpatialSceneBase, energyMaterial, metalMaterial } from "./SpatialSceneBase";
 
 const RARITY_COLORS = { common: 0xcbd5db, rare: 0x58c9ed, epic: 0xa982f0, legendary: 0xf0b65b } as const;
+const PRODUCT_ART_SLOTS: Record<string, ExperienceAssetSlotId> = {
+  skin_aurora: "collection-aurora-art",
+  badge_founder: "collection-founder-art",
+  bundle_starter: "collection-starter-art",
+};
 const FINAL_PASS_MIDPOINT = (
   EXPERIENCE_PHASE_RANGES.finalCrownPass[0] + EXPERIENCE_PHASE_RANGES.finalCrownPass[1]
 ) / 2;
@@ -29,8 +35,10 @@ export function getCollectionFinalVisibility(progress: number) {
 
 export class CollectionVaultScene extends SpatialSceneBase {
   private authored: THREE.Group | null = null;
+  private readonly collectionPlate = createCinematicArtPlane(16.4, 9.2);
   private readonly rails: THREE.InstancedMesh;
   private readonly housings: THREE.Group[] = [];
+  private readonly productArt = new Map<string, ReturnType<typeof createCinematicArtPlane>>();
   private readonly fadeMaterials = new Map<THREE.Material, FadeMaterialState>();
   private readonly featured = getFeaturedCollectionItems(3);
   private readonly foreground = new ForegroundOcclusionSystem([
@@ -65,6 +73,8 @@ export class CollectionVaultScene extends SpatialSceneBase {
 
     this.featured.forEach((item, index) => {
       const housing = this.createHousing(item);
+      const art = this.createProductArt(item);
+      housing.add(art.mesh);
       const positions = [[1.55, 0.55, 0.15], [3.4, -1.1, -1.05], [-1.05, 1.55, -1.5]] as const;
       housing.position.fromArray(positions[index]);
       housing.rotation.y = index === 0 ? -0.12 : index === 1 ? 0.18 : -0.2;
@@ -72,18 +82,33 @@ export class CollectionVaultScene extends SpatialSceneBase {
       this.housings.push(housing);
       this.root.add(housing);
     });
-    this.root.add(this.rails, this.foreground.root);
+    this.collectionPlate.mesh.position.set(-0.55, 0.06, -8.25);
+    this.collectionPlate.material.opacity = 0.94;
+    this.root.add(this.collectionPlate.mesh, this.rails, this.foreground.root);
     this.captureFadeMaterials(this.root);
   }
 
   async preload() {
-    const model = await this.assets.loadModel("collection-item-housings", this.quality);
-    if (!model || this.authored) return;
-    this.authored = model;
-    model.position.set(0.0, 0.15, -0.9);
-    model.scale.setScalar(0.9);
-    this.root.add(model);
-    this.captureFadeMaterials(model);
+    const artLimit = this.quality === "low" ? 2 : 3;
+    const [model, backdropTexture, ...artTextures] = await Promise.all([
+      this.assets.loadModel("collection-item-housings", this.quality),
+      this.assets.loadTexture("network-collection-backdrop", this.quality),
+      ...this.featured.map((item, index) => index < artLimit
+        ? this.assets.loadTexture(PRODUCT_ART_SLOTS[item.id], this.quality)
+        : Promise.resolve(null)),
+    ]);
+    setCinematicArtTexture(this.collectionPlate, backdropTexture);
+    this.featured.forEach((item, index) => {
+      const art = this.productArt.get(item.id);
+      if (art) setCinematicArtTexture(art, artTextures[index] ?? null);
+    });
+    if (model && !this.authored) {
+      this.authored = model;
+      model.position.set(0.0, 0.15, -0.9);
+      model.scale.setScalar(0.9);
+      this.root.add(model);
+      this.captureFadeMaterials(model);
+    }
   }
 
   private captureFadeMaterials(root: THREE.Object3D) {
@@ -147,6 +172,19 @@ export class CollectionVaultScene extends SpatialSceneBase {
     return group;
   }
 
+  private createProductArt(item: CommerceCatalogItem) {
+    const art = createCinematicArtPlane(1.7, 1.7);
+    art.mesh.name = `CollectionProductArt:${item.id}`;
+    art.mesh.userData.bcProductArt = true;
+    art.mesh.position.set(0, item.category === "skins" ? 0.04 : 0.02, item.category === "bundles" ? 0.92 : 0.82);
+    art.mesh.scale.setScalar(item.category === "bundles" ? 1.08 : item.category === "badges" ? 0.94 : 1.02);
+    art.mesh.renderOrder = 4;
+    art.material.opacity = 0.96;
+    art.material.alphaTest = 0.015;
+    this.productArt.set(item.id, art);
+    return art;
+  }
+
   evaluate(snapshot: SceneEvaluationSnapshot) {
     this.resetPose();
     const dominant = snapshot.weight > 0.5;
@@ -159,7 +197,15 @@ export class CollectionVaultScene extends SpatialSceneBase {
     this.rails.scale.y = 0.78 + snapshot.localProgress * 0.22;
     const visible = dominant ? (snapshot.quality === "low" ? 2 : this.housings.length) : 1;
     this.housings.forEach((housing, index) => {
-      housing.visible = !authored && index < visible;
+      housing.visible = index < visible;
+      housing.children.forEach((child) => {
+        if (child.userData.bcProductArt) {
+          const material = (child as THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>).material;
+          child.visible = Boolean(material.map);
+        } else {
+          child.visible = !authored;
+        }
+      });
       housing.position.x = compact
         ? (index === 0 ? 0.72 : -1.2)
         : (index === 0 ? 1.55 : index === 1 ? 3.4 : -1.05);
@@ -179,7 +225,19 @@ export class CollectionVaultScene extends SpatialSceneBase {
       this.authored.position.z = -1.45 + reveal * 0.55;
       this.authored.scale.setScalar(0.82 + reveal * 0.08);
     }
+    this.collectionPlate.mesh.position.set(
+      compact ? -0.15 : -0.55 + snapshot.localProgress * 0.18,
+      0.06,
+      -8.25 + snapshot.localProgress * 0.26,
+    );
+    this.collectionPlate.mesh.scale.setScalar(compact ? 1.16 : 1.06);
     if (this.foreground.root.visible) this.foreground.evaluate(snapshot.localProgress, snapshot.quality, snapshot.reducedMotion);
     this.applyFinalVisibility(snapshot);
+  }
+
+  override dispose() {
+    this.collectionPlate.material.map = null;
+    for (const art of this.productArt.values()) art.material.map = null;
+    super.dispose();
   }
 }

@@ -1,6 +1,9 @@
 import * as THREE from "three";
+import { clamp, smootherstep } from "../../experience/core/math";
 import type { SceneEvaluationSnapshot } from "../core/SceneLifecycle";
 import type { AssetSlotRegistry } from "../core/AssetSlotRegistry";
+import { EXPERIENCE_PHASE_RANGES } from "../experienceShellConfig";
+import { createCinematicArtPlane, setCinematicArtTexture } from "./CinematicArtPlane";
 import { ForegroundOcclusionSystem } from "./ForegroundOcclusionSystem";
 import { SpatialSceneBase, energyMaterial } from "./SpatialSceneBase";
 
@@ -14,6 +17,7 @@ const COMPACT_NODE_POSITIONS = [
 
 export class NetworkCoreScene extends SpatialSceneBase {
   private authored: THREE.Group | null = null;
+  private readonly networkPlate = createCinematicArtPlane(16.4, 9.2);
   private readonly commandCore = new THREE.Group();
   private readonly nodes: THREE.Group[] = [];
   private readonly dataPaths: THREE.LineSegments;
@@ -28,18 +32,18 @@ export class NetworkCoreScene extends SpatialSceneBase {
   constructor(private readonly assets: AssetSlotRegistry) {
     super("network-core");
     const housingMaterial = this.solid(new THREE.MeshStandardMaterial({
-      color: 0x17323a,
-      emissive: 0x0d3b44,
-      emissiveIntensity: 0.28,
-      metalness: 0.7,
-      roughness: 0.46,
+      color: 0x24464f,
+      emissive: 0x0c5964,
+      emissiveIntensity: 0.46,
+      metalness: 0.78,
+      roughness: 0.34,
     }));
     const innerMaterial = this.solid(new THREE.MeshStandardMaterial({
-      color: 0x0b171c,
-      emissive: 0x082b32,
-      emissiveIntensity: 0.22,
-      metalness: 0.66,
-      roughness: 0.58,
+      color: 0x10242a,
+      emissive: 0x0a414a,
+      emissiveIntensity: 0.38,
+      metalness: 0.74,
+      roughness: 0.46,
     }));
     const cyan = this.material(energyMaterial(0x62e4ec, 0.46), 0.46);
 
@@ -78,7 +82,7 @@ export class NetworkCoreScene extends SpatialSceneBase {
     });
     const paths = new THREE.BufferGeometry();
     paths.setAttribute("position", new THREE.Float32BufferAttribute(pathPositions, 3));
-    this.dataPaths = new THREE.LineSegments(paths, this.material(new THREE.LineBasicMaterial({ color: 0x4fadb8, transparent: true, opacity: 0.24 }), 0.24));
+    this.dataPaths = new THREE.LineSegments(paths, this.material(new THREE.LineBasicMaterial({ color: 0x67dbe6, transparent: true, opacity: 0.38 }), 0.38));
 
     this.city = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), innerMaterial, 18);
     const marker = new THREE.Object3D();
@@ -91,24 +95,42 @@ export class NetworkCoreScene extends SpatialSceneBase {
       this.city.setMatrixAt(index, marker.matrix);
     }
     this.city.instanceMatrix.needsUpdate = true;
-    this.root.add(this.commandCore, this.dataPaths, this.city, this.foreground.root);
+    this.networkPlate.mesh.position.set(-0.2, 0.05, -8.2);
+    this.root.add(this.networkPlate.mesh, this.commandCore, this.dataPaths, this.city, this.foreground.root);
   }
 
   async preload() {
-    const model = await this.assets.loadModel("network-environment", this.quality);
-    if (!model || this.authored) return;
-    this.authored = model;
-    model.position.set(0.0, 0.2, -0.9);
-    model.scale.setScalar(0.9);
-    this.root.add(model);
+    const [model, backdropTexture] = await Promise.all([
+      this.assets.loadModel("network-environment", this.quality),
+      this.assets.loadTexture("network-collection-backdrop", this.quality),
+    ]);
+    setCinematicArtTexture(this.networkPlate, backdropTexture);
+    if (model && !this.authored) {
+      this.authored = model;
+      model.position.set(0.0, 0.2, -0.9);
+      model.scale.setScalar(0.9);
+      this.root.add(model);
+    }
   }
 
   evaluate(snapshot: SceneEvaluationSnapshot) {
     this.resetPose();
     const dominant = snapshot.weight > 0.5;
     const authored = Boolean(this.authored && snapshot.quality !== "low");
+    const networkReveal = smootherstep(clamp(
+      (snapshot.globalProgress - EXPERIENCE_PHASE_RANGES.vaultToNetwork[0])
+      / (EXPERIENCE_PHASE_RANGES.vaultToNetwork[1] - EXPERIENCE_PHASE_RANGES.vaultToNetwork[0]),
+    ));
     if (this.authored) this.authored.visible = authored;
     this.root.position.set(0.2, 0.2, 0);
+    this.networkPlate.mesh.position.set(
+      -0.2 - (1 - networkReveal) * 0.28,
+      0.05 + (1 - networkReveal) * 0.16,
+      -8.2 + networkReveal * 0.36,
+    );
+    this.networkPlate.mesh.scale.setScalar(1.12 - networkReveal * 0.06);
+    this.networkPlate.material.opacity = (0.1 + networkReveal * 0.86)
+      * Math.min(1, snapshot.weight * 1.75);
     const idle = snapshot.reducedMotion ? 0 : snapshot.elapsedSeconds;
     this.commandCore.visible = !authored;
     this.commandCore.rotation.set(idle * 0.012, -idle * 0.018, snapshot.localProgress * 0.08);
@@ -134,5 +156,10 @@ export class NetworkCoreScene extends SpatialSceneBase {
     this.foreground.root.visible = snapshot.weight > 0.65;
     this.city.position.y = (1 - snapshot.localProgress) * 0.24;
     if (this.foreground.root.visible) this.foreground.evaluate(snapshot.localProgress, snapshot.quality, snapshot.reducedMotion);
+  }
+
+  override dispose() {
+    this.networkPlate.material.map = null;
+    super.dispose();
   }
 }

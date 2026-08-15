@@ -1,11 +1,14 @@
 import * as THREE from "three";
+import { clamp, smootherstep } from "../../experience/core/math";
 import type { SceneEvaluationSnapshot } from "../core/SceneLifecycle";
 import type { AssetSlotRegistry } from "../core/AssetSlotRegistry";
+import { createCinematicArtPlane, setCinematicArtTexture } from "./CinematicArtPlane";
 import { ForegroundOcclusionSystem } from "./ForegroundOcclusionSystem";
 import { SpatialSceneBase, energyMaterial } from "./SpatialSceneBase";
 
 export class WorldGateScene extends SpatialSceneBase {
   private authored: THREE.Group | null = null;
+  private readonly oceanPlate = createCinematicArtPlane(16.4, 9.2);
   private readonly arcs = new THREE.Group();
   private readonly tunnel = new THREE.Group();
   private readonly ribMesh: THREE.InstancedMesh;
@@ -106,35 +109,48 @@ export class WorldGateScene extends SpatialSceneBase {
     this.streaks = new THREE.LineSegments(streakGeometry, this.material(new THREE.LineBasicMaterial({ color: 0x4c7bd5, transparent: true, opacity: 0.2 }), 0.2));
 
     this.tunnel.add(tunnelWall, this.ribMesh, this.aperture, this.depthCore, this.streaks);
-    this.root.add(this.tunnel, this.arcs, this.foreground.root);
+    this.oceanPlate.mesh.position.set(-0.4, -4.4, -7.2);
+    this.root.add(this.oceanPlate.mesh, this.tunnel, this.arcs, this.foreground.root);
   }
 
   async preload() {
-    const model = await this.assets.loadModel("world-gate", this.quality);
-    if (!model || this.authored) return;
-    this.authored = model;
-    model.position.set(-0.2, 0.05, -0.65);
-    model.scale.setScalar(0.92);
-    this.root.add(model);
+    const [model, oceanTexture] = await Promise.all([
+      this.assets.loadModel("world-gate", this.quality),
+      this.assets.loadTexture("evofish-backdrop", this.quality),
+    ]);
+    setCinematicArtTexture(this.oceanPlate, oceanTexture);
+    if (model && !this.authored) {
+      this.authored = model;
+      model.position.set(-0.2, 0.05, -0.65);
+      model.scale.setScalar(0.92);
+      this.root.add(model);
+    }
   }
 
   evaluate(snapshot: SceneEvaluationSnapshot) {
     this.resetPose();
-    const dominant = snapshot.weight > 0.5;
     const authored = Boolean(this.authored && snapshot.quality !== "low");
+    const oceanRise = smootherstep(clamp((snapshot.localProgress + 0.08) / 0.72));
     if (this.authored) this.authored.visible = authored;
-    this.arcs.visible = dominant && !authored;
-    this.ribMesh.visible = !authored;
-    this.aperture.visible = !authored;
-    this.streaks.visible = snapshot.weight >= 0.45;
-    this.foreground.root.visible = snapshot.weight > 0.65;
+    this.tunnel.visible = !authored && snapshot.localProgress < 0.7;
+    // This scene is a physical Crown-to-ocean bridge, never a portal tableau.
+    this.arcs.visible = false;
+    this.ribMesh.visible = !authored && snapshot.localProgress < 0.62;
+    this.aperture.visible = false;
+    this.depthCore.visible = false;
+    this.streaks.visible = snapshot.weight >= 0.4 && snapshot.localProgress < 0.86;
+    this.foreground.root.visible = snapshot.weight > 0.55 && snapshot.localProgress < 0.74;
     this.root.position.set(0.4, 0.2, 0);
     const motion = snapshot.reducedMotion ? 0 : snapshot.elapsedSeconds * 0.018;
     this.arcs.children.forEach((arc, index) => {
       arc.rotation.z = (index % 2 ? -1.02 : 0.72) + motion * (index % 2 ? -1 : 1) + snapshot.localProgress * (0.08 + index * 0.025);
     });
+    this.tunnel.position.y = snapshot.localProgress * 1.12;
     this.tunnel.position.z = snapshot.localProgress * 0.7;
     this.tunnel.scale.z = 0.86 + snapshot.localProgress * 0.34;
+    this.oceanPlate.mesh.position.set(-0.4, -4.4 + oceanRise * 4.15, -7.2 + oceanRise * 0.45);
+    this.oceanPlate.mesh.scale.setScalar(snapshot.quality === "low" ? 1.85 : 1.04 + oceanRise * 0.08);
+    this.oceanPlate.material.opacity = (0.08 + oceanRise * 0.82) * snapshot.weight;
     if (this.authored?.visible) {
       this.authored.position.z = -0.65 + snapshot.localProgress * 0.48;
       this.authored.rotation.z = (snapshot.localProgress - 0.5) * 0.025;
@@ -144,5 +160,10 @@ export class WorldGateScene extends SpatialSceneBase {
     this.depthCore.scale.setScalar(0.72 + snapshot.localProgress * 0.32);
     this.depthCore.rotation.z = snapshot.reducedMotion ? 0 : motion * -4;
     if (this.foreground.root.visible) this.foreground.evaluate(snapshot.localProgress, snapshot.quality, snapshot.reducedMotion);
+  }
+
+  override dispose() {
+    this.oceanPlate.material.map = null;
+    super.dispose();
   }
 }

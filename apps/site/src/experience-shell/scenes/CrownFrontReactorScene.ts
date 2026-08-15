@@ -1,7 +1,9 @@
 import * as THREE from "three";
+import { clamp, smootherstep } from "../../experience/core/math";
 import type { SceneEvaluationSnapshot } from "../core/SceneLifecycle";
 import type { AssetSlotRegistry } from "../core/AssetSlotRegistry";
-import { ForegroundOcclusionSystem } from "./ForegroundOcclusionSystem";
+import { createCinematicArtPlane, setCinematicArtTexture } from "./CinematicArtPlane";
+import { createForegroundArmorGeometry, ForegroundOcclusionSystem } from "./ForegroundOcclusionSystem";
 import { SpatialSceneBase, energyMaterial, metalMaterial } from "./SpatialSceneBase";
 import { EXPERIENCE_PHASE_RANGES } from "../experienceShellConfig";
 
@@ -11,6 +13,7 @@ const TACTICAL_ORANGE = new THREE.Color(0xff6f2f);
 
 export class CrownFrontReactorScene extends SpatialSceneBase {
   private authored: THREE.Group | null = null;
+  private readonly vaultPlate = createCinematicArtPlane(16.4, 9.2);
   private readonly chamber = new THREE.Group();
   private readonly containment = new THREE.Group();
   private readonly shutters: THREE.InstancedMesh;
@@ -19,12 +22,13 @@ export class CrownFrontReactorScene extends SpatialSceneBase {
   private readonly nucleus: THREE.Mesh;
   private readonly energyVolume: THREE.Mesh;
   private readonly coreCage: THREE.Mesh;
+  private readonly reactorHousing: THREE.Mesh;
   private readonly foreground = new ForegroundOcclusionSystem([
     { position: [-5.25, 0.2, 2.3], scale: [0.52, 7.4, 0.5], rotation: [0.04, 0.18, -0.16], travel: [1.25, 0.1, 0.8] },
     { position: [5.4, -0.45, 2.1], scale: [0.44, 6.8, 0.48], rotation: [-0.05, -0.15, 0.2], travel: [-1.1, 0.15, 0.9] },
     { position: [-2.4, 3.65, 1.55], scale: [4.1, 0.42, 0.5], rotation: [0.08, 0.12, 0.12], travel: [0.8, -0.75, 0.7] },
     { position: [2.9, -3.5, 1.7], scale: [3.8, 0.36, 0.46], rotation: [-0.07, -0.1, -0.1], travel: [-0.65, 0.7, 0.76] },
-  ], 0x100d0c, 0x401408);
+  ], 0x050708, 0x211108);
 
   constructor(private readonly assets: AssetSlotRegistry) {
     super("crown-front-reactor");
@@ -119,13 +123,13 @@ export class CrownFrontReactorScene extends SpatialSceneBase {
       this.containment.add(arc);
     });
 
-    const reactorHousing = new THREE.Mesh(
+    this.reactorHousing = new THREE.Mesh(
       new THREE.CylinderGeometry(1.28, 1.72, 1.8, 12, 1, true),
       shellMaterial,
     );
-    reactorHousing.rotation.x = Math.PI / 2;
-    reactorHousing.position.z = -3.45;
-    reactorHousing.scale.setScalar(0.68);
+    this.reactorHousing.rotation.x = Math.PI / 2;
+    this.reactorHousing.position.z = -5.3;
+    this.reactorHousing.scale.setScalar(0.24);
     const cageMaterial = this.solid(new THREE.MeshStandardMaterial({
       color: 0x392b24,
       emissive: 0x5b210d,
@@ -134,41 +138,47 @@ export class CrownFrontReactorScene extends SpatialSceneBase {
       roughness: 0.38,
     }));
     this.coreCage = new THREE.Mesh(new THREE.DodecahedronGeometry(0.98, 0), cageMaterial);
-    this.coreCage.position.set(0.08, 0.02, -3.35);
-    this.coreCage.scale.set(0.68, 0.6, 0.46);
+    this.coreCage.position.set(0.08, 0.02, -5.25);
+    this.coreCage.scale.set(0.32, 0.28, 0.22);
     this.energyVolume = new THREE.Mesh(
       new THREE.CylinderGeometry(0.52, 0.78, 1.25, 10, 1, true),
       this.material(energyMaterial(0xff6f2f, 0.34), 0.34),
     );
     this.energyVolume.rotation.x = Math.PI / 2;
-    this.energyVolume.position.z = -3.55;
+    this.energyVolume.position.z = -5.45;
     this.nucleus = new THREE.Mesh(
       new THREE.OctahedronGeometry(0.48, 0),
       this.material(energyMaterial(0xffb06c, 0.52), 0.52),
     );
-    this.nucleus.position.z = -3.9;
+    this.nucleus.position.z = -5.7;
     this.nucleus.scale.set(0.46, 0.54, 0.46);
 
     const shutterMaterial = this.solid(new THREE.MeshStandardMaterial({
-      color: 0x2a211d,
-      emissive: 0x6b260e,
-      emissiveIntensity: 0.34,
-      metalness: 0.74,
-      roughness: 0.42,
+      color: 0x090b0d,
+      emissive: 0x351408,
+      emissiveIntensity: 0.1,
+      metalness: 0.88,
+      roughness: 0.34,
     }));
-    this.shutters = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), shutterMaterial, 8);
+    this.shutters = new THREE.InstancedMesh(createForegroundArmorGeometry(), shutterMaterial, 8);
     this.shutters.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.chamber.add(walls, ribs, bridges, tacticalLights);
-    this.root.add(this.chamber, this.containment, reactorHousing, this.energyVolume, this.coreCage, this.nucleus, this.shutters, this.foreground.root);
+    this.vaultPlate.mesh.position.set(-0.8, 0.05, -8.4);
+    this.root.add(this.vaultPlate.mesh, this.chamber, this.containment, this.reactorHousing, this.energyVolume, this.coreCage, this.nucleus, this.shutters, this.foreground.root);
   }
 
   async preload() {
-    const model = await this.assets.loadModel("crown-front-environment", this.quality);
-    if (!model || this.authored) return;
-    this.authored = model;
-    model.position.set(-0.35, 0.0, -1.1);
-    model.scale.setScalar(0.92);
-    this.root.add(model);
+    const [model, backdropTexture] = await Promise.all([
+      this.assets.loadModel("crown-front-environment", this.quality),
+      this.assets.loadTexture("crown-front-backdrop", this.quality),
+    ]);
+    setCinematicArtTexture(this.vaultPlate, backdropTexture);
+    if (model && !this.authored) {
+      this.authored = model;
+      model.position.set(-0.35, 0.0, -1.1);
+      model.scale.setScalar(0.92);
+      this.root.add(model);
+    }
   }
 
   evaluate(snapshot: SceneEvaluationSnapshot) {
@@ -176,13 +186,32 @@ export class CrownFrontReactorScene extends SpatialSceneBase {
     const authored = Boolean(this.authored && snapshot.quality !== "low");
     if (this.authored) this.authored.visible = authored;
     this.chamber.visible = snapshot.weight > 0.5 && !authored;
-    this.containment.visible = !authored;
+    this.containment.visible = false;
     this.foreground.root.visible = snapshot.weight > 0.65;
     this.root.position.set(0.8, 0.18, 0);
     const motion = snapshot.reducedMotion ? 0 : snapshot.elapsedSeconds;
-    const vaultReveal = snapshot.globalProgress < EXPERIENCE_PHASE_RANGES.oceanToVault[1]
-      ? snapshot.weight
-      : 1;
+    const vaultReveal = smootherstep(clamp(
+      (snapshot.globalProgress - EXPERIENCE_PHASE_RANGES.oceanToVault[0])
+      / (EXPERIENCE_PHASE_RANGES.oceanToVault[1] - EXPERIENCE_PHASE_RANGES.oceanToVault[0]),
+    ));
+    const networkExit = smootherstep(clamp(
+      (snapshot.globalProgress - EXPERIENCE_PHASE_RANGES.vaultToNetwork[0])
+      / (EXPERIENCE_PHASE_RANGES.vaultToNetwork[1] - EXPERIENCE_PHASE_RANGES.vaultToNetwork[0]),
+    ));
+    const authoredDepth = Boolean(this.vaultPlate.material.map);
+    this.reactorHousing.visible = !authoredDepth;
+    this.energyVolume.visible = !authoredDepth;
+    this.coreCage.visible = !authoredDepth;
+    this.nucleus.visible = !authoredDepth;
+    this.vaultPlate.mesh.position.set(
+      -0.8 + (1 - vaultReveal) * 0.34,
+      0.05 + (1 - vaultReveal) * 0.18,
+      -8.4 + vaultReveal * 0.42,
+    );
+    this.vaultPlate.mesh.scale.setScalar(1.08 + (1 - vaultReveal) * 0.08);
+    this.vaultPlate.material.opacity = (0.08 + vaultReveal * 0.88)
+      * snapshot.weight
+      * (1 - networkExit * 0.95);
     if (vaultReveal < 0.5) {
       this.tacticalLightMaterial.color.lerpColors(RESIDUAL_CYAN, TACTICAL_WHITE, vaultReveal * 2);
     } else {
@@ -190,18 +219,18 @@ export class CrownFrontReactorScene extends SpatialSceneBase {
     }
     this.containment.rotation.z = snapshot.localProgress * 0.08 + motion * 0.008;
     this.energyVolume.rotation.z = snapshot.localProgress * 0.24 - motion * 0.05;
-    this.energyVolume.scale.setScalar((0.34 + snapshot.localProgress * 0.05) * (0.45 + vaultReveal * 0.55));
+    this.energyVolume.scale.setScalar((0.18 + snapshot.localProgress * 0.04) * (0.45 + vaultReveal * 0.55));
     this.coreCage.rotation.set(0.08, -0.12 + snapshot.localProgress * 0.06, motion * 0.004);
     this.nucleus.rotation.set(motion * 0.08, -motion * 0.11, snapshot.localProgress * 0.18);
-    const nucleusScale = (0.38 + snapshot.localProgress * 0.08) * (0.4 + vaultReveal * 0.6);
+    const nucleusScale = (0.17 + snapshot.localProgress * 0.04) * (0.4 + vaultReveal * 0.6);
     this.nucleus.scale.set(nucleusScale, nucleusScale * 1.18, nucleusScale);
     const opening = (snapshot.reducedMotion ? 0.55 : 0.12) + vaultReveal * (snapshot.reducedMotion ? 0.45 : 0.88);
     for (let index = 0; index < 8; index += 1) {
       const side = index % 2 ? 1 : -1;
       const level = Math.floor(index / 2) - 1.5;
-      this.shutterMarker.position.set(side * (0.68 + opening * 1.55), level * 1.05, 0.72 - Math.abs(level) * 0.2);
+      this.shutterMarker.position.set(side * (0.35 + opening * 3.1), level * 1.05, 0.72 - Math.abs(level) * 0.2);
       this.shutterMarker.rotation.set(0.02 * level, side * -0.08, side * 0.035);
-      this.shutterMarker.scale.set(0.58, 0.9, 0.34);
+      this.shutterMarker.scale.set(0.42, 0.72, 0.24);
       this.shutterMarker.updateMatrix();
       this.shutters.setMatrixAt(index, this.shutterMarker.matrix);
     }
@@ -212,5 +241,10 @@ export class CrownFrontReactorScene extends SpatialSceneBase {
       this.authored.rotation.z = snapshot.localProgress * 0.018;
     }
     if (this.foreground.root.visible) this.foreground.evaluate(snapshot.localProgress, snapshot.quality, snapshot.reducedMotion);
+  }
+
+  override dispose() {
+    this.vaultPlate.material.map = null;
+    super.dispose();
   }
 }

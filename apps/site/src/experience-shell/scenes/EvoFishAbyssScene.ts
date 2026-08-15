@@ -3,6 +3,7 @@ import { clamp, createSeededRandom, smootherstep } from "../../experience/core/m
 import type { QualityTier } from "../../experience/types";
 import type { SceneEvaluationSnapshot } from "../core/SceneLifecycle";
 import type { AssetSlotRegistry } from "../core/AssetSlotRegistry";
+import { createCinematicArtPlane, setCinematicArtTexture } from "./CinematicArtPlane";
 import { ForegroundOcclusionSystem } from "./ForegroundOcclusionSystem";
 import { SpatialSceneBase, energyMaterial, metalMaterial } from "./SpatialSceneBase";
 import { EXPERIENCE_PHASE_RANGES } from "../experienceShellConfig";
@@ -11,6 +12,7 @@ const OCEAN_CYAN = new THREE.Color(0x4ab7cc);
 const TRANSITION_WHITE = new THREE.Color(0xe4efef);
 
 export class EvoFishAbyssScene extends SpatialSceneBase {
+  private readonly abyssPlate = createCinematicArtPlane(16.4, 9.2);
   private readonly subjectMaterial: THREE.ShaderMaterial;
   private readonly subject: THREE.Mesh;
   private readonly caustics = new THREE.Group();
@@ -65,7 +67,7 @@ export class EvoFishAbyssScene extends SpatialSceneBase {
         }
       `,
     }), 0.82);
-    this.subject = new THREE.Mesh(new THREE.PlaneGeometry(6.4, 4), this.subjectMaterial);
+    this.subject = new THREE.Mesh(new THREE.PlaneGeometry(6.7, 4.4), this.subjectMaterial);
     this.subject.position.set(1.25, 0.55, -1.2);
 
     const waterVolume = new THREE.Mesh(
@@ -73,7 +75,8 @@ export class EvoFishAbyssScene extends SpatialSceneBase {
       this.material(new THREE.MeshBasicMaterial({ color: 0x032331, transparent: true, opacity: 0.42, depthWrite: false }), 0.42),
     );
     waterVolume.position.z = -4.2;
-    this.root.add(waterVolume);
+    this.abyssPlate.mesh.position.set(-0.45, 0.2, -6.8);
+    this.root.add(this.abyssPlate.mesh, waterVolume);
 
     this.causticMaterial = this.material(energyMaterial(0x4ab7cc, 0.14), 0.14);
     [-3.7, -1.45, 0.9, 3.35].forEach((x, index) => {
@@ -125,9 +128,14 @@ export class EvoFishAbyssScene extends SpatialSceneBase {
   }
 
   async preload() {
-    const texture = await this.assets.loadTexture("evofish-subject", this.currentQuality);
-    if (texture) {
-      this.subjectMaterial.uniforms.uMap.value = texture;
+    let [subjectTexture, backdropTexture] = await Promise.all([
+      this.assets.loadTexture("evofish-subject", this.currentQuality),
+      this.assets.loadTexture("evofish-backdrop", this.currentQuality),
+    ]);
+    subjectTexture ??= await this.assets.loadTexture("evofish-legacy-subject", this.currentQuality);
+    setCinematicArtTexture(this.abyssPlate, backdropTexture);
+    if (subjectTexture) {
+      this.subjectMaterial.uniforms.uMap.value = subjectTexture;
       this.subjectMaterial.uniforms.uHasTexture.value = 1;
       this.subjectMaterial.needsUpdate = true;
     }
@@ -154,12 +162,23 @@ export class EvoFishAbyssScene extends SpatialSceneBase {
     this.subject.position.x = earlyX + (fullX - earlyX) * reveal;
     this.subject.position.y = compact ? 0.9 + reveal * 0.22 : 0.46 + reveal * 0.09;
     const earlyScale = compact ? 1.24 : 1.42;
-    const fullScale = compact ? 0.9 : 1;
+    const fullScale = compact ? 0.86 : 1.08;
     this.subject.scale.setScalar(earlyScale + (fullScale - earlyScale) * reveal);
     this.subject.position.z = -0.72 - reveal * 0.84;
     this.subject.rotation.y = snapshot.reducedMotion ? 0 : (reveal - 0.5) * -0.075;
     this.subjectMaterial.uniforms.uReveal.value = reveal;
-    this.subjectMaterial.uniforms.uOpacity.value = (0.56 + reveal * 0.34) * snapshot.weight;
+    this.subjectMaterial.uniforms.uOpacity.value = (0.56 + reveal * 0.34)
+      * snapshot.weight
+      * (1 - oceanExit * 0.88);
+    this.abyssPlate.mesh.position.set(
+      compact ? -0.15 : -0.45 + snapshot.localProgress * 0.22,
+      0.22 - reveal * 0.16,
+      -6.8 + reveal * 0.24,
+    );
+    this.abyssPlate.mesh.scale.setScalar(compact ? 1.18 : 1.04 + reveal * 0.04);
+    this.abyssPlate.material.opacity = (0.72 + reveal * 0.2)
+      * snapshot.weight
+      * (1 - oceanExit * 0.86);
     this.caustics.position.x = snapshot.localProgress * 0.35 * (1 - oceanExit);
     this.caustics.rotation.z = snapshot.reducedMotion ? 0 : Math.sin(snapshot.elapsedSeconds * 0.12) * 0.025 * (1 - oceanExit);
     this.causticMaterial.color.lerpColors(OCEAN_CYAN, TRANSITION_WHITE, oceanExit);
@@ -191,6 +210,7 @@ export class EvoFishAbyssScene extends SpatialSceneBase {
 
   override dispose() {
     this.subjectMaterial.uniforms.uMap.value = null;
+    this.abyssPlate.material.map = null;
     super.dispose();
   }
 }
