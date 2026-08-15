@@ -14,19 +14,18 @@ describe("experience audio direction", () => {
     expect(network.network).toBeGreaterThan(network.vault);
   });
 
-  it("keeps music stable while reduced motion lowers spatial ambience", () => {
+  it("keeps the music layer separate while reduced motion lowers spatial ambience", () => {
     const standard = evaluateExperienceAudioMix(0.76, false);
     const reduced = evaluateExperienceAudioMix(0.76, true);
 
-    expect(reduced.music).toBe(standard.music);
     expect(reduced.vault).toBeLessThan(standard.vault);
+    expect("music" in reduced).toBe(false);
   });
 
-  it("resolves to music alone on the minimal final screen", () => {
+  it("resolves all spatial ambience before the minimal final screen", () => {
     expect(evaluateExperienceAudioMix(0.96, false).crown).toBe(0);
     expect(evaluateExperienceAudioMix(0.98, false).crown).toBeGreaterThan(0);
     expect(evaluateExperienceAudioMix(1, false)).toEqual({
-      music: 0.22,
       crown: 0,
       ocean: 0,
       vault: 0,

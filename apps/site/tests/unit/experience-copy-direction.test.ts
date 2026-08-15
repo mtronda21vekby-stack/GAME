@@ -11,8 +11,8 @@ describe("locked experience copy direction", () => {
   it("shows the minimal BlackCrown hero copy only during 22–30 percent", () => {
     const hero = EXPERIENCE_CHAPTERS.find((chapter) => chapter.id === "crown-chamber")!;
     expect(hero).toMatchObject({
-      eyebrow: "BLACKCROWN",
-      title: "DIGITAL CROWN NEXUS",
+      eyebrow: "DIGITAL CROWN NEXUS",
+      title: "BLACKCROWN",
       body: "ONE CROWN CONNECTS EVERY WORLD.",
       copyRange: EXPERIENCE_PHASE_RANGES.blackcrownHero,
     });

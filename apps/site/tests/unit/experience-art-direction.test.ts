@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { describe, expect, it } from "vitest";
-import { EXPERIENCE_CHAPTERS, EXPERIENCE_PHASE_RANGES } from "../../src/experience-shell/experienceShellConfig";
+import { EXPERIENCE_CHAPTERS, EXPERIENCE_PHASE_RANGES, EXPERIENCE_STORY_HEIGHT } from "../../src/experience-shell/experienceShellConfig";
 import { getCollectionHousingKind, getFeaturedCollectionItems } from "../../src/experience-shell/featuredCatalog";
 import {
   interpolateLightingProfiles,
@@ -9,11 +9,15 @@ import {
   SCENE_LIGHTING_PROFILES,
 } from "../../src/experience-shell/core/SceneLightingProfiles";
 import { foregroundActivation, getForegroundVisibleCount } from "../../src/experience-shell/scenes/ForegroundOcclusionSystem";
+import { EXPERIENCE_ASSET_SLOT_IDS } from "../../src/experience-shell/core/AssetSlotRegistry";
 import { CAMERA_KEYFRAMES } from "../../src/experience/camera/CameraKeyframes";
-import { CameraRig } from "../../src/experience/camera/CameraRig";
+import { CameraRig, getMobileCameraPullback } from "../../src/experience/camera/CameraRig";
 import { INITIAL_SCROLL_SNAPSHOT } from "../../src/experience/types";
 import {
   getAssemblyFragmentSourceIndex,
+  ASSEMBLY_FRAGMENT_COUNTS,
+  evaluateAssemblyArc,
+  isCloseAssemblyFragmentSource,
   shouldShowAssemblyFragments,
 } from "../../src/experience-shell/scenes/CrownChamberScene";
 
@@ -80,6 +84,13 @@ describe("Experience art direction V3", () => {
     phases.slice(1).forEach((phase, index) => expect(phase[0]).toBe(phases[index][1]));
   });
 
+  it("provides enough native scroll travel for a 40–60 second cinematic read", () => {
+    expect(EXPERIENCE_STORY_HEIGHT.desktopVh).toBeGreaterThanOrEqual(2400);
+    expect(EXPERIENCE_STORY_HEIGHT.mobileVh).toBeGreaterThanOrEqual(2000);
+    expect(EXPERIENCE_STORY_HEIGHT.landscapeVh).toBeGreaterThanOrEqual(2200);
+    expect(EXPERIENCE_STORY_HEIGHT.reducedVh).toBeLessThan(EXPERIENCE_STORY_HEIGHT.mobileVh);
+  });
+
   it("shows assembly fragments only during the 6–22 percent assembly beat", () => {
     expect(shouldShowAssemblyFragments(0, false, true)).toBe(false);
     expect(shouldShowAssemblyFragments(0.059, false, true)).toBe(false);
@@ -90,16 +101,44 @@ describe("Experience art direction V3", () => {
   });
 
   it("samples quality-tier assembly fragments across the full Crown width", () => {
-    const lowTierSources = Array.from({ length: 56 }, (_, index) =>
-      getAssemblyFragmentSourceIndex(index, 56, 168));
+    const lowTierSources = Array.from({ length: ASSEMBLY_FRAGMENT_COUNTS.low }, (_, index) =>
+      getAssemblyFragmentSourceIndex(index, ASSEMBLY_FRAGMENT_COUNTS.low, 168));
 
     expect(lowTierSources[0]).toBe(0);
     expect(lowTierSources.at(-1)).toBe(167);
-    expect(new Set(lowTierSources).size).toBe(56);
+    expect(new Set(lowTierSources).size).toBe(ASSEMBLY_FRAGMENT_COUNTS.low);
     expect(lowTierSources.some((index) => index >= 80 && index <= 87)).toBe(true);
-    const closeFlyingSources = lowTierSources.filter((index) => index % 8 === 0);
+    const closeFlyingSources = lowTierSources.filter(isCloseAssemblyFragmentSource);
     expect(closeFlyingSources.some((index) => index < 84)).toBe(true);
     expect(closeFlyingSources.some((index) => index >= 84)).toBe(true);
+  });
+
+  it("keeps nano assembly within the approved tier budgets and fully reversible", () => {
+    expect(ASSEMBLY_FRAGMENT_COUNTS).toEqual({ low: 32, medium: 72, high: 112 });
+    const sample = evaluateAssemblyArc(-4.2, 1.1, 1.8, 0.43);
+    expect(evaluateAssemblyArc(-4.2, 1.1, 1.8, 0.43)).toBe(sample);
+    expect(evaluateAssemblyArc(-4.2, 1.1, 1.8, 0)).toBeCloseTo(-4.2, 8);
+    expect(evaluateAssemblyArc(-4.2, 1.1, 1.8, 1)).toBeCloseTo(1.1, 8);
+  });
+
+  it("registers unique local slots for the generated cinematic V2 art", () => {
+    expect(new Set(EXPERIENCE_ASSET_SLOT_IDS).size).toBe(EXPERIENCE_ASSET_SLOT_IDS.length);
+    expect(EXPERIENCE_ASSET_SLOT_IDS).toEqual(expect.arrayContaining([
+      "evofish-backdrop",
+      "crown-front-backdrop",
+      "network-collection-backdrop",
+      "collection-aurora-art",
+      "collection-founder-art",
+      "collection-starter-art",
+    ]));
+  });
+
+  it("uses strong phase-specific mobile fit without altering the final core crossing", () => {
+    expect(getMobileCameraPullback(0.25, false)).toBeGreaterThan(5);
+    expect(getMobileCameraPullback(0.5, false)).toBeGreaterThan(7);
+    expect(getMobileCameraPullback(0.87, false)).toBeGreaterThan(5);
+    expect(getMobileCameraPullback(0.5, true)).toBeLessThan(getMobileCameraPullback(0.5, false));
+    expect(getMobileCameraPullback(1, false)).toBe(0);
   });
 
   it("passes ocean-to-vault lighting through a cold-white midpoint", () => {

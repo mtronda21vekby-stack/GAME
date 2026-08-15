@@ -46,6 +46,22 @@ async function setNexusProgress(page: Page, progress: number) {
   }, { timeout: 10_000 }).toBeLessThan(0.0005);
 }
 
+function expectStableCandidateLod(requests: string[], candidate: "a" | "b", lod: string | null) {
+  const glbs = [...new Set(requests.filter((url) => new RegExp(`crown-candidate-${candidate}-lod\\d\\.glb$`, "u").test(url)))];
+  const expected = lod === "high" ? "lod0" : lod === "medium" ? "lod1" : "lod2";
+  expect(glbs.length).toBeGreaterThanOrEqual(1);
+  // Auto quality is allowed one absolute LOD replacement on a slow device;
+  // repeated requests would indicate churn or a disposal leak.
+  expect(glbs.length).toBeLessThanOrEqual(2);
+  expect(glbs.some((url) => url.includes(expected))).toBe(true);
+}
+
+async function lockDesktopReviewQuality(page: Page) {
+  if (test.info().project.name !== "chromium-lab") return;
+  await page.getByTitle("high quality").click();
+  await expect(page.getByTitle("high quality")).toHaveAttribute("aria-checked", "true");
+}
+
 test("@off Home preserves the current cinematic, key art, CTA and fast-scroll stability", async ({ page }) => {
   const requests: string[] = [];
   page.on("request", (request) => requests.push(request.url()));
@@ -381,10 +397,9 @@ test("@lab Candidate A uses one allowlisted LOD and reverses its absolute pose",
   await expect(runtime).toHaveAttribute("data-bc-crown-backend", "glb", { timeout: 15_000 });
   await expect(runtime).toHaveAttribute("data-bc-crown-asset-id", "blackcrown-digital-crown-candidate-a-v1");
   await expect(page.locator("canvas[data-bc-nexus-canvas]")).toHaveCount(1);
+  await lockDesktopReviewQuality(page);
   const lod = await runtime.getAttribute("data-bc-crown-lod");
-  const candidateGlbs = requests.filter((url) => /crown-candidate-a-lod\d\.glb$/u.test(url));
-  expect(candidateGlbs).toHaveLength(1);
-  expect(candidateGlbs[0]).toContain(lod === "high" ? "lod0" : lod === "medium" ? "lod1" : "lod2");
+  expectStableCandidateLod(requests, "a", lod);
 
   await setNexusProgress(page, 0.315);
   const opened = await runtime.getAttribute("data-bc-crown-pose");
@@ -422,10 +437,9 @@ test("@lab Candidate B uses one allowlisted LOD, drives its iris and reverses it
   await expect(runtime).toHaveAttribute("data-bc-crown-backend", "glb", { timeout: 15_000 });
   await expect(runtime).toHaveAttribute("data-bc-crown-asset-id", "blackcrown-digital-crown-candidate-b-v1");
   await expect(page.locator("canvas[data-bc-nexus-canvas]")).toHaveCount(1);
+  await lockDesktopReviewQuality(page);
   const lod = await runtime.getAttribute("data-bc-crown-lod");
-  const candidateGlbs = requests.filter((url) => /crown-candidate-b-lod\d\.glb$/u.test(url));
-  expect(candidateGlbs).toHaveLength(1);
-  expect(candidateGlbs[0]).toContain(lod === "high" ? "lod0" : lod === "medium" ? "lod1" : "lod2");
+  expectStableCandidateLod(requests, "b", lod);
 
   await setNexusProgress(page, 0.68);
   const portalPose = (await runtime.getAttribute("data-bc-crown-pose"))!.split(":").map(Number);

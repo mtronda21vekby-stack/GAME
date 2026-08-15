@@ -2,6 +2,21 @@ import { defineConfig, devices } from "@playwright/test";
 
 const offUrl = "http://127.0.0.1:5195";
 const labUrl = "http://127.0.0.1:5196";
+const localChromiumExecutable = process.env.BC_CHROMIUM_EXECUTABLE;
+const localChromiumLaunch = localChromiumExecutable
+  ? {
+      launchOptions: {
+        executablePath: localChromiumExecutable,
+        args: [
+          "--no-sandbox",
+          "--ignore-gpu-blocklist",
+          "--use-gl=angle",
+          "--use-angle=swiftshader",
+          "--enable-unsafe-swiftshader",
+        ],
+      },
+    }
+  : {};
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -33,7 +48,12 @@ export default defineConfig({
     {
       name: "chromium-off",
       grep: /@off/,
-      use: { ...devices["Desktop Chrome"], baseURL: offUrl, viewport: { width: 1440, height: 900 } },
+      use: {
+        ...devices["Desktop Chrome"],
+        ...localChromiumLaunch,
+        baseURL: offUrl,
+        viewport: { width: 1440, height: 900 },
+      },
     },
     {
       name: "webkit-off",
@@ -43,7 +63,12 @@ export default defineConfig({
     {
       name: "chromium-lab",
       grep: /@lab/,
-      use: { ...devices["Desktop Chrome"], baseURL: labUrl, viewport: { width: 1440, height: 900 } },
+      use: {
+        ...devices["Desktop Chrome"],
+        ...localChromiumLaunch,
+        baseURL: labUrl,
+        viewport: { width: 1440, height: 900 },
+      },
     },
     {
       name: "webkit-lab",

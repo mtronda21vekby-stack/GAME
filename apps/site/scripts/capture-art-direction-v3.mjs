@@ -9,13 +9,16 @@ const output = `${rootOutput}/${phase}`;
 const baseUrl = process.env.BC_CAPTURE_URL || "http://127.0.0.1:5194";
 
 const chapters = [
-  ["crown", 0.26],
-  ["gate", 0.365],
+  ["awakening", 0.03],
+  ["assembly", 0.12],
+  ["hero", 0.25],
+  ["crown-ocean", 0.36],
   ["evofish", 0.5],
+  ["ocean-vault", 0.63],
   ["crown-front", 0.76],
-  ["network", 0.865],
-  ["collection", 0.935],
-  ["final-pass", 0.98],
+  ["network", 0.87],
+  ["collection", 0.94],
+  ["final-crown", 0.985],
   ["identity", 0.999],
 ];
 
@@ -27,8 +30,13 @@ const transitions = [
   ["network-to-collection", 0.935],
   ["collection-to-identity", 0.98],
 ];
+const focusedKeyframes = chapters.filter(([label]) => ["hero", "evofish", "crown-front", "network", "final-crown"].includes(label));
 
-await mkdir(output, { recursive: true });
+await Promise.all([
+  mkdir(output, { recursive: true }),
+  mkdir(`${rootOutput}/debug`, { recursive: true }),
+  mkdir(`${rootOutput}/comparisons`, { recursive: true }),
+]);
 
 async function waitForRuntime(page) {
   const runtime = page.locator('[data-bc-experience-runtime="active"]');
@@ -129,20 +137,50 @@ async function captureSet(browser, prefix, viewport, points, options = {}) {
   return metrics;
 }
 
-const browser = await chromium.launch({ headless: true });
-const desktop = captureScope === "all"
+const qaExecutable = process.env.BC_CHROMIUM_EXECUTABLE;
+const browser = await chromium.launch({
+  headless: true,
+  executablePath: qaExecutable || undefined,
+  args: qaExecutable ? [
+    "--no-sandbox",
+    "--ignore-gpu-blocklist",
+    "--use-gl=angle",
+    "--use-angle=swiftshader",
+    "--enable-unsafe-swiftshader",
+  ] : undefined,
+});
+const desktop = captureScope === "all" || captureScope === "desktop"
   ? await captureSet(browser, "desktop", { width: 1440, height: 900 }, chapters)
+  : captureScope === "keyframes"
+    ? await captureSet(browser, "desktop", { width: 1440, height: 900 }, focusedKeyframes)
   : [];
 const desktopTransitions = captureScope === "all" || captureScope === "transitions"
   ? await captureSet(browser, "desktop", { width: 1440, height: 900 }, transitions)
   : [];
-const mobile = captureScope === "all"
+const mobile = captureScope === "all" || captureScope === "mobile"
   ? await captureSet(browser, "mobile", { width: 390, height: 844 }, chapters, { autoQuality: true })
+  : captureScope === "mobile-keyframes"
+    ? await captureSet(browser, "mobile", { width: 390, height: 844 }, focusedKeyframes, { autoQuality: true })
   : [];
+if (captureScope === "mobile430") {
+  await captureSet(browser, "mobile430", { width: 430, height: 932 }, chapters, { autoQuality: true });
+}
+if (captureScope === "mobile430-keyframes") {
+  await captureSet(browser, "mobile430", { width: 430, height: 932 }, focusedKeyframes, { autoQuality: true });
+}
+if (captureScope === "landscape") {
+  await captureSet(browser, "landscape", { width: 844, height: 390 }, chapters, { autoQuality: true });
+}
+if (captureScope === "landscape-keyframes") {
+  await captureSet(browser, "landscape", { width: 844, height: 390 }, focusedKeyframes, { autoQuality: true });
+}
+if (captureScope === "reduced") {
+  await captureSet(browser, "reduced", { width: 1440, height: 900 }, [chapters[2], chapters[6], chapters[10]], { reducedMotion: true, autoQuality: true });
+}
 if (captureScope === "all") {
   await captureSet(browser, "mobile430", { width: 430, height: 932 }, chapters, { autoQuality: true });
   await captureSet(browser, "landscape", { width: 844, height: 390 }, chapters, { autoQuality: true });
-  await captureSet(browser, "reduced", { width: 1440, height: 900 }, [chapters[0], chapters[3], chapters[7]], { reducedMotion: true, autoQuality: true });
+  await captureSet(browser, "reduced", { width: 1440, height: 900 }, [chapters[2], chapters[6], chapters[10]], { reducedMotion: true, autoQuality: true });
 
   const debugSession = await openExperience(browser, { width: 1440, height: 900 });
   await debugSession.hiddenDebug.evaluate((element) => element.remove());
@@ -163,7 +201,7 @@ const galleryFiles = [
   ...chapters.map(([label]) => `mobile-${label}.png`),
   "landscape-crown-front.png",
   "landscape-collection.png",
-  "reduced-crown.png",
+  "reduced-hero.png",
   "reduced-crown-front.png",
   "reduced-identity.png",
 ];
