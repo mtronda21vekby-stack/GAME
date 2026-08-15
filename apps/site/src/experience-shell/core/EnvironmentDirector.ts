@@ -6,7 +6,7 @@ import type { PortalField } from "../../experience/scene/PortalField";
 import type { QualityTier, SceneLightingProfile } from "../../experience/types";
 import type { SceneLifecycleSnapshot } from "./SceneLifecycle";
 import { resolveSceneLightingProfile, SCENE_LIGHTING_PROFILES } from "./SceneLightingProfiles";
-import { EXPERIENCE_PHASE_RANGES } from "../experienceShellConfig";
+import { EXPERIENCE_FINAL_BLACKOUT_PROGRESS, EXPERIENCE_PHASE_RANGES } from "../experienceShellConfig";
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 const smooth = (value: number) => {
@@ -36,13 +36,16 @@ export class EnvironmentDirector {
       this.scene.fog.density = this.profile.fogDensity;
     }
 
-    const crownExit = smooth((progress - 0.30) / 0.13);
+    const crownExit = smooth(
+      (progress - EXPERIENCE_PHASE_RANGES.crownToOcean[0])
+      / (EXPERIENCE_PHASE_RANGES.crownToOcean[1] - EXPERIENCE_PHASE_RANGES.crownToOcean[0]),
+    );
     const finalPassStart = EXPERIENCE_PHASE_RANGES.finalCrownPass[0];
     const finalArrival = (finalPassStart + EXPERIENCE_PHASE_RANGES.finalCrownPass[1]) * 0.5;
     const finalReturn = smooth((progress - finalPassStart) / (finalArrival - finalPassStart));
     let crownRotationZOffset = 0;
     crown.root.visible = progress < EXPERIENCE_PHASE_RANGES.crownToOcean[1]
-      || (progress >= finalPassStart && progress < 0.998);
+      || (progress >= finalPassStart && progress < EXPERIENCE_FINAL_BLACKOUT_PROGRESS);
     if (crown.root.visible) {
       if (progress >= EXPERIENCE_PHASE_RANGES.crownToOcean[0]
         && progress < EXPERIENCE_PHASE_RANGES.crownToOcean[1]) {

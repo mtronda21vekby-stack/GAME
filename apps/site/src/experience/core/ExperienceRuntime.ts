@@ -235,7 +235,16 @@ export class ExperienceRuntime {
     this.camera.aspect = Math.max(1, viewportWidth) / Math.max(1, viewportHeight);
     this.crown.root.position.set(crownX, crownY, 0);
     const crownScale = identityReturn > 0 ? 0.72 + identityReturn * 0.16 : 1.05 + gateCentering * 0.1;
-    this.crown.root.scale.setScalar(narrowViewport ? crownScale * 0.76 : compactViewport ? crownScale * 0.82 : crownScale);
+    const heroFit = Math.max(0, Math.min(
+      1,
+      (this.snapshot.progress - (EXPERIENCE_PHASE_RANGES.blackcrownHero[0] - 0.02)) / 0.02,
+      ((EXPERIENCE_PHASE_RANGES.blackcrownHero[1] + 0.02) - this.snapshot.progress) / 0.02,
+    ));
+    const desktopHeroScale = compactViewport ? 1 : 1 - heroFit * 0.32;
+    this.crown.root.scale.setScalar(
+      (narrowViewport ? crownScale * 0.76 : viewportHeight <= 520 ? crownScale * 0.94 : compactViewport ? crownScale * 0.82 : crownScale)
+      * desktopHeroScale,
+    );
     this.architecture.root.position.set(crownX, crownY, 0);
     this.architecture.root.visible = this.snapshot.progress < EXPERIENCE_PHASE_RANGES.finalCrownPass[0];
     this.ecosystem.root.position.set(crownX, crownY, -0.4);
