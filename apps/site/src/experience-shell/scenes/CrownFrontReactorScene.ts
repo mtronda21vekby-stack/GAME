@@ -13,6 +13,7 @@ const TACTICAL_ORANGE = new THREE.Color(0xff6f2f);
 
 export class CrownFrontReactorScene extends SpatialSceneBase {
   private authored: THREE.Group | null = null;
+  private readonly oceanVaultPlate = createCinematicArtPlane(16.4, 9.2);
   private readonly vaultPlate = createCinematicArtPlane(16.4, 9.2);
   private readonly chamber = new THREE.Group();
   private readonly containment = new THREE.Group();
@@ -163,16 +164,20 @@ export class CrownFrontReactorScene extends SpatialSceneBase {
     this.shutters = new THREE.InstancedMesh(createForegroundArmorGeometry(), shutterMaterial, 8);
     this.shutters.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.chamber.add(walls, ribs, bridges, tacticalLights);
+    this.oceanVaultPlate.mesh.position.set(-0.8, 0.05, -8.15);
+    this.oceanVaultPlate.mesh.renderOrder = -7;
     this.vaultPlate.mesh.position.set(-0.8, 0.05, -8.4);
-    this.root.add(this.vaultPlate.mesh, this.chamber, this.containment, this.reactorHousing, this.energyVolume, this.coreCage, this.nucleus, this.shutters, this.foreground.root);
+    this.root.add(this.vaultPlate.mesh, this.oceanVaultPlate.mesh, this.chamber, this.containment, this.reactorHousing, this.energyVolume, this.coreCage, this.nucleus, this.shutters, this.foreground.root);
   }
 
   async preload() {
-    const [model, backdropTexture] = await Promise.all([
+    const [model, backdropTexture, transitionTexture] = await Promise.all([
       this.assets.loadModel("crown-front-environment", this.quality),
       this.assets.loadTexture("crown-front-backdrop", this.quality),
+      this.assets.loadTexture("ocean-vault-bridge", this.quality),
     ]);
     setCinematicArtTexture(this.vaultPlate, backdropTexture);
+    setCinematicArtTexture(this.oceanVaultPlate, transitionTexture);
     if (model && !this.authored) {
       this.authored = model;
       model.position.set(-0.35, 0.0, -1.1);
@@ -184,10 +189,12 @@ export class CrownFrontReactorScene extends SpatialSceneBase {
   evaluate(snapshot: SceneEvaluationSnapshot) {
     this.resetPose();
     const authored = Boolean(this.authored && snapshot.quality !== "low");
+    const cinematicDepth = Boolean(this.vaultPlate.material.map);
     if (this.authored) this.authored.visible = authored;
-    this.chamber.visible = snapshot.weight > 0.5 && !authored;
+    this.chamber.visible = snapshot.weight > 0.5 && !authored && !cinematicDepth;
     this.containment.visible = false;
-    this.foreground.root.visible = snapshot.weight > 0.65;
+    this.foreground.root.visible = snapshot.weight > 0.65 && !cinematicDepth;
+    this.shutters.visible = !cinematicDepth;
     this.root.position.set(0.8, 0.18, 0);
     const motion = snapshot.reducedMotion ? 0 : snapshot.elapsedSeconds;
     const vaultReveal = smootherstep(clamp(
@@ -198,7 +205,7 @@ export class CrownFrontReactorScene extends SpatialSceneBase {
       (snapshot.globalProgress - EXPERIENCE_PHASE_RANGES.vaultToNetwork[0])
       / (EXPERIENCE_PHASE_RANGES.vaultToNetwork[1] - EXPERIENCE_PHASE_RANGES.vaultToNetwork[0]),
     ));
-    const authoredDepth = Boolean(this.vaultPlate.material.map);
+    const authoredDepth = cinematicDepth;
     this.reactorHousing.visible = !authoredDepth;
     this.energyVolume.visible = !authoredDepth;
     this.coreCage.visible = !authoredDepth;
@@ -212,6 +219,18 @@ export class CrownFrontReactorScene extends SpatialSceneBase {
     this.vaultPlate.material.opacity = (0.08 + vaultReveal * 0.88)
       * snapshot.weight
       * (1 - networkExit * 0.95);
+    const transitionEnvelope = Math.sin(Math.PI * vaultReveal);
+    this.oceanVaultPlate.mesh.position.set(
+      -0.8 + (1 - vaultReveal) * 0.26,
+      0.05 - transitionEnvelope * 0.08,
+      -8.15 + vaultReveal * 0.5,
+    );
+    this.oceanVaultPlate.mesh.scale.setScalar(
+      (snapshot.quality === "low" ? 1.42 : 1.08) + transitionEnvelope * 0.05,
+    );
+    this.oceanVaultPlate.material.opacity = transitionEnvelope
+      * Math.min(1, snapshot.weight * 1.8)
+      * (1 - networkExit);
     if (vaultReveal < 0.5) {
       this.tacticalLightMaterial.color.lerpColors(RESIDUAL_CYAN, TACTICAL_WHITE, vaultReveal * 2);
     } else {
@@ -228,9 +247,9 @@ export class CrownFrontReactorScene extends SpatialSceneBase {
     for (let index = 0; index < 8; index += 1) {
       const side = index % 2 ? 1 : -1;
       const level = Math.floor(index / 2) - 1.5;
-      this.shutterMarker.position.set(side * (0.35 + opening * 3.1), level * 1.05, 0.72 - Math.abs(level) * 0.2);
+      this.shutterMarker.position.set(side * (1.6 + opening * 3.2), level * 1.05, 0.72 - Math.abs(level) * 0.2);
       this.shutterMarker.rotation.set(0.02 * level, side * -0.08, side * 0.035);
-      this.shutterMarker.scale.set(0.42, 0.72, 0.24);
+      this.shutterMarker.scale.set(0.55, 0.9, 0.3);
       this.shutterMarker.updateMatrix();
       this.shutters.setMatrixAt(index, this.shutterMarker.matrix);
     }
@@ -245,6 +264,7 @@ export class CrownFrontReactorScene extends SpatialSceneBase {
 
   override dispose() {
     this.vaultPlate.material.map = null;
+    this.oceanVaultPlate.material.map = null;
     super.dispose();
   }
 }

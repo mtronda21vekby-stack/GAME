@@ -285,7 +285,13 @@ export class ExperienceRuntime {
     if (this.ecosystem.root.visible) this.ecosystem.update(this.elapsedSeconds, timeline.ecosystem, timeline.enter, this.snapshot.reducedMotion);
     if (this.portal.root.visible) this.portal.update(this.elapsedSeconds, timeline.portal, timeline.tacticalOrange, timeline.enter, this.snapshot.reducedMotion);
 
+    // Cinematic plates replace only the visible shell for a bounded approach
+    // window. Camera targeting and Candidate B transforms still run against
+    // the live Crown, which returns before the physical core crossing.
+    const crownRenderVisible = this.crown.root.visible;
+    if (shell.heroPlateMask || shell.crownOceanPlateMask || shell.finalCrownPlateMask) this.crown.root.visible = false;
     this.rendererHost.renderer.render(this.sceneRoot.scene, this.camera);
+    this.crown.root.visible = crownRenderVisible;
     if (this.awaitingCrownFirstFrame) {
       this.awaitingCrownFirstFrame = false;
       this.crownFirstFrameTime = performance.now() - this.crownAttachedAt;

@@ -14,6 +14,7 @@ import { CrownFrontReactorScene } from "../scenes/CrownFrontReactorScene";
 import { NetworkCoreScene } from "../scenes/NetworkCoreScene";
 import { CollectionVaultScene } from "../scenes/CollectionVaultScene";
 import { IdentityScene } from "../scenes/IdentityScene";
+import { EXPERIENCE_PHASE_RANGES } from "../experienceShellConfig";
 
 type ExperienceShellRuntimeOptions = {
   parent: THREE.Group;
@@ -37,7 +38,7 @@ export class ExperienceShellRuntime {
     this.registry.register(new CrownFrontReactorScene(this.assets));
     this.registry.register(new NetworkCoreScene(this.assets));
     this.registry.register(new CollectionVaultScene(this.assets));
-    this.registry.register(new IdentityScene());
+    this.registry.register(new IdentityScene(this.assets));
   }
 
   update(
@@ -52,7 +53,25 @@ export class ExperienceShellRuntime {
   ) {
     const lifecycle = this.registry.evaluate(progress, elapsedSeconds, reducedMotion, quality);
     const environment = this.environment.update(progress, lifecycle, quality, reducedMotion, crown, particles, portal, ecosystem);
-    return { ...lifecycle, ...environment };
+    const finalScene = this.registry.get("identity");
+    if (finalScene && progress >= EXPERIENCE_PHASE_RANGES.finalCrownPass[0]) {
+      // Keep the approach plate locked to the live Crown anchor. It dissolves
+      // before core crossing, leaving Candidate B as the actual pass-through.
+      finalScene.root.position.copy(crown.root.position);
+      finalScene.root.scale.copy(crown.root.scale);
+      finalScene.root.rotation.set(0, 0, 0);
+    }
+    const crownChamber = this.registry.get("crown-chamber");
+    const heroPlateMask = progress >= EXPERIENCE_PHASE_RANGES.blackcrownHero[0]
+      && progress < EXPERIENCE_PHASE_RANGES.crownToOcean[0] + 0.04
+      && Number(crownChamber?.root.userData.bcHeroPlateOpacity ?? 0) > 0.12;
+    const worldGate = this.registry.get("world-gate");
+    const crownOceanPlateMask = progress >= EXPERIENCE_PHASE_RANGES.crownToOcean[0]
+      && progress < EXPERIENCE_PHASE_RANGES.crownToOcean[1]
+      && Number(worldGate?.root.userData.bcCrownOceanBridgeOpacity ?? 0) > 0.34;
+    const finalCrownPlateMask = progress >= EXPERIENCE_PHASE_RANGES.finalCrownPass[0]
+      && Number(finalScene?.root.userData.bcFinalCrownPlateOpacity ?? 0) > 0.08;
+    return { ...lifecycle, ...environment, heroPlateMask, crownOceanPlateMask, finalCrownPlateMask };
   }
 
   get activeSceneCount() { return this.registry.activeSceneCount; }

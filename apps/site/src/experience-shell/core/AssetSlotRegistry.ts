@@ -6,12 +6,15 @@ import type { QualityTier } from "../../experience/types";
 export const EXPERIENCE_ASSET_SLOT_IDS = [
   "crown",
   "blackcrown-hero-plate",
+  "blackcrown-final-open-plate",
+  "crown-ocean-bridge",
   "world-gate",
   "evofish-subject",
   "evofish-legacy-subject",
   "evofish-backdrop",
   "crown-front-environment",
   "crown-front-backdrop",
+  "ocean-vault-bridge",
   "network-environment",
   "network-collection-backdrop",
   "collection-item-housings",
@@ -76,6 +79,16 @@ export class AssetSlotRegistry {
       medium: "/experience/art/cinematic-v2/blackcrown-hero-medium.webp",
       low: "/experience/art/cinematic-v2/blackcrown-hero-low.webp",
     }, "candidate-b-crown-silhouette");
+    this.register("blackcrown-final-open-plate", {
+      high: "/experience/art/cinematic-v2/blackcrown-final-open-high.webp",
+      medium: "/experience/art/cinematic-v2/blackcrown-final-open-medium.webp",
+      low: "/experience/art/cinematic-v2/blackcrown-final-open-low.webp",
+    }, "candidate-b-final-core-pass");
+    this.register("crown-ocean-bridge", {
+      high: "/experience/art/cinematic-v2/crown-ocean-bridge-high.webp",
+      medium: "/experience/art/cinematic-v2/crown-ocean-bridge-medium.webp",
+      low: "/experience/art/cinematic-v2/crown-ocean-bridge-low.webp",
+    }, "procedural-crown-ocean-bridge");
     this.register("world-gate", {}, "procedural-gate");
     this.register("evofish-subject", {
       high: "/experience/art/cinematic-v2/evofish-subject-high.webp",
@@ -98,6 +111,11 @@ export class AssetSlotRegistry {
       medium: "/experience/art/cinematic-v2/crown-front-vault-medium.webp",
       low: "/experience/art/cinematic-v2/crown-front-vault-low.webp",
     }, "procedural-military-vault-depth");
+    this.register("ocean-vault-bridge", {
+      high: "/experience/art/cinematic-v2/ocean-vault-bridge-high.webp",
+      medium: "/experience/art/cinematic-v2/ocean-vault-bridge-medium.webp",
+      low: "/experience/art/cinematic-v2/ocean-vault-bridge-low.webp",
+    }, "procedural-ocean-vault-bridge");
     this.register("network-environment", {}, "procedural-network");
     this.register("network-collection-backdrop", {
       high: "/experience/art/cinematic-v2/network-collection-high.webp",

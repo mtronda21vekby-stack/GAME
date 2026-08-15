@@ -150,10 +150,14 @@ export class EvoFishAbyssScene extends SpatialSceneBase {
         (snapshot.globalProgress - EXPERIENCE_PHASE_RANGES.oceanToVault[0])
         / (EXPERIENCE_PHASE_RANGES.oceanToVault[1] - EXPERIENCE_PHASE_RANGES.oceanToVault[0]),
       ));
+    const cinematicArt = Boolean(this.abyssPlate.material.map);
     this.caustics.visible = snapshot.weight > 0.05;
-    this.silhouettes.visible = snapshot.weight > 0.05;
+    // The approved abyss art already carries organic near silhouettes. Keep
+    // the geometric dodecahedrons strictly as a missing-asset fallback so they
+    // cannot read as black blockout props over the production plate.
+    this.silhouettes.visible = !cinematicArt && snapshot.weight > 0.05;
     this.bubbles.visible = dominant;
-    this.foreground.root.visible = snapshot.weight > 0.65;
+    this.foreground.root.visible = !cinematicArt && snapshot.weight > 0.65;
     this.root.position.set(snapshot.reducedMotion ? 0 : -0.2 + snapshot.localProgress * 0.42, 0, 0);
     const compact = snapshot.quality === "low";
     const reveal = snapshot.reducedMotion ? 1 : smootherstep(clamp((snapshot.localProgress - 0.08) / 0.72));
@@ -167,9 +171,10 @@ export class EvoFishAbyssScene extends SpatialSceneBase {
     this.subject.position.z = -0.72 - reveal * 0.84;
     this.subject.rotation.y = snapshot.reducedMotion ? 0 : (reveal - 0.5) * -0.075;
     this.subjectMaterial.uniforms.uReveal.value = reveal;
+    const subjectExit = 1 - smootherstep(clamp(oceanExit / 0.72));
     this.subjectMaterial.uniforms.uOpacity.value = (0.56 + reveal * 0.34)
       * snapshot.weight
-      * (1 - oceanExit * 0.88);
+      * subjectExit;
     this.abyssPlate.mesh.position.set(
       compact ? -0.15 : -0.45 + snapshot.localProgress * 0.22,
       0.22 - reveal * 0.16,
@@ -181,6 +186,7 @@ export class EvoFishAbyssScene extends SpatialSceneBase {
       * (1 - oceanExit * 0.86);
     this.caustics.position.x = snapshot.localProgress * 0.35 * (1 - oceanExit);
     this.caustics.rotation.z = snapshot.reducedMotion ? 0 : Math.sin(snapshot.elapsedSeconds * 0.12) * 0.025 * (1 - oceanExit);
+    this.causticMaterial.opacity = 0.14 * snapshot.weight * (1 - smootherstep(oceanExit));
     this.causticMaterial.color.lerpColors(OCEAN_CYAN, TRANSITION_WHITE, oceanExit);
     this.caustics.children.forEach((sheet, index) => {
       const baseRotation = -0.42 + index * 0.19;

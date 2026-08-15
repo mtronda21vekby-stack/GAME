@@ -168,10 +168,13 @@ export class CrownChamberScene extends SpatialSceneBase {
   }
 
   async preload() {
-    setCinematicArtTexture(
-      this.heroPlate,
-      await this.assets.loadTexture("blackcrown-hero-plate", this.currentQuality),
-    );
+    const [heroTexture] = await Promise.all([
+      this.assets.loadTexture("blackcrown-hero-plate", this.currentQuality),
+      // The final pass is only four percent of the story. Warm its compact
+      // plate here so a fast scrub cannot reveal the coarse fallback first.
+      this.assets.loadTexture("blackcrown-final-open-plate", this.currentQuality),
+    ]);
+    setCinematicArtTexture(this.heroPlate, heroTexture);
   }
 
   evaluate(snapshot: SceneEvaluationSnapshot) {
@@ -232,8 +235,13 @@ export class CrownChamberScene extends SpatialSceneBase {
       compact ? 0.62 : 0.24,
       0.55 - heroAmount * 0.08,
     );
-    this.heroPlate.mesh.scale.setScalar(compact ? 0.78 : 0.76);
+    // Preserve the complete outer shell on portrait phones; the approved
+    // mobile composition must never crop the two outer Crown spires.
+    this.heroPlate.mesh.scale.setScalar(compact ? 0.68 : 0.76);
     this.heroPlate.material.opacity = heroAmount * (compact ? 0.72 : 0.82);
+    this.root.userData.bcHeroPlateOpacity = this.heroPlate.mesh.visible
+      ? this.heroPlate.material.opacity
+      : 0;
     this.field.scale.setScalar((0.94 + snapshot.localProgress * 0.1) * (compact ? 0.72 : 1));
     (this.field.material as THREE.MeshBasicMaterial).opacity = (0.07 + snapshot.localProgress * 0.04) * snapshot.weight * (compact ? 0.6 : 1);
     if (this.foreground.root.visible) this.foreground.evaluate(snapshot.localProgress, snapshot.quality, snapshot.reducedMotion);

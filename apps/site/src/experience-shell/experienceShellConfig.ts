@@ -201,9 +201,14 @@ export const EXPERIENCE_CHAPTERS: readonly ExperienceChapterConfig[] = [
 ] as const;
 
 export const EXPERIENCE_STORY_HEIGHT = {
-  desktopVh: 2500,
-  mobileVh: 2100,
-  landscapeVh: 2350,
+  // Native scroll remains authoritative. The extended physical distance makes
+  // a normal read land around the directed 40–60 second experience instead of
+  // collapsing the ten beats into a 15 second skim.
+  desktopVh: 6800,
+  mobileVh: 6000,
+  landscapeVh: 6200,
+  // Reduced motion remains deliberately compact and avoids the cinematic
+  // dwell distance while preserving every semantic chapter and CTA.
   reducedVh: 520,
 } as const;
 

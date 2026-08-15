@@ -20,6 +20,7 @@ import {
   isCloseAssemblyFragmentSource,
   shouldShowAssemblyFragments,
 } from "../../src/experience-shell/scenes/CrownChamberScene";
+import { evaluateFinalCrownPlate } from "../../src/experience-shell/scenes/IdentityScene";
 
 describe("Experience art direction V3", () => {
   it("interpolates bounded lighting profiles deterministically in both directions", () => {
@@ -85,9 +86,9 @@ describe("Experience art direction V3", () => {
   });
 
   it("provides enough native scroll travel for a 40–60 second cinematic read", () => {
-    expect(EXPERIENCE_STORY_HEIGHT.desktopVh).toBeGreaterThanOrEqual(2400);
-    expect(EXPERIENCE_STORY_HEIGHT.mobileVh).toBeGreaterThanOrEqual(2000);
-    expect(EXPERIENCE_STORY_HEIGHT.landscapeVh).toBeGreaterThanOrEqual(2200);
+    expect(EXPERIENCE_STORY_HEIGHT.desktopVh).toBeGreaterThanOrEqual(6000);
+    expect(EXPERIENCE_STORY_HEIGHT.mobileVh).toBeGreaterThanOrEqual(5600);
+    expect(EXPERIENCE_STORY_HEIGHT.landscapeVh).toBeGreaterThanOrEqual(5800);
     expect(EXPERIENCE_STORY_HEIGHT.reducedVh).toBeLessThan(EXPERIENCE_STORY_HEIGHT.mobileVh);
   });
 
@@ -124,13 +125,26 @@ describe("Experience art direction V3", () => {
   it("registers unique local slots for the generated cinematic V2 art", () => {
     expect(new Set(EXPERIENCE_ASSET_SLOT_IDS).size).toBe(EXPERIENCE_ASSET_SLOT_IDS.length);
     expect(EXPERIENCE_ASSET_SLOT_IDS).toEqual(expect.arrayContaining([
+      "blackcrown-final-open-plate",
+      "crown-ocean-bridge",
       "evofish-backdrop",
       "crown-front-backdrop",
+      "ocean-vault-bridge",
       "network-collection-backdrop",
       "collection-aurora-art",
       "collection-founder-art",
       "collection-starter-art",
     ]));
+  });
+
+  it("shows the final beauty plate only during approach and releases the live core for crossing", () => {
+    expect(evaluateFinalCrownPlate(0.96, 0).opacity).toBe(0);
+    const locked = evaluateFinalCrownPlate(0.985, 0.625);
+    expect(locked.approach).toBeCloseTo(1, 8);
+    expect(locked.opacity).toBeGreaterThan(0.85);
+    expect(evaluateFinalCrownPlate(0.994, 0.85).opacity).toBe(0);
+    expect(evaluateFinalCrownPlate(0.98, 0.5)).toEqual(evaluateFinalCrownPlate(0.98, 0.5));
+    expect(evaluateFinalCrownPlate(0.985, 0.625, true).opacity).toBeLessThan(locked.opacity);
   });
 
   it("uses strong phase-specific mobile fit without altering the final core crossing", () => {

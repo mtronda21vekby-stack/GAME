@@ -116,7 +116,7 @@ export class WorldGateScene extends SpatialSceneBase {
   async preload() {
     const [model, oceanTexture] = await Promise.all([
       this.assets.loadModel("world-gate", this.quality),
-      this.assets.loadTexture("evofish-backdrop", this.quality),
+      this.assets.loadTexture("crown-ocean-bridge", this.quality),
     ]);
     setCinematicArtTexture(this.oceanPlate, oceanTexture);
     if (model && !this.authored) {
@@ -130,15 +130,16 @@ export class WorldGateScene extends SpatialSceneBase {
   evaluate(snapshot: SceneEvaluationSnapshot) {
     this.resetPose();
     const authored = Boolean(this.authored && snapshot.quality !== "low");
+    const cinematicBridge = Boolean(this.oceanPlate.material.map);
     const oceanRise = smootherstep(clamp((snapshot.localProgress + 0.08) / 0.72));
     if (this.authored) this.authored.visible = authored;
-    this.tunnel.visible = !authored && snapshot.localProgress < 0.7;
+    this.tunnel.visible = !authored && !cinematicBridge && snapshot.localProgress < 0.7;
     // This scene is a physical Crown-to-ocean bridge, never a portal tableau.
     this.arcs.visible = false;
-    this.ribMesh.visible = !authored && snapshot.localProgress < 0.62;
+    this.ribMesh.visible = !authored && !cinematicBridge && snapshot.localProgress < 0.62;
     this.aperture.visible = false;
     this.depthCore.visible = false;
-    this.streaks.visible = snapshot.weight >= 0.4 && snapshot.localProgress < 0.86;
+    this.streaks.visible = !cinematicBridge && snapshot.weight >= 0.4 && snapshot.localProgress < 0.86;
     this.foreground.root.visible = snapshot.weight > 0.55 && snapshot.localProgress < 0.74;
     this.root.position.set(0.4, 0.2, 0);
     const motion = snapshot.reducedMotion ? 0 : snapshot.elapsedSeconds * 0.018;
@@ -148,9 +149,12 @@ export class WorldGateScene extends SpatialSceneBase {
     this.tunnel.position.y = snapshot.localProgress * 1.12;
     this.tunnel.position.z = snapshot.localProgress * 0.7;
     this.tunnel.scale.z = 0.86 + snapshot.localProgress * 0.34;
-    this.oceanPlate.mesh.position.set(-0.4, -4.4 + oceanRise * 4.15, -7.2 + oceanRise * 0.45);
-    this.oceanPlate.mesh.scale.setScalar(snapshot.quality === "low" ? 1.85 : 1.04 + oceanRise * 0.08);
-    this.oceanPlate.material.opacity = (0.08 + oceanRise * 0.82) * snapshot.weight;
+    this.oceanPlate.mesh.position.set(-0.4, -1.42 + oceanRise * 1.34, -7.2 + oceanRise * 0.45);
+    this.oceanPlate.mesh.scale.setScalar(snapshot.quality === "low" ? 1.5 : 1.04 + oceanRise * 0.08);
+    this.oceanPlate.material.opacity = (0.14 + oceanRise * 0.86) * Math.min(1, snapshot.weight * 1.6);
+    this.root.userData.bcCrownOceanBridgeOpacity = this.oceanPlate.material.map
+      ? this.oceanPlate.material.opacity
+      : 0;
     if (this.authored?.visible) {
       this.authored.position.z = -0.65 + snapshot.localProgress * 0.48;
       this.authored.rotation.z = (snapshot.localProgress - 0.5) * 0.025;
