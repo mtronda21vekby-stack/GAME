@@ -40,6 +40,8 @@ export class GLBCrownAdapter implements CrownVisual {
   private readonly loaded: LoadedCrownInstance;
   private readonly motions: SegmentMotion[];
   private readonly presentation: CrownPresentation;
+  private readonly silhouetteBand = new THREE.Group();
+  private readonly silhouetteMaterials: THREE.Material[] = [];
   private assemblyProgress = 0;
   private openProgress = 0;
   private coreIntensity = 0;
@@ -62,6 +64,39 @@ export class GLBCrownAdapter implements CrownVisual {
     this.bindings.authoredRoot.scale.multiplyScalar((3.15 / height) * this.presentation.baseScale);
     this.bindings.authoredRoot.position.add(new THREE.Vector3(...this.presentation.cameraTargetOffset));
     this.root.add(this.bindings.authoredRoot);
+
+    const bandMaterial = new THREE.MeshStandardMaterial({
+      color: 0x060b0e,
+      emissive: 0x07252c,
+      emissiveIntensity: 0.22,
+      metalness: 0.9,
+      roughness: 0.28,
+      transparent: true,
+      opacity: 0,
+    });
+    const bandEnergy = new THREE.MeshBasicMaterial({
+      color: 0x48dbea,
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const lowerBand = new THREE.Mesh(
+      new THREE.TorusGeometry(1.72, 0.115, 7, 64, Math.PI * 1.12),
+      bandMaterial,
+    );
+    lowerBand.rotation.z = Math.PI * 0.94;
+    const energyTrace = new THREE.Mesh(
+      new THREE.TorusGeometry(1.47, 0.026, 5, 56, Math.PI * 1.08),
+      bandEnergy,
+    );
+    energyTrace.rotation.z = Math.PI * 0.96;
+    energyTrace.position.z = 0.08;
+    this.silhouetteBand.name = "BC_RUNTIME_LOWER_CROWN_ARC";
+    this.silhouetteBand.position.set(0, -0.06, -0.04);
+    this.silhouetteBand.add(lowerBand, energyTrace);
+    this.silhouetteMaterials.push(bandMaterial, bandEnergy);
+    this.root.add(this.silhouetteBand);
 
     const count = this.bindings.segments.length;
     this.motions = this.bindings.segments.map((object, index) => {
@@ -119,6 +154,7 @@ export class GLBCrownAdapter implements CrownVisual {
 
   update(_deltaTime: number, state: CrownVisualState) {
     const assemblySignal = state.reducedMotion ? 1 : 0.36 + this.assemblyProgress * 0.64;
+    const crownShape = state.reducedMotion ? 1 : smootherstep(clamp((this.assemblyProgress - 0.72) / 0.28));
     for (const motion of this.motions) {
       const local = smootherstep(clamp((assemblySignal - motion.delay) / 0.64));
       restoreTransform(motion.object, motion.base);
@@ -132,6 +168,10 @@ export class GLBCrownAdapter implements CrownVisual {
       motion.object.position.z -= this.openProgress * (0.22 + centerLift * 0.18);
       const openRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-centerLift * this.openProgress * 0.1, side * this.openProgress * 0.21, 0));
       motion.object.quaternion.multiply(openRotation);
+      motion.object.position.y += ((1 - Math.abs(motion.normalized)) * 0.34 - Math.abs(motion.normalized) * 0.1) * crownShape;
+      motion.object.position.x *= 1 - crownShape * 0.045;
+      const crownRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, -motion.normalized * 0.2 * crownShape));
+      motion.object.quaternion.multiply(crownRotation);
     }
 
     for (const [index, spire] of this.bindings.spires.entries()) {
@@ -139,7 +179,17 @@ export class GLBCrownAdapter implements CrownVisual {
       restoreTransform(spire, base);
       const center = 1 - Math.abs((index - (this.bindings.spires.length - 1) / 2) / Math.max(1, (this.bindings.spires.length - 1) / 2));
       spire.position.y += this.openProgress * (this.presentation.spireLift + center * 0.15);
+      spire.position.y += (center * 0.3 - (1 - center) * 0.14) * crownShape;
+      const normalized = (index - (this.bindings.spires.length - 1) / 2) / Math.max(1, (this.bindings.spires.length - 1) / 2);
+      const crownRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, -normalized * 0.15 * crownShape));
+      spire.quaternion.multiply(crownRotation);
     }
+
+    this.silhouetteBand.visible = crownShape > 0.001;
+    this.silhouetteBand.position.y = 0.45 + this.openProgress * 0.08;
+    this.silhouetteBand.scale.set(0.86 + this.openProgress * 0.1, 0.38 - this.openProgress * 0.015, 1);
+    (this.silhouetteMaterials[0] as THREE.MeshStandardMaterial).opacity = crownShape * (0.94 - this.openProgress * 0.16);
+    (this.silhouetteMaterials[1] as THREE.MeshBasicMaterial).opacity = crownShape * (0.16 + this.coreIntensity * 0.045);
 
     this.root.rotation.set(
       -0.025 + state.open * 0.025,
@@ -201,6 +251,11 @@ export class GLBCrownAdapter implements CrownVisual {
     if (this.disposed) return;
     this.disposed = true;
     this.root.removeFromParent();
+    this.silhouetteBand.traverse((object) => {
+      const mesh = object as THREE.Mesh;
+      mesh.geometry?.dispose();
+    });
+    this.silhouetteMaterials.forEach((material) => material.dispose());
     this.root.clear();
     this.materials.dispose();
     this.loaded.lease.release();

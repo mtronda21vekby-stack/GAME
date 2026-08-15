@@ -31,7 +31,7 @@ export class ExperienceShellRuntime {
     this.assets = new AssetSlotRegistry(options.signal);
     this.registry = new SceneRegistry(options.parent, options.requestFrame);
     this.environment = new EnvironmentDirector(options.scene);
-    this.registry.register(new CrownChamberScene());
+    this.registry.register(new CrownChamberScene(this.assets));
     this.registry.register(new WorldGateScene(this.assets));
     this.registry.register(new EvoFishAbyssScene(this.assets));
     this.registry.register(new CrownFrontReactorScene(this.assets));
