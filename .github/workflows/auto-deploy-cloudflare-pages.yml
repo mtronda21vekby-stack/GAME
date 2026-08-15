@@ -32,7 +32,7 @@ env:
   VITE_BC_ENVIRONMENT_ASSET_MODE: blender
 
 concurrency:
-  group: blackcrown-production-pages
+  group: blackcrown-preview-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -98,10 +98,10 @@ jobs:
           name: blackcrown-dist
           path: dist
 
-      - name: Deploy production bundle to siteblcrown
+      - name: Deploy branch preview to siteblcrown
         if: steps.cloudflare.outputs.enabled == 'true'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=${{ env.CLOUDFLARE_PROJECT_NAME }} --branch=main --commit-dirty=true
+          command: pages deploy dist --project-name=${{ env.CLOUDFLARE_PROJECT_NAME }} --branch=${{ github.ref_name }} --commit-dirty=true
