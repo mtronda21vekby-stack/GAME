@@ -7,7 +7,11 @@ on:
     paths:
       - "apps/site/**"
       - "functions/api/commerce/**"
+      - "functions/api/auth/guest.ts"
+      - "functions/api/me.ts"
       - "functions/api/_lib/commerce.ts"
+      - "functions/api/_lib/user-session.ts"
+      - "scripts/check-commerce-trust.mjs"
       - "packages/**"
       - "package.json"
       - "pnpm-lock.yaml"
@@ -53,6 +57,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Validate commerce trust boundary
+        run: node scripts/check-commerce-trust.mjs
 
       - name: Validate key art
         run: pnpm --filter @blackcrown/site test:assets
