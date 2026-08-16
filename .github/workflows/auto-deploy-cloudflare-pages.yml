@@ -57,6 +57,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Validate commerce trust boundary
+        run: node scripts/check-commerce-trust.mjs
+
       - name: Build production output
         run: pnpm build:prod
 
