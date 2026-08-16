@@ -9,6 +9,7 @@ export const SITE_PATHS = [
   "/checkout",
   "/checkout/success",
   "/account",
+  "/account/telegram",
   "/admin",
 ] as const;
 
@@ -120,6 +121,15 @@ export const SITE_ROUTE_METADATA: readonly RouteMetadataDefinition[] = [
       title: "Аккаунт — BlackCrown",
       description: "Профиль, коллекция и доступы игрока BlackCrown.",
       chrome: standardChrome,
+      noIndex: true,
+    },
+  },
+  {
+    path: "/account/telegram",
+    metadata: {
+      title: "Telegram Bridge — BlackCrown",
+      description: "Защищённая привязка Telegram-бота к аккаунту BlackCrown.",
+      chrome: focusedChrome,
       noIndex: true,
     },
   },
