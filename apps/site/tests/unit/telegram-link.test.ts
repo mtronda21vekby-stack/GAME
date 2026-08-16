@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createUserSessionToken } from "../../../../functions/api/_lib/user-session";
 import { onRequestPost as linkTelegram } from "../../../../functions/api/integrations/telegram/link";
 import { onRequestGet as telegramStatus } from "../../../../functions/api/integrations/telegram/status";
-import { sanitizeTelegramLinkCode } from "../../src/lib/telegramLink";
+import { sanitizeTelegramLinkCode } from "../../src/lib/telegramLinkCode";
 
 const SESSION_SECRET = "telegram-link-unit-test-session-secret-with-entropy";
 const VALID_CODE = "BCO_link_token_1234567890_ABCDEFGH";
