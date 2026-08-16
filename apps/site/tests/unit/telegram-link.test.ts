@@ -20,7 +20,7 @@ function context(request: Request) {
   } as never;
 }
 
-function rpcResponse(payload: Record<string, unknown>, status = 200) {
+function bridgeResponse(payload: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(payload), {
     status,
     headers: { "content-type": "application/json" },
@@ -32,7 +32,7 @@ afterEach(() => {
 });
 
 describe("Telegram account bridge", () => {
-  it("rejects an unsigned link request before calling Supabase", async () => {
+  it("rejects an unsigned link request before calling Render", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
     const request = new Request("https://blackcrown.test/api/integrations/telegram/link", {
@@ -46,7 +46,7 @@ describe("Telegram account bridge", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("rejects a weak code without touching the RPC", async () => {
+  it("rejects a weak code without touching the bridge", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
     const request = new Request("https://blackcrown.test/api/integrations/telegram/link", {
@@ -63,23 +63,24 @@ describe("Telegram account bridge", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("uses the signed session identity and ignores a browser-supplied user id", async () => {
+  it("forwards only the signed session identity and ignores a browser user id", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
-      rpcResponse({
+      bridgeResponse({
         ok: true,
         linked: true,
         premium: false,
         entitlements: [],
-        linked_at: "2026-08-16T00:00:00Z",
+        linkedAt: "2026-08-16T00:00:00Z",
       }),
     );
     vi.stubGlobal("fetch", fetchMock);
 
+    const cookie = await sessionCookie("site-user-authoritative");
     const request = new Request("https://blackcrown.test/api/integrations/telegram/link", {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        cookie: await sessionCookie("site-user-authoritative"),
+        cookie,
       },
       body: JSON.stringify({
         code: VALID_CODE,
@@ -92,23 +93,23 @@ describe("Telegram account bridge", () => {
     expect(await response.json()).toMatchObject({ ok: true, linked: true, premium: false });
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
-    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(String(fetchMock.mock.calls[0][0])).toContain("/rpc/blackcrown_complete_telegram_link");
-    expect(JSON.parse(String(init.body))).toEqual({
-      p_code: VALID_CODE,
-      p_site_user_id: "site-user-authoritative",
-    });
-    expect(String(init.headers && (init.headers as Record<string, string>).apikey)).toMatch(/^sb_publishable_/);
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const headers = init.headers as Record<string, string>;
+    expect(String(url)).toBe("https://ggbf6-warzon-bot.onrender.com/integrations/site/telegram/link");
+    expect(JSON.parse(String(init.body))).toEqual({ code: VALID_CODE });
+    expect(headers["x-bc-site-user"]).toBe("site-user-authoritative");
+    expect(headers["x-bc-session-token"]).toBe(cookie.slice("bc_session=".length));
+    expect(JSON.stringify(init)).not.toContain("attacker-controlled-id");
   });
 
-  it("returns only sanitized status for the signed site account", async () => {
+  it("returns only sanitized status from the verified bot bridge", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
-      rpcResponse({
+      bridgeResponse({
         ok: true,
         linked: true,
         premium: true,
         entitlements: ["bco_premium"],
-        linked_at: "2026-08-16T00:00:00Z",
+        linkedAt: "2026-08-16T00:00:00Z",
         telegram_user_id: 123,
       }),
     );
@@ -129,6 +130,7 @@ describe("Telegram account bridge", () => {
       linkedAt: "2026-08-16T00:00:00Z",
     });
     expect(payload).not.toHaveProperty("telegram_user_id");
+    expect(String(fetchMock.mock.calls[0][0])).toContain("/integrations/site/telegram/status");
   });
 
   it("accepts only high-entropy URL-safe link codes", () => {
