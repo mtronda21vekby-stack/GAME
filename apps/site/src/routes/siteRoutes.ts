@@ -14,6 +14,9 @@ const CheckoutSuccess = React.lazy(() =>
   import("./pages/CheckoutSuccess").then((module) => ({ default: module.CheckoutSuccess })),
 );
 const Account = React.lazy(() => import("./pages/Account").then((module) => ({ default: module.Account })));
+const TelegramLink = React.lazy(() =>
+  import("./pages/TelegramLink").then((module) => ({ default: module.TelegramLink })),
+);
 const Admin = React.lazy(() => import("./pages/Admin").then((module) => ({ default: module.Admin })));
 const NexusLab = React.lazy(() =>
   import("../components/nexus/NexusLabPage").then((module) => ({ default: module.NexusLabPage })),
@@ -30,6 +33,7 @@ const components: Record<SitePath, React.ComponentType> = {
   "/checkout": Checkout,
   "/checkout/success": CheckoutSuccess,
   "/account": Account,
+  "/account/telegram": TelegramLink,
   "/admin": Admin,
 };
 
