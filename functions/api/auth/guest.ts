@@ -38,15 +38,22 @@ function sanitizeNickname(s: string) {
   return t.replace(/[\u0000-\u001F\u007F]/g, "").slice(0, 24).trim();
 }
 
-function newUserId() {
-  try {
-    const anyCrypto = crypto as any;
-    if (anyCrypto?.randomUUID) return anyCrypto.randomUUID();
-  } catch {
-    // ignore
+function newUserId(): string | null {
+  const cryptoApi = globalThis.crypto;
+  if (!cryptoApi) return null;
+
+  if (typeof cryptoApi.randomUUID === "function") {
+    return `u_${cryptoApi.randomUUID()}`;
   }
-  const rnd = Math.random().toString(16).slice(2);
-  return `u_${Date.now().toString(16)}_${rnd}`;
+
+  if (typeof cryptoApi.getRandomValues === "function") {
+    const bytes = new Uint8Array(24);
+    cryptoApi.getRandomValues(bytes);
+    const token = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+    return `u_${token}`;
+  }
+
+  return null;
 }
 
 const USER_TTL = 180 * 24 * 60 * 60;
@@ -116,9 +123,12 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     }
   }
 
+  const rawUid = newUserId();
+  if (!rawUid) return json({ ok: false, reason: "secure_random_unavailable" }, 503);
+
   const now = Date.now();
   const nickname = sanitizeNickname(body.nickname || "") || "Игрок";
-  const uid = safeId(newUserId());
+  const uid = safeId(rawUid);
   const profile: UserProfileV1 = {
     v: 1,
     id: uid,
