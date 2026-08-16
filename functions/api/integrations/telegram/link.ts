@@ -1,5 +1,5 @@
 import type { Env } from "../../_lib/auth";
-import { callBlackCrownPublicRpc } from "../../_lib/blackcrown-supabase";
+import { callBlackCrownBotBridge } from "../../_lib/blackcrown-bot-bridge";
 import { verifyUserSession } from "../../_lib/user-session";
 
 const MAX_BODY_BYTES = 2_048;
@@ -25,7 +25,8 @@ function resultStatus(reason: string) {
     return 409;
   }
   if (reason === "invalid_or_expired_code" || reason === "invalid_site_user") return 400;
-  return 502;
+  if (reason === "auth_required" || reason === "site_session_mismatch") return 401;
+  return 503;
 }
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
@@ -48,23 +49,18 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   if (!code) return json({ ok: false, reason: "invalid_or_expired_code" }, 400);
 
   try {
-    const rpc = await callBlackCrownPublicRpc(env, "blackcrown_complete_telegram_link", {
-      p_code: code,
-      p_site_user_id: session.userId,
-    });
-
-    if (!rpc.ok) return json({ ok: false, reason: "link_service_unavailable" }, 503);
-    if (rpc.payload.ok !== true) {
-      const reason = String(rpc.payload.reason || "link_failed");
+    const bridge = await callBlackCrownBotBridge(request, env, "link", session.userId, { code });
+    if (!bridge.ok || bridge.payload.ok !== true) {
+      const reason = String(bridge.payload.reason || "link_service_unavailable");
       return json({ ok: false, reason }, resultStatus(reason));
     }
 
     return json({
       ok: true,
-      linked: rpc.payload.linked === true,
-      premium: rpc.payload.premium === true,
-      entitlements: Array.isArray(rpc.payload.entitlements) ? rpc.payload.entitlements : [],
-      linkedAt: typeof rpc.payload.linked_at === "string" ? rpc.payload.linked_at : null,
+      linked: bridge.payload.linked === true,
+      premium: bridge.payload.premium === true,
+      entitlements: Array.isArray(bridge.payload.entitlements) ? bridge.payload.entitlements : [],
+      linkedAt: typeof bridge.payload.linkedAt === "string" ? bridge.payload.linkedAt : null,
     });
   } catch {
     return json({ ok: false, reason: "link_service_unavailable" }, 503);
