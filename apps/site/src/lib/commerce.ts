@@ -101,22 +101,30 @@ function emitCartChanged(lines: CartLine[]) {
   );
 }
 
-function createClientId() {
-  try {
-    if (crypto?.randomUUID) return crypto.randomUUID();
-  } catch {
-    // fall through
+function secureRandomToken(prefix: string) {
+  const cryptoApi = globalThis.crypto;
+  if (!cryptoApi) throw new Error("secure_random_unavailable");
+
+  if (typeof cryptoApi.randomUUID === "function") {
+    return `${prefix}${cryptoApi.randomUUID()}`;
   }
-  return `client_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
+
+  if (typeof cryptoApi.getRandomValues === "function") {
+    const bytes = new Uint8Array(24);
+    cryptoApi.getRandomValues(bytes);
+    const token = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+    return `${prefix}${token}`;
+  }
+
+  throw new Error("secure_random_unavailable");
+}
+
+function createClientId() {
+  return secureRandomToken("client_");
 }
 
 export function createCheckoutIdempotencyKey() {
-  try {
-    if (crypto?.randomUUID) return `checkout:${crypto.randomUUID()}`;
-  } catch {
-    // fall through
-  }
-  return `checkout:${Date.now().toString(36)}:${Math.random().toString(36).slice(2, 12)}`;
+  return secureRandomToken("checkout:");
 }
 
 function getClientId() {
@@ -126,7 +134,10 @@ function getClientId() {
     const created = createClientId();
     localStorage.setItem(CLIENT_ID_KEY, created);
     return created;
-  } catch {
+  } catch (error) {
+    // Storage may be unavailable in privacy contexts. A cryptographic
+    // ephemeral recovery credential is still safe for the current session.
+    if (error instanceof Error && error.message === "secure_random_unavailable") throw error;
     return createClientId();
   }
 }
