@@ -83,4 +83,62 @@ forbidText("apps/site/src/lib/blackcrownWorldStatus.ts", [
   "sb_secret_",
 ]);
 
-console.log("Commerce and Supabase GAME trust boundaries: OK");
+requireText("functions/api/_lib/blackcrown-supabase.ts", [
+  "wqriwhciqvrbhkkiuhxb.supabase.co",
+  "sb_publishable_",
+  "EXPECTED_HOST",
+  "blackcrown_complete_telegram_link",
+  "blackcrown_get_site_telegram_status",
+]);
+forbidText("functions/api/_lib/blackcrown-supabase.ts", [
+  "nmgotvxisujvpfoxivoq",
+  "sb_secret_",
+  "SUPABASE_SERVICE_ROLE_KEY",
+  'Authorization: `Bearer',
+]);
+
+for (const path of [
+  "functions/api/integrations/telegram/link.ts",
+  "functions/api/integrations/telegram/status.ts",
+]) {
+  requireText(path, ["verifyUserSession", "cache-control", "no-store"]);
+  forbidText(path, ["getUserIdCookie", "bc_uid", "SUPABASE_SERVICE_ROLE_KEY"]);
+}
+
+requireText("functions/api/integrations/telegram/link.ts", [
+  "session.userId",
+  "blackcrown_complete_telegram_link",
+  "p_site_user_id: session.userId",
+]);
+
+requireText("apps/site/src/lib/telegramLink.ts", [
+  "ensureGuestSession",
+  "sanitizeTelegramLinkCode",
+  "/api/integrations/telegram/link",
+  "/api/integrations/telegram/status",
+]);
+
+requireText("apps/site/src/routes/pages/TelegramLink.tsx", [
+  "Привязка не выдаёт Premium",
+  "bco_premium",
+  "telegramLinkCodeFromLocation",
+]);
+
+const linkMigration = requireText(
+  "supabase/migrations/20260816211500_create_blackcrown_telegram_premium_link.sql",
+  [
+    "blackcrown_telegram_link_challenges",
+    "blackcrown_account_links",
+    "blackcrown_entitlements",
+    "enable row level security",
+    "blackcrown_complete_telegram_link",
+    "blackcrown_get_telegram_entitlement_status",
+    "to anon, authenticated",
+    "to service_role",
+  ],
+);
+if (linkMigration.includes("insert into public.blackcrown_entitlements")) {
+  throw new Error("Account-link migration must not mint Premium entitlements");
+}
+
+console.log("Commerce, Supabase GAME, and Telegram Premium link trust boundaries: OK");
