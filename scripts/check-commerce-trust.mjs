@@ -89,10 +89,11 @@ requireText("functions/api/_lib/blackcrown-supabase.ts", [
   "EXPECTED_HOST",
   "blackcrown_complete_telegram_link",
   "blackcrown_get_site_telegram_status",
+  "sb_secret_",
+  "service[_-]?role",
 ]);
 forbidText("functions/api/_lib/blackcrown-supabase.ts", [
   "nmgotvxisujvpfoxivoq",
-  "sb_secret_",
   "SUPABASE_SERVICE_ROLE_KEY",
   'Authorization: `Bearer',
 ]);
