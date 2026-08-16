@@ -1,0 +1,73 @@
+name: BlackCrown Identity Bridge Check
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "functions/api/account/telegram/**"
+      - "functions/api/_lib/supabase-server.ts"
+      - "functions/api/_lib/telegram-link.ts"
+      - "apps/site/public/link-telegram/**"
+      - "apps/site/src/lib/telegramLink.ts"
+      - "apps/site/tests/unit/telegram-link.test.ts"
+      - "supabase/migrations/*identity_bridge*.sql"
+      - "scripts/check-identity-bridge.mjs"
+      - ".github/workflows/identity-bridge-check.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "functions/api/account/telegram/**"
+      - "functions/api/_lib/supabase-server.ts"
+      - "functions/api/_lib/telegram-link.ts"
+      - "apps/site/public/link-telegram/**"
+      - "apps/site/src/lib/telegramLink.ts"
+      - "apps/site/tests/unit/telegram-link.test.ts"
+      - "supabase/migrations/*identity_bridge*.sql"
+      - "scripts/check-identity-bridge.mjs"
+      - ".github/workflows/identity-bridge-check.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: blackcrown-identity-bridge-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-identity-bridge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate trust boundary
+        run: node scripts/check-identity-bridge.mjs
+
+      - name: Typecheck site and Pages Functions
+        run: pnpm --filter @blackcrown/site typecheck
+
+      - name: Run identity unit tests
+        run: pnpm --filter @blackcrown/site exec vitest run tests/unit/telegram-link.test.ts
