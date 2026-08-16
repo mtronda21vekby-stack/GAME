@@ -1,5 +1,5 @@
 import type { Env } from "../../_lib/auth";
-import { callBlackCrownPublicRpc } from "../../_lib/blackcrown-supabase";
+import { callBlackCrownBotBridge } from "../../_lib/blackcrown-bot-bridge";
 import { verifyUserSession } from "../../_lib/user-session";
 
 function json(body: unknown, status = 200) {
@@ -17,20 +17,18 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   if (!session?.userId) return json({ ok: false, reason: "auth_required" }, 401);
 
   try {
-    const rpc = await callBlackCrownPublicRpc(env, "blackcrown_get_site_telegram_status", {
-      p_site_user_id: session.userId,
-    });
-
-    if (!rpc.ok || rpc.payload.ok !== true) {
-      return json({ ok: false, reason: "link_service_unavailable" }, 503);
+    const bridge = await callBlackCrownBotBridge(request, env, "status", session.userId);
+    if (!bridge.ok || bridge.payload.ok !== true) {
+      const reason = String(bridge.payload.reason || "link_service_unavailable");
+      return json({ ok: false, reason }, reason === "auth_required" || reason === "site_session_mismatch" ? 401 : 503);
     }
 
     return json({
       ok: true,
-      linked: rpc.payload.linked === true,
-      premium: rpc.payload.premium === true,
-      entitlements: Array.isArray(rpc.payload.entitlements) ? rpc.payload.entitlements : [],
-      linkedAt: typeof rpc.payload.linked_at === "string" ? rpc.payload.linked_at : null,
+      linked: bridge.payload.linked === true,
+      premium: bridge.payload.premium === true,
+      entitlements: Array.isArray(bridge.payload.entitlements) ? bridge.payload.entitlements : [],
+      linkedAt: typeof bridge.payload.linkedAt === "string" ? bridge.payload.linkedAt : null,
     });
   } catch {
     return json({ ok: false, reason: "link_service_unavailable" }, 503);
