@@ -1,4 +1,5 @@
-import { getMetricsKV, getUserIdCookie, type Env } from "../_lib/auth";
+import { getMetricsKV, type Env } from "../_lib/auth";
+import { verifyUserSession } from "../_lib/user-session";
 import {
   commerceCartFingerprint,
   commerceEntitlementsKey,
@@ -24,11 +25,17 @@ type CheckoutBody = {
 const ORDER_TTL = 365 * 24 * 60 * 60;
 const USER_TTL = 180 * 24 * 60 * 60;
 
+function mockCheckoutEnabled(env: Env): boolean {
+  const value = String(env.BC_COMMERCE_MOCK_ENABLED || "").trim().toLowerCase();
+  return value === "1" || value === "true" || value === "yes";
+}
+
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const kv = getMetricsKV(env);
   if (!kv) return commerceJson({ ok: false, reason: "commerce_storage_unavailable" }, 503);
 
-  const userId = getUserIdCookie(request)?.trim();
+  const session = await verifyUserSession(request, env);
+  const userId = session?.userId || "";
   if (!userId) return commerceJson({ ok: false, reason: "auth_required" }, 401);
 
   let body: CheckoutBody = {};
@@ -38,6 +45,11 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     return commerceJson({ ok: false, reason: "invalid_json" }, 400);
   }
 
+  // Mock payment is strictly an explicit development switch. Production is
+  // fail-closed until a real payment provider/webhook becomes authoritative.
+  if (body.paymentMethod === "mock" && !mockCheckoutEnabled(env)) {
+    return commerceJson({ ok: false, reason: "payment_provider_unavailable" }, 503);
+  }
   if (body.paymentMethod !== "mock") {
     return commerceJson({ ok: false, reason: "unsupported_payment_method" }, 400);
   }
