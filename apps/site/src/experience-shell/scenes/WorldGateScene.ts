@@ -131,7 +131,9 @@ export class WorldGateScene extends SpatialSceneBase {
     this.resetPose();
     const authored = Boolean(this.authored && snapshot.quality !== "low");
     const cinematicBridge = Boolean(this.oceanPlate.material.map);
-    const oceanRise = smootherstep(clamp((snapshot.localProgress + 0.08) / 0.72));
+    // Water is already physically present below the Crown when transit begins;
+    // bringing it into frame early avoids the empty/dark first half of the beat.
+    const oceanRise = smootherstep(clamp((snapshot.localProgress + 0.14) / 0.64));
     if (this.authored) this.authored.visible = authored;
     this.tunnel.visible = !authored && !cinematicBridge && snapshot.localProgress < 0.7;
     // This scene is a physical Crown-to-ocean bridge, never a portal tableau.
@@ -149,9 +151,9 @@ export class WorldGateScene extends SpatialSceneBase {
     this.tunnel.position.y = snapshot.localProgress * 1.12;
     this.tunnel.position.z = snapshot.localProgress * 0.7;
     this.tunnel.scale.z = 0.86 + snapshot.localProgress * 0.34;
-    this.oceanPlate.mesh.position.set(-0.4, -1.42 + oceanRise * 1.34, -7.2 + oceanRise * 0.45);
+    this.oceanPlate.mesh.position.set(-0.4, -1.16 + oceanRise * 1.12, -7.2 + oceanRise * 0.45);
     this.oceanPlate.mesh.scale.setScalar(snapshot.quality === "low" ? 1.5 : 1.04 + oceanRise * 0.08);
-    this.oceanPlate.material.opacity = (0.14 + oceanRise * 0.86) * Math.min(1, snapshot.weight * 1.6);
+    this.oceanPlate.material.opacity = (0.24 + oceanRise * 0.76) * Math.min(1, snapshot.weight * 1.6);
     this.root.userData.bcCrownOceanBridgeOpacity = this.oceanPlate.material.map
       ? this.oceanPlate.material.opacity
       : 0;

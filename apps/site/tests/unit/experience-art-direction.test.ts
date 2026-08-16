@@ -21,6 +21,8 @@ import {
   shouldShowAssemblyFragments,
 } from "../../src/experience-shell/scenes/CrownChamberScene";
 import { evaluateFinalCrownPlate } from "../../src/experience-shell/scenes/IdentityScene";
+import { NETWORK_WORLD_SPECS } from "../../src/experience-shell/scenes/NetworkCoreScene";
+import { EXPERIENCE_WORLD_LINKS } from "../../src/experience-shell/dom/WorldIndex";
 
 describe("Experience art direction V3", () => {
   it("interpolates bounded lighting profiles deterministically in both directions", () => {
@@ -145,6 +147,18 @@ describe("Experience art direction V3", () => {
     expect(evaluateFinalCrownPlate(0.994, 0.85).opacity).toBe(0);
     expect(evaluateFinalCrownPlate(0.98, 0.5)).toEqual(evaluateFinalCrownPlate(0.98, 0.5));
     expect(evaluateFinalCrownPlate(0.985, 0.625, true).opacity).toBeLessThan(locked.opacity);
+    expect(locked.scale).toBeGreaterThan(evaluateFinalCrownPlate(0.965, 0.2).scale);
+    expect(locked.verticalOffset).toBeLessThan(evaluateFinalCrownPlate(0.965, 0.2).verticalOffset);
+  });
+
+  it("gives the five primary network worlds unique spatial housings", () => {
+    expect(NETWORK_WORLD_SPECS.map((world) => world.id)).toEqual(
+      EXPERIENCE_WORLD_LINKS.map(([label]) => label),
+    );
+    expect(NETWORK_WORLD_SPECS).toHaveLength(5);
+    expect(new Set(NETWORK_WORLD_SPECS.map((world) => world.kind)).size).toBe(5);
+    expect(new Set(NETWORK_WORLD_SPECS.map((world) => world.position.join(","))).size).toBe(5);
+    expect(new Set(NETWORK_WORLD_SPECS.map((world) => world.compactPosition.join(","))).size).toBe(5);
   });
 
   it("uses strong phase-specific mobile fit without altering the final core crossing", () => {

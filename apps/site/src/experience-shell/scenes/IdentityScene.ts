@@ -18,8 +18,9 @@ export function evaluateFinalCrownPlate(progress: number, weight: number, reduce
   return {
     approach,
     opacity: lifecyclePresence * (0.16 + approach * 0.84) * release * (reducedMotion ? 0.76 : 0.92),
-    depth: 0.54 + approach * 0.2,
-    scale: 0.9 + approach * 0.1,
+    depth: 0.48 + approach * 0.34,
+    scale: 0.86 + approach * 0.36,
+    verticalOffset: 1.02 - approach * 0.28,
   };
 }
 
@@ -50,11 +51,11 @@ export class IdentityScene extends SpatialSceneBase {
   evaluate(snapshot: SceneEvaluationSnapshot) {
     this.resetPose();
     const state = evaluateFinalCrownPlate(snapshot.globalProgress, snapshot.weight, snapshot.reducedMotion);
-    const qualityFit = snapshot.quality === "low" ? 0.29 : snapshot.quality === "medium" ? 0.42 : 0.54;
+    const qualityFit = snapshot.quality === "low" ? 0.35 : snapshot.quality === "medium" ? 0.46 : 0.56;
     // The generated Crown's core sits below the source-image midpoint. Lift
     // the plate so the passage, not the decorative spire, owns screen center
     // on both desktop and portrait iPhone.
-    this.finalCrownPlate.mesh.position.set(0, 1.05, state.depth);
+    this.finalCrownPlate.mesh.position.set(0, state.verticalOffset, state.depth);
     this.finalCrownPlate.mesh.scale.setScalar(qualityFit * state.scale);
     this.finalCrownPlate.material.opacity = state.opacity;
     this.root.visible = Boolean(this.finalCrownPlate.material.map) && state.opacity > 0.001;
