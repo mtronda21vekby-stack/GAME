@@ -83,33 +83,40 @@ forbidText("apps/site/src/lib/blackcrownWorldStatus.ts", [
   "sb_secret_",
 ]);
 
-requireText("functions/api/_lib/blackcrown-supabase.ts", [
-  "wqriwhciqvrbhkkiuhxb.supabase.co",
-  "sb_publishable_",
-  "EXPECTED_HOST",
-  "blackcrown_complete_telegram_link",
-  "blackcrown_get_site_telegram_status",
-  "sb_secret_",
-  "service[_-]?role",
+if (fs.existsSync("functions/api/_lib/blackcrown-supabase.ts")) {
+  throw new Error("Direct public Supabase account-link client must not exist");
+}
+requireText("functions/api/_lib/blackcrown-bot-bridge.ts", [
+  "https://ggbf6-warzon-bot.onrender.com",
+  "EXPECTED_BOT_HOST",
+  'readCookie(request, "bc_session")',
+  '"x-bc-session-token"',
+  '"x-bc-site-user"',
 ]);
-forbidText("functions/api/_lib/blackcrown-supabase.ts", [
-  "nmgotvxisujvpfoxivoq",
+forbidText("functions/api/_lib/blackcrown-bot-bridge.ts", [
   "SUPABASE_SERVICE_ROLE_KEY",
-  'Authorization: `Bearer',
+  "sb_secret_",
+  "sb_publishable_",
+  "wqriwhciqvrbhkkiuhxb.supabase.co",
 ]);
 
 for (const path of [
   "functions/api/integrations/telegram/link.ts",
   "functions/api/integrations/telegram/status.ts",
 ]) {
-  requireText(path, ["verifyUserSession", "cache-control", "no-store"]);
-  forbidText(path, ["getUserIdCookie", "bc_uid", "SUPABASE_SERVICE_ROLE_KEY"]);
+  requireText(path, ["verifyUserSession", "callBlackCrownBotBridge", "cache-control", "no-store"]);
+  forbidText(path, [
+    "getUserIdCookie",
+    "bc_uid",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "callBlackCrownPublicRpc",
+    "/rest/v1/rpc/",
+  ]);
 }
 
 requireText("functions/api/integrations/telegram/link.ts", [
   "session.userId",
-  "blackcrown_complete_telegram_link",
-  "p_site_user_id: session.userId",
+  'callBlackCrownBotBridge(request, env, "link", session.userId',
 ]);
 
 requireText("apps/site/src/lib/telegramLink.ts", [
@@ -134,7 +141,6 @@ const linkMigration = requireText(
     "enable row level security",
     "blackcrown_complete_telegram_link",
     "blackcrown_get_telegram_entitlement_status",
-    "to anon, authenticated",
     "to service_role",
   ],
 );
@@ -142,4 +148,17 @@ if (linkMigration.includes("insert into public.blackcrown_entitlements")) {
   throw new Error("Account-link migration must not mint Premium entitlements");
 }
 
-console.log("Commerce, Supabase GAME, and Telegram Premium link trust boundaries: OK");
+requireText("supabase/migrations/20260816213000_harden_blackcrown_telegram_link_rls.sql", [
+  "for all",
+  "using (false)",
+  "with check (false)",
+]);
+
+requireText("supabase/migrations/20260816214500_make_blackcrown_link_rpcs_server_only.sql", [
+  "revoke execute on function public.blackcrown_complete_telegram_link",
+  "revoke execute on function public.blackcrown_get_site_telegram_status",
+  "from public, anon, authenticated",
+  "to service_role",
+]);
+
+console.log("Commerce, Supabase GAME, and server-verified Telegram Premium link boundaries: OK");
