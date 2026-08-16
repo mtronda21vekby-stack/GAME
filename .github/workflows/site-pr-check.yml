@@ -12,7 +12,7 @@ on:
       - "functions/api/me.ts"
       - "functions/api/_lib/commerce.ts"
       - "functions/api/_lib/user-session.ts"
-      - "functions/api/_lib/blackcrown-supabase.ts"
+      - "functions/api/_lib/blackcrown-bot-bridge.ts"
       - "supabase/**"
       - "scripts/check-commerce-trust.mjs"
       - "packages/**"
