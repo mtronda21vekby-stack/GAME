@@ -94,6 +94,19 @@ jobs:
         if: steps.cloudflare.outputs.enabled == 'true'
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        if: steps.cloudflare.outputs.enabled == 'true'
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: Setup Node.js
+        if: steps.cloudflare.outputs.enabled == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
       - name: Download dist artifact
         if: steps.cloudflare.outputs.enabled == 'true'
         uses: actions/download-artifact@v4
