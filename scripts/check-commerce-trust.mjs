@@ -70,4 +70,17 @@ if (/SERVICE_ROLE|sb_secret_/i.test(envExample)) {
   throw new Error("apps/site/.env.example must never contain a privileged Supabase credential");
 }
 
-console.log("Commerce trust boundary: OK");
+requireText("apps/site/src/lib/blackcrownWorldStatus.ts", [
+  "https://wqriwhciqvrbhkkiuhxb.supabase.co",
+  "sb_publishable_",
+  'const STATUS_TABLE = "blackcrown_world_status"',
+  'const CACHE_KEY = "bc.world-status.game.v1"',
+]);
+forbidText("apps/site/src/lib/blackcrownWorldStatus.ts", [
+  "nmgotvxisujvpfoxivoq",
+  "sb_publishable_B2dxtgWZBYfC8iRkV02k0Q_FDJ01QNR",
+  "SERVICE_ROLE",
+  "sb_secret_",
+]);
+
+console.log("Commerce and Supabase GAME trust boundaries: OK");

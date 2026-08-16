@@ -35,15 +35,18 @@ type CachedWorldStatusPayload = {
   rows: BlackCrownWorldStatus[];
 };
 
-const DEFAULT_SUPABASE_URL = "https://nmgotvxisujvpfoxivoq.supabase.co";
-const DEFAULT_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_B2dxtgWZBYfC8iRkV02k0Q_FDJ01QNR";
+// Browser-safe public credentials for the shared Supabase GAME project.
+// Environment overrides remain supported for local/preview builds.
+const DEFAULT_SUPABASE_URL = "https://wqriwhciqvrbhkkiuhxb.supabase.co";
+const DEFAULT_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ncAkKMk3JAVk9zVIYU16lA_ydBHiQfo";
 const SUPABASE_URL =
   (import.meta.env.VITE_BLACKCROWN_SUPABASE_URL as string | undefined)?.trim() ||
   DEFAULT_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY =
   (import.meta.env.VITE_BLACKCROWN_SUPABASE_PUBLISHABLE_KEY as string | undefined)?.trim() ||
   DEFAULT_SUPABASE_PUBLISHABLE_KEY;
-const CACHE_KEY = "bc.world-status.v1";
+const STATUS_TABLE = "blackcrown_world_status";
+const CACHE_KEY = "bc.world-status.game.v1";
 const REQUEST_TIMEOUT_MS = 4500;
 
 const FALLBACK_ROWS: BlackCrownWorldStatus[] = [
@@ -145,7 +148,7 @@ function writeCachedRows(rows: BlackCrownWorldStatus[], syncedAt: number) {
 }
 
 function createEndpoint() {
-  const endpoint = new URL(`${SUPABASE_URL}/rest/v1/blackcrown_world_status`);
+  const endpoint = new URL(`${SUPABASE_URL}/rest/v1/${STATUS_TABLE}`);
   endpoint.searchParams.set(
     "select",
     "slug,display_name,status,tone,summary,sort_order,updated_at"
