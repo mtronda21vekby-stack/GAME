@@ -30,8 +30,9 @@ requireText("functions/api/auth/guest.ts", [
   "verifyUserSession",
   "setUserSessionCookie",
   "weak_clientId",
+  "getRandomValues",
 ]);
-forbidText("functions/api/auth/guest.ts", ["getUserIdCookie", "setUserIdCookie"]);
+forbidText("functions/api/auth/guest.ts", ["getUserIdCookie", "setUserIdCookie", "Math.random"]);
 
 requireText("functions/api/me.ts", ["verifyUserSession", "setUserSessionCookie"]);
 forbidText("functions/api/me.ts", ["getUserIdCookie", "setUserIdCookie"]);
@@ -50,6 +51,13 @@ for (const path of [
   requireText(path, ["verifyUserSession"]);
   forbidText(path, ["getUserIdCookie"]);
 }
+
+requireText("apps/site/src/lib/commerce.ts", [
+  "secure_random_unavailable",
+  "randomUUID",
+  "getRandomValues",
+]);
+forbidText("apps/site/src/lib/commerce.ts", ["Math.random"]);
 
 const envExample = read("apps/site/.env.example");
 if (!envExample.includes("https://wqriwhciqvrbhkkiuhxb.supabase.co")) {
