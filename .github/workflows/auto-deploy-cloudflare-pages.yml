@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - "deploy/blackcrown-cinematic-production-v2-preview"
     paths:
       - ".github/workflows/auto-deploy-cloudflare-pages.yml"
       - "apps/**"
