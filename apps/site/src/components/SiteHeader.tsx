@@ -5,7 +5,7 @@ import { userStorage } from "@blackcrown/core";
 import { nav as navSite, navExternal } from "../lib/nav";
 import type { SitePath } from "../routes/routeMetadata";
 
-type ActiveKey = "home" | "about" | "store" | "support" | "privacy" | "terms" | "account";
+type ActiveKey = "home" | "about" | "store" | "support" | "privacy" | "terms" | "account" | "telegram";
 type SiteHeaderProps = {
   active?: ActiveKey;
   showLobby?: boolean;
@@ -56,13 +56,20 @@ export function SiteHeader(props: SiteHeaderProps) {
         <NavLink href="/about" label="О проекте" active={a === "about"} />
         <NavLink href="/store" label="Магазин" active={a === "store"} />
         <NavLink href="/support" label="Поддержка" active={a === "support"} />
+        <NavLink href="/account/telegram" label="Telegram" active={a === "telegram"} />
         <NavLink href="/privacy" label="Privacy" active={a === "privacy"} />
         <NavLink href="/terms" label="Terms" active={a === "terms"} />
       </nav>
 
       <div className="bcRight">
         {showAccountPill ? (
-          <button type="button" className="bcAccountPill" onClick={() => navSite("/account")} aria-label="Аккаунт" aria-current={a === "account" ? "page" : undefined}>
+          <button
+            type="button"
+            className="bcAccountPill"
+            onClick={() => navSite("/account")}
+            aria-label="Аккаунт"
+            aria-current={a === "account" || a === "telegram" ? "page" : undefined}
+          >
             Аккаунт: {name}
           </button>
         ) : null}

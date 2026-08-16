@@ -7,10 +7,13 @@ on:
     paths:
       - "apps/site/**"
       - "functions/api/commerce/**"
+      - "functions/api/integrations/**"
       - "functions/api/auth/guest.ts"
       - "functions/api/me.ts"
       - "functions/api/_lib/commerce.ts"
       - "functions/api/_lib/user-session.ts"
+      - "functions/api/_lib/blackcrown-bot-bridge.ts"
+      - "supabase/**"
       - "scripts/check-commerce-trust.mjs"
       - "packages/**"
       - "package.json"

@@ -83,4 +83,82 @@ forbidText("apps/site/src/lib/blackcrownWorldStatus.ts", [
   "sb_secret_",
 ]);
 
-console.log("Commerce and Supabase GAME trust boundaries: OK");
+if (fs.existsSync("functions/api/_lib/blackcrown-supabase.ts")) {
+  throw new Error("Direct public Supabase account-link client must not exist");
+}
+requireText("functions/api/_lib/blackcrown-bot-bridge.ts", [
+  "https://ggbf6-warzon-bot.onrender.com",
+  "EXPECTED_BOT_HOST",
+  'readCookie(request, "bc_session")',
+  '"x-bc-session-token"',
+  '"x-bc-site-user"',
+]);
+forbidText("functions/api/_lib/blackcrown-bot-bridge.ts", [
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "sb_secret_",
+  "sb_publishable_",
+  "wqriwhciqvrbhkkiuhxb.supabase.co",
+]);
+
+for (const path of [
+  "functions/api/integrations/telegram/link.ts",
+  "functions/api/integrations/telegram/status.ts",
+]) {
+  requireText(path, ["verifyUserSession", "callBlackCrownBotBridge", "cache-control", "no-store"]);
+  forbidText(path, [
+    "getUserIdCookie",
+    "bc_uid",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "callBlackCrownPublicRpc",
+    "/rest/v1/rpc/",
+  ]);
+}
+
+requireText("functions/api/integrations/telegram/link.ts", [
+  "session.userId",
+  'callBlackCrownBotBridge(request, env, "link", session.userId',
+]);
+
+requireText("apps/site/src/lib/telegramLink.ts", [
+  "ensureGuestSession",
+  "sanitizeTelegramLinkCode",
+  "/api/integrations/telegram/link",
+  "/api/integrations/telegram/status",
+]);
+
+requireText("apps/site/src/routes/pages/TelegramLink.tsx", [
+  "Привязка не выдаёт Premium",
+  "bco_premium",
+  "telegramLinkCodeFromLocation",
+]);
+
+const linkMigration = requireText(
+  "supabase/migrations/20260816211500_create_blackcrown_telegram_premium_link.sql",
+  [
+    "blackcrown_telegram_link_challenges",
+    "blackcrown_account_links",
+    "blackcrown_entitlements",
+    "enable row level security",
+    "blackcrown_complete_telegram_link",
+    "blackcrown_get_telegram_entitlement_status",
+    "to service_role",
+  ],
+);
+if (linkMigration.includes("insert into public.blackcrown_entitlements")) {
+  throw new Error("Account-link migration must not mint Premium entitlements");
+}
+
+requireText("supabase/migrations/20260816213000_harden_blackcrown_telegram_link_rls.sql", [
+  "for all",
+  "using (false)",
+  "with check (false)",
+]);
+
+requireText("supabase/migrations/20260816214500_make_blackcrown_link_rpcs_server_only.sql", [
+  "revoke execute on function public.blackcrown_complete_telegram_link",
+  "revoke execute on function public.blackcrown_get_site_telegram_status",
+  "from public, anon, authenticated",
+  "to service_role",
+]);
+
+console.log("Commerce, Supabase GAME, and server-verified Telegram Premium link boundaries: OK");
