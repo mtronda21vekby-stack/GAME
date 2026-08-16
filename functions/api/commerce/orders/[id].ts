@@ -1,11 +1,13 @@
-import { getMetricsKV, getUserIdCookie, type Env } from "../../_lib/auth";
+import { getMetricsKV, type Env } from "../../_lib/auth";
+import { verifyUserSession } from "../../_lib/user-session";
 import { commerceJson, commerceOrderKey, safeCommerceOrderId, type CommerceOrderV1 } from "../../_lib/commerce";
 
 export const onRequestGet: PagesFunction<Env> = async ({ request, env, params }) => {
   const kv = getMetricsKV(env);
   if (!kv) return commerceJson({ ok: false, reason: "commerce_storage_unavailable" }, 503);
 
-  const userId = getUserIdCookie(request)?.trim();
+  const session = await verifyUserSession(request, env);
+  const userId = session?.userId || "";
   if (!userId) return commerceJson({ ok: false, reason: "auth_required" }, 401);
 
   const orderId = safeCommerceOrderId(params.id);
