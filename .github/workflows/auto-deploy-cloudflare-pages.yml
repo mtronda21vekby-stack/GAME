@@ -28,8 +28,8 @@ env:
   BLACKCROWN_PRODUCTION_URL: "https://blackcrown.work"
   BLACKCROWN_BOT_PRODUCTION_URL: "https://ggbf6-warzon-bot.onrender.com"
   EXPECTED_SITE_BRIDGE_CONTRACT: "blackcrown-account-bridge-v41.1"
-  EXPECTED_BOT_VERSION: "41.1.0"
-  EXPECTED_BOT_RELEASE_CONTRACT: "bco-lightweight-site-session-verify-v41.1"
+  EXPECTED_BOT_VERSION: "43.0.0"
+  EXPECTED_BOT_RELEASE_CONTRACT: "bco-personal-meta-v43"
   VITE_BC_EXPERIENCE_MODE: home
   VITE_BC_EXPERIENCE_DEBUG: "0"
   VITE_BC_EXPERIENCE_QUALITY: auto
@@ -120,7 +120,7 @@ jobs:
           expected_site=os.environ['EXPECTED_SITE_BRIDGE_CONTRACT']
           expected_version=os.environ['EXPECTED_BOT_VERSION']
           expected_contract=os.environ['EXPECTED_BOT_RELEASE_CONTRACT']
-          headers={'Accept':'application/json','Cache-Control':'no-cache','Pragma':'no-cache','User-Agent':'BLACK-CROWN-OPS/production-smoke-v41.1'}
+          headers={'Accept':'application/json','Cache-Control':'no-cache','Pragma':'no-cache','User-Agent':'BLACK-CROWN-OPS/production-smoke-v43'}
           def request_json(url):
               req=urllib.request.Request(url,headers=headers,method='GET')
               try:
