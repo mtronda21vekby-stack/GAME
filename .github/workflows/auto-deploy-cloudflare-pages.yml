@@ -27,6 +27,7 @@ env:
   CLOUDFLARE_PROJECT_NAME: siteblcrown
   BLACKCROWN_PRODUCTION_URL: "https://blackcrown.work"
   BLACKCROWN_BOT_PRODUCTION_URL: "https://ggbf6-warzon-bot.onrender.com"
+  EXPECTED_SITE_BRIDGE_CONTRACT: "blackcrown-account-bridge-v41.1"
   EXPECTED_BOT_VERSION: "41.1.0"
   EXPECTED_BOT_RELEASE_CONTRACT: "bco-lightweight-site-session-verify-v41.1"
   VITE_BC_EXPERIENCE_MODE: home
@@ -47,27 +48,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
       - name: Validate commerce trust boundary
         run: node scripts/check-commerce-trust.mjs
-
       - name: Build production output
         run: pnpm build:prod
-
       - name: Upload dist artifact
         uses: actions/upload-artifact@v4
         with:
@@ -91,27 +86,22 @@ jobs:
             echo "::error::Production deploy cannot be verified because Cloudflare credentials are missing."
             exit 1
           fi
-
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
           run_install: false
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-
       - name: Download dist artifact
         uses: actions/download-artifact@v4
         with:
           name: blackcrown-dist
           path: dist
-
       - name: Deploy production bundle to siteblcrown
         shell: bash
         run: >-
@@ -120,104 +110,50 @@ jobs:
           --branch=main
           --commit-hash=${GITHUB_SHA}
           --commit-dirty=true
-
       - name: Production ecosystem smoke gate
         shell: bash
         run: |
           python - <<'PY'
-          import json
-          import os
-          import time
-          import urllib.error
-          import urllib.request
-
-          site = os.environ["BLACKCROWN_PRODUCTION_URL"].rstrip("/")
-          bot = os.environ["BLACKCROWN_BOT_PRODUCTION_URL"].rstrip("/")
-          expected_version = os.environ["EXPECTED_BOT_VERSION"]
-          expected_contract = os.environ["EXPECTED_BOT_RELEASE_CONTRACT"]
-          headers = {
-              "Accept": "application/json",
-              "Cache-Control": "no-cache",
-              "Pragma": "no-cache",
-              "User-Agent": "BLACK-CROWN-OPS/production-smoke-v41",
-          }
-
-          def request_json(url: str):
-              req = urllib.request.Request(url, headers=headers, method="GET")
+          import json, os, time, urllib.error, urllib.request
+          site=os.environ['BLACKCROWN_PRODUCTION_URL'].rstrip('/')
+          bot=os.environ['BLACKCROWN_BOT_PRODUCTION_URL'].rstrip('/')
+          expected_site=os.environ['EXPECTED_SITE_BRIDGE_CONTRACT']
+          expected_version=os.environ['EXPECTED_BOT_VERSION']
+          expected_contract=os.environ['EXPECTED_BOT_RELEASE_CONTRACT']
+          headers={'Accept':'application/json','Cache-Control':'no-cache','Pragma':'no-cache','User-Agent':'BLACK-CROWN-OPS/production-smoke-v41.1'}
+          def request_json(url):
+              req=urllib.request.Request(url,headers=headers,method='GET')
               try:
-                  with urllib.request.urlopen(req, timeout=20) as response:
-                      status = response.status
-                      body = response.read().decode("utf-8", errors="replace")
+                  with urllib.request.urlopen(req,timeout=20) as response:
+                      status=response.status; body=response.read().decode('utf-8',errors='replace')
               except urllib.error.HTTPError as exc:
-                  status = exc.code
-                  body = exc.read().decode("utf-8", errors="replace")
+                  status=exc.code; body=exc.read().decode('utf-8',errors='replace')
+              try: payload=json.loads(body)
+              except Exception: payload=None
+              return status,payload,body[:500]
+          last_error='not started'
+          for attempt in range(1,19):
               try:
-                  payload = json.loads(body)
-              except Exception:
-                  payload = None
-              return status, payload, body[:500]
-
-          last_error = "not started"
-          for attempt in range(1, 19):
-              try:
-                  # Public site must be reachable after the Pages deployment.
-                  req = urllib.request.Request(
-                      site + "/",
-                      headers={**headers, "Accept": "text/html,*/*"},
-                      method="GET",
-                  )
-                  with urllib.request.urlopen(req, timeout=20) as response:
-                      if response.status != 200:
-                          raise AssertionError(f"site root status={response.status}")
-
-                  # The lightweight verifier must exist in production and fail closed
-                  # without a signed bc_session cookie.
-                  verify_status, verify_payload, verify_body = request_json(site + "/api/auth/session/verify")
-                  if verify_status != 401:
-                      raise AssertionError(
-                          f"session verifier expected 401, got {verify_status}: {verify_body}"
-                      )
-                  if not isinstance(verify_payload, dict) or verify_payload.get("reason") != "unauthorized":
-                      raise AssertionError(f"session verifier contract mismatch: {verify_body}")
-
-                  # Render must be the exact release paired with this site bridge.
-                  bot_status, bot_payload, bot_body = request_json(bot + "/health/details")
-                  if bot_status != 200 or not isinstance(bot_payload, dict):
-                      raise AssertionError(f"bot health unavailable: {bot_status} {bot_body}")
-                  release = bot_payload.get("release")
-                  if not isinstance(release, dict):
-                      raise AssertionError(f"bot release metadata missing: {bot_body}")
-                  if release.get("version") != expected_version:
-                      raise AssertionError(
-                          f"stale bot version {release.get('version')!r}; expected {expected_version!r}"
-                      )
-                  if release.get("contract") != expected_contract:
-                      raise AssertionError(
-                          f"stale bot contract {release.get('contract')!r}; expected {expected_contract!r}"
-                      )
-
-                  # The bridge route itself must be deployed and fail closed without identity.
-                  bridge_status, bridge_payload, bridge_body = request_json(
-                      bot + "/integrations/site/telegram/status"
-                  )
-                  if bridge_status != 401:
-                      raise AssertionError(
-                          f"bot bridge expected 401, got {bridge_status}: {bridge_body}"
-                      )
-                  if not isinstance(bridge_payload, dict) or bridge_payload.get("reason") != "auth_required":
-                      raise AssertionError(f"bot bridge contract mismatch: {bridge_body}")
-
-                  print(
-                      "production ecosystem smoke: clean",
-                      f"site={site}",
-                      f"bot_version={expected_version}",
-                      f"contract={expected_contract}",
-                  )
+                  status,payload,body=request_json(site+'/api/deploy-version')
+                  if status != 200 or not isinstance(payload,dict) or payload.get('bridgeContract') != expected_site:
+                      raise AssertionError(f'stale site deployment: {status} {body}')
+                  status,payload,body=request_json(site+'/api/auth/session/verify')
+                  if status != 401 or not isinstance(payload,dict) or payload.get('reason') != 'unauthorized':
+                      raise AssertionError(f'session verifier contract mismatch: {status} {body}')
+                  status,payload,body=request_json(bot+'/health/details')
+                  if status != 200 or not isinstance(payload,dict):
+                      raise AssertionError(f'bot health unavailable: {status} {body}')
+                  release=payload.get('release')
+                  if not isinstance(release,dict) or release.get('version') != expected_version or release.get('contract') != expected_contract:
+                      raise AssertionError(f'stale bot release: {body}')
+                  status,payload,body=request_json(bot+'/integrations/site/telegram/status')
+                  if status != 401 or not isinstance(payload,dict) or payload.get('reason') != 'auth_required':
+                      raise AssertionError(f'bot bridge contract mismatch: {status} {body}')
+                  print('production ecosystem smoke: clean',f'site_contract={expected_site}',f'bot_version={expected_version}',f'bot_contract={expected_contract}')
                   break
               except Exception as exc:
-                  last_error = f"attempt {attempt}/18: {type(exc).__name__}: {exc}"
+                  last_error=f'attempt {attempt}/18: {type(exc).__name__}: {exc}'
                   print(last_error)
-                  if attempt == 18:
-                      raise SystemExit(f"Production ecosystem smoke failed: {last_error}")
+                  if attempt == 18: raise SystemExit(f'Production ecosystem smoke failed: {last_error}')
                   time.sleep(10)
           PY
