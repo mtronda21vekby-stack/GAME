@@ -27,7 +27,7 @@ env:
   CLOUDFLARE_PROJECT_NAME: siteblcrown
   BLACKCROWN_PRODUCTION_URL: "https://blackcrown.work"
   BLACKCROWN_BOT_PRODUCTION_URL: "https://ggbf6-warzon-bot.onrender.com"
-  EXPECTED_SITE_BRIDGE_CONTRACT: "blackcrown-account-bridge-v41.1"
+  EXPECTED_SITE_BRIDGE_CONTRACT: "blackcrown-account-bridge-v43-direct-supabase"
   EXPECTED_BOT_VERSION: "43.0.0"
   EXPECTED_BOT_RELEASE_CONTRACT: "bco-personal-meta-v43"
   VITE_BC_EXPERIENCE_MODE: home
@@ -120,7 +120,7 @@ jobs:
           expected_site=os.environ['EXPECTED_SITE_BRIDGE_CONTRACT']
           expected_version=os.environ['EXPECTED_BOT_VERSION']
           expected_contract=os.environ['EXPECTED_BOT_RELEASE_CONTRACT']
-          headers={'Accept':'application/json','Cache-Control':'no-cache','Pragma':'no-cache','User-Agent':'BLACK-CROWN-OPS/production-smoke-v43'}
+          headers={'Accept':'application/json','Cache-Control':'no-cache','Pragma':'no-cache','User-Agent':'BLACK-CROWN-OPS/production-smoke-v43-direct-supabase'}
           def request_json(url):
               req=urllib.request.Request(url,headers=headers,method='GET')
               try:
@@ -146,9 +146,6 @@ jobs:
                   release=payload.get('release')
                   if not isinstance(release,dict) or release.get('version') != expected_version or release.get('contract') != expected_contract:
                       raise AssertionError(f'stale bot release: {body}')
-                  status,payload,body=request_json(bot+'/integrations/site/telegram/status')
-                  if status != 401 or not isinstance(payload,dict) or payload.get('reason') != 'auth_required':
-                      raise AssertionError(f'bot bridge contract mismatch: {status} {body}')
                   print('production ecosystem smoke: clean',f'site_contract={expected_site}',f'bot_version={expected_version}',f'bot_contract={expected_contract}')
                   break
               except Exception as exc:
