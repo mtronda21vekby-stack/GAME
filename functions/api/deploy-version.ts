@@ -12,6 +12,6 @@ export const onRequestGet: PagesFunction = async () => {
   return json({
     ok: true,
     service: "blackcrown-site",
-    bridgeContract: "blackcrown-account-bridge-v41.1",
+    bridgeContract: "blackcrown-account-bridge-v43-direct-supabase",
   });
 };
