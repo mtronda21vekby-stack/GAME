@@ -13,5 +13,6 @@ export const onRequestGet: PagesFunction = async () => {
     ok: true,
     service: "blackcrown-site",
     bridgeContract: "blackcrown-account-bridge-v43-direct-supabase",
+    runtimeMarker: "supabase-secret-refresh-2026-08-19T13:16Z",
   });
 };
