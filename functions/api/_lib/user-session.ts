@@ -37,9 +37,6 @@ function safeUserId(value: unknown): string {
 }
 
 function getSessionSecret(env: Env): string {
-  // Dedicated key is preferred. Existing admin secret is a compatibility
-  // fallback with explicit domain separation so rollout can be fail-closed
-  // without forcing a production outage while BC_USER_SESSION_SECRET is added.
   return String(
     env.BC_USER_SESSION_SECRET ||
       env.BC_SESSION_SECRET ||
@@ -76,6 +73,15 @@ export function userSessionConfigured(env: Env): boolean {
   return !!getSessionSecret(env);
 }
 
+export async function recoverGuestUserId(clientIdInput: unknown): Promise<string | null> {
+  const clientId = String(clientIdInput ?? "").trim();
+  if (clientId.length < 20 || clientId.length > 160 || !/^[a-zA-Z0-9_\-:.@]+$/.test(clientId)) return null;
+  if (!globalThis.crypto?.subtle) return null;
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`blackcrown:guest:${clientId}`));
+  const hex = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return `u_${hex.slice(0, 48)}`;
+}
+
 export async function createUserSessionToken(
   env: Env,
   userIdInput: string,
@@ -84,12 +90,9 @@ export async function createUserSessionToken(
   const secret = getSessionSecret(env);
   const userId = safeUserId(userIdInput);
   if (!secret || !userId) return null;
-
   const now = Math.floor(Date.now() / 1000);
   const ttl = Math.max(60, Math.min(Math.floor(maxAgeSec), DEFAULT_TTL));
-  const payload = b64UrlEncodeBytes(
-    new TextEncoder().encode(JSON.stringify({ sub: userId, iat: now, exp: now + ttl })),
-  );
+  const payload = b64UrlEncodeBytes(new TextEncoder().encode(JSON.stringify({ sub: userId, iat: now, exp: now + ttl })));
   const data = `${TOKEN_VERSION}.${payload}`;
   const signature = b64UrlEncodeBytes(await hmac(secret, data));
   return `${data}.${signature}`;
@@ -100,48 +103,28 @@ export async function verifyUserSession(request: Request, env: Env): Promise<Use
   if (!secret) return null;
   const token = readCookie(request, COOKIE_NAME);
   if (!token) return null;
-
   const parts = token.split(".");
   if (parts.length !== 3 || parts[0] !== TOKEN_VERSION) return null;
   const [, payload, signature] = parts;
   const providedSignature = b64UrlDecodeToBytes(signature);
   if (!providedSignature) return null;
-
   const expectedSignature = await hmac(secret, `${TOKEN_VERSION}.${payload}`);
   if (!constantTimeEqual(providedSignature, expectedSignature)) return null;
-
   const payloadBytes = b64UrlDecodeToBytes(payload);
   if (!payloadBytes) return null;
-
   let parsed: { sub?: unknown; iat?: unknown; exp?: unknown };
-  try {
-    parsed = JSON.parse(new TextDecoder().decode(payloadBytes)) as typeof parsed;
-  } catch {
-    return null;
-  }
-
+  try { parsed = JSON.parse(new TextDecoder().decode(payloadBytes)) as typeof parsed; } catch { return null; }
   const userId = safeUserId(parsed.sub);
   const issuedAt = Number(parsed.iat);
   const expiresAt = Number(parsed.exp);
   const now = Math.floor(Date.now() / 1000);
   if (!userId || !Number.isFinite(issuedAt) || !Number.isFinite(expiresAt)) return null;
   if (issuedAt > now + 60 || expiresAt <= now || expiresAt - issuedAt > DEFAULT_TTL + 60) return null;
-
   return { userId, issuedAt, expiresAt };
 }
 
-export async function setUserSessionCookie(
-  env: Env,
-  userId: string,
-  maxAgeSec = DEFAULT_TTL,
-): Promise<string | null> {
+export async function setUserSessionCookie(env: Env, userId: string, maxAgeSec = DEFAULT_TTL): Promise<string | null> {
   const token = await createUserSessionToken(env, userId, maxAgeSec);
   if (!token) return null;
-  return setCookie(COOKIE_NAME, token, {
-    path: "/",
-    httpOnly: true,
-    sameSite: "Lax",
-    secure: true,
-    maxAgeSec,
-  });
+  return setCookie(COOKIE_NAME, token, { path: "/", httpOnly: true, sameSite: "Lax", secure: true, maxAgeSec });
 }
