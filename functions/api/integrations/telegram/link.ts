@@ -20,10 +20,19 @@ function safeCode(value: unknown) {
 }
 
 function resultStatus(reason: string) {
-  if (reason === "site_already_linked" || reason === "telegram_already_linked" || reason === "link_conflict") return 409;
+  if (["site_already_linked", "telegram_already_linked", "link_conflict", "canonical_identity_conflict"].includes(reason)) return 409;
   if (reason === "invalid_or_expired_code" || reason === "invalid_site_user") return 400;
   if (reason === "auth_required" || reason === "site_session_mismatch") return 401;
   return 503;
+}
+
+function canonicalId(payload: Record<string, unknown>) {
+  const raw = typeof payload.blackCrownUserId === "string"
+    ? payload.blackCrownUserId
+    : typeof payload.black_crown_user_id === "string"
+      ? payload.black_crown_user_id
+      : "";
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(raw) ? raw : null;
 }
 
 function publicResult(payload: Record<string, unknown>) {
@@ -33,6 +42,7 @@ function publicResult(payload: Record<string, unknown>) {
     premium: payload.premium === true,
     entitlements: Array.isArray(payload.entitlements) ? payload.entitlements : [],
     linkedAt: typeof payload.linkedAt === "string" ? payload.linkedAt : typeof payload.linked_at === "string" ? payload.linked_at : null,
+    blackCrownUserId: canonicalId(payload),
   };
 }
 
@@ -47,10 +57,6 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const code = safeCode(body.code);
   if (!code) return json({ ok: false, reason: "invalid_or_expired_code" }, 400);
 
-  // Normal path: signed HttpOnly session. Recovery path: the same high-entropy
-  // client credential used by /api/auth/guest. This avoids iOS/Telegram WebView
-  // Set-Cookie races between guest bootstrap and the immediately following link
-  // request while preserving a stable site identity.
   const session = await verifyUserSession(request, env);
   const recoveredUserId = session?.userId ? null : await recoverGuestUserId(body.clientId);
   const siteUserId = session?.userId || recoveredUserId;
