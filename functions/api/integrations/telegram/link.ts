@@ -1,17 +1,15 @@
 import type { Env } from "../../_lib/auth";
 import { callBlackCrownBotBridge } from "../../_lib/blackcrown-bot-bridge";
 import { completeTelegramLink } from "../../_lib/blackcrown-supabase-bridge";
-import { verifyUserSession } from "../../_lib/user-session";
+import { recoverGuestUserId, setUserSessionCookie, verifyUserSession } from "../../_lib/user-session";
 
 const MAX_BODY_BYTES = 2_048;
+const USER_TTL = 180 * 24 * 60 * 60;
 
-function json(body: unknown, status = 200) {
+function json(body: unknown, status = 200, headers?: Record<string, string>) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: {
-      "content-type": "application/json; charset=utf-8",
-      "cache-control": "no-store",
-    },
+    headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", ...(headers || {}) },
   });
 }
 
@@ -34,46 +32,48 @@ function publicResult(payload: Record<string, unknown>) {
     linked: payload.linked === true,
     premium: payload.premium === true,
     entitlements: Array.isArray(payload.entitlements) ? payload.entitlements : [],
-    linkedAt:
-      typeof payload.linkedAt === "string"
-        ? payload.linkedAt
-        : typeof payload.linked_at === "string"
-          ? payload.linked_at
-          : null,
+    linkedAt: typeof payload.linkedAt === "string" ? payload.linkedAt : typeof payload.linked_at === "string" ? payload.linked_at : null,
   };
 }
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
-  const session = await verifyUserSession(request, env);
-  if (!session?.userId) return json({ ok: false, reason: "auth_required" }, 401);
-
   const contentLength = Number(request.headers.get("content-length") || 0);
   if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) return json({ ok: false, reason: "payload_too_large" }, 413);
 
-  let body: { code?: unknown } = {};
-  try {
-    body = (await request.json()) as { code?: unknown };
-  } catch {
-    return json({ ok: false, reason: "invalid_json" }, 400);
-  }
+  let body: { code?: unknown; clientId?: unknown } = {};
+  try { body = (await request.json()) as { code?: unknown; clientId?: unknown }; }
+  catch { return json({ ok: false, reason: "invalid_json" }, 400); }
 
   const code = safeCode(body.code);
   if (!code) return json({ ok: false, reason: "invalid_or_expired_code" }, 400);
 
-  const direct = await completeTelegramLink(env, code, session.userId);
-  if (direct.ok && direct.payload.ok === true) return json(publicResult(direct.payload));
+  // Normal path: signed HttpOnly session. Recovery path: the same high-entropy
+  // client credential used by /api/auth/guest. This avoids iOS/Telegram WebView
+  // Set-Cookie races between guest bootstrap and the immediately following link
+  // request while preserving a stable site identity.
+  const session = await verifyUserSession(request, env);
+  const recoveredUserId = session?.userId ? null : await recoverGuestUserId(body.clientId);
+  const siteUserId = session?.userId || recoveredUserId;
+  if (!siteUserId) return json({ ok: false, reason: "auth_required" }, 401);
+
+  const direct = await completeTelegramLink(env, code, siteUserId);
+  if (direct.ok && direct.payload.ok === true) {
+    const cookie = recoveredUserId ? await setUserSessionCookie(env, siteUserId, USER_TTL) : null;
+    return json(publicResult(direct.payload), 200, cookie ? { "Set-Cookie": cookie } : undefined);
+  }
   const directReason = String(direct.payload.reason || "");
   if (directReason && !["supabase_bridge_unconfigured", "supabase_bridge_unavailable"].includes(directReason)) {
     return json({ ok: false, reason: directReason }, resultStatus(directReason));
   }
 
   try {
-    const bridge = await callBlackCrownBotBridge(request, env, "link", session.userId, { code });
+    const bridge = await callBlackCrownBotBridge(request, env, "link", siteUserId, { code });
     if (!bridge.ok || bridge.payload.ok !== true) {
       const reason = String(bridge.payload.reason || directReason || "link_service_unavailable");
       return json({ ok: false, reason }, resultStatus(reason));
     }
-    return json(publicResult(bridge.payload));
+    const cookie = recoveredUserId ? await setUserSessionCookie(env, siteUserId, USER_TTL) : null;
+    return json(publicResult(bridge.payload), 200, cookie ? { "Set-Cookie": cookie } : undefined);
   } catch {
     return json({ ok: false, reason: directReason || "link_service_unavailable" }, 503);
   }
