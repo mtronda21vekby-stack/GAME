@@ -6,13 +6,26 @@ const REQUEST_TIMEOUT_MS = 12_000;
 function config(env: Env) {
   const url = String(env.SUPABASE_URL || env.BLACKCROWN_SUPABASE_URL || DEFAULT_SUPABASE_URL).trim().replace(/\/$/, "");
   const key = String(
-    env.SUPABASE_SERVICE_ROLE_KEY ||
+    env.SUPABASE_SECRET_KEY ||
+      env.SUPABASE_SERVICE_ROLE_KEY ||
       env.BLACKCROWN_SUPABASE_SERVICE_ROLE_KEY ||
       env.SUPABASE_SERVICE_KEY ||
       "",
   ).trim();
   if (!/^https:\/\/[a-z0-9]+\.supabase\.co$/i.test(url) || !key) return null;
   return { url, key };
+}
+
+function authHeaders(key: string) {
+  const headers: Record<string, string> = { apikey: key };
+  // Modern Supabase secret keys (sb_secret_...) are opaque API keys, not JWTs.
+  // Sending one as Authorization: Bearer makes the API gateway reject the
+  // request with 401. Legacy service_role keys are JWTs and may be sent in
+  // both headers for compatibility.
+  if (!key.startsWith("sb_secret_")) {
+    headers.authorization = `Bearer ${key}`;
+  }
+  return headers;
 }
 
 async function rpc(env: Env, name: string, args: Record<string, unknown>) {
@@ -24,12 +37,11 @@ async function rpc(env: Env, name: string, args: Record<string, unknown>) {
     const response = await fetch(`${cfg.url}/rest/v1/rpc/${name}`, {
       method: "POST",
       headers: {
-        apikey: cfg.key,
-        authorization: `Bearer ${cfg.key}`,
+        ...authHeaders(cfg.key),
         accept: "application/json",
         "content-type": "application/json",
         "cache-control": "no-store",
-        "user-agent": "BlackCrown-Pages/direct-account-bridge-v1",
+        "user-agent": "BlackCrown-Pages/direct-account-bridge-v2",
       },
       body: JSON.stringify(args),
       signal: controller.signal,
