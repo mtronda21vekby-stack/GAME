@@ -5,11 +5,14 @@ const REQUEST_TIMEOUT_MS = 12_000;
 
 function config(env: Env) {
   const url = String(env.SUPABASE_URL || env.BLACKCROWN_SUPABASE_URL || DEFAULT_SUPABASE_URL).trim().replace(/\/$/, "");
+  // Canonical account-bridge credential: use the same service-role key that
+  // production diagnostics validates. Modern secret keys remain supported as
+  // a fallback, but must never shadow a known-good service-role credential.
   const key = String(
-    env.SUPABASE_SECRET_KEY ||
-      env.SUPABASE_SERVICE_ROLE_KEY ||
+    env.SUPABASE_SERVICE_ROLE_KEY ||
       env.BLACKCROWN_SUPABASE_SERVICE_ROLE_KEY ||
       env.SUPABASE_SERVICE_KEY ||
+      env.SUPABASE_SECRET_KEY ||
       "",
   ).trim();
   if (!/^https:\/\/[a-z0-9]+\.supabase\.co$/i.test(url) || !key) return null;
@@ -41,7 +44,7 @@ async function rpc(env: Env, name: string, args: Record<string, unknown>) {
         accept: "application/json",
         "content-type": "application/json",
         "cache-control": "no-store",
-        "user-agent": "BlackCrown-Pages/direct-account-bridge-v2",
+        "user-agent": "BlackCrown-Pages/direct-account-bridge-v3-canonical-service-role",
       },
       body: JSON.stringify(args),
       signal: controller.signal,
