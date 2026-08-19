@@ -13,6 +13,15 @@ function json(body: unknown, status = 200) {
   });
 }
 
+function canonicalId(payload: Record<string, unknown>) {
+  const raw = typeof payload.blackCrownUserId === "string"
+    ? payload.blackCrownUserId
+    : typeof payload.black_crown_user_id === "string"
+      ? payload.black_crown_user_id
+      : "";
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(raw) ? raw : null;
+}
+
 function publicResult(payload: Record<string, unknown>) {
   return {
     ok: true,
@@ -25,6 +34,7 @@ function publicResult(payload: Record<string, unknown>) {
         : typeof payload.linked_at === "string"
           ? payload.linked_at
           : null,
+    blackCrownUserId: canonicalId(payload),
   };
 }
 
