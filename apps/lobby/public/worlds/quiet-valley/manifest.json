@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "quiet-valley",
+  "title": "Quiet Valley",
+  "version": "0.5.0-blackcrown.1",
+  "runtime": "/lobby/runtime/quiet-valley/index.html",
+  "preview": "/lobby/worlds/quiet-valley/preview.webp",
+  "bridge": "blackcrown.world.v1",
+  "saveNamespace": "bc.world.quiet-valley.v1",
+  "persistence": "local",
+  "capabilities": [
+    "webgl2",
+    "touch",
+    "mouse",
+    "local-save",
+    "story",
+    "characters",
+    "rent",
+    "orders",
+    "terrain-upgrades"
+  ],
+  "future": [
+    "server-authoritative-save",
+    "cross-device-account-sync",
+    "friend-visits",
+    "player-market",
+    "seasonal-events"
+  ]
+}
