@@ -24,8 +24,8 @@ export function createSecureClientId(): string | null {
 function isUsableClientId(value: string | null): value is string {
   if (!value || value.length < 20) return false;
 
-  // Older shells could fall back to Math.random() and emitted c_* IDs.
-  // Rotate those credentials instead of treating them as recovery secrets.
+  // Older shells could emit weak c_* recovery IDs. Rotate those credentials
+  // instead of treating them as high-entropy recovery secrets.
   if (value.startsWith("c_")) return false;
 
   return true;
