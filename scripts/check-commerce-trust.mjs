@@ -26,13 +26,32 @@ requireText("functions/api/_lib/user-session.ts", [
   "verifyUserSession",
 ]);
 
+// Guest recovery changed in v43 from a random server-side user id to a
+// deterministic SHA-256 derivation from a cryptographically random clientId.
+// The clientId is the recovery credential; authorization still requires the
+// server-signed HttpOnly bc_session cookie.
 requireText("functions/api/auth/guest.ts", [
   "verifyUserSession",
   "setUserSessionCookie",
   "weak_clientId",
-  "getRandomValues",
+  "crypto.subtle.digest",
+  "blackcrown:guest:",
 ]);
 forbidText("functions/api/auth/guest.ts", ["getUserIdCookie", "setUserIdCookie", "Math.random"]);
+
+requireText("packages/core/src/clientIdentity.ts", [
+  'const CLIENT_ID_KEY = "bc.clientId.v1"',
+  "randomUUID",
+  "getRandomValues",
+  "client_",
+  "value.startsWith(\"c_\")",
+  "/api/auth/guest",
+]);
+forbidText("packages/core/src/clientIdentity.ts", ["Math.random"]);
+
+requireText("apps/site/src/App.tsx", ["ensureGuestSession"]);
+forbidText("apps/site/src/App.tsx", ["Math.random", "function safeId"]);
+requireText("apps/lobby/src/routes/App.tsx", ["ensureGuestSession"]);
 
 requireText("functions/api/me.ts", ["verifyUserSession", "setUserSessionCookie"]);
 forbidText("functions/api/me.ts", ["getUserIdCookie", "setUserIdCookie"]);
@@ -161,4 +180,4 @@ requireText("supabase/migrations/20260816214500_make_blackcrown_link_rpcs_server
   "to service_role",
 ]);
 
-console.log("Commerce, Supabase GAME, and server-verified Telegram Premium link boundaries: OK");
+console.log("Commerce, cryptographic guest identity, Supabase GAME, and server-verified Telegram Premium link boundaries: OK");
