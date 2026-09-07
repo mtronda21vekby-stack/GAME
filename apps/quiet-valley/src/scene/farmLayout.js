@@ -100,10 +100,17 @@ export function createFarmLayout(BaseFarmArt){
    for(const [id,route] of Object.entries(routes))art.livingWorld.villagerRoutes[id]=route.map(p=>[...p]);
   }
 
+  // Picking/labels must follow the visual objects. Moving only meshes would leave invisible
+  // interaction hotspots at the old positions and make the rearranged farm feel broken.
+  art.marketPoint=[-7.05,2.0,6.55];
+  art.orderBoardPoint=[-4.45,2.45,6.45];
+  art.troughPoint=[3.65,.8,-4.05];
+
   art.layoutWorld={
    moved,removedLoose,routes,
    districts:{homes:[-8.35,-4.75,-6.45,-7.35],market:[-7.05,-4.45,6.55,6.45],utility:[-10.85,1.25],livestock:[3.65,8.0,-4.05,5.0]},
-   inspect(){return {moved:{...moved},removedLoose,routes:Object.fromEntries(Object.entries(routes).map(([k,v])=>[k,v.map(p=>[...p])]))};}
+   anchors:{market:[...art.marketPoint],orders:[...art.orderBoardPoint],trough:[...art.troughPoint]},
+   inspect(){return {moved:{...moved},removedLoose,routes:Object.fromEntries(Object.entries(routes).map(([k,v])=>[k,v.map(p=>[...p])])),anchors:{market:[...art.marketPoint],orders:[...art.orderBoardPoint],trough:[...art.troughPoint]}};}
   };
   return art;
  }};
