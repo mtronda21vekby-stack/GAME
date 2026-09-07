@@ -36,6 +36,10 @@ test('real first frame, protected playfield and smart crop interactions',async({
  await expect.poll(async()=> (await info(page)).state.plots[0].waterAt).toBeGreaterThan(0);
  await page.screenshot({path:testInfo.outputPath('garden-water.png')});
  const ui=await page.locator('#objective-chip').boundingBox();expect(ui?.height).toBeLessThan(95);
+ if(testInfo.project.name.includes('desktop')){
+  const tools=await page.locator('.quick-actions').boundingBox(),resources=await page.locator('.resources').boundingBox();
+  expect(tools!.x+tools!.width).toBeLessThan(resources!.x);
+ }
  expect(await page.locator('.platform-back').getAttribute('href')).toBe('/games/');
  expect(errors).toEqual([]);
 });
@@ -78,7 +82,8 @@ test('animal care spends actual feed and lighting presets preserve the same farm
  await page.locator('[data-close-details]').click();await page.locator('#home-camera').click();
  await page.locator('#menu-toggle').click();await page.locator('#quick-graphics').click();
  await page.locator('[data-lighting="evening"]').click();
- await page.waitForTimeout(1200);await page.screenshot({path:testInfo.outputPath('farm-evening.png')});
+ await expect.poll(async()=> (await info(page)).graphics.daylight).toBeLessThan(.26);
+ await page.screenshot({path:testInfo.outputPath('farm-evening.png')});
  await page.locator('#menu-toggle').click();await page.locator('#quick-graphics').click();
  await page.locator('[data-quality="high"]').click();
  expect((await info(page)).graphics.quality).toBe('high');expect((await info(page)).graphics.post).toBe(true);
