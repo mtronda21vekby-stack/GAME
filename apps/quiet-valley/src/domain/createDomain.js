@@ -1,14 +1,15 @@
 import {createFarming} from './farming.js';
 import {createExpansion} from './expansion.js';
 import {createEstate} from './estate.js';
+import {createRadialEstate} from './radialEstate.js';
 import {createStory} from './story.js';
 import {createProduction} from './production.js';
 /** Features compose once per session, never extend imported globals. */
 export function createDomain(clock){
- const sim=createFarming(clock),expansion=createExpansion(sim,clock),estate=createEstate(expansion,clock),story=createStory(estate,clock),production=createProduction(sim,story,clock);
+ const sim=createFarming(clock),expansion=createExpansion(sim,clock),estate=createEstate(expansion,clock),radialEstate=createRadialEstate(estate,clock),story=createStory(radialEstate,clock),production=createProduction(sim,story,clock);
  const queryOnly=object=>Object.freeze(Object.fromEntries(Object.entries(object).filter(([key])=>!['sim','act','tick','fresh','validate','ensureOrders'].includes(key))));
  return {
   commands:{fresh:sim.fresh,validate:sim.validate,tick:sim.tick,act:sim.act,resume(state,now){state.game.lastActiveAt=now;return sim.tick(state,now);}},
-  queries:{FarmSim:queryOnly(sim),FarmExpansion:queryOnly(estate),ValleyGameplay:queryOnly(story),FarmProduction:queryOnly(production)}
+  queries:{FarmSim:queryOnly(sim),FarmExpansion:queryOnly(radialEstate),ValleyGameplay:queryOnly(story),FarmProduction:queryOnly(production)}
  };
 }
