@@ -2,6 +2,7 @@ import React from "react";
 import { Button } from "@blackcrown/ui";
 import { Icons } from "@blackcrown/assets";
 import { userStorage } from "@blackcrown/core";
+import { GAMES_HUB_PATH } from "../lib/gameRoutes";
 import { nav as navSite, navExternal } from "../lib/nav";
 import type { SitePath } from "../routes/routeMetadata";
 
@@ -86,7 +87,7 @@ export function SiteHeader(props: SiteHeaderProps) {
           </Button>
         ) : null}
 
-        <Button variant="primary" leftIconSrc={Icons.play} onClick={() => navExternal("/games/")}>
+        <Button variant="primary" leftIconSrc={Icons.play} onClick={() => navExternal(GAMES_HUB_PATH)}>
           Играть
         </Button>
       </div>
