@@ -21,6 +21,15 @@ async function fundedFreshFarm(page:Page){
  await page.reload();await ready(page);
 }
 
+async function openEstate(page:Page){
+ const direct=page.locator('#open-land');
+ if(!await direct.isVisible()){
+  const menu=page.locator('#menu-toggle');
+  await expect(menu).toBeVisible();await menu.click();
+ }
+ await expect(direct).toBeVisible();await direct.click();
+}
+
 test('buying estate tier 2 visibly grows the rendered island beyond its original shoreline',async({page},testInfo)=>{
  await fundedFreshFarm(page);
  const before=await info(page);
@@ -28,7 +37,7 @@ test('buying estate tier 2 visibly grows the rendered island beyond its original
  expect(before.world.estate.tierPads).toBe(0);
  expect(before.world.estate.bounds.base.x).toBe(14.75);
 
- await page.locator('#open-land').click();
+ await openEstate(page);
  const expand=page.locator('[data-action="expandEstate"]');
  await expect(expand).toBeVisible();await expect(expand).toBeEnabled();
  await expand.click();
@@ -41,7 +50,7 @@ test('buying estate tier 2 visibly grows the rendered island beyond its original
  expect(after.camera.size).toBeGreaterThan(before.camera.size);
 
  await page.locator('[data-close-modal]').click();
- await page.waitForTimeout(500);
+ await page.waitForTimeout(700);
  await page.screenshot({path:testInfo.outputPath('estate-tier2-visible-coast.png')});
  await expect(page.locator('#error')).toBeHidden();
 });
