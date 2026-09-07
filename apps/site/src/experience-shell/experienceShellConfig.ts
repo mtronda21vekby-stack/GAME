@@ -1,3 +1,5 @@
+import { EVOFISH_GAME_PATH, GAMES_HUB_PATH } from "../lib/gameRoutes";
+
 export const EXPERIENCE_CHAPTER_IDS = [
   "boot",
   "crown-chamber",
@@ -105,7 +107,7 @@ export const EXPERIENCE_CHAPTERS: readonly ExperienceChapterConfig[] = [
     eyebrow: "WORLD / EVOFISH",
     title: "EVOLUTION BEGINS IN THE DEEP",
     body: "Descend through a living abyss where every choice changes the organism and its world.",
-    actions: [{ label: "ENTER EVOFISH", href: "/game/", kind: "primary" }],
+    actions: [{ label: "ENTER EVOFISH", href: EVOFISH_GAME_PATH, kind: "primary" }],
     range: [0.36, 0.52],
     sceneId: "evofish-abyss",
     tone: "ocean",
@@ -165,7 +167,7 @@ export const EXPERIENCE_CHAPTERS: readonly ExperienceChapterConfig[] = [
     title: "ONE PROFILE. ALL WORLDS.",
     body: "The Crown returns as identity, collection and access converge into one final portal.",
     actions: [
-      { label: "ENTER GAMES", href: "/games/", kind: "primary", primaryTarget: true },
+      { label: "ENTER GAMES", href: GAMES_HUB_PATH, kind: "primary", primaryTarget: true },
       { label: "PROFILE", href: "/account", kind: "secondary" },
       { label: "STORE", href: "/store", kind: "secondary" },
     ],
