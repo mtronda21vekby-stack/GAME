@@ -27,7 +27,7 @@ export function createRadialEstate(X, clock){
  function radialCell(s,region,x,z){
   if(region!=='farm'||!even(x,z))return false;
   const tier=tierOf(s);if(tier<2)return false;
-  if(!insideEllipse(x,z,bounds[tier],.83))return false;
+  if(!insideEllipse(x,z,bounds[tier],.90))return false;
   return !insideEllipse(x,z,core,.91);
  }
  function radialPlacementCheck(s,region,x,z,ignoreId=null){
