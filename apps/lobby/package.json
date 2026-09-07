@@ -3,10 +3,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "build:quiet-valley": "node world-runtimes/quiet-valley/build.mjs",
+    "dev": "node world-runtimes/quiet-valley/build.mjs && vite",
+    "build": "node world-runtimes/quiet-valley/build.mjs && vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "node -e \"process.exit(0)\""
+    "lint": "node -e \"process.exit(0)\"",
+    "test:quiet-valley": "node --test world-runtimes/quiet-valley/tests/*.test.cjs",
+    "test:worlds": "node scripts/validate-worlds.mjs"
   },
   "dependencies": {
     "@blackcrown/assets": "workspace:*",

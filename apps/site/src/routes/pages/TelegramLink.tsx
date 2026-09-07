@@ -19,6 +19,7 @@ const EMPTY_STATUS: TelegramLinkStatus = {
   premium: false,
   entitlements: [],
   linkedAt: null,
+  blackCrownUserId: null,
 };
 
 type LoadState = "loading" | "ready" | "error";

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#dfe9d2">
+  <meta name="description" content="Quiet Valley — живой фермерский мир внутри BLACKCROWN Lobby.">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Quiet Valley — BLACKCROWN World</title>
+  <style>/*__CSS__*/</style>
+</head>
+<body>
+<a class="bc-world-return" href="/lobby" aria-label="Вернуться в BLACKCROWN Lobby"><span>←</span><strong>BLACKCROWN</strong><small>LOBBY</small></a>
+<div class="bc-world-badge" aria-hidden="true"><span>WORLD</span><strong>QUIET VALLEY</strong><small>0.5.0 · ALPHA</small></div>
+
+<section id="launch-hint" class="launch-card" role="status">
+  <div class="loading-leaf">🌱</div>
+  <h1>Quiet Valley</h1>
+  <p><strong>Для игры нужен JavaScript и WebGL 2.</strong> Если вы видите этот текст вместо фермы, откройте опубликованную BLACKCROWN-ссылку в Safari или Chrome.</p>
+  <small>BLACKCROWN WORLD NODE · 0.5.0-blackcrown.1</small>
+</section>
+
+<canvas id="world" aria-label="Трёхмерная ферма Quiet Valley" tabindex="0"></canvas>
+<div id="loading"><div class="loading-leaf">🌱</div><h1>Quiet Valley</h1><p>Подключаем ферму к BLACKCROWN World Network…</p><div class="loader-line"></div><small>Загружаем 3D-мир и локальное сохранение</small></div>
+<div id="error" class="launch-card" hidden role="alert"></div>
+
+<div id="ui">
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark">🌿</div><div><h1>Quiet Valley</h1><div class="subtitle"><span id="save-status">Локальная ферма</span> · BLACKCROWN WORLD</div></div></div>
+    <div class="resources">
+      <div class="resource"><b id="coins">0</b><small>🪙 монеты</small></div>
+      <div class="resource"><b id="level">LV 1</b><small>уровень</small></div>
+      <div class="resource"><b id="rep">0 REP</b><small>репутация</small></div>
+      <button class="top-action" id="open-orders">📦 Заказы <span id="orders-ready">0</span></button>
+      <button class="top-action" id="open-lease">🏠 <span id="lease-dot">✓</span></button>
+    </div>
+  </header>
+
+  <aside class="left-stack">
+    <section class="hud-card"><small>ТЕКУЩАЯ ЛОКАЦИЯ</small><h2 id="region-title">Домашняя ферма</h2><p id="region-desc"></p><div class="hud-actions"><button id="open-map">Карта</button><button id="open-land">Улучшения</button></div></section>
+    <section class="hud-card"><small>ИСТОРИЯ</small><h2 id="story-title">Первые покупатели</h2><p id="story-progress">0/2 целей</p><div class="hud-actions"><button id="open-journal">Открыть главу</button></div></section>
+    <section class="hud-card"><small>ПОГОДА</small><h2 id="weather">☀️ Солнечно</h2><p id="weather-sub">Урожай +1</p></section>
+  </aside>
+
+  <div class="right-stack">
+    <button class="round-action" id="zoom-in" aria-label="Приблизить">＋</button>
+    <button class="round-action" id="zoom-out" aria-label="Отдалить">−</button>
+    <button class="round-action" id="home-camera" aria-label="Общий вид">⌂</button>
+    <button class="round-action" id="day-toggle" aria-label="День или вечер">☾</button>
+    <button class="round-action" id="open-help" aria-label="Справка">?</button>
+  </div>
+
+  <div id="labels" aria-label="Интерактивные объекты мира"></div>
+  <aside id="details" hidden aria-label="Выбранный объект"></aside>
+
+  <div class="bottom-wrap">
+    <div class="toolbar">
+      <button class="tool active" data-tool="inspect"><span>☝️</span><b>Осмотр</b></button>
+      <button class="tool" data-tool="plant"><span>🌱</span><b>Посадить</b></button>
+      <button class="tool" data-tool="water"><span>💧</span><b>Полить</b></button>
+      <button class="tool" data-tool="harvest"><span>🧺</span><b>Собрать</b></button>
+      <button class="tool" id="open-barn"><span>🏚️</span><b>Амбар</b></button>
+      <button class="tool" id="open-shop"><span>🐾</span><b>Животные</b></button>
+    </div>
+    <div class="controls-hint" id="control-hint">Осмотр: нажмите на грядку, животное или жителя</div>
+  </div>
+</div>
+
+<div id="weather-layer" class="weather-layer" aria-hidden="true"></div>
+<div class="location-shade" id="location-shade" aria-hidden="true"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="floaters"></div>
+<div id="modal-overlay" hidden><section id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1"></section></div>
+<div id="intro-overlay" class="intro-overlay" hidden></div>
+
+<script>/*__BOOT__*/</script>
+<script>/*__SCRIPTS__*/</script>
+<script>/*__BRIDGE__*/</script>
+</body>
+</html>

@@ -24,15 +24,37 @@ requireText("functions/api/_lib/user-session.ts", [
   "HMAC",
   "blackcrown:user-session:",
   "verifyUserSession",
+  "recoverGuestUserId",
+  "crypto.subtle.digest",
+  "blackcrown:guest:",
 ]);
 
+// Guest recovery changed in v43 from a random server-side user id to a
+// deterministic SHA-256 derivation from a cryptographically random clientId.
+// The clientId is the recovery credential; authorization still requires the
+// server-signed HttpOnly bc_session cookie after bootstrap/recovery.
 requireText("functions/api/auth/guest.ts", [
   "verifyUserSession",
   "setUserSessionCookie",
   "weak_clientId",
-  "getRandomValues",
+  "crypto.subtle.digest",
+  "blackcrown:guest:",
 ]);
 forbidText("functions/api/auth/guest.ts", ["getUserIdCookie", "setUserIdCookie", "Math.random"]);
+
+requireText("packages/core/src/clientIdentity.ts", [
+  'const CLIENT_ID_KEY = "bc.clientId.v1"',
+  "randomUUID",
+  "getRandomValues",
+  "client_",
+  "value.startsWith(\"c_\")",
+  "/api/auth/guest",
+]);
+forbidText("packages/core/src/clientIdentity.ts", ["Math.random"]);
+
+requireText("apps/site/src/App.tsx", ["ensureGuestSession"]);
+forbidText("apps/site/src/App.tsx", ["Math.random", "function safeId"]);
+requireText("apps/lobby/src/routes/App.tsx", ["ensureGuestSession"]);
 
 requireText("functions/api/me.ts", ["verifyUserSession", "setUserSessionCookie"]);
 forbidText("functions/api/me.ts", ["getUserIdCookie", "setUserIdCookie"]);
@@ -86,6 +108,16 @@ forbidText("apps/site/src/lib/blackcrownWorldStatus.ts", [
 if (fs.existsSync("functions/api/_lib/blackcrown-supabase.ts")) {
   throw new Error("Direct public Supabase account-link client must not exist");
 }
+
+// Privileged Supabase access is permitted only in the server-side bridge.
+requireText("functions/api/_lib/blackcrown-supabase-bridge.ts", [
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "blackcrown_complete_telegram_link",
+  "blackcrown_get_site_telegram_status",
+  "/rest/v1/rpc/",
+]);
+forbidText("functions/api/_lib/blackcrown-supabase-bridge.ts", ["sb_publishable_"]);
+
 requireText("functions/api/_lib/blackcrown-bot-bridge.ts", [
   "https://ggbf6-warzon-bot.onrender.com",
   "EXPECTED_BOT_HOST",
@@ -114,9 +146,25 @@ for (const path of [
   ]);
 }
 
+// Telegram WebViews may race the Set-Cookie response from guest bootstrap.
+// The link endpoint may therefore recover the exact deterministic guest from
+// the same high-entropy client credential, immediately minting the signed
+// HttpOnly session cookie after a successful link. Both direct and bot-bridge
+// paths must use that single resolved site identity.
 requireText("functions/api/integrations/telegram/link.ts", [
-  "session.userId",
-  'callBlackCrownBotBridge(request, env, "link", session.userId',
+  "recoverGuestUserId",
+  "setUserSessionCookie",
+  "session?.userId",
+  "recoveredUserId",
+  "siteUserId",
+  "completeTelegramLink(env, code, siteUserId)",
+  'callBlackCrownBotBridge(request, env, "link", siteUserId',
+]);
+
+requireText("functions/api/integrations/telegram/status.ts", [
+  "session?.userId",
+  "getTelegramLinkStatus(env, session.userId)",
+  'callBlackCrownBotBridge(request, env, "status", session.userId',
 ]);
 
 requireText("apps/site/src/lib/telegramLink.ts", [
@@ -161,4 +209,4 @@ requireText("supabase/migrations/20260816214500_make_blackcrown_link_rpcs_server
   "to service_role",
 ]);
 
-console.log("Commerce, Supabase GAME, and server-verified Telegram Premium link boundaries: OK");
+console.log("Commerce, cryptographic guest identity, Supabase GAME, and server-verified Telegram Premium link boundaries: OK");

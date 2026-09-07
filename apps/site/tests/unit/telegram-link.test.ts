@@ -128,6 +128,7 @@ describe("Telegram account bridge", () => {
       premium: true,
       entitlements: ["bco_premium"],
       linkedAt: "2026-08-16T00:00:00Z",
+      blackCrownUserId: null,
     });
     expect(payload).not.toHaveProperty("telegram_user_id");
     expect(String(fetchMock.mock.calls[0][0])).toContain("/integrations/site/telegram/status");

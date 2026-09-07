@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "apps/site/**"
+      - "apps/lobby/**"
       - "functions/api/commerce/**"
       - "functions/api/integrations/**"
       - "functions/api/auth/guest.ts"
@@ -60,6 +61,17 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      # Lobby/world gates intentionally run first. This makes new-world regressions
+      # visible even when a pre-existing site/commerce gate is failing independently.
+      - name: Typecheck lobby
+        run: pnpm --filter @blackcrown/lobby typecheck
+
+      - name: Quiet Valley deterministic tests
+        run: pnpm --filter @blackcrown/lobby test:quiet-valley
+
+      - name: Validate BLACKCROWN world registry and runtimes
+        run: pnpm --filter @blackcrown/lobby test:worlds
 
       - name: Validate commerce trust boundary
         run: node scripts/check-commerce-trust.mjs
