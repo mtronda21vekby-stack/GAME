@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "quiet-valley",
   "title": "Quiet Valley",
-  "version": "0.5.0-blackcrown.1",
+  "version": "0.5.1-blackcrown.2",
   "runtime": "/games/quiet-valley/index.html",
   "preview": "/games/quiet-valley/preview.webp",
   "bridge": "blackcrown.world.v1",
@@ -17,7 +17,8 @@
     "characters",
     "rent",
     "orders",
-    "terrain-upgrades"
+    "terrain-upgrades",
+    "ios-safe-renderer"
   ],
   "future": [
     "server-authoritative-save",
