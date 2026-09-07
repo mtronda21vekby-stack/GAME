@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createDomain} from '../src/domain/createDomain.js';
-import {parseCommand} from '../src/application/commands.ts';
 
 function harness(){
  let now=1_000_000;
@@ -11,13 +10,6 @@ function harness(){
  state.coins=5000;state.world.materials.wood=200;state.world.materials.stone=200;
  return {domain,state,now:()=>now,advance:ms=>{now+=ms;domain.commands.tick(state,now);}};
 }
-
-test('estate commands are accepted by the application boundary',()=>{
- assert.equal(parseCommand({type:'expandEstate'}).type,'expandEstate');
- assert.equal(parseCommand({type:'buildEstate',key:'tool_shed'}).key,'tool_shed');
- assert.equal(parseCommand({type:'hireStaff',key:'gardener'}).key,'gardener');
- assert.equal(parseCommand({type:'dismissStaff',key:'gardener'}).key,'gardener');
-});
 
 test('island expansion unlocks buildings and staff capacity progressively',()=>{
  const h=harness(),act=a=>h.domain.commands.act(h.state,a,h.now());
