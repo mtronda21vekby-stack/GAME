@@ -1,0 +1,84 @@
+name: Materialize Quiet Valley 0.7 source pass
+on:
+  push:
+    branches: [refactor/quiet-valley-modular-application]
+    paths: [.github/workflows/qv070-apply.yml]
+permissions:
+  contents: write
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/quiet-valley-modular-application
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Verify transport and materialize source files
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import {createHash} from 'node:crypto';
+          import {brotliDecompressSync} from 'node:zlib';
+          const sha=value=>createHash('sha256').update(value).digest('hex');
+          const partHashes=[
+            '200f4d1ebdb22cbb053134e49db4a54079e89fb1be5588e66c6e306ca6c65504',
+            '25716804e42ee870d1a6824b63a313aebc18755a97013de3516d25598e8a3828',
+            'dbd0b1ca7a8a3dc7300b2cbeaedcc1d60cad6cef5e089eb4e53be6c2f6e99349',
+            'f0a2391cc003cd32a450ad9066bbc6b35dec5c9244c3d63a9c0e0b662c6c2d34',
+            '13f10cc2c713e7816f94e994071430e02abcf2b780ba18ecdc9e21973aa5340a',
+            '92ee0a24cb018d21b5d6abc12c05a5da29b8707fc727c3758dbf956aae32c3ff'
+          ];
+          const chunks=partHashes.map((expected,index)=>{
+            const value=fs.readFileSync(`.qv070/part${index}`,'utf8').trim();
+            if(sha(value)!==expected)throw new Error(`transport hash mismatch part ${index}`);
+            return value;
+          });
+          const packed=Buffer.from(chunks.join(''),'base64');
+          if(sha(packed)!=='fbf540780b14b085e2f0a125ce4f6323e8d5c2cb6e6ad427ca909faafddb68dd')throw new Error('archive digest mismatch');
+          const records=JSON.parse(brotliDecompressSync(packed));
+          const allowed=new Set([
+            'apps/quiet-valley/package.json',
+            'apps/quiet-valley/index.html',
+            'apps/quiet-valley/src/app/version.js',
+            'apps/quiet-valley/src/app/controller.js',
+            'apps/quiet-valley/src/presentation/launch.js',
+            'apps/quiet-valley/src/presentation/atelier.css',
+            'apps/quiet-valley/src/rendering/geometry.js',
+            'apps/quiet-valley/src/rendering/renderer.js',
+            'apps/quiet-valley/src/rendering/shaders/frag.js',
+            'apps/quiet-valley/src/rendering/shaders/screenFrag.js',
+            'apps/quiet-valley/src/scene/farm.js',
+            'apps/quiet-valley/tests/visual-quality-contract.test.mjs',
+            'apps/lobby/public/worlds/quiet-valley/manifest.json',
+            'apps/lobby/src/worlds/catalog.ts'
+          ]);
+          if(!Array.isArray(records)||records.length!==allowed.size)throw new Error('unexpected file count');
+          const seen=new Set();
+          for(const record of records){
+            if(!allowed.has(record.p)||seen.has(record.p))throw new Error(`out-of-scope or duplicate path: ${record.p}`);
+            seen.add(record.p);
+            const bytes=Buffer.from(record.t,'base64');
+            if(sha(bytes)!==record.s)throw new Error(`source digest mismatch: ${record.p}`);
+            fs.mkdirSync(path.dirname(record.p),{recursive:true});
+            fs.writeFileSync(record.p,bytes);
+          }
+          for(const file of allowed)if(!seen.has(file))throw new Error(`missing source: ${file}`);
+          fs.rmSync('.qv070',{recursive:true,force:true});
+          console.log(`materialized ${seen.size} verified source files`);
+          NODE
+      - name: Commit source-only result to feature branch
+        shell: bash
+        run: |
+          test "$GITHUB_REF_NAME" = 'refactor/quiet-valley-modular-application'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          test -z "$(git diff --cached --name-only -- .github/workflows)"
+          git diff --cached --stat
+          git commit -m 'feat(quiet-valley): top visual material and mobile playfield pass'
+          git push origin HEAD:refactor/quiet-valley-modular-application
