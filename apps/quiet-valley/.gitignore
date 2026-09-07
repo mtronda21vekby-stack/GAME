@@ -1,0 +1,4 @@
+dist/
+.compiled/
+reports/
+node_modules/
