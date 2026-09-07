@@ -165,7 +165,7 @@ export const EXPERIENCE_CHAPTERS: readonly ExperienceChapterConfig[] = [
     title: "ONE PROFILE. ALL WORLDS.",
     body: "The Crown returns as identity, collection and access converge into one final portal.",
     actions: [
-      { label: "ENTER", href: "/game/", kind: "primary", primaryTarget: true },
+      { label: "ENTER GAMES", href: "/games/", kind: "primary", primaryTarget: true },
       { label: "PROFILE", href: "/account", kind: "secondary" },
       { label: "STORE", href: "/store", kind: "secondary" },
     ],

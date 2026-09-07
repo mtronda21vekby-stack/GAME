@@ -86,7 +86,7 @@ export function SiteHeader(props: SiteHeaderProps) {
           </Button>
         ) : null}
 
-        <Button variant="primary" leftIconSrc={Icons.play} onClick={() => navExternal("/game/")}>
+        <Button variant="primary" leftIconSrc={Icons.play} onClick={() => navExternal("/games/")}>
           Играть
         </Button>
       </div>
