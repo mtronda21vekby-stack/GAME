@@ -1,4 +1,5 @@
 import React from "react";
+import { GAMES_HUB_PATH } from "../lib/gameRoutes";
 import { SiteIcons } from "./siteIcons";
 
 export type DockV2Tone = "cyan" | "violet" | "green";
@@ -33,7 +34,7 @@ const DEFAULT_ITEMS: DockV2Item[] = [
     isActive: (path) => path === "/",
   },
   {
-    href: "/games/",
+    href: GAMES_HUB_PATH,
     label: "Играть",
     icon: SiteIcons.games,
     tone: "green",
