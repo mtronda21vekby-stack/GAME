@@ -3,6 +3,7 @@ const specs:Record<string,readonly string[]>={
  plant:['id','crop'],water:['id'],harvest:['id'],unlock:['id'],feed:['id'],pet:['id'],collect:['id'],
  buyAnimal:['species'],sell:[],sellSurplus:[],claim:['key'],travel:['region'],upgrade:['key'],clear:['key'],
  plantTree:['id'],waterTree:['id'],harvestTree:['id'],collectHoney:[],placeDecor:['key','region','x','z','rotation'],removeDecor:['id'],buyMaterial:['key','qty'],
+ expandEstate:[],buildEstate:['key'],hireStaff:['key'],dismissStaff:['key'],
  markIntroSeen:[],talkCharacter:['key'],payRent:[],deliverOrder:['id'],refreshOrders:[],claimStory:['id'],
  buildWorkshop:['key'],craft:['key'],collectCraft:['id'],deliverFestival:[]
 };

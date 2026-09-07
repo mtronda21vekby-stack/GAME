@@ -16,6 +16,23 @@ export function createValleyUI(FarmSim, FarmExpansion) {
  function nav(kind){return `<nav class="valley-tabs" aria-label="Разделы долины"><button data-valley-tab="map" class="${kind==='map'?'active':''}">Карта долины</button><button data-valley-tab="land" class="${kind==='land'?'active':''}">Улучшения</button><button data-valley-tab="decor" class="${kind==='decor'?'active':''}">Украшения</button></nav>`;}
  function header(s,kind){const area=X.regions[s.world.region];return `<button class="close" data-close-modal aria-label="Закрыть окно">×</button><div class="eyebrow">ТИХАЯ ДОЛИНА · НОВЫЕ ГОРИЗОНТЫ</div><h2 id="modal-title">${kind==='map'?'Ваша маленькая вселенная':kind==='land'?'Пусть здесь будет уютно':'Создайте своё место'}</h2><p>${kind==='map'?'Четыре уголка одной долины. Исследуйте бесплатно; урожай и продукция не останавливаются, пока вы в пути.':area.name+' · стройте за игровые ресурсы. Никаких реальных покупок.'}</p>${nav(kind)}`;}
  function summary(s){return `<div class="supply-strip"><span><b>${s.coins}</b> 🪙 монет</span><span><b>${s.world.materials.wood}</b> 🪵 древесины</span><span><b>${s.world.materials.stone}</b> 🪨 камня</span></div>`;}
+ function estatePanel(s){
+  if(!X.estateStatus)return '';
+  const st=X.estateStatus(s),e=s.world.estate,next=st.next;
+  let html=`<section class="estate-panel"><div class="land-region-title">🏝️ ${st.meta.name}<span>${st.meta.area}% территории · уровень ${st.tier}/4</span></div><div class="notice"><b>Расширение острова открывает новую хозяйственную инфраструктуру.</b><br>Постройки дают места для персонала и новые автоматические возможности. Штат: ${e.staff.length}/${st.staffCapacity} · крупные постройки: ${e.buildings.length}/${st.buildingCapacity}.</div>`;
+  if(next){const c=next.cost,disabled=s.coins<c.coins||s.world.materials.wood<c.wood||s.world.materials.stone<c.stone;html+=`<article class="project-card estate-growth"><span class="project-icon">🗺️</span><div class="project-copy"><h3>Расширить остров до ${next.area}%</h3><p>${next.name}. Откроется: ${next.unlocks.join(', ')}.</p><div class="project-meta">${cost(c)}</div></div><button class="primary" data-action="expandEstate" ${disabled?'disabled':''}>Расширить</button></article>`;}else html+=`<div class="notice">✓ Максимальная территория открыта: ${st.meta.area}%. Теперь развитие идёт через здания и команду.</div>`;
+  html+='<div class="eyebrow" style="margin-top:18px">ХОЗЯЙСТВЕННЫЕ ПОСТРОЙКИ</div><div class="project-list">';
+  for(const [key,b] of Object.entries(X.estateBuildings||{})){
+   const built=e.buildings.includes(key),locked=st.tier<b.tier,full=!built&&e.buildings.length>=st.buildingCapacity,poor=s.coins<b.cost.coins||s.world.materials.wood<b.cost.wood||s.world.materials.stone<b.cost.stone,disabled=!built&&(locked||full||poor);
+   html+=`<article class="project-card ${built?'built':''}"><span class="project-icon">${b.icon}</span><div class="project-copy"><h3>${b.name}</h3><p>${b.desc}</p><div class="project-meta">${built?'✓ Построено':cost(b.cost)}</div>${locked?`<small class="project-blocker">Нужен уровень острова ${b.tier}</small>`:full?'<small class="project-blocker">Нет свободного строительного слота — расширьте остров</small>':''}</div><button class="primary" data-action="buildEstate" data-key="${key}" ${built||disabled?'disabled':''}>${built?'Готово ✓':'Построить'}</button></article>`;
+  }
+  html+='</div><div class="eyebrow" style="margin-top:18px">ПЕРСОНАЛ</div><div class="project-list">';
+  for(const [key,r] of Object.entries(X.staffRoles||{})){
+   const hired=e.staff.includes(key),need=X.estateBuildings?.[r.requires],locked=st.tier<r.tier||!e.buildings.includes(r.requires),full=!hired&&e.staff.length>=st.staffCapacity,poor=s.coins<r.cost;
+   html+=`<article class="project-card ${hired?'built':''}"><span class="project-icon">${r.icon}</span><div class="project-copy"><h3>${r.name}</h3><p>${r.desc}</p><div class="project-meta">${hired?'В штате':r.cost+' 🪙 за найм'}</div>${locked?`<small class="project-blocker">Сначала: ${need?.name||'расширение острова'}</small>`:full?'<small class="project-blocker">Нет свободного места для сотрудника</small>':''}</div>${hired?`<button class="secondary" data-action="dismissStaff" data-key="${key}">Уволить</button>`:`<button class="primary" data-action="hireStaff" data-key="${key}" ${locked||full||poor?'disabled':''}>Нанять</button>`}</article>`;
+  }
+  return html+'</div></section>';
+ }
  function modal(kind,s){let html=header(s,kind);const region=s.world.region;
   if(kind==='map'){
    html+='<div class="region-grid">';for(const [key,r] of Object.entries(X.regions)){
@@ -23,7 +40,7 @@ export function createValleyUI(FarmSim, FarmExpansion) {
     html+=`<article class="region-card ${region===key?'here':''}"><div class="region-picture" data-theme="${key}">${mini(key)}<span class="region-stamp">${key==='farm'?'ДОМ':key==='orchard'?'ЯБЛОКИ':key==='river'?'+8 ГРЯДОК':'МЁД И РЕСУРСЫ'}</span></div><div class="region-copy"><small>${r.tag}</small><h3>${r.name}</h3><p>${r.description}</p><div class="region-card-bottom"><span>${done} / ${defs.length} проектов</span><button class="primary" data-travel="${key}">${region===key?'Вы здесь · открыть':'Отправиться →'}</button></div></div></article>`;
    }html+='</div><div class="fineprint">Прогресс каждой локации сохраняется вместе с фермой. Все покупки — только за заработанные игровые монеты.</div>';
   } else if(kind==='land'){
-   html+=summary(s)+`<div class="land-region-title">${X.regions[region].icon} ${X.regions[region].name}<button data-valley-tab="map">Сменить участок ↗</button></div><div class="project-list">`;
+   html+=summary(s)+estatePanel(s)+`<div class="land-region-title">${X.regions[region].icon} ${X.regions[region].name}<button data-valley-tab="map">Сменить участок ↗</button></div><div class="project-list">`;
    for(const [key,p] of Object.entries(X.projects).filter(([,p])=>p.region===region)){
     const lv=X.level(s,key),complete=lv>=p.max,error=X.projectError(s,key),c=X.projectCost(s,key);
     html+=`<article class="project-card ${complete?'built':''}" id="project-${key}"><span class="project-icon">${p.icon}</span><div class="project-copy"><h3>${p.name}${p.max>1?' <small>'+lv+'/'+p.max+'</small>':''}</h3><p>${p.desc}</p><div class="project-meta">${complete?'✓ Построено':cost(c)}</div>${!complete&&error?`<small class="project-blocker">${error}</small>`:''}</div><button class="primary" data-action="upgrade" data-key="${key}" ${error?'disabled':''}>${complete?'Готово ✓':lv?'Улучшить':'Построить'}</button></article>`;
