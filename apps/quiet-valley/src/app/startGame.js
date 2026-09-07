@@ -6,6 +6,7 @@ import {attachBridge} from '../infrastructure/blackcrownBridge.js';
 import * as F from '../rendering/index.js';
 import {createFarmArt} from '../scene/farm.js';
 import {createValleyWorld} from '../scene/valley.js';
+import {createCountryDetails} from '../scene/countryDetails.js';
 import {createAtmosphere} from '../scene/atmosphere.js';
 import {createWatering} from '../scene/watering.js';
 import {createValleyUI} from '../presentation/templates/land.js';
@@ -25,7 +26,7 @@ export async function startGame({lifetime,diagnostics}){
  const app=await startController({session,FarmSim,FarmExpansion,ValleyGameplay,FarmProduction,F,
   FarmArt:createFarmArt(FarmSim),ValleyWorld:createValleyWorld(FarmExpansion,FarmSim),FarmAtmosphere:createAtmosphere(FarmProduction),FarmWater:createWatering(reducedMotion),
   ValleyUI:createValleyUI(FarmSim,FarmExpansion),GameplayUI:createGameplayUI(FarmSim,ValleyGameplay),ProductionUI:createProductionUI(FarmSim,FarmProduction),FarmPick,
-  lifetime,diagnostics,graphics:graphicsPreferences(storage,reducedMotion)});
+  createCountryDetails,lifetime,diagnostics,graphics:graphicsPreferences(storage,reducedMotion)});
  if(!diagnostics.failed)attachBridge({inspect:app.inspect,lifetime,host:window,origin:location.origin,version:VERSION});
  return app;
 }

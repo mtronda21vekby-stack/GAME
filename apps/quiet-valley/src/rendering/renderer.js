@@ -13,6 +13,7 @@ import shadowFragment from './shaders/shadowFragment.js';
    this.onQualityChange=onQualityChange;this.disposed=false;
    this.canvas=canvas;const gl=this.gl=canvas.getContext('webgl2',{alpha:true,antialias:true,preserveDrawingBuffer:false,powerPreference:'default'});
    if(!gl)throw new Error('WebGL 2 недоступен. Откройте игру в Safari или Chrome с аппаратным ускорением.');
+   this.glVersion=gl.getParameter(gl.VERSION);
    this.warnings=[];this.program=null;this.depth=null;this.post=null;this.drawStats={calls:0,triangles:0,instances:0};
    this.uniforms=new Map();this.batches=new Map();this.meshes=[];this.day=1;this.time=0;this.frameCount=0;
    this.motion=motion;
@@ -26,8 +27,7 @@ import shadowFragment from './shaders/shadowFragment.js';
   }
   static async create(canvas,options){
    const renderer=new Renderer(canvas,options);
-   await renderer.initialize();
-   return renderer;
+   try{await renderer.initialize();return renderer;}catch(error){renderer.dispose();throw error;}
   }
   async initialize(){
    this.program=await this.compile(vertex,frag,'materials');
@@ -97,8 +97,8 @@ import shadowFragment from './shaders/shadowFragment.js';
    }
    n.stamp=this.stamp;return n.m;
   }
-  visible(n){if(n.visible===false)return false;return n.parent?this.visible(n.parent):true;}
-  update(){this.stamp=(this.stamp||0)+1;const gl=this.gl;for(const b of this.batches.values()){const count=b.nodes.length;if(b.data.length<count*23)b.data=new Float32Array(count*23);let k=0;for(const n of b.nodes){if(!this.visible(n))continue;b.data.set(this.matrix(n),k*23);b.data.set(n.c,k*23+16);b.data.set(n.fx,k*23+19);k++;}b.instances=k;gl.bindBuffer(gl.ARRAY_BUFFER,b.ib);gl.bufferData(gl.ARRAY_BUFFER,b.data.subarray(0,k*23),gl.DYNAMIC_DRAW);}}
+  visible(n){if(n.visibilityStamp===this.stamp)return n.cachedVisible;n.visibilityStamp=this.stamp;return n.cachedVisible=n.visible!==false&&(!n.parent||this.visible(n.parent));}
+  update(){this.stamp=(this.stamp||0)+1;const gl=this.gl;for(const b of this.batches.values()){const count=b.nodes.length;if(b.data.length<count*23)b.data=new Float32Array(count*23);let k=0;for(const n of b.nodes){if(!this.visible(n))continue;b.data.set(this.matrix(n),k*23);b.data.set(n.c,k*23+16);b.data.set(n.fx,k*23+19);k++;}b.instances=k;gl.bindBuffer(gl.ARRAY_BUFFER,b.ib);if(b.capacity!==b.data.byteLength){gl.bufferData(gl.ARRAY_BUFFER,b.data.byteLength,gl.DYNAMIC_DRAW);b.capacity=b.data.byteLength;}if(k)gl.bufferSubData(gl.ARRAY_BUFFER,0,b.data.subarray(0,k*23));}}
   resize(){
    const gl=this.gl,d=Math.min(devicePixelRatio||1,this.settings.dpr),bounds=this.canvas.getBoundingClientRect();this.w=Math.max(1,bounds.width);this.h=Math.max(1,bounds.height);
    this.canvas.width=Math.max(1,Math.round(this.w*d));this.canvas.height=Math.max(1,Math.round(this.h*d));
@@ -131,12 +131,12 @@ import shadowFragment from './shaders/shadowFragment.js';
     const u=this.locations(program);gl.useProgram(program);gl.uniformMatrix4fv(u.uVP,false,depth?this.light:this.vp);gl.uniformMatrix4fv(u.uLight,false,this.light);gl.uniform1f(u.uTime,this.time);gl.uniform1f(u.uMotion,this.motion);
     if(!depth){gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,this.shadow);gl.uniform1i(u.uShadow,0);gl.uniform3fv(u.uSun,this.sun);gl.uniform3fv(u.uEye,this.eye);gl.uniform1f(u.uDay,this.day);gl.uniform1f(u.uShadowEnabled,this.shadowOK?1:0);gl.uniform1f(u.uShadowTexel,1/this.shadowSize);gl.uniform1f(u.uQuality,this.settings.pcf);}
     for(const b of this.sortedBatches){if(depth&&b.alpha<1)continue;if(!b.instances)continue;
-     if(!depth){gl.uniform1f(u.uAlpha,b.alpha);if(b.alpha<1){gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);}else{gl.disable(gl.BLEND);gl.depthMask(true);}}
+     if(!depth){gl.uniform1f(u.uAlpha,b.alpha);if(b.alpha<1){gl.enable(gl.BLEND);gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);}else{gl.disable(gl.BLEND);gl.depthMask(true);}}
      gl.bindVertexArray(b.vao);gl.drawArraysInstanced(gl.TRIANGLES,0,b.count,b.instances);this.drawStats.calls++;if(!depth){this.drawStats.triangles+=b.count*b.instances/3;this.drawStats.instances+=b.instances;}
     }gl.depthMask(true);
    };
-   if(this.depth&&this.shadowOK&&this.frameCount++%this.settings.interval===0){gl.bindFramebuffer(gl.FRAMEBUFFER,this.fb);gl.viewport(0,0,this.shadowSize,this.shadowSize);gl.disable(gl.BLEND);gl.clear(gl.DEPTH_BUFFER_BIT);render(this.depth,true);}
-   gl.bindFramebuffer(gl.FRAMEBUFFER,this.postOK?this.sceneFB:null);gl.viewport(0,0,this.canvas.width,this.canvas.height);const dusk=1-this.day;gl.clearColor(.75-dusk*.34,.82-dusk*.34,.74-dusk*.23,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);render(this.program,false);
+   if(this.depth&&this.shadowOK&&this.frameCount++%this.settings.interval===0){gl.bindFramebuffer(gl.FRAMEBUFFER,this.fb);gl.viewport(0,0,this.shadowSize,this.shadowSize);gl.disable(gl.BLEND);gl.clear(gl.DEPTH_BUFFER_BIT);gl.enable(gl.POLYGON_OFFSET_FILL);gl.polygonOffset(1.25,2.0);render(this.depth,true);gl.disable(gl.POLYGON_OFFSET_FILL);}
+   gl.bindFramebuffer(gl.FRAMEBUFFER,this.postOK?this.sceneFB:null);gl.viewport(0,0,this.canvas.width,this.canvas.height);const dusk=1-this.day;gl.clearColor(0,0,0,0);this.canvas.style.setProperty('--dusk',String(dusk));gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);render(this.program,false);
    if(this.postOK){gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.disable(gl.DEPTH_TEST);gl.disable(gl.BLEND);gl.useProgram(this.post);const u=this.locations(this.post);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,this.sceneTex);gl.uniform1i(u.uScene,0);gl.uniform2f(u.uPixel,1/this.canvas.width,1/this.canvas.height);gl.bindVertexArray(this.screenVAO);gl.drawArrays(gl.TRIANGLES,0,3);}
   }
  }

@@ -82,7 +82,7 @@ function run(action) {
                 m.wait = 3;
             }
             if (action.type === 'feed') {
-                m.target = [3.55, -3.0];
+                m.target = m.type === 'chicken' ? [8.2, 4.9] : [3.55, -3.0];
                 m.wait = 5;
             }
         }

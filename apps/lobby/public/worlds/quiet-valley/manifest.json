@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "quiet-valley",
   "title": "Quiet Valley",
-  "version": "0.6.2-restored.1",
+  "version": "0.6.3-atelier.1",
   "runtime": "/games/quiet-valley/index.html",
   "preview": "/games/quiet-valley/preview.webp",
   "bridge": "blackcrown.world.v1",

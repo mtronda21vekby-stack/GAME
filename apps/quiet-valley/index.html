@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"><meta name="theme-color" content="#edf0dc"><meta name="description" content="Тихая долина — играбельный локальный прототип 3D-фермы. Все модели созданы кодом."><title>Тихая долина · Урожайная мастерская</title><link rel="stylesheet" href="./src/presentation/style.css"></head>
+<html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"><meta name="theme-color" content="#edf0dc"><meta name="description" content="Тихая долина — играбельный локальный прототип 3D-фермы. Все модели созданы кодом."><title>Тихая долина · Урожайная мастерская</title><link rel="stylesheet" href="./src/presentation/style.css"><link rel="stylesheet" href="./src/presentation/atelier.css"></head>
 <body>
 <a class="platform-back" href="/games/" aria-label="Вернуться в хаб игр BLACKCROWN">←</a>
 <section id="launch-hint" class="launch-card" role="status">
@@ -7,10 +7,10 @@
  <p><strong>Этот просмотрщик не запустил JavaScript.</strong> Здесь может отображаться только документ, а не игра.</p>
  <p>На iPhone нужна опубликованная HTTPS-ссылка, открытая в Safari. Скачивание HTML-файла не заменяет публикацию.</p>
  <p>Откройте игру через BLACKCROWN Games или локальный сервер проекта.</p>
- <small>Тихая долина · 0.6.2-restored.1 · отдельное приложение</small>
+ <small>Тихая долина · 0.6.3-atelier.1 · отдельное приложение</small>
 </section>
 <canvas id="world" aria-label="Трёхмерная ферма. Перетаскивайте для вращения. Выбирайте грядки и животных." tabindex="0"></canvas>
-<div id="loading"><div class="loading-leaf">🌱</div><h1>Тихая долина</h1><p>В вашей маленькой вселенной наступает утро.</p><div class="loader-line"></div><small id="launch-stage">Подготавливаем материалы…</small><small class="runtime-version">0.6.2-restored.1</small></div>
+<div id="loading"><div class="loading-leaf">🌱</div><h1>Тихая долина</h1><p>В вашей маленькой вселенной наступает утро.</p><div class="loader-line"></div><small id="launch-stage">Подготавливаем материалы…</small><small class="runtime-version">0.6.3-atelier.1</small></div>
 <div id="error" class="launch-card" hidden role="alert"></div>
 <div id="ui">
 <div class="quick-actions"><button id="quick-map"><span>⌘</span> <b id="quick-region">Домашняя ферма</b><span>⌄</span></button><button id="open-production"><span>⚙</span> Мастерская <b id="craft-ready"></b></button><button id="menu-toggle" aria-label="Меню фермы" aria-expanded="false">☰</button></div>
@@ -20,13 +20,13 @@
  <div class="brand"><div class="brand-mark" data-icon="sprout"></div><div><h1>Тихая долина</h1><div class="subtitle"><i></i><span id="save-status">Локальная ферма · сохранение в браузере</span></div></div></div>
  <div class="resources"><div class="resource money"><span data-icon="coin"></span><div><b id="coins">180</b><small>монеты</small></div></div><div class="resource level"><span data-icon="star"></span><div><b id="level">1 уровень</b><small id="xp">0 / 100 опыта</small></div></div><button class="icon-button" id="help" aria-label="Как играть" data-icon="help"></button></div>
 </header>
-<div class="region-bar"><span class="region-name" id="region-name">🏡 Ферма</span><button id="open-map" aria-label="Карта долины">Карта ↗</button><button id="open-land" aria-label="Улучшения участка">Участок</button><button id="open-orders" class="orders-button" aria-label="Заказы долины">Заказы <b id="orders-ready">0</b></button><button id="open-people" aria-label="Жители долины">Жители ♥</button><button id="quick-story">История долины</button><button id="quick-graphics">Настройки графики</button><button id="quick-photo">Фото без интерфейса</button></div><button id="lease-chip" class="lease-chip" aria-label="Аренда фермы"><span>🏠</span><b id="lease-title">День 1</b><small id="lease-note">1-я неделя бесплатно</small></button><button id="weather-chip" class="weather-chip" aria-label="Текущая погода"><span id="weather-icon">☀️</span><b id="weather-name">Солнечно</b><small id="weather-time">1:30</small></button>
+<div class="region-bar"><span class="region-name" id="region-name">🏡 Ферма</span><button id="open-map" aria-label="Карта долины">Карта ↗</button><button id="open-land" aria-label="Улучшения участка">Участок</button><button id="open-orders" class="orders-button" aria-label="Заказы долины">Заказы <b id="orders-ready">0</b></button><button id="open-people" aria-label="Жители долины">Жители ♥</button><button id="quick-story">История долины</button><button id="quick-graphics">Настройки графики</button><button id="quick-photo">Фото без интерфейса</button><button id="quick-audio">Включить звук</button></div><button id="lease-chip" class="lease-chip" aria-label="Аренда фермы"><span>🏠</span><b id="lease-title">День 1</b><small id="lease-note">1-я неделя бесплатно</small></button><button id="weather-chip" class="weather-chip" aria-label="Текущая погода"><span id="weather-icon">☀️</span><b id="weather-name">Солнечно</b><small id="weather-time">1:30</small></button>
 <aside class="area-summary" id="area-summary" hidden><div class="eyebrow" id="area-tag"></div><h2 id="area-title"></h2><p id="area-desc"></p><div class="area-materials" id="area-materials"></div><button class="primary" id="area-projects">Улучшить участок</button></aside>
 <aside class="quest-card">
  <div class="eyebrow" id="story-eyebrow">ИСТОРИЯ ДОЛИНЫ <span class="tiny-sun">☀</span></div><h2 id="story-title">Первые покупатели</h2><p class="quest-intro" id="story-intro">У фермы появляется цель.</p>
  <div id="quests"></div><div class="quest-footer"><span class="dot"></span><button id="open-journal-inline">Открыть журнал →</button></div>
 </aside>
-<div class="view-controls"><button class="icon-button" id="zoom-in" aria-label="Приблизить" data-icon="plus"></button><button class="icon-button" id="zoom-out" aria-label="Отдалить" data-icon="minus"></button><span></span><button class="icon-button" id="home-camera" aria-label="Общий вид фермы" data-icon="home"></button><button class="icon-button" id="focus-garden" aria-label="Огород — приблизить грядки" title="Огород" data-icon="sprout"></button><button class="icon-button" id="graphics-settings" aria-label="Настройки графики" title="Графика"><svg viewBox="0 0 24 24"><path d="m12 3 2.6 5.4 6 .8-4.3 4.2 1 5.9-5.3-2.8-5.3 2.8 1-5.9L3.4 9.2l6-.8Z"/></svg></button><button class="icon-button" id="day-toggle" aria-label="Переключить вечернее освещение" data-icon="sun"></button><button class="icon-button" id="sound-toggle" aria-label="Включить звук" data-icon="muted"></button></div>
+<div class="view-controls"><button class="icon-button" id="zoom-in" aria-label="Приблизить" data-icon="plus"></button><button class="icon-button" id="zoom-out" aria-label="Отдалить" data-icon="minus"></button><span></span><button class="icon-button" id="home-camera" aria-label="Общий вид фермы" data-icon="home"></button><button class="icon-button" id="focus-garden" aria-label="Огород — приблизить грядки" title="Огород" data-icon="sprout"></button><button class="icon-button" id="focus-animals" aria-label="Приблизить животных" data-icon="paw"></button><button class="icon-button" id="graphics-settings" aria-label="Настройки графики" title="Графика"><svg viewBox="0 0 24 24"><path d="m12 3 2.6 5.4 6 .8-4.3 4.2 1 5.9-5.3-2.8-5.3 2.8 1-5.9L3.4 9.2l6-.8Z"/></svg></button><button class="icon-button" id="day-toggle" aria-label="Переключить вечернее освещение" data-icon="sun"></button><button class="icon-button" id="sound-toggle" aria-label="Включить звук" data-icon="muted"></button></div>
 <div id="labels" aria-label="Грядки и животные"></div>
 <aside id="details" hidden aria-label="Выбранный объект"></aside>
 <div class="bottom-wrap">
@@ -41,7 +41,7 @@
  </div><div class="toolbar-divider"></div><button class="tool store-tool" id="open-barn"><span data-icon="barn"></span><b>Амбар</b><i id="inv-count">8</i></button><button class="tool" id="open-shop"><span data-icon="paw"></span><b>Животные</b></button></div>
  <div class="controls-hint" id="control-hint">Нажмите на грядку или животное <span>·</span> Перетаскивайте, чтобы вращать <span>·</span> Колёсико — масштаб</div>
 </div>
-<div class="build-tag">BLACKCROWN · ЛОКАЛЬНАЯ ФЕРМА <span>0.6.2-restored.1</span></div>
+<div class="build-tag">BLACKCROWN · ЛОКАЛЬНАЯ ФЕРМА <span>0.6.3-atelier.1</span></div>
 </div>
 <button id="photo-return" hidden>Вернуть интерфейс</button>
 <div id="weather-layer" class="weather-layer" aria-hidden="true"></div><div class="location-shade" id="location-shade"></div><div id="toast" role="status" aria-live="polite"></div><div id="floaters"></div>

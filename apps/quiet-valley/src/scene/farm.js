@@ -5,7 +5,13 @@ export function createFarmArt(FarmSim) {
  function make(R){
   let seed=7163;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
   const colors={cream:'#eee4c8',wood:'#aa794d',dark:'#68452f',grass:'#8fa565',leaf:'#648543',mint:'#527b71',roof:'#bb7558',soil:'#694b32',water:'#5cb5b7'};
-  const box=(p,s,c,r=[0,0,0],g=null)=>R.add('box',p,s,c,r,g);
+  const box=(p,s,c,r=[0,0,0],g=null)=>{
+   const n=R.add(Math.min(...s)>.12?'bevelBox':'box',p,s,c,r,g);
+   if([colors.wood,colors.dark,'#bd8d59','#bcab87'].includes(c))n.fx=[7,0,0,0];
+   if([colors.mint,colors.roof].includes(c))n.fx=[8,0,0,0];
+   if(['#e5d6b3','#d6b286'].includes(c))n.fx=[9,0,0,0];
+   return n;
+  };
   const ball=(p,s,c,g=null)=>{const n=R.add('sphere',p,s,c,[0,0,0],g);if(n.c[1]>n.c[0]*1.035&&n.c[1]>n.c[2]*1.10&&n.c[1]>.05)n.fx=[2,0,.75,p[0]+p[2]*1.7];return n;};
   const cyl=(p,s,c,r=[0,0,0],g=null,alpha=1)=>R.add('cylinder',p,s,c,r,g,alpha);
   const cone=(p,s,c,r=[0,0,0],g=null)=>R.add('cone',p,s,c,r,g);
@@ -43,7 +49,7 @@ export function createFarmArt(FarmSim) {
    const win=(xx,yy,zz)=>{box([xx,yy,zz],[.92,.92,.1],colors.cream,[0,0,0],g);box([xx,yy,zz+.07],[.74,.74,.07],'#567b80',[0,0,0],g).fx=[5,0,0,0];box([xx,yy,zz+.12],[.055,.8,.06],colors.cream,[0,0,0],g);box([xx,yy,zz+.13],[.8,.055,.05],colors.cream,[0,0,0],g);box([xx,yy-.55,zz+.13],[1.05,.2,.3],colors.wood,[0,0,0],g);for(let k=0;k<4;k++){ball([xx-.34+k*.22,yy-.38,zz+.15],[.19,.16,.18],'#6b9146',g);ball([xx-.34+k*.22,yy-.28,zz+.24],[.07,.07,.07],k%2?'#f0ce67':'#f2ba9d',g);}};
    win(w*.27,h*.56,d/2+.09);box([0,.06,d/2+.58],[w+.5,.12,.85],'#bcab87',[0,0,0],g);
    box([-w*.27,h+.75,-d*.18],[.5,1.35,.5],'#b6a184',[0,0,0],g);box([-w*.27,h+1.47,-d*.18],[.64,.13,.64],'#7e7762',[0,0,0],g);
-   for(let k=0;k<3;k++)ball([x-w*.27+.07*k,h+2.0+k*.4,z-d*.18],[.16+k*.065,.19+k*.065,.17+k*.065],'#d9dfca');
+   for(let k=0;k<4;k++){const p=[x-w*.27,h+1.8,z-d*.18];const n=R.add('sphere',p,[.14,.19,.14],'#e7e7d3',[0,0,0],null,.20);clouds.push({n,origin:[...p],phase:k/4});}
    return g;}
   building(-6.5,-6.8,4.05,3,2.15,colors.mint,'#e5d6b3');
   building(-1.15,-7.85,2.8,2.5,1.8,colors.roof,'#d6b286');
@@ -68,9 +74,14 @@ export function createFarmArt(FarmSim) {
   // Four lightweight villagers make the farm feel inhabited. Their stories live in gameplay.js.
   function villager(id,name,pos,shirt,hair,route){
    const g=group([pos[0],.23,pos[1]],[1,1,1]),torso=group([0,0,0],[1,1,1],[0,0,0],g),head=group([0,0,0],[1,1,1],[0,0,0],g),arms=[],legs=[];
-   cyl([0,1.12,0],[.31,.80,.31],shirt,[0,0,0],torso);ball([0,1.72,0],[.27,.30,.27],'#d6ae8c',g);ball([0,1.91,-.03],[.28,.14,.27],hair,g);
+   cyl([0,1.12,0],[.31,.80,.31],shirt,[0,0,0],torso);head.p=[0,1.72,0];ball([0,0,0],[.27,.30,.27],'#d6ae8c',head);ball([0,.19,-.03],[.28,.14,.27],hair,head);
+   if(id==='elena'){cyl([0,.25,0],[.44,.045,.39],'#d4b16d',[0,0,0],head);cyl([0,.35,0],[.25,.19,.23],'#dabd80',[0,0,0],head);cyl([0,.28,0],[.26,.055,.24],'#79634a',[0,0,0],head);}
+   if(id==='mia'){cyl([0,.24,0],[.25,.17,.25],'#f0e7d2',[0,0,0],head);for(let i=0;i<3;i++)ball([(i-1)*.12,.40,0],[.15,.16,.20],'#f4ead6',head);box([0,1.02,.30],[.40,.55,.045],'#efe4c8',[0,0,0],torso);}
+   if(id==='fedor'){ball([0,.23,0],[.30,.16,.28],'#455f51',head);box([0,.23,.27],[.38,.045,.24],'#455f51',[0,0,0],head);}
+   if(id==='lea'){ball([.25,.01,-.15],[.13,.28,.15],hair,head);box([0,1.05,.30],[.4,.44,.04],'#bd976c',[0,0,0],torso);}
+
    for(const side of [-1,1]){const a=group([side*.38,1.33,0],[1,1,1],[0,0,0],g);cyl([0,-.20,0],[.075,.56,.075],'#d6ae8c',[0,0,side*.08],a);arms.push(a);const l=group([side*.17,.73,0],[1,1,1],[0,0,0],g);cyl([0,-.28,0],[.10,.67,.10],'#687268',[0,0,0],l);box([0,-.60,.09],[.22,.14,.34],'#574f42',[0,0,0],l);legs.push(l);}
-   ball([-.10,1.75,.25],[.025,.03,.018],'#383c33',g);ball([.10,1.75,.25],[.025,.03,.018],'#383c33',g);
+   ball([-.10,.03,.25],[.025,.03,.018],'#383c33',head);ball([.10,.03,.25],[.025,.03,.018],'#383c33',head);
    const v={id,name,g,head,torso,arms,legs,route,routeIndex:0,target:[route[0][0],route[0][1]],wait:2+rnd()*3,phase:rnd()*6.28};villagers.push(v);return v;
   }
   villager('elena','Елена',[-7.8,-5.0],'#8e9b70','#7b6250',[[-7.8,-5.0],[-6.3,-3.9],[-7.2,-7.2]]);
@@ -127,7 +138,7 @@ export function createFarmArt(FarmSim) {
     if(visible){const progress=p.waterAt?Math.max(0,Math.min(1,1-(p.readyAt-now)/Math.max(1,p.readyAt-p.waterAt))):.02,scale=.20+progress*.80;sp.g.s=[scale,scale,scale];}
    }
   }}
-  function animate(t,dt,state){for(const m of cropModels){m.wet+=(m.targetWet-m.wet)*Math.min(1,dt*5.5);m.dirt.fx[1]=m.wet;m.ridges.forEach(n=>n.fx[1]=m.wet);}sails.r[2]=t*.23;for(const o of treeTops)o.g.r[2]=Math.sin(t*.9+o.phase)*.013;ducks.forEach((d,i)=>{d.p[0]=5.4+Math.sin(t*.10+i*2.8)*1.35;d.p[2]=7.2+Math.cos(t*.10+i*2.8)*.7;d.r[1]=Math.PI/2-t*.10-i*2.8;});
+  function animate(t,dt,state){for(const c of clouds){const p=(t*.16+c.phase)%1;c.n.p=[c.origin[0]+p*.4+Math.sin(t*.3)*.09,c.origin[1]+p*1.65,c.origin[2]];const scale=Math.sin(p*Math.PI);c.n.s=[(.14+p*.27)*scale,(.2+p*.25)*scale,(.14+p*.27)*scale];}for(const m of cropModels){m.wet+=(m.targetWet-m.wet)*Math.min(1,dt*5.5);m.dirt.fx[1]=m.wet;m.ridges.forEach(n=>n.fx[1]=m.wet);}sails.r[2]=t*.23;for(const o of treeTops)o.g.r[2]=Math.sin(t*.9+o.phase)*.013;ducks.forEach((d,i)=>{d.p[0]=5.4+Math.sin(t*.10+i*2.8)*1.35;d.p[2]=7.2+Math.cos(t*.10+i*2.8)*.7;d.r[1]=Math.PI/2-t*.10-i*2.8;});
    for(const a of state.animals){let m=animalModels.get(a.id)||animalModel(a),g=m.g;let chicken=a.type==='chicken';m.wait-=dt;let dx=m.target[0]-g.p[0],dz=m.target[1]-g.p[2],dist=Math.hypot(dx,dz);m.move=dist>.10&&m.pet<=0;
     if(m.move){let speed=chicken?.48:.38,step=Math.min(dist,speed*dt);g.p[0]+=dx/dist*step;g.p[2]+=dz/dist*step;let goal=Math.atan2(dx,dz),delta=Math.atan2(Math.sin(goal-g.r[1]),Math.cos(goal-g.r[1]));g.r[1]+=delta*Math.min(1,dt*5);g.p[1]=.23+Math.sin(t*9+m.phase)*.014;}
     else{g.p[1]=.23;if(m.wait<0){m.target=chicken?[3.2+rnd()*5.7,3.6+rnd()*1.7]:[3.1+rnd()*5.35,-4.2+rnd()*6.45];m.wait=4+rnd()*7;}}
