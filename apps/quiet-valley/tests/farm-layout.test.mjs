@@ -18,7 +18,7 @@ function baseFarm(){
   const duplicate=R.add('box',[3.1,.47,-3.75],[1,.4,.7],'#fff');
   const villagers=['elena','mia','fedor','lea'].map(id=>({id,g:R.group([0,.2,0]),route:[],target:[0,0],wait:0}));
   const livingWorld={villagerRoutes:{elena:[],mia:[],fedor:[],lea:[]}};
-  return {villagers,livingWorld,_roots:roots,_duplicate:duplicate};
+  return {villagers,livingWorld,marketPoint:[-5.2,2,7.1],orderBoardPoint:[-2.55,2.45,6.75],troughPoint:[3.1,.8,-3.75],_roots:roots,_duplicate:duplicate};
  }};
 }
 
@@ -43,4 +43,12 @@ test('villager routes follow the new functional districts',()=>{
  assert.ok(mia.route.length>=6);
  assert.ok(lea.route.every(([x,z])=>x>=2&&x<=8.1&&z>=3.2&&z<=5.1));
  assert.deepEqual(art.livingWorld.villagerRoutes.mia,mia.route);
+});
+
+test('interaction anchors move with the visual market, order board and trough',()=>{
+ const R=renderer(),art=createFarmLayout(baseFarm()).make(R);
+ assert.deepEqual(art.marketPoint,[-7.05,2.0,6.55]);
+ assert.deepEqual(art.orderBoardPoint,[-4.45,2.45,6.45]);
+ assert.deepEqual(art.troughPoint,[3.65,.8,-4.05]);
+ assert.deepEqual(art.layoutWorld.anchors.market,art.marketPoint);
 });
