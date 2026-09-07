@@ -1,0 +1,78 @@
+name: Materialize Quiet Valley recovery sources
+on:
+  push:
+    branches: [work/quiet-valley-restoration-transfer]
+    paths: [.github/workflows/quiet-valley-apply-recovery.yml]
+permissions:
+  contents: write
+jobs:
+  materialize:
+    if: github.ref == 'refs/heads/work/quiet-valley-restoration-transfer'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/quiet-valley-restoration-transfer
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Verify transport and reconstruct normal source files
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import {createHash} from 'node:crypto';
+          import {brotliDecompressSync} from 'node:zlib';
+          const hash=b=>createHash('sha256').update(b).digest('hex');
+          const hashes=['53fdab18258f0f6acf3c82df392f69f3e6bdb78a9ca26788d4cc71a213875c8c','757b1195c2f9ef08dd98d3a6a499d03addb20c46f234835dc3cc1045db808018','874ca9eaa49ba02b48b56ef23c56ee9aba54d8273f19be662abe7bbd9fd82a87','995c2de2cd7c7d73c24a4694176d420a72480786478edc7b948425db2b599efe','7ff5f51f6e9f5f5161b21c50fcf67fe3cf1ff6d81f4e92cdc10852af7c259d84','e16224ee9d9672f3d691556ec42fae9d1986c7e8641bc82f5987fb31a902be68'];
+          const parts=hashes.map((expected,i)=>{
+            const s=fs.readFileSync('.qv-transfer/part'+i,'utf8').trim();
+            if(hash(s)!==expected)throw Error('Transport mismatch in part '+i);
+            return s;
+          });
+          const packed=Buffer.from(parts.join(''),'base64');
+          if(hash(packed)!=='c92dcda990a0bfc3150e45f08d56740f2a74fb5aa48083620c7e6e73c8f1db4f')throw Error('Archive digest mismatch');
+          const records=JSON.parse(brotliDecompressSync(packed));
+          if(records.length!==63)throw Error('Unexpected file count');
+          const exact=new Set(['pnpm-lock.yaml','package.json','scripts/assemble.mjs','apps/lobby/package.json','apps/lobby/scripts/validate-worlds.mjs','apps/lobby/public/worlds/quiet-valley/manifest.json','apps/lobby/src/worlds/catalog.ts','apps/site/playwright.quiet-valley.config.ts','.github/workflows/site-pr-check.yml','.github/workflows/auto-deploy-cloudflare-pages.yml']);
+          const safe=p=>typeof p==='string'&&!p.startsWith('/')&&!p.split('/').includes('..')&&!p.includes('\\');
+          const output=new Map();
+          for(const r of records){
+            if(!safe(r.p)||(!exact.has(r.p)&&!r.p.startsWith('apps/quiet-valley/')&&!r.p.startsWith('apps/site/tests/quiet-valley/')))throw Error('Out-of-scope destination');
+            if(output.has(r.p))throw Error('Duplicate destination');
+            let result;
+            if(r.t!==undefined)result=Buffer.from(r.t);
+            else{
+              if(!safe(r.b))throw Error('Invalid base path');
+              const base=fs.readFileSync(r.b);
+              if(hash(base)!==r.h)throw Error('Source checkpoint moved: '+r.b);
+              result=Buffer.concat(r.o.map(op=>{
+                if(typeof op==='string')return Buffer.from(op,'utf8');
+                if(!Array.isArray(op)||op.length!==2||!op.every(Number.isSafeInteger)||op[0]<0||op[1]<0||op[0]+op[1]>base.length)throw Error('Invalid copy operation');
+                return base.subarray(op[0],op[0]+op[1]);
+              }));
+            }
+            if(hash(result)!==r.s)throw Error('Source digest mismatch: '+r.p);
+            output.set(r.p,result);
+          }
+          // All bases have been read and verified. Replace only this staging-owned partial app.
+          fs.rmSync('apps/quiet-valley',{recursive:true,force:true});
+          for(const [p,bytes] of output){fs.mkdirSync(path.dirname(p),{recursive:true});fs.writeFileSync(p,bytes);}
+          // Superseded setContent/UA-only test is replaced by the served-page game suite.
+          fs.rmSync('apps/site/tests/e2e/quiet-valley-mobile.spec.ts',{force:true});
+          fs.rmSync('.qv-transfer',{recursive:true,force:true});
+          fs.rmSync('.github/workflows/quiet-valley-source-transfer.yml',{force:true});
+          fs.rmSync('.github/workflows/quiet-valley-apply-recovery.yml',{force:true});
+          console.log('Verified and restored '+output.size+' source files. No encoded transport remains.');
+          NODE
+      - name: Commit staging checkpoint, never main
+        run: |
+          test "$GITHUB_REF_NAME" = 'work/quiet-valley-restoration-transfer'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --stat
+          git commit -m 'Restore detailed Quiet Valley as independent modular application'
+          git push origin HEAD:work/quiet-valley-restoration-transfer
