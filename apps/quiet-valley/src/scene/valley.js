@@ -1,10 +1,11 @@
 import * as F from '../rendering/index.js';
+import {makeEstateModel} from './estateModels.js';
 /* Procedural regional dioramas. Shared instanced geometry; only the active island is drawn. */
 'use strict';
 export function createValleyWorld(FarmExpansion, FarmSim) {
  function make(R,home){
   const X=FarmExpansion,roots={},features=[],projects={},fruits=[],bees=[],wheels=[],waters=[],sprinklers=[];
-  const decorations=new Map();let active='farm',revision='',ghost=null,grid=null,placement=null;
+  const decorations=new Map();let active='farm',revision='',ghost=null,grid=null,placement=null,ghostNodes=[],placementCount=0;
   const color={grass:'#a4bb78',wood:'#a58258',dark:'#5e6650',cream:'#f1e6c8',leaf:'#83a55e',rock:'#b0b2a0'};
   const add=(type,p,s,c,g=null,r=[0,0,0],alpha=1)=>R.add(type,p,s,c,r,g,alpha);
   const box=(p,s,c,g,r)=>add('box',p,s,c,g,r);
@@ -169,16 +170,24 @@ export function createValleyWorld(FarmExpansion, FarmSim) {
    if(f.kind==='project')return !X.level(s,f.key);
    if(f.kind==='honey')return !!X.level(s,'forest_apiary');return true;
   }
-  function setPlacement(type,s,rotation=0){removeGroup(grid);removeGroup(ghost);grid=group();ghost=null;placement=type?{type,rotation}:null;
-   if(!type)return;for(let x=-12;x<=12;x+=2)for(let z=-10;z<=10;z+=2)if(X.allowedCell(s.world.region,x,z)){
-    const valid=!X.placementCheck(s,s.world.region,x,z);add('box',[x,.30,z],[1.8,.025,1.8],valid?'#c6dfae':'#d4b8a1',grid,[0,0,0],valid?.36:.22);
+  function setPlacement(type,s,rotation=0){
+   removeGroup(grid);removeGroup(ghost);grid=null;ghost=null;ghostNodes=[];placementCount=0;placement=type?{type,rotation}:null;
+   if(!type)return;grid=group();const cells=X.placementCells(s,type,rotation);placementCount=cells.filter(c=>c.valid).length;
+   for(const {x,z,valid} of cells)add('box',[x,.30,z],[1.8,.025,1.8],valid?'#c6dfae':'#d4b8a1',grid,[0,0,0],valid?.45:.22);
+   if(type!=='remove'){
+    const start=R.meshes.length;
+    ghost=type.startsWith('estate:')?makeEstateModel(R,type.slice(7)):makeDecor(type,0,0,null,rotation);
+    ghost.r[1]=rotation*Math.PI/2;ghostNodes=R.meshes.slice(start);ghost.visible=false;
    }
-   if(type!=='remove'){ghost=makeDecor(type,0,0,null,rotation);for(const n of R.meshes){let p=n;while(p&&p!==ghost)p=p.parent;if(p===ghost)n.c=F.rgb('#c0dba3');}ghost.visible=false;}
   }
-  function preview(x,z,s){if(!ghost)return;ghost.p[0]=x;ghost.p[2]=z;ghost.visible=!X.placementCheck(s,s.world.region,x,z);}
+  function preview(x,z,s){
+   if(!ghost)return;ghost.p[0]=x;ghost.p[2]=z;ghost.visible=true;
+   const valid=!X.placementError(s,placement.type,x,z,placement.rotation),color=F.rgb(valid?'#b9d790':'#ce8270');
+   for(const n of ghostNodes)n.c=color;
+  }
   function focusCamera(region,mobile=false){return region==='farm'?{yaw:.48,pitch:.69,size:mobile?21.6:13.8,target:[-1.0,.3,.4]}:{yaw:.34,pitch:.73,size:mobile?18.7:11.9,target:[0,.2,0]};}
   return {roots,features,projects,fruits,decorations,sync,animate,featureVisible,setPlacement,preview,focusCamera,active:()=>active,
-   inspect:()=>({region:active,visibleRoots:Object.entries(roots).filter(([,g])=>g.visible).map(([k])=>k),visibleProjects:Object.entries(projects).filter(([k,g])=>g.visible&&X.projects[k].region===active).map(([k])=>k),decorations:decorations.size,riverPlots:home.cropModels.filter(m=>m.region==='river').length})};
+   inspect:()=>({placementCells:placementCount,region:active,visibleRoots:Object.entries(roots).filter(([,g])=>g.visible).map(([k])=>k),visibleProjects:Object.entries(projects).filter(([k,g])=>g.visible&&X.projects[k].region===active).map(([k])=>k),decorations:decorations.size,riverPlots:home.cropModels.filter(m=>m.region==='river').length})};
  }
  return {make};
 }

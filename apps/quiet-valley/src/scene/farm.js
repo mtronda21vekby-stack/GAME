@@ -17,11 +17,13 @@ export function createFarmArt(FarmSim) {
   const cone=(p,s,c,r=[0,0,0],g=null)=>R.add('cone',p,s,c,r,g);
   const group=(p=[0,0,0],s=[1,1,1],r=[0,0,0],parent=null)=>R.group(p,s,r,parent);
   const treeTops=[],wheels=[],clouds=[],cropModels=[],animalModels=new Map(),flowers=[],villagers=[];
+  const terrain={layers:[],shore:[]};
   const soil=R.add('island',[0,-.69,0],[14.6,1.6,11.4],'#997457');
-  R.add('island',[0,.13,0],[14.75,.3,11.5],colors.grass).fx=[4,0,0,0];
-  R.add('island',[0,-1.48,0],[14.2,.32,11.1],'#79644b');
+  const turf=R.add('island',[0,.13,0],[14.75,.3,11.5],colors.grass);turf.fx=[4,0,0,0];
+  const bedrock=R.add('island',[0,-1.48,0],[14.2,.32,11.1],'#79644b');
+  terrain.layers=[soil,turf,bedrock].map(node=>({node,scale:[...node.s]}));
   // Layered rocks reveal that this is a little living diorama, not an infinite plane.
-  for(let i=0;i<56;i++){let a=i/56*Math.PI*2,r=1+rnd()*.035;ball([Math.cos(a)*14.3*r,-.9+rnd()*.45,Math.sin(a)*11.1*r],[.24+rnd()*.38,.20+rnd()*.3,.22+rnd()*.38],['#bda17f','#cfb393','#8f775f'][i%3]);}
+  for(let i=0;i<56;i++){let a=i/56*Math.PI*2,r=1+rnd()*.035;const node=ball([Math.cos(a)*14.3*r,-.9+rnd()*.45,Math.sin(a)*11.1*r],[.24+rnd()*.38,.20+rnd()*.3,.22+rnd()*.38],['#bda17f','#cfb393','#8f775f'][i%3]);terrain.shore.push({node,position:[...node.p]});}
   function bush(x,z,s=1){for(let k=0;k<3;k++)ball([x+(k-1)*.29*s,.38*s+.2,z+(k%2)*.13],[.47*s,.36*s,.41*s],['#6f904c','#809f54','#557944'][k]);}
   function tree(x,z,s=1,fruit=false){const g=group([x,.2,z],[s,s,s]);cyl([0,1,0],[.16,1.8,.16],colors.wood,[0,0,-.05],g);cyl([.18,1.58,0],[.09,.78,.09],colors.wood,[0,0,-.65],g);const top=group([0,2.4,0],[1,1,1],[0,0,0],g);for(let k=0;k<5;k++){let a=k/5*Math.PI*2;ball([Math.cos(a)*.43,(k%2)*.28,Math.sin(a)*.43],[.87,.87,.83],['#7ba451','#91ae59','#658e48','#83a652','#5b8148'][k],top);}ball([0,.57,0],[.73,.8,.68],'#8aac5b',top);if(fruit)for(let k=0;k<9;k++){let a=k/9*6.28;ball([Math.cos(a)*.91,-.2+(k%3)*.32,Math.sin(a)*.91],[.105,.115,.105],'#da7656',top);}treeTops.push({g:top,phase:rnd()*6});return g;}
   [[-11,-6,1.2],[-11.8,-3,.85],[-12,1,1],[-10,4.1,.8],[-10.5,7.1,1.0],[11,-3,1.1],[11,-7.3,.92],[7.7,-8.4,1.1],[4.8,-8.9,.85],[-5,-9.6,.7],[-1,-10,.7],[-12.2,-.3,.55],[11.9,1,.85],[10.8,5.3,.7]].forEach(([x,z,s],i)=>tree(x,z,s,i>4));
@@ -154,7 +156,7 @@ export function createFarmArt(FarmSim) {
    // Soft separation prevents animals occupying exactly the same spot.
    let list=[...animalModels.values()];for(let i=0;i<list.length;i++)for(let j=i+1;j<list.length;j++){let a=list[i],b=list[j];if((a.type==='chicken')!==(b.type==='chicken'))continue;let dx=a.g.p[0]-b.g.p[0],dz=a.g.p[2]-b.g.p[2],d=Math.hypot(dx,dz),sep=a.type==='chicken'?.42:.92;if(d<sep&&d>.001){const shift=(sep-d)*Math.min(dt*2,.1);a.g.p[0]+=dx/d*shift;b.g.p[0]-=dx/d*shift;a.g.p[2]+=dz/d*shift;b.g.p[2]-=dz/d*shift;}}
   }
-  return {sails,cropModels,animalModels,animalModel,villagers,updateCrops,animate,marketPoint:[-5.2,2.0,7.1],orderBoardPoint:[-2.55,2.45,6.75],troughPoint:[3.1,.8,-3.75]};
+  return {terrain,sails,cropModels,animalModels,animalModel,villagers,updateCrops,animate,marketPoint:[-5.2,2.0,7.1],orderBoardPoint:[-2.55,2.45,6.75],troughPoint:[3.1,.8,-3.75]};
  }
  return {make};
 }

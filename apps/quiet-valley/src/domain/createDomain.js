@@ -1,3 +1,4 @@
+import {estateScale,terrainBounds} from './estateLayout.js';
 import {createFarming} from './farming.js';
 import {createExpansion} from './expansion.js';
 import {createEstate} from './estate.js';
@@ -9,6 +10,6 @@ export function createDomain(clock){
  const queryOnly=object=>Object.freeze(Object.fromEntries(Object.entries(object).filter(([key])=>!['sim','act','tick','fresh','validate','ensureOrders'].includes(key))));
  return {
   commands:{fresh:sim.fresh,validate:sim.validate,tick:sim.tick,act:sim.act,resume(state,now){state.game.lastActiveAt=now;return sim.tick(state,now);}},
-  queries:{FarmSim:queryOnly(sim),FarmExpansion:queryOnly(estate),ValleyGameplay:queryOnly(story),FarmProduction:queryOnly(production)}
+  queries:{FarmSim:queryOnly(sim),FarmExpansion:queryOnly({...estate,estateScale,terrainBounds}),ValleyGameplay:queryOnly(story),FarmProduction:queryOnly(production)}
  };
 }

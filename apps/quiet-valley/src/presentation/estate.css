@@ -1,0 +1,9 @@
+/* Radial construction: one-tap entry, no clipped placement toolbar on phones. */
+#open-estate{color:#f3dba3}
+#build-controls .build-copy{min-width:0}
+#build-controls small{white-space:normal;line-height:1.4}
+@media(max-width:700px){
+ #build-controls{flex-wrap:wrap;max-width:calc(100vw - 24px)}
+ #build-controls .build-copy{flex:1 1 calc(100% - 40px)}
+ #build-controls button{flex:1;min-height:44px}
+}

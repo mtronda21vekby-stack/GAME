@@ -9,6 +9,24 @@ function input() {
     const paint = id => { if (id === null || visited.has(id) || !__qvPorts.state.plots[id]?.unlocked)
         return; visited.add(id); __qvPorts.choosePlot(id); };
     function tapAt(x, y, touch) {
+        if (__qvPorts.buildType) {
+            const p = __qvPorts.R.ground(x, y, .25), cx = Math.round(p[0] / 2) * 2, cz = Math.round(p[2] / 2) * 2;
+            if (__qvPorts.buildType === 'remove') {
+                const item = __qvPorts.state.world.decor.find(d => d.region === __qvPorts.state.world.region && d.x === cx && d.z === cz);
+                if (item)
+                    __qvPorts.run({ type: 'removeDecor', id: item.id });
+                else
+                    __qvPorts.toast('Нажмите на нижнюю часть своего украшения.');
+            }
+            else if(__qvPorts.buildType.startsWith('estate:')){
+                const key=__qvPorts.buildType.slice(7),moving=__qvPorts.state.world.estate.buildings.includes(key);
+                const result=__qvPorts.run({type:moving?'moveEstate':'buildEstate',key,x:cx,z:cz,rotation:__qvPorts.buildRotation});
+                if(result.ok)__qvPorts.endBuild();
+            }
+            else
+                __qvPorts.run({ type: 'placeDecor', region: __qvPorts.state.world.region, key: __qvPorts.buildType, x: cx, z: cz, rotation: __qvPorts.buildRotation });
+            return;
+        }
         if (__qvPorts.tool === 'inspect' && __qvPorts.state.world.region === 'farm') {
             for (const v of __qvPorts.art.villagers || []) {
                 const q = __qvPorts.R.project([v.g.p[0], 1.15, v.g.p[2]]);
@@ -24,19 +42,6 @@ function input() {
                     return;
                 }
             }
-        }
-        if (__qvPorts.buildType) {
-            const p = __qvPorts.R.ground(x, y, .25), cx = Math.round(p[0] / 2) * 2, cz = Math.round(p[2] / 2) * 2;
-            if (__qvPorts.buildType === 'remove') {
-                const item = __qvPorts.state.world.decor.find(d => d.region === __qvPorts.state.world.region && d.x === cx && d.z === cz);
-                if (item)
-                    __qvPorts.run({ type: 'removeDecor', id: item.id });
-                else
-                    __qvPorts.toast('Нажмите на нижнюю часть своего украшения.');
-            }
-            else
-                __qvPorts.run({ type: 'placeDecor', region: __qvPorts.state.world.region, key: __qvPorts.buildType, x: cx, z: cz, rotation: __qvPorts.buildRotation });
-            return;
         }
         const id = pick(x, y, touch);
         if (__qvPorts.tool !== 'inspect' && id !== null) {
@@ -123,13 +128,14 @@ function input() {
         if (pointers.size >= 2) {
             const a = [...pointers.values()], d = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y);
             if (lastPinch > 0 && d > 0)
-                __qvPorts.R.camera.size = Math.max(6.5, Math.min(43, __qvPorts.R.camera.size * lastPinch / d));
+                __qvPorts.R.camera.size = Math.max(6.5, Math.min(85, __qvPorts.R.camera.size * lastPinch / d));
             const center = { x: (a[0].x + a[1].x) / 2, y: (a[0].y + a[1].y) / 2 };
             if (lastCenter) {
                 __qvPorts.R.cameraVP();
                 const before = __qvPorts.R.ground(lastCenter.x, lastCenter.y, .25), after = __qvPorts.R.ground(center.x, center.y, .25);
-                __qvPorts.R.camera.target[0] = Math.max(-12, Math.min(12, __qvPorts.R.camera.target[0] + before[0] - after[0]));
-                __qvPorts.R.camera.target[2] = Math.max(-10, Math.min(10, __qvPorts.R.camera.target[2] + before[2] - after[2]));
+                const extent=__qvPorts.state.world.region==='farm'?__qvPorts.FarmExpansion.terrainBounds(__qvPorts.state.world.estate.tier):{x:12,z:10};
+                __qvPorts.R.camera.target[0] = Math.max(-extent.x, Math.min(extent.x, __qvPorts.R.camera.target[0] + before[0] - after[0]));
+                __qvPorts.R.camera.target[2] = Math.max(-extent.z, Math.min(extent.z, __qvPorts.R.camera.target[2] + before[2] - after[2]));
             }
             lastCenter = center;
             lastPinch = d;
@@ -181,11 +187,11 @@ function input() {
     __qvPorts.lifetime.on(document, 'lostpointercapture', e => { if (pointers.has(e.pointerId))
         finish(e, true); });
     __qvPorts.lifetime.on(window, 'blur', () => { pointers.clear(); down = null; multi = false; });
-    __qvPorts.lifetime.on(canvas, 'wheel', e => { e.preventDefault(); __qvPorts.R.camera.size = Math.max(6.5, Math.min(43, __qvPorts.R.camera.size * Math.exp(e.deltaY * .001))); }, { passive: false });
+    __qvPorts.lifetime.on(canvas, 'wheel', e => { e.preventDefault(); __qvPorts.R.camera.size = Math.max(6.5, Math.min(85, __qvPorts.R.camera.size * Math.exp(e.deltaY * .001))); }, { passive: false });
     __qvPorts.lifetime.on(canvas, 'contextmenu', e => e.preventDefault());
     __qvPorts.$('#focus-garden').onclick = __qvPorts.focusGarden;
     __qvPorts.$('#zoom-in').onclick = () => __qvPorts.R.camera.size = Math.max(6.5, __qvPorts.R.camera.size / 1.18);
-    __qvPorts.$('#zoom-out').onclick = () => __qvPorts.R.camera.size = Math.min(43, __qvPorts.R.camera.size * 1.18);
+    __qvPorts.$('#zoom-out').onclick = () => __qvPorts.R.camera.size = Math.min(85, __qvPorts.R.camera.size * 1.18);
     __qvPorts.$('#home-camera').onclick = __qvPorts.defaultCamera;
     __qvPorts.$('#day-toggle').onclick = () => { __qvPorts.night = !__qvPorts.night; __qvPorts.$('#day-toggle').innerHTML = __qvPorts.icon(__qvPorts.night ? 'moon' : 'sun'); document.body.style.background = __qvPorts.night ? 'radial-gradient(ellipse at 40% 25%,#abb5ad,#8eaaa1 65%,#7b9a96)' : ''; };
     __qvPorts.$('#sound-toggle').onclick = () => { __qvPorts.audioOn = !__qvPorts.audioOn; __qvPorts.$('#sound-toggle').innerHTML = __qvPorts.icon(__qvPorts.audioOn ? 'sound' : 'muted'); __qvPorts.$('#sound-toggle').setAttribute('aria-label', __qvPorts.audioOn ? 'Выключить звук' : 'Включить звук'); __qvPorts.chime('heart'); };
