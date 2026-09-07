@@ -28,20 +28,23 @@ test('layout pass moves authored districts and removes duplicate loose stable cl
  assert.equal(art.layoutWorld.moved.market,true);
  assert.equal(art.layoutWorld.moved.coop,true);
  assert.deepEqual(art._roots[0].p,[-8.35,.2,-6.45]);
+ assert.deepEqual(art._roots[2].p,[-7.85,.2,1.25]);
  assert.deepEqual(art._roots[3].p,[-7.05,.2,6.55]);
  assert.deepEqual(art._roots[5].p,[8.0,.2,5.0]);
  assert.equal(art._duplicate.visible,false);
  assert.ok(art.layoutWorld.removedLoose>=1);
 });
 
-test('villager routes follow the new functional districts',()=>{
+test('villager routes follow the new functional districts and stay inside runtime bounds',()=>{
  const R=renderer(),art=createFarmLayout(baseFarm()).make(R);
  const mia=art.villagers.find(v=>v.id==='mia');
+ const fedor=art.villagers.find(v=>v.id==='fedor');
  const lea=art.villagers.find(v=>v.id==='lea');
  assert.deepEqual(mia.g.p.slice(0,3),[-7.0,.2,6.05]);
  assert.deepEqual(lea.g.p.slice(0,3),[7.95,.2,4.85]);
  assert.ok(mia.route.length>=6);
  assert.ok(lea.route.every(([x,z])=>x>=2&&x<=8.1&&z>=3.2&&z<=5.1));
+ assert.ok(fedor.route.every(([x,z])=>x>=-8.2&&x<=8.4&&z>=-7.5&&z<=7.6));
  assert.deepEqual(art.livingWorld.villagerRoutes.mia,mia.route);
 });
 
