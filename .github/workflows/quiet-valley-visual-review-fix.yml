@@ -1,0 +1,49 @@
+name: Quiet Valley screenshot review corrections
+on:
+  push:
+    branches: [work/quiet-valley-art-audit]
+    paths: [.github/workflows/quiet-valley-visual-review-fix.yml]
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.ref == 'refs/heads/work/quiet-valley-art-audit'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/quiet-valley-art-audit
+      - name: Apply explicit source corrections verified against the reviewed head
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import {createHash} from 'node:crypto';
+          const hash=s=>createHash('sha256').update(s).digest('hex');
+          const edits=[
+           ['apps/quiet-valley/src/app/controller.js','114de9c13ba5dc47e0da65ae49af15b2495608bc3a8488496a5f5293cb48cc0d','4837694acbf058ea17d612bc291f93813b22e9d2595df5139ce5f84cbf4725fb',[
+            ['const dt = Math.min(.06, (time - previous) / 1000);','const elapsed = Math.max(0, (time - previous) / 1000);\n            const dt = Math.min(.06, elapsed);'],
+            ['Math.min(1, dt * 1.7)','(1 - Math.exp(-Math.min(1, elapsed) * 1.7))'],
+            ['graphics: { quality: R.quality, shadowSize:','graphics: { quality: R.quality, daylight: R.day, shadowSize:']
+           ]],
+           ['apps/quiet-valley/src/presentation/atelier.css','bcd948e7550de7de940d7bea20e898cda9287418f96e36677d0ec48f0f846400','0eb32abfe796ceb25fea5dfd412c9ad58a9e3785d40eaaae47fc699ef4436ab6',[
+            ['right:294px','right:334px'],['.tool b{font-size:9px;letter-spacing:0}','.tool b{font-size:10px;letter-spacing:0}']
+           ]],
+           ['apps/site/tests/quiet-valley/restoration.spec.ts','0a11adfa58c83cb023f69803a2962c7add40417e85442b5eb885ff535e2d052d','d7cfd25ca6a151d4e7621f0fa373a9d448d4d3e3e2d6fa6553569bf7600a76b8',[
+            ['await page.waitForTimeout(1200);await page.screenshot','await expect.poll(async()=> (await info(page)).graphics.daylight).toBeLessThan(.26);\n await page.screenshot'],
+            ["expect(await page.locator('.platform-back')","if(testInfo.project.name.includes('desktop')){\n  const tools=await page.locator('.quick-actions').boundingBox(),resources=await page.locator('.resources').boundingBox();\n  expect(tools!.x+tools!.width).toBeLessThan(resources!.x);\n }\n expect(await page.locator('.platform-back')"]
+           ]]
+          ];
+          const outputs=[];
+          for(const[p,base,target,replacements]of edits){let text=fs.readFileSync(p,'utf8');if(hash(text)!==base)throw Error('Reviewed head changed: '+p);for(const[a,b]of replacements){if(!text.includes(a))throw Error('Missing source anchor');text=text.replaceAll(a,b);}if(hash(text)!==target)throw Error('Unexpected output: '+p);outputs.push([p,text]);}
+          for(const[p,text]of outputs)fs.writeFileSync(p,text);
+          NODE
+      - name: Commit source only to isolated work branch
+        run: |
+          test "$GITHUB_REF_NAME" = 'work/quiet-valley-art-audit'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add apps/quiet-valley/src/app/controller.js apps/quiet-valley/src/presentation/atelier.css apps/site/tests/quiet-valley/restoration.spec.ts
+          test -z "$(git diff --cached --name-only -- .github/workflows)"
+          git commit -m 'Fix screenshot-reviewed toolbar overlap and time-based evening lighting'
+          git push origin HEAD:work/quiet-valley-art-audit
