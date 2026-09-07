@@ -3,12 +3,17 @@ import type { ExperienceTransition } from "./types";
 export const GateToOceanTransition: ExperienceTransition = {
   id: "gate-to-ocean",
   evaluate(amount, from, to, reducedMotion) {
-    const travel = reducedMotion ? 0.45 : 4.2;
-    from.root.position.z = amount * travel;
-    from.root.scale.setScalar(1 + amount * (reducedMotion ? 0.04 : 0.52));
-    to.root.position.z = -(1 - amount) * (reducedMotion ? 0.5 : 4.8);
-    to.root.position.y = -(1 - amount) * 0.7;
-    to.root.scale.setScalar(0.76 + amount * 0.24);
+    const travelScale = reducedMotion ? 0.28 : 1;
+    from.root.position.z = amount * 5.1 * travelScale;
+    from.root.position.y += amount * 0.55 * travelScale;
+    from.root.scale.setScalar(1 + amount * 0.42 * travelScale);
+    from.root.rotation.z += amount * 0.045 * travelScale;
+
+    // The ocean rises from below while the gate clears the camera, creating one
+    // continuous spatial transition instead of a background crossfade.
+    to.root.position.z = -(1 - amount) * 5.8 * travelScale;
+    to.root.position.y = -(1 - amount) * 2.35 * travelScale;
+    to.root.position.x = (1 - amount) * 0.42 * travelScale;
+    to.root.scale.setScalar(0.68 + amount * 0.32);
   },
 };
-

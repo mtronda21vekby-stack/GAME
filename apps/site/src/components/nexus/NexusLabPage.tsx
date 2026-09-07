@@ -2,6 +2,7 @@ import { BlackCrownExperienceShell } from "../../experience-shell/BlackCrownExpe
 import { ExperienceShellProvider } from "../../experience-shell/ExperienceShellProvider";
 import "../../experience/experience.css";
 import "../../experience-shell/experience-shell.css";
+import "../../experience-shell/cinematic-parallax-v1.css";
 
 export function NexusLabPage() {
   return (

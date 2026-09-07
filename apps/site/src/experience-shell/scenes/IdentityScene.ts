@@ -4,6 +4,12 @@ import type { AssetSlotRegistry } from "../core/AssetSlotRegistry";
 import { ForegroundOcclusionSystem } from "./ForegroundOcclusionSystem";
 import { SpatialSceneBase, energyMaterial } from "./SpatialSceneBase";
 
+const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
+const smooth = (value: number) => {
+  const t = clamp01(value);
+  return t * t * (3 - 2 * t);
+};
+
 export class IdentityScene extends SpatialSceneBase {
   private authored: THREE.Group | null = null;
   private readonly profileArcs = new THREE.Group();
@@ -69,27 +75,40 @@ export class IdentityScene extends SpatialSceneBase {
     this.resetPose();
     const dominant = snapshot.weight > 0.5;
     const authored = Boolean(this.authored && snapshot.quality !== "low");
+    const settle = smooth(snapshot.localProgress / 0.46);
+    const clear = smooth((snapshot.localProgress - 0.62) / 0.30);
+
+    // Identity is only a framing bridge into the final Crown. It deliberately
+    // clears away before 100% so the camera can pass through the Crown and land
+    // on a minimal black BLACKCROWN lock-up instead of another glowing ring.
+    this.root.visible = snapshot.weight > 0.02 && clear < 0.985;
+    if (!this.root.visible) return;
+
     if (this.authored) this.authored.visible = authored;
     this.profileArcs.visible = !authored;
     this.core.visible = !authored;
     this.axis.visible = !authored;
-    this.dataColumns.visible = dominant && !authored;
-    this.foreground.root.visible = snapshot.weight > 0.65;
-    this.root.position.set(0.2, 0.42, 0);
+    this.dataColumns.visible = dominant && !authored && clear < 0.72;
+    this.foreground.root.visible = snapshot.weight > 0.62 && clear < 0.58;
+    this.root.position.set(0.2, 0.42 + clear * 0.65, clear * 2.8);
+    this.root.scale.setScalar(1 - clear * 0.32);
+
     const motion = snapshot.reducedMotion ? 0 : snapshot.elapsedSeconds;
     this.profileArcs.children.forEach((arc, index) => {
       arc.rotation.z = (index === 0 ? 0.38 : index === 1 ? -0.62 : 0.94)
-        + snapshot.localProgress * (index % 2 ? -0.12 : 0.09)
-        + motion * (index % 2 ? -0.008 : 0.006);
+        + settle * (index % 2 ? -0.1 : 0.075)
+        + motion * (index % 2 ? -0.006 : 0.005);
     });
-    this.core.rotation.set(motion * 0.035, -motion * 0.05, snapshot.localProgress * 0.16);
-    this.core.scale.setScalar(0.76 + snapshot.localProgress * 0.2);
-    this.dataColumns.position.y = (1 - snapshot.localProgress) * -0.48;
-    this.axis.scale.y = 0.65 + snapshot.localProgress * 0.35;
+    this.core.rotation.set(motion * 0.028, -motion * 0.04, settle * 0.12);
+    this.core.scale.setScalar((0.76 + settle * 0.2) * (1 - clear * 0.55));
+    this.dataColumns.position.y = (1 - settle) * -0.48 + clear * 1.1;
+    this.axis.scale.y = (0.65 + settle * 0.35) * (1 - clear * 0.7);
+
     if (this.authored?.visible) {
-      this.authored.position.z = -1.35 + snapshot.localProgress * 0.25;
-      this.authored.scale.setScalar(0.84 + snapshot.localProgress * 0.06);
+      this.authored.position.z = -1.35 + settle * 0.25 + clear * 2.4;
+      this.authored.position.y = clear * 0.55;
+      this.authored.scale.setScalar((0.84 + settle * 0.06) * (1 - clear * 0.28));
     }
-    if (this.foreground.root.visible) this.foreground.evaluate(snapshot.localProgress, snapshot.quality, snapshot.reducedMotion);
+    if (this.foreground.root.visible) this.foreground.evaluate(settle, snapshot.quality, snapshot.reducedMotion);
   }
 }

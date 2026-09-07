@@ -118,22 +118,42 @@ export class EvoFishAbyssScene extends SpatialSceneBase {
   evaluate(snapshot: SceneEvaluationSnapshot) {
     this.resetPose();
     const dominant = snapshot.weight > 0.5;
+    const compact = snapshot.quality === "low";
+    const revealRaw = Math.max(0, Math.min(1, snapshot.localProgress / 0.62));
+    const reveal = revealRaw * revealRaw * (3 - 2 * revealRaw);
+    const oceanRise = Math.max(0, Math.min(1, snapshot.localProgress / 0.32));
+
     this.caustics.visible = dominant;
     this.silhouettes.visible = dominant;
     this.bubbles.visible = dominant;
-    this.foreground.root.visible = snapshot.weight > 0.65;
-    this.root.position.set(snapshot.reducedMotion ? 0 : -0.2 + snapshot.localProgress * 0.42, 0, 0);
-    const compact = snapshot.quality === "low";
-    this.subject.position.x = compact ? 0 : 1.25;
-    this.subject.position.y = compact ? 1.12 : 0.55;
-    this.subject.scale.setScalar(compact ? 0.9 : 1);
-    this.subject.position.z = -1.55 + snapshot.localProgress * 0.58;
-    this.subject.rotation.y = snapshot.reducedMotion ? 0 : (snapshot.localProgress - 0.5) * -0.075;
-    this.subjectMaterial.uniforms.uOpacity.value = (0.72 + snapshot.localProgress * 0.18) * snapshot.weight;
-    this.caustics.position.x = snapshot.localProgress * 0.35;
+    this.foreground.root.visible = snapshot.weight > 0.58;
+
+    // The ocean physically rises into frame during the Crown exit instead of
+    // appearing as a flat background swap.
+    this.root.position.set(
+      snapshot.reducedMotion ? 0 : -0.34 + snapshot.localProgress * 0.54,
+      snapshot.reducedMotion ? 0 : -1.45 * (1 - oceanRise),
+      0,
+    );
+
+    // Start close on the creature as a partial/detail reveal, then pull back to
+    // expose the full hero silhouette. This keeps the raster source as a subject
+    // inside a layered 3D volume rather than a scrolling background card.
+    const startScale = compact ? 1.18 : 1.62;
+    const endScale = compact ? 0.88 : 1.0;
+    this.subject.scale.setScalar(startScale + (endScale - startScale) * reveal);
+    this.subject.position.x = compact ? 0.35 * (1 - reveal) : 2.45 - reveal * 1.2;
+    this.subject.position.y = compact ? 1.35 - reveal * 0.28 : 0.95 - reveal * 0.4;
+    this.subject.position.z = -0.62 - reveal * 0.72 + snapshot.localProgress * 0.16;
+    this.subject.rotation.y = snapshot.reducedMotion ? 0 : (0.11 * (1 - reveal)) - snapshot.localProgress * 0.055;
+    this.subjectMaterial.uniforms.uOpacity.value = (0.34 + reveal * 0.56) * snapshot.weight;
+
+    this.caustics.position.x = snapshot.localProgress * 0.48;
+    this.caustics.position.y = (1 - oceanRise) * -0.55;
     this.caustics.rotation.z = snapshot.reducedMotion ? 0 : Math.sin(snapshot.elapsedSeconds * 0.12) * 0.025;
     this.bubbles.position.y = snapshot.reducedMotion ? 0 : (snapshot.elapsedSeconds * 0.045) % 0.8;
-    this.silhouettes.position.x = -snapshot.localProgress * 0.28;
+    this.silhouettes.position.x = -snapshot.localProgress * 0.42;
+    this.silhouettes.position.z = (1 - reveal) * 0.35;
     if (this.foreground.root.visible) this.foreground.evaluate(snapshot.localProgress, snapshot.quality, snapshot.reducedMotion);
   }
 
