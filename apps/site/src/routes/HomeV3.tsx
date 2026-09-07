@@ -67,7 +67,7 @@ export function HomeV3() {
           network={network}
           statusSource={statusSnapshot.source}
           onNavigate={nav}
-          onPlay={() => navExternal("/game/")}
+          onPlay={() => navExternal("/games/")}
           onOpenCrownFront={() => navExternal("/games/crown-front/")}
           onOpenLobby={() => navExternal("/lobby/")}
         />
