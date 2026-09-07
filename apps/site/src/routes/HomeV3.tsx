@@ -8,6 +8,7 @@ import {
   loadBlackCrownWorldStatuses,
   type BlackCrownWorldStatusSnapshot,
 } from "../lib/blackcrownWorldStatus";
+import { GAMES_HUB_PATH } from "../lib/gameRoutes";
 import { openTelegramBot } from "../lib/telegram";
 import { nav, navExternal } from "../lib/nav";
 import "../styles/home.css";
@@ -67,7 +68,7 @@ export function HomeV3() {
           network={network}
           statusSource={statusSnapshot.source}
           onNavigate={nav}
-          onPlay={() => navExternal("/games/")}
+          onPlay={() => navExternal(GAMES_HUB_PATH)}
           onOpenCrownFront={() => navExternal("/games/crown-front/")}
           onOpenLobby={() => navExternal("/lobby/")}
         />
