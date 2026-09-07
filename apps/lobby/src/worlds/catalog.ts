@@ -21,7 +21,7 @@ export const WORLD_CATALOG = [
     title: "Quiet Valley",
     eyebrow: "FARM GAME · ALPHA",
     description: "Самостоятельная 3D-ферма BLACKCROWN: растения, животные, заказы жителей, мягкая аренда, сюжет и развитие территории.",
-    version: "0.5.1-blackcrown.2",
+    version: "0.5.2-blackcrown.3",
     maturity: "alpha",
     lobbyRoute: "/games/quiet-valley/",
     runtimeUrl: "/games/quiet-valley/index.html",
@@ -30,7 +30,7 @@ export const WORLD_CATALOG = [
     accent: "#b9dc82",
     saveNamespace: "bc.world.quiet-valley.v1",
     bridgeChannel: WORLD_BRIDGE_CHANNEL,
-    capabilities: ["3D WebGL", "touch", "local save", "story", "characters", "terrain upgrades", "iOS safe renderer"],
+    capabilities: ["3D WebGL", "touch", "local save", "story", "characters", "terrain upgrades", "iOS safe renderer", "mobile premium materials"],
     roadmap: ["cloud save", "friend visits", "player market", "seasons"],
   },
 ] as const satisfies readonly WorldDefinition[];
