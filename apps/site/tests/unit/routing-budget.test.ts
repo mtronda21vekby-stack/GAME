@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { collectInitialAssets, validateBundle } from "../../scripts/check-bundle-budget.mjs";
+import { GAMES_HUB_PATH } from "../../src/lib/gameRoutes";
 import { getSiteRouteMetadata, isExternalAppPath, normalizePath, SITE_PATHS } from "../../src/routes/routeMetadata";
 
 describe("route registry", () => {
@@ -12,6 +13,8 @@ describe("route registry", () => {
   });
 
   it("preserves protected app navigation", () => {
+    expect(GAMES_HUB_PATH).toBe("/games/");
+    expect(isExternalAppPath(GAMES_HUB_PATH)).toBe(true);
     expect(isExternalAppPath("/game/")).toBe(true);
     expect(isExternalAppPath("/lobby/room")).toBe(true);
     expect(isExternalAppPath("/games/crown-front/")).toBe(true);
