@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#193f49"><meta name="description" content="Огни бухты — 3D-игра о кораблях, маршрутах и спасении на море."><title>Огни бухты · Harborlight</title><link rel="stylesheet" href="./src/ui/style.css"></head>
+<body>
+<canvas id="world" aria-label="Трёхмерная бухта. Выбирайте корабли и прокладывайте маршруты." tabindex="0"></canvas>
+<div id="loading"><div class="loading-beacon">⌁</div><span class="eyebrow">HARBORLIGHT</span><h1>Зажигаем маяк.</h1><p>Собираем бухту и готовим материалы…</p><div class="loading-bar"></div></div>
+<div id="error" class="modal" hidden><div class="modal-card"><span class="eyebrow">ЗАПУСК ПРЕРВАН</span><h2>Не удалось открыть бухту.</h2><p></p><button class="primary" onclick="location.reload()">Повторить запуск</button></div></div>
+<section id="main-menu" hidden>
+ <div class="menu-brand"><span data-icon="anchor"></span><b>HARBORLIGHT</b><small>ИНТЕРАКТИВНАЯ МОРСКАЯ ИСТОРИЯ</small></div>
+ <div class="hero-copy"><div class="eyebrow"><i></i> ВАША БУХТА. ВАШ КУРС.</div><h1>Огни<br><em>бухты.</em></h1><p class="hero-intro">Каждому кораблю нужен путь домой.<br>Сегодня этот путь прокладываете вы.</p><div class="hero-rule"><span>01</span><p>Рисуйте курсы. Разводите потоки.<br>Спасайте тех, кто не дошёл.</p></div>
+ <div class="start-row"><button id="start" class="primary" disabled>Начать экспедицию <span>↗</span></button><button id="continue" class="secondary" hidden>Продолжить рейс</button></div><small class="run-length">Три вахты · примерно 5–7 минут · без ожиданий и платежей</small>
+ <div id="map-select"></div>
+ </div>
+ <div class="menu-footer"><span>01 / МОРСКАЯ ДИСПЕТЧЕРСКАЯ</span><span>ЛУЧШИЙ РЕЙС <b id="best-menu">0</b></span></div>
+ <div class="hero-stamp"><span>22°</span><small>СЕВЕРНЫЙ ВЕТЕР<br>ТИХОЕ МОРЕ</small></div>
+</section>
+<div id="game-ui" hidden>
+ <header class="topbar"><button id="menu-link" class="wordmark" aria-label="Главное меню"><span data-icon="anchor"></span><b>ОГНИ БУХТЫ<small>HARBORLIGHT</small></b></button><div class="score-box"><small>СЧЁТ</small><b id="score">0</b><span id="combo">Чистый курс</span></div><div class="safety"><small>БЕЗОПАСНОСТЬ</small><span id="hearts"></span></div><button id="pause" class="round" aria-label="Пауза" data-icon="pause"></button></header>
+ <div class="mission"><span id="stage-count" class="eyebrow">ВАХТА 1 / 3</span><h2 id="stage-title">Утренняя вахта</h2><small id="weather"></small><div class="progress"><i id="stage-progress"></i></div></div>
+ <div class="fleet-count"><strong id="delivered">00</strong><span>СУДОВ<br>ДОСТАВЛЕНО</span></div>
+ <div class="view-controls"><button id="zoom-in" class="round" aria-label="Приблизить" data-icon="plus"></button><button id="zoom-out" class="round" aria-label="Отдалить" data-icon="minus"></button><button id="camera-home" class="round" aria-label="Общий вид" data-icon="compass"></button></div>
+ <div id="selection" hidden><div class="selection-symbol" data-icon="ship"></div><div><strong id="selected-name"></strong><small id="selected-goal"></small></div><b id="selected-time"></b><button id="hold"></button></div>
+ <footer class="game-bottom"><div class="instruction"><i></i><span id="instruction">Выберите судно → нажмите причал того же цвета</span></div><div class="tools"><button id="focus"><span data-icon="focus"></span><b>Фокус<small class="timer">6 секунд</small></b><kbd>F</kbd></button><button id="sound" class="round" aria-label="Включить звук" data-icon="sound"></button><button id="help" class="round" aria-label="Как играть" data-icon="help"></button></div></footer>
+</div>
+<div id="ports" hidden></div><div id="ship-labels" hidden></div><button id="sos" hidden></button><div id="toast" role="status" hidden></div>
+<div id="pause-modal" class="modal" hidden><div class="modal-card"><span class="eyebrow">МОРЕ ПОДОЖДЁТ</span><h2>Небольшая пауза.</h2><p>Корабли и часы остановлены.<br>Рейс сохранён на этом устройстве.</p><button id="resume" class="primary">Продолжить рейс →</button><div class="pause-options"><button id="restart" class="secondary">Начать заново</button><button id="pause-menu" class="secondary">Главное меню</button></div><label class="setting">Графика<select id="quality"><option value="low">Экономная</option><option value="balanced" selected>Сбалансированная</option><option value="high">Высокая</option></select></label></div></div>
+<div id="upgrade-modal" class="modal" hidden><div class="modal-card wide"><span class="eyebrow">НОВЫЕ ВОЗМОЖНОСТИ</span><h2 id="upgrade-title"></h2><p id="upgrade-sub"></p><div id="upgrades"></div></div></div>
+<div id="result-modal" class="modal" hidden><div class="modal-card"><span class="eyebrow" id="result-kicker"></span><h2 id="result-title"></h2><div class="result-value" id="result-score">0</div><p id="result-detail"></p><button id="result-next" class="primary">Следующая бухта ↗</button><button id="play-again" class="secondary">Ещё один рейс</button><button id="result-menu" class="text-button">Главное меню</button></div></div>
+<div id="help-modal" class="modal" hidden><div class="modal-card"><span class="eyebrow">КАК ИГРАТЬ</span><h2>Здесь решает<br>не скорость, а курс.</h2><div class="rules"><p><b>1. Выберите корабль.</b> Нажмите на модель или маленькую метку. I — грузы, II — рыба, III — пассажиры.</p><p><b>2. Укажите свой причал.</b> Нажмите на пристань того же цвета — проложится безопасный маршрут. Или проведите пальцем от судна до причала, обходя сушу.</p><p><b>3. Следите за пересечениями.</b> Корабли могут столкнуться. Остановите выбранное судно на 8 секунд или измените его путь.</p><p><b>4. Используйте фокус и SOS.</b> Фокус замедляет время. Маршрут через спасательную лодку приносит бонус; затем ведите судно к пристани.</p><p><b>5. Пройдите три вахты.</b> Между ними выберите улучшение. Три ошибки завершают рейс. В шторм отмеченная область замедляет корабли.</p></div><button id="help-close" class="primary">Понятно. Отдать швартовы →</button></div></div>
+<noscript>Для игры нужен JavaScript. Откройте страницу в Safari или Chrome.</noscript>
+<script type="module" src="./src/application/main.js"></script>
+</body></html>
