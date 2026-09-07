@@ -61,12 +61,20 @@ if (fs.existsSync(siteIcons)) copyDir(siteIcons, path.join(OUT, "icons"));
 const sitePwa = path.join(SITE, "pwa");
 if (fs.existsSync(sitePwa)) copyDir(sitePwa, path.join(OUT, "pwa"));
 
-// Redirects for SPA routing (site + nested apps + standalone games)
+// Fail the build if the standalone game entry points were not assembled.
+ensureExists(path.join(OUT, "games/index.html"), "BLACKCROWN Games Hub");
+ensureExists(path.join(OUT, "games/quiet-valley/index.html"), "Quiet Valley standalone entry");
+
+// Redirects for SPA routing (site + nested apps + standalone games).
+// Explicit canonical routes are required because the site-wide SPA fallback must never
+// answer /games/ or /games/quiet-valley/ with the root BLACKCROWN page.
 const redirects = [
   "/game/*   /game/index.html   200",
   "/lobby/*  /lobby/index.html  200",
   "/games    /games/index.html  200",
-  "/games/quiet-valley/*  /games/quiet-valley/index.html  200",
+  "/games/   /games/index.html  200",
+  "/games/quiet-valley    /games/quiet-valley/index.html  200",
+  "/games/quiet-valley/   /games/quiet-valley/index.html  200",
   "/*        /index.html        200"
 ].join("\n") + "\n";
 fs.writeFileSync(path.join(OUT, "_redirects"), redirects, "utf-8");
