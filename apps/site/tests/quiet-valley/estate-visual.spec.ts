@@ -8,6 +8,13 @@ async function ready(page:Page){
  await expect.poll(async()=> (await info(page)).presentationPending).toBe(false);
  await expect(page.locator('#open-estate')).toBeVisible();
 }
+async function presented(page:Page){
+ // A successful command changes state before the next canvas frame. Screenshots
+ // must wait for new scene submissions and a browser presentation opportunity.
+ const frame=(await info(page)).frames;
+ await expect.poll(async()=> (await info(page)).frames).toBeGreaterThan(frame+1);
+ await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
+}
 async function fundedFarm(page:Page){
  await page.goto(PATH);await ready(page);
  // Test fixture only. Every expansion, placement and relocation below uses visible UI.
@@ -48,7 +55,7 @@ test('continuous radial land supports four-sided decoration, chosen building sit
  expect(expanded.world.estate.layout).toBe('radial-v2');expect(expanded.world.estate.tierPads).toBe(0);expect(expanded.world.estate.bridges).toBe(0);
  expect(expanded.state.coins).toBe(initial.state.coins-180);
  expect(expanded.state.world.materials).toEqual({wood:990,stone:992});
- await page.waitForTimeout(700);await page.screenshot({path:testInfo.outputPath('radial-02-expanded.png')});
+ await presented(page);await page.screenshot({path:testInfo.outputPath('radial-02-expanded.png')});
 
  await decorTool(page,'lamp');
  for(const [x,z] of [[16,0],[-16,0],[0,12],[0,-12]]){
@@ -64,13 +71,16 @@ test('continuous radial land supports four-sided decoration, chosen building sit
  await page.locator('[data-place="estate:tool_shed"]').click();
  expect((await info(page)).state.coins).toBe(funds,'choosing a site must not charge before construction');
  expect((await info(page)).construction.type).toBe('estate:tool_shed');
- await page.screenshot({path:testInfo.outputPath('radial-03-placement-grid.png')});
+ await presented(page);await page.screenshot({path:testInfo.outputPath('radial-03-placement-grid.png')});
  await cell(page,16,0,mobile);
  await expect.poll(async()=> (await info(page)).state.world.estate.placements.tool_shed).toEqual({x:16,z:0,rotation:0});
  expect((await info(page)).state.coins).toBe(funds-90);
- expect((await info(page)).world.estate.buildings).toContainEqual({key:'tool_shed',x:16,z:0,rotation:0});
+ const placed=(await info(page)).world.estate.buildings.find((b:any)=>b.key==='tool_shed');
+ expect(placed).toBeDefined();expect(placed.rotation).toBe(0);
+ // WebKit preserves IEEE -0 from ground unprojection; -0 and +0 describe the same site.
+ expect(placed.x).toBeCloseTo(16,8);expect(placed.z).toBeCloseTo(0,8);
  await expect(page.locator('#build-controls')).toBeHidden();
- await page.screenshot({path:testInfo.outputPath('radial-04-building-on-new-land.png')});
+ await presented(page);await page.screenshot({path:testInfo.outputPath('radial-04-building-on-new-land.png')});
 
  await openLand(page);const paid=(await info(page)).state.coins;
  await expect(page.locator('[data-place="estate:tool_shed"]')).toHaveText('Переместить');
@@ -92,7 +102,7 @@ test('continuous radial land supports four-sided decoration, chosen building sit
   await openLand(page);await page.locator('[data-action="expandEstate"]').click();await page.locator('[data-close-modal]').click();
   const after=await info(page);expect(after.state.world.estate.tier).toBe(tier);grows(before,after.world.estate.bounds);
  }
- await page.waitForTimeout(700);await page.screenshot({path:testInfo.outputPath('radial-05-largest-estate.png')});
+ await presented(page);await page.screenshot({path:testInfo.outputPath('radial-05-largest-estate.png')});
  expect((await info(page)).world.estate.tierPads).toBe(0);expect(errors).toEqual([]);
  await expect(page.locator('#error')).toBeHidden();
 });

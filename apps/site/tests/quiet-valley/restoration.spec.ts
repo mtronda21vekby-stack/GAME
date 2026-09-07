@@ -73,6 +73,9 @@ test('all four detailed locations survive travel without accumulating scene obje
  await expect(page.locator('#error')).toBeHidden();expect(errors).toEqual([]);
 });
 test('animal care spends actual feed and lighting presets preserve the same farm',async({page},testInfo)=>{
+ // Chromium CI uses software rendering. This scenario also rebuilds both high
+ // and low quality framebuffers; retain every assertion with a separate budget.
+ test.setTimeout(180000);
  const errors=watch(page);await open(page);const isMobile=testInfo.project.name.includes('mobile');
  if(!isMobile)await page.locator('#focus-animals').click();
  const before=(await info(page)).state;
