@@ -48,6 +48,7 @@ function choosePlot(id, { direct = false } = {}) {
 }
 function chooseAnimal(id) { __qvPorts.selected = { kind: 'animal', id }; setTool('inspect'); __qvPorts.selected = { kind: 'animal', id }; __qvPorts.renderDetails(true); __qvPorts.updateSelection(); }
 function run(action) {
+    const previousRegion = __qvPorts.state.world.region;
     const result = __qvPorts.session.dispatch(action);
     __qvPorts.state = __qvPorts.session.snapshot();
     __qvPorts.toast(result.message);
@@ -64,8 +65,11 @@ function run(action) {
         __qvPorts.world.sync(__qvPorts.state);
         __qvPorts.defaultCamera();
         __qvPorts.waterFX.animate(20);
-        document.getElementById('location-shade').classList.add('active');
-        __qvPorts.lifetime.timeout(() => document.getElementById('location-shade').classList.remove('active'), 170);
+        // Only the presentation controller may uncover a newly rendered region.
+        // A fixed timer races the GPU and exposes the previous location's frame.
+        // A same-region command must not cover an already presented scene forever.
+        if (__qvPorts.state.world.region !== previousRegion)
+            document.getElementById('location-shade').classList.add('active');
         setTool('inspect', { applySelection: false });
     }
     let point = [0, 1, 0];
