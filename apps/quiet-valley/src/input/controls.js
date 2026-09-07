@@ -57,7 +57,7 @@ function input() {
             return;
         }
         if (id !== null) {
-            __qvPorts.choosePlot(id);
+            __qvPorts.choosePlot(id, {direct:true});
             return;
         }
         let nearest = null;

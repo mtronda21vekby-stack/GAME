@@ -5,13 +5,13 @@ import { createInteractions } from '../input/interactions.js';
 import { createControls } from '../input/controls.js';
 /* UI, input, persistence and presentation composition root. */
 'use strict';
-export async function startController({ session, FarmSim, FarmExpansion, ValleyGameplay, FarmProduction, FarmArt, ValleyWorld, FarmAtmosphere, FarmWater, ValleyUI, GameplayUI, ProductionUI, FarmPick, F, diagnostics, lifetime, graphics }) {
+export async function startController({ session, FarmSim, FarmExpansion, ValleyGameplay, FarmProduction, FarmArt, ValleyWorld, FarmAtmosphere, FarmWater, ValleyUI, GameplayUI, ProductionUI, FarmPick, F, diagnostics, lifetime, graphics, createCountryDetails }) {
     const gameNow = () => session.now();
     const $ = s => document.querySelector(s);
     const icons = { sprout: '<path d="M12 21v-9M12 15C5 16 3 10 3 6c6-1 10 2 9 9ZM12 11C11 5 15 2 21 3c0 6-3 9-9 8Z"/>', coin: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="6"/><path d="M12 8v8m-2-6 2-2 2 2"/>', star: '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z"/>', help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4m0 3h.01"/>', plus: '<path d="M12 5v14M5 12h14"/>', minus: '<path d="M5 12h14"/>', home: '<path d="m3 11 9-8 9 8M5 10v11h14V10M9 21v-8h6v8"/>', sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/>', moon: '<path d="M20 15A9 9 0 0 1 9 3a9 9 0 1 0 11 12Z"/>', muted: '<path d="m11 4-5 4H3v8h3l5 4ZM16 9l5 6m0-6-5 6"/>', sound: '<path d="m11 4-5 4H3v8h3l5 4ZM15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/>', cursor: '<path d="m5 3 14 10-7 1-3 7Z"/>', water: '<path d="M12 2C9 7 5 11 5 15a7 7 0 0 0 14 0c0-4-4-8-7-13Z"/><path d="M9 15c0 2 1 3 3 3"/>', basket: '<path d="M3 10h18l-2 11H5ZM7 10l5-8 5 8M9 14v4m6-4v4"/>', barn: '<path d="M3 10 12 3l9 7v11H3ZM8 21V11h8v10M8 12l8 9m0-9-8 9"/>', paw: '<ellipse cx="12" cy="16" rx="5" ry="4"/><ellipse cx="5" cy="10" rx="2" ry="2.7" transform="rotate(-20 5 10)"/><ellipse cx="9" cy="5.5" rx="2" ry="2.7"/><ellipse cx="15" cy="5.5" rx="2" ry="2.7"/><ellipse cx="19" cy="10" rx="2" ry="2.7" transform="rotate(20 19 10)"/>' };
     const icon = name => `<svg viewBox="0 0 24 24" aria-hidden="true">${icons[name] || icons.sprout}</svg>`;
     document.querySelectorAll('[data-icon]').forEach(el => el.innerHTML = icon(el.dataset.icon));
-    let R, art, world, atmosphere, waterFX, state, storageOK = true, loadWarning = '', selected = null, tool = 'inspect', seed = 'carrot', modalKind = null, night = false, audioOn = false, audio = null, saveCount = 0, detailsSignature = '', questSignature = '';
+    let R, art, world, atmosphere, country, waterFX, state, storageOK = true, loadWarning = '', selected = null, tool = 'inspect', seed = 'carrot', modalKind = null, night = false, audioOn = false, audio = null, saveCount = 0, detailsSignature = '', questSignature = '';
     const escapeText = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const store = { inspect: () => session.persistence() };
     state = session.snapshot();
@@ -163,7 +163,7 @@ export async function startController({ session, FarmSim, FarmExpansion, ValleyG
         R.setQuality(b.dataset.quality);
         renderModal('graphics', false);
         toast('Графика: ' + F.QUALITY[R.quality].label);
-    } if (b.dataset.seed) {
+    } if (b.dataset.lighting) { night=b.dataset.lighting==='evening';visualDirty=true;closeModal(); } if (b.dataset.seed) {
         seed = b.dataset.seed;
         buildSeeds();
     } if (b.hasAttribute('data-close-details')) {
@@ -254,11 +254,26 @@ export async function startController({ session, FarmSim, FarmExpansion, ValleyG
     });
     $('#quick-map').onclick = () => renderModal('map');
     $('#open-production').onclick = () => renderModal('production');
-    $('#objective-chip').onclick = () => renderModal('production');
+    $('#objective-chip').onclick = () => {
+        const goal=FarmProduction.nextGoal(state);
+        if(goal.view==='garden'||goal.view==='water'||goal.view==='animals'){
+            if(state.world.region!=='farm')run({type:'travel',region:'farm'});
+            if(goal.view==='animals'){
+                const a=state.animals.find(a=>a.type==='cow')||state.animals[0],m=a&&art.animalModels.get(a.id);if(m){R.camera.target=[m.g.p[0],.5,m.g.p[2]];R.camera.size=innerWidth<700?9:7;R.camera.pitch=.65;R.cameraVP();chooseAnimal(a.id);}else renderModal('shop');
+            }else{focusGarden();setTool(goal.view==='water'?'water':'inspect',{applySelection:false});}
+            toast(goal.detail);
+        }else renderModal(goal.view);
+    };
     $('#menu-toggle').onclick = () => { $('#ui').classList.toggle('menu-open'); $('#menu-toggle').setAttribute('aria-expanded', String($('#ui').classList.contains('menu-open'))); };
     $('#quick-story').onclick = () => renderModal('journal');
     $('#quick-graphics').onclick = () => renderModal('graphics');
     $('#quick-photo').onclick = photo;
+    $('#quick-audio').onclick=()=>{$('#sound-toggle').click();$('#quick-audio').textContent=audioOn?'Выключить звук':'Включить звук';};
+    $('#focus-animals').onclick=()=>{
+        if(state.world.region!=='farm')run({type:'travel',region:'farm'});
+        R.camera.target=[6,.5,-.1];R.camera.size=innerWidth<700?10.5:7.5;R.camera.pitch=.7;R.camera.yaw=.22;
+        R.cameraVP();setTool('inspect',{applySelection:false});updateLabels(gameNow());
+    };
     $('#open-map').onclick = () => renderModal('map');
     $('#open-land').onclick = () => renderModal('land');
     $('#open-orders').onclick = () => renderModal('orders');
@@ -276,7 +291,7 @@ export async function startController({ session, FarmSim, FarmExpansion, ValleyG
     $('#help').onclick = () => renderModal('help');
     lifetime.on($('#modal-overlay'), 'click', e => { if (e.target === $('#modal-overlay'))
         closeModal(); });
-    function photo() { document.body.classList.remove('menu-open'); document.body.classList.toggle('photo'); $('#photo-return').hidden = !document.body.classList.contains('photo'); }
+    function photo() { $('#ui').classList.remove('menu-open'); document.body.classList.toggle('photo'); $('#photo-return').hidden = !document.body.classList.contains('photo'); }
     $('#photo-return').onclick = photo;
     const defaultCamera = () => { Object.assign(R.camera, world ? world.focusCamera(state.world.region, innerWidth < 700) : { yaw: .58, pitch: .79, size: innerWidth < 700 ? 23.4 : 14.7, target: [0, 0, -.05] }); };
     const focusGarden = () => { if (state.world.region === 'farm') {
@@ -306,6 +321,7 @@ export async function startController({ session, FarmSim, FarmExpansion, ValleyG
         art = FarmArt.make(R);
         world = ValleyWorld.make(R, art);
         atmosphere = FarmAtmosphere.make(R, world, art);
+        country = createCountryDetails(R,world);
         world.sync(state);
         defaultCamera();
         waterFX = FarmWater.make(R);
@@ -343,6 +359,7 @@ export async function startController({ session, FarmSim, FarmExpansion, ValleyG
                     art.animate(time / 1000, dt, state);
                     world.animate(time / 1000, dt, state);
                     atmosphere.animate(time / 1000, dt, state);
+                    country.animate(time / 1000);
                     waterFX.animate(dt);
                     for (const p of particles) {
                         if (p.life <= 0) {
@@ -394,7 +411,7 @@ export async function startController({ session, FarmSim, FarmExpansion, ValleyG
         lifetime.on(window, 'resize', () => { R.resize(); R.cameraVP(); updateLabels(gameNow()); });
         if (loadWarning)
             lifetime.timeout(() => toast(loadWarning), 450);
-        window.FarmApp = { inspect: () => ({ version: '0.6.2-restored.1', weather: ValleyGameplay.weather(state), story: ValleyGameplay.storyStatus(state), orders: state.game.orders.map(o => ({ ...o, deliverable: ValleyGameplay.canDeliver(state, o) })), world: world.inspect(), construction: { type: buildType, rotation: buildRotation }, graphics: { quality: R.quality, shadowSize: R.shadowSize, post: R.postOK, motion: R.motion, warnings: R.warnings }, waterFX: waterFX.inspect(), soilWetness: art.cropModels.map(m => m.wet), camera: { ...R.camera }, state: FarmSim.clone(state), tool, seed, selected, storageOK, saveCount, webgl: R.gl.getParameter(R.gl.VERSION), shadow: R.shadowOK, meshes: R.meshes.length, drawBatches: R.batches.size, drawStats: R.drawStats, production: FarmSim.clone(state.production), persistence: store.inspect(), frames, elapsedMs: performance.now() - started }), projectPlot: (id, dx = 0, dz = 0) => { R.cameraVP(); let p = art.cropModels[id]; return R.project([p.x + dx, p.surface, p.z + dz]); }, projectWorld: (x, z) => { R.cameraVP(); return R.project([x, .25, z]); }, projectFeature: key => { const f = world.features.find(f => f.key === key); return f ? R.project(f.pos) : null; }, projectAnimal: id => { let m = art.animalModels.get(id); return m ? R.project([m.g.p[0], .8, m.g.p[2]]) : null; } };
+        window.FarmApp = { inspect: () => ({ version: '0.6.3-atelier.1', weather: ValleyGameplay.weather(state), story: ValleyGameplay.storyStatus(state), orders: state.game.orders.map(o => ({ ...o, deliverable: ValleyGameplay.canDeliver(state, o) })), world: world.inspect(), construction: { type: buildType, rotation: buildRotation }, graphics: { quality: R.quality, shadowSize: R.shadowSize, post: R.postOK, motion: R.motion, warnings: R.warnings }, waterFX: waterFX.inspect(), soilWetness: art.cropModels.map(m => m.wet), camera: { ...R.camera }, state: FarmSim.clone(state), tool, seed, selected, storageOK, saveCount, webgl: R.glVersion, shadow: R.shadowOK, meshes: R.meshes.length, drawBatches: R.batches.size, drawStats: R.drawStats, production: FarmSim.clone(state.production), persistence: store.inspect(), frames, elapsedMs: performance.now() - started }), projectPlot: (id, dx = 0, dz = 0) => { R.cameraVP(); let p = art.cropModels[id]; return R.project([p.x + dx, p.surface, p.z + dz]); }, projectWorld: (x, z) => { R.cameraVP(); return R.project([x, .25, z]); }, projectFeature: key => { const f = world.features.find(f => f.key === key); return f ? R.project(f.pos) : null; }, projectAnimal: id => { let m = art.animalModels.get(id); return m ? R.project([m.g.p[0], .8, m.g.p[2]]) : null; } };
         window.render_game_to_text = () => JSON.stringify({ coordinates: 'Y up; plots use world X/Z; screen origin top-left', ...window.FarmApp.inspect() });
     }
     catch (e) {

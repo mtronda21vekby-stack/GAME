@@ -1,6 +1,19 @@
 import {TAU,norm} from './math.js';
  function geometry(type){const out=[];function vert(p,n){out.push(...p,...n);}function tri(a,b,c,na,nb=na,nc=na){vert(a,na);vert(b,nb);vert(c,nc);}
-  if(type==='blade'){
+  if(type==='bevelBox'){
+   const a=.5,b=.445;
+   for(let axis=0;axis<3;axis++)for(const sign of [-1,1]){
+    const u=(axis+1)%3,v=(axis+2)%3,n=[0,0,0];n[axis]=sign;
+    const points=[[-1,-1],[1,-1],[1,1],[-1,1]].map(([su,sv])=>{const p=[0,0,0];p[axis]=sign*a;p[u]=su*b;p[v]=sv*b;return p;});
+    tri(points[0],points[1],points[2],n);tri(points[0],points[2],points[3],n);
+   }
+   for(let x=0;x<3;x++)for(let y=x+1;y<3;y++)for(const sx of [-1,1])for(const sy of [-1,1]){
+    const z=3-x-y,n=[0,0,0];n[x]=sx;n[y]=sy;
+    const p=(hi,t)=>{const r=[0,0,0];r[x]=sx*(hi?a:b);r[y]=sy*(hi?b:a);r[z]=t*b;return r;};
+    tri(p(true,-1),p(true,1),p(false,1),norm(n));tri(p(true,-1),p(false,1),p(false,-1),norm(n));
+   }
+   for(const x of [-1,1])for(const y of [-1,1])for(const z of [-1,1])tri([x*a,y*b,z*b],[x*b,y*a,z*b],[x*b,y*b,z*a],norm([x,y,z]));
+  }else if(type==='blade'){
    tri([-.06,0,0],[.06,0,0],[.015,.65,.04],[0,0,1]);
    tri([.06,0,0],[-.06,0,0],[.015,.65,.04],[0,0,-1]);
   } else if(type==='box'){

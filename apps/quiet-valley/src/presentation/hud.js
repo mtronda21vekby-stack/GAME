@@ -85,6 +85,7 @@ function updateUI(force = false) {
     __qvPorts.$('#objective-title').textContent = goal.title;
     __qvPorts.$('#objective-sub').textContent = goal.detail;
     __qvPorts.$('#objective-step').textContent = goal.step + ' / ' + goal.total;
+    __qvPorts.$('#objective-chip').dataset.goalView = goal.view;
     __qvPorts.$('#craft-ready').textContent = __qvPorts.state.production.jobs.filter(j => j.readyAt <= __qvPorts.gameNow()).length || '';
     __qvPorts.$('#quick-region').textContent = __qvPorts.FarmExpansion.regions[__qvPorts.state.world.region].name;
     if (__qvPorts.modalKind === 'production') {
@@ -177,12 +178,12 @@ function renderModal(kind, focus = true) {
         __qvPorts.lastModalTrigger = document.activeElement;
     let html = '<button class="close" data-close-modal aria-label="Закрыть окно">×</button>';
     if (kind === 'barn') {
-        let total = Object.entries(__qvPorts.state.inventory).reduce((sum, [k, n]) => sum + (k === 'wheat' ? Math.max(0, n - 3) : n) * __qvPorts.FarmSim.PRODUCTS[k].price, 0);
+        const {total,reserved}=__qvPorts.FarmProduction.surplus(__qvPorts.state);
         html += '<div class="eyebrow">ВСЁ, ЧТО ВЫ ВЫРАСТИЛИ</div><h2 id="modal-title">Ваш амбар</h2><p>Свежий урожай и маленькие подарки от животных.</p>';
         for (const [key, p] of Object.entries(__qvPorts.FarmSim.PRODUCTS)) {
-            html += `<div class="inventory-row"><span class="inventory-emoji">${p.icon}</span><div class="inventory-name">${p.name}<small>${p.price} монет за штуку${key === 'wheat' ? ' · корм для животных' : ''}</small></div><b class="inventory-quantity">${__qvPorts.state.inventory[key]}</b><button data-action="sell" data-key="${key}" data-qty="1" ${__qvPorts.state.inventory[key] ? '' : 'disabled'}>Продать 1</button></div>`;
+            html += `<div class="inventory-row"><span class="inventory-emoji">${p.icon}</span><div class="inventory-name">${p.name}<small>${p.price} монет за штуку${reserved[key] ? ' · для заказов и корма: '+reserved[key] : ''}</small></div><b class="inventory-quantity">${__qvPorts.state.inventory[key]}</b><button data-action="sell" data-key="${key}" data-qty="1" ${__qvPorts.state.inventory[key] ? '' : 'disabled'}>Продать 1</button></div>`;
         }
-        html += `<div class="inventory-total"><span>Продать запасы</span><b>${total} 🪙</b></div><button class="primary" data-action="sell" ${total ? '' : 'disabled'}>Продать всё · ${total} монет</button><div class="fineprint">При продаже всего остаются 3 единицы пшеницы на корм.<br>Отдельной кнопкой можно продать и этот запас.</div>`;
+        html += `<div class="inventory-total"><span>Свободно для продажи</span><b>${total} 🪙</b></div><button class="primary" data-action="sellSurplus" ${total ? '' : 'disabled'}>Продать излишки · ${total} монет</button><div class="fineprint">Излишки не затрагивают продукты для трёх текущих заказов и 3 пшеницы на корм. Отдельная продажа по одной штуке — ваш осознанный выбор.</div>`;
     }
     else if (kind === 'shop') {
         html += '<div class="eyebrow">НОВЫЕ ЖИТЕЛИ ДОЛИНЫ</div><h2 id="modal-title">Кого поселим?</h2><p>Каждое животное гуляет по ферме самостоятельно. Кормите, гладьте и собирайте продукцию.</p>';
@@ -195,7 +196,7 @@ function renderModal(kind, focus = true) {
         html += '<div class="eyebrow">СВЕТ, ВОДА И ВЕТЕР</div><h2 id="modal-title">Графика</h2><p>Шейдерная вода, ветер в листве и влажная земля работают во всех режимах.</p>';
         for (const [key, q] of Object.entries(__qvPorts.F.QUALITY))
             html += `<button class="quality-choice ${__qvPorts.R.quality === key ? 'chosen' : ''}" data-quality="${key}" aria-pressed="${__qvPorts.R.quality === key}"><b>${q.label}</b><small>${key === 'high' ? 'Мягкие тени 2048 · лёгкое свечение' : key === 'balanced' ? 'Тени 1024 · умеренное разрешение' : 'Меньше нагрузка · упрощённые тени'}</small><span>${__qvPorts.R.quality === key ? '✓' : '○'}</span></button>`;
-        html += '<div class="notice">При нагреве телефона выберите «Экономный». Прогресс фермы не меняется при переключении графики. Это процедурные эффекты, без трассировки лучей.</div><div class="modal-button-row"><button class="secondary" id="save-help">Сохранение и справка</button></div>';
+        html += '<div class="modal-button-row"><button class="secondary" data-lighting="day">Утро</button><button class="secondary" data-lighting="evening">Вечер</button></div><div class="notice">При нагреве телефона выберите «Экономный». Прогресс фермы не меняется при переключении графики. Это процедурные эффекты, без трассировки лучей.</div><div class="modal-button-row"><button class="secondary" id="save-help">Сохранение и справка</button></div>';
     }
     else {
         html += '<div class="eyebrow">МАЛЕНЬКАЯ ФЕРМА. БОЛЬШАЯ ЗАБОТА.</div><h2 id="modal-title">Добро пожаловать</h2><div class="help-grid"><span>🌱</span><div>Нажмите на каплю для полива. Либо выберите «Полить» и коснитесь самой земли.<small>Морковь: 45 сек. Пшеница: 30 сек. Тыква: 75 сек.</small></div><span>🐑</span><div>Нажмите на животное: покормите пшеницей, погладьте и заберите продукцию.<small>Сытость и настроение влияют на производство. Животные не погибают.</small></div><span>🪙</span><div>Выполняйте заказы на рыночной доске, а лишние запасы продавайте в амбаре.<small>Срочные заказы и серии поставок дают повышенную награду.</small></div><span>🖐</span><div>В режиме осмотра перетаскивание вращает ферму. С лейкой — поливает грядки. Колёсико или два пальца — масштаб.<small>Клавиши 1–4: инструменты. B: амбар. H: убрать интерфейс. Escape: закрыть окно.</small></div></div><div class="notice"><b>Это локальный прототип, не онлайн-сервис.</b><br>Прогресс хранится только в этом браузере. Очистка данных браузера может его удалить. Аккаунтов, друзей и серверной экономики здесь пока нет. Таймеры ускорены; изменение часов устройства влияет на локальную симуляцию. Все 3D-модели созданы программно.</div><div class="modal-button-row"><button class="secondary" id="export-save">Экспорт сохранения</button><button class="secondary" id="import-save">Импорт</button><input type="file" id="import-file" accept="application/json,.json" hidden><button class="secondary" id="reset-save">Начать заново</button></div>';

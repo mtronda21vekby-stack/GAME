@@ -20,7 +20,17 @@ export default `#version 300 es
   vec3 n=normalize(vN),viewDir=normalize(uEye-vP);float material=vFX.x;
   vec3 base=vC;float shine=0.,alpha=uAlpha;
   float sh=shadow(n);float daylight=clamp(uDay,0.,1.);float clock=uTime*uMotion;
-  if(material>.5&&material<1.5){
+  if(material>6.5&&material<7.5){
+   float grain=.5+.5*sin(vLocal.y*92.+sin(vLocal.x*13.+vLocal.z*7.)*2.2);
+   base*=.94+grain*.10;
+  } else if(material>7.5&&material<8.5){
+   vec2 tile=vec2(vP.z*3.0,vP.y*5.0);tile.x+=mod(floor(tile.y),2.)*.5;
+   vec2 edge=abs(fract(tile)-.5);vec2 width=max(fwidth(tile),vec2(.025));
+   float seam=max(smoothstep(.44-width.x,.49,edge.x),smoothstep(.44-width.y,.49,edge.y));
+   base*=.95+.075*hash21(floor(tile));base*=1.-seam*.12;
+  } else if(material>8.5&&material<9.5){
+   base*=.96+.065*noise2(vP.xy*18.+vP.zz*2.);
+  } else if(material>.5&&material<1.5){
    // Analytic wave normal, procedural caustics and sky Fresnel (not SSR).
    vec2 w=vP.xz;float radius=vFX.y>.5?abs(vLocal.x-.18*sin(vLocal.z*3.)):length(vLocal.xz);
    n=normalize(vec3(-.13*cos(w.x*2.7+clock*.9)-.055*cos((w.x+w.y)*5.-clock*.8),1.,-.13*cos(w.y*4.2-clock*1.1)-.055*cos((w.x+w.y)*5.-clock*.8)));
@@ -47,14 +57,14 @@ export default `#version 300 es
    base*=mix(.78,1.13,patches);base=mix(base,base*vec3(1.04,1.08,.86),noise2(vP.xz*17.)*.13);
   } else if(material>1.5&&material<2.5){base*=.87+.13*sin(vP.y*2.+vP.x*.5);float rim=pow(1.-max(dot(n,viewDir),0.),3.);shine+=rim*.018*daylight;}
   float lambert=max(dot(n,uSun),0.);
-  vec3 hemi=mix(vec3(.24,.27,.17),vec3(.53,.64,.73),clamp(n.y*.5+.5,0.,1.));
+  vec3 hemi=mix(vec3(.25,.27,.19),vec3(.46,.58,.69),clamp(n.y*.5+.5,0.,1.));
   float contact=mix(.78,1.,smoothstep(-.55,.45,vLocal.y));
-  vec3 light=hemi*.56*contact+vec3(1.,.86,.64)*lambert*sh*1.02;
+  vec3 light=hemi*.62*contact+vec3(1.,.85,.63)*lambert*sh*1.08;
   if(material>1.5&&material<2.5)light+=vec3(.24,.32,.12)*pow(max(dot(-uSun,viewDir),0.),2.)*.32;
   light=mix(vec3(.13,.19,.30)+light*.22,light,daylight);
   vec3 c=base*light+vec3(1.,.92,.76)*shine*sh;
   if(material>4.5&&material<5.5)c+=vec3(1.2,.66,.18)*(1.-daylight)*1.7;
-  if(material>5.5){c=base*(.9+daylight*.35)+vec3(.14,.24,.28);}
+  if(material>5.5&&material<6.5){c=base*(.9+daylight*.35)+vec3(.14,.24,.28);}
   float fog=smoothstep(26.,75.,length(vP.xz));c=mix(c,vec3(.70,.76,.62),fog*.65);
   outColor=vec4(tonemap(c),alpha);
  }`;

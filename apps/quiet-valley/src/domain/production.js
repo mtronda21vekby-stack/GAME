@@ -1,6 +1,7 @@
 /* Pure production commands. Inputs are reserved once; completed jobs are claimed once.
  * This remains a local game. A future server must own the same command invariants. */
 'use strict';
+import {surplus,nextFarmGoal} from './journey.js';
 export function createProduction(FarmSim, ValleyGameplay, clock) {
   const S=FarmSim;
   const base = { fresh:S.fresh, validate:S.validate, tick:S.tick, act:S.act };
@@ -83,6 +84,13 @@ export function createProduction(FarmSim, ValleyGameplay, clock) {
     if(!action||typeof action!=='object')return fail('Некорректное действие');
     const p=ensure(state);
     switch(action.type){
+      case 'sellSurplus':{
+        const available=surplus(state,S.PRODUCTS);
+        if(!available.total)return fail('Запасы нужны заказчикам и животным. Пока нет излишков.');
+        for(const [key,amount] of Object.entries(available.items))state.inventory[key]-=amount;
+        state.coins+=available.total;state.stats.sales++;state.xp+=8;
+        return done(`Излишки проданы: +${available.total} монет. Заказы и корм сохранены.`,'coins');
+      }
       case 'buildWorkshop':{
         const error=buildError(state,action.key);if(error)return fail(error);
         const station=STATIONS[action.key];
@@ -124,5 +132,5 @@ export function createProduction(FarmSim, ValleyGameplay, clock) {
     if(!(p.crafted.bread>0))return {title:'Испеките деревенский хлеб',detail:'Мука + молоко + яйцо → 2 хлеба',step:4,total:5};
     return {title:p.festivalDelivered?'Праздник урожая состоялся':'Соберите корзину к празднику',detail:p.festivalDelivered?'Продолжайте историю и развивайте четыре участка':'4 хлеба · 2 конфитюра · 1 ткань',step:5,total:5};
   }
-  return {GOODS,STATIONS,RECIPES,FESTIVAL,ensure,ingredients,missing,buildError,craftError,nextGoal};
+  return {GOODS,STATIONS,RECIPES,FESTIVAL,ensure,ingredients,missing,buildError,craftError,nextGoal:state=>nextFarmGoal(state,nextGoal(state)),surplus:state=>surplus(state,S.PRODUCTS)};
 }
