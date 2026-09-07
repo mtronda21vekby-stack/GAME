@@ -50,14 +50,23 @@ const catalog = fs.readFileSync(catalogPath, "utf8");
 const required = [
   [manifest.schemaVersion === 1, "manifest schemaVersion"],
   [manifest.id === "quiet-valley", "manifest world id"],
+  [manifest.version === "0.5.1-blackcrown.2", "runtime version"],
   [manifest.bridge === "blackcrown.world.v1", "bridge contract"],
   [manifest.saveNamespace === "bc.world.quiet-valley.v1", "save namespace"],
+  [manifest.capabilities.includes("ios-safe-renderer"), "manifest iOS safe capability"],
   [runtime.includes("bc.world.quiet-valley.v1"), "runtime save namespace"],
   [runtime.includes("blackcrown.world.v1"), "runtime bridge"],
-  [runtime.includes("BLACKCROWN"), "runtime lobby return"],
+  [runtime.includes("0.5.1-blackcrown.2"), "runtime version marker"],
+  [runtime.includes("this.mobileSafe"), "mobile-safe renderer selection"],
+  [runtime.includes("Mobile safe renderer"), "mobile-safe postprocess bypass"],
+  [runtime.includes("setTimeout(() => startRenderLoop(), 16)"), "non-blocking render-loop startup"],
+  [runtime.includes("[hidden]{display:none!important}"), "reliable hidden-state CSS"],
+  [runtime.includes("BLACKCROWN"), "runtime platform return"],
   [catalog.includes(manifest.runtime), "catalog runtime URL"],
   [catalog.includes(manifest.preview), "catalog preview URL"],
+  [catalog.includes(manifest.version), "catalog version"],
   [!runtime.includes("/*__"), "runtime build placeholders"],
+  [!runtime.includes("texture(uShadow,s.xy+offset*uShadowTexel).r?.30:1."), "invalid GLSL shadow token"],
 ];
 
 for (const [ok, label] of required) {
