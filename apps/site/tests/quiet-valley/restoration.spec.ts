@@ -22,10 +22,10 @@ function watch(page:Page){
 // Separate scenarios have independent save stores and time budgets. In particular,
 // ready() never navigates; the old reload()->boot()->goto() canceled WebKit modules.
 test('real first frame, protected playfield and smart crop interactions',async({page},testInfo)=>{
- const errors=watch(page);await open(page);
+ const errors=watch(page);await open(page);const isMobile=testInfo.project.name.includes('mobile');
  expect((await info(page)).graphics.quality).toBe('balanced');
  await page.screenshot({path:testInfo.outputPath('farm-day.png')});
- await page.locator('#focus-garden').click();
+ if(!isMobile)await page.locator('#focus-garden').click();
  let p=await page.evaluate(()=> (window as any).FarmApp.projectPlot(0));await tap(page,p.x,p.y);
  await expect.poll(async()=> (await info(page)).state.plots[0].crop).toBe(null);
  await page.locator('[data-tool="plant"]').click();await page.locator('[data-seed="wheat"]').click();
@@ -68,14 +68,15 @@ test('all four detailed locations survive travel without accumulating scene obje
  await expect(page.locator('#error')).toBeHidden();expect(errors).toEqual([]);
 });
 test('animal care spends actual feed and lighting presets preserve the same farm',async({page},testInfo)=>{
- const errors=watch(page);await open(page);await page.locator('#focus-animals').click();
+ const errors=watch(page);await open(page);const isMobile=testInfo.project.name.includes('mobile');
+ if(!isMobile)await page.locator('#focus-animals').click();
  const before=(await info(page)).state;
  const p=await page.evaluate(()=> (window as any).FarmApp.projectAnimal(1));await tap(page,p.x,p.y);
  await page.locator('[data-action="feed"][data-id="1"]').click();
  await expect.poll(async()=> (await info(page)).state.inventory.wheat).toBe(before.inventory.wheat-1);
  expect((await info(page)).state.animals.find((a:any)=>a.id===1).hunger).toBeGreaterThan(90);
  await page.screenshot({path:testInfo.outputPath('animal-care.png')});
- await page.locator('[data-close-details]').click();await page.locator('#home-camera').click();
+ await page.locator('[data-close-details]').click();if(!isMobile)await page.locator('#home-camera').click();
  await page.locator('#menu-toggle').click();await page.locator('#quick-graphics').click();
  await page.locator('[data-lighting="evening"]').click();
  await page.waitForTimeout(1200);await page.screenshot({path:testInfo.outputPath('farm-evening.png')});
