@@ -19,7 +19,7 @@ export function createFarmLayout(BaseFarmArt){
   const moved={
    farmhouse:moveRoot([-6.5,-6.8],[-8.35,-6.45]),
    cottage:moveRoot([-1.15,-7.85],[-4.75,-7.35]),
-   windmill:moveRoot([-10,-3.65],[-10.85,1.25]),
+   windmill:moveRoot([-10,-3.65],[-7.85,1.25]),
    market:moveRoot([-5.2,7.1],[-7.05,6.55]),
    orderBoard:moveRoot([-2.55,6.75],[-4.45,6.45]),
    wagon:moveRoot([-8.5,6.7],[-9.25,5.35]),
@@ -88,7 +88,7 @@ export function createFarmLayout(BaseFarmArt){
   const routes={
    elena:[[-8.0,-5.75],[-6.25,-5.25],[-4.3,-5.0],[-3.2,-4.85],[-1.2,-4.75],[-3.2,-4.85],[-5.7,-5.2]],
    mia:[[-7.0,6.05],[-5.8,5.85],[-4.45,6.15],[-2.9,5.75],[-1.0,4.95],[-2.9,5.75],[-5.15,5.55]],
-   fedor:[[-10.55,1.35],[-9.25,2.3],[-8.2,3.7],[-7.1,5.2],[-5.15,5.4],[-7.1,5.2],[-9.0,3.35]],
+   fedor:[[-7.75,1.35],[-7.4,2.3],[-7.15,3.7],[-6.8,5.0],[-5.15,5.4],[-6.8,5.0],[-7.35,3.25]],
    lea:[[7.95,4.85],[6.9,4.2],[5.6,3.3],[3.8,3.3],[2.0,3.55],[3.8,3.3],[6.4,4.0]]
   };
   for(const v of art.villagers||[]){
@@ -108,7 +108,7 @@ export function createFarmLayout(BaseFarmArt){
 
   art.layoutWorld={
    moved,removedLoose,routes,
-   districts:{homes:[-8.35,-4.75,-6.45,-7.35],market:[-7.05,-4.45,6.55,6.45],utility:[-10.85,1.25],livestock:[3.65,8.0,-4.05,5.0]},
+   districts:{homes:[-8.35,-4.75,-6.45,-7.35],market:[-7.05,-4.45,6.55,6.45],utility:[-7.85,1.25],livestock:[3.65,8.0,-4.05,5.0]},
    anchors:{market:[...art.marketPoint],orders:[...art.orderBoardPoint],trough:[...art.troughPoint]},
    inspect(){return {moved:{...moved},removedLoose,routes:Object.fromEntries(Object.entries(routes).map(([k,v])=>[k,v.map(p=>[...p])])),anchors:{market:[...art.marketPoint],orders:[...art.orderBoardPoint],trough:[...art.troughPoint]}};}
   };
