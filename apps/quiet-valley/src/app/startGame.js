@@ -6,6 +6,7 @@ import {attachBridge} from '../infrastructure/blackcrownBridge.js';
 import * as F from '../rendering/index.js';
 import {createFarmArt} from '../scene/farm.js';
 import {createValleyWorld} from '../scene/valley.js';
+import {createEstateWorld} from '../scene/estateWorld.js';
 import {createCountryDetails} from '../scene/countryDetails.js';
 import {createAtmosphere} from '../scene/atmosphere.js';
 import {createWatering} from '../scene/watering.js';
@@ -23,8 +24,9 @@ export async function startGame({lifetime,diagnostics}){
  const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
  const domain=createDomain(clock),session=new GameSession(domain.commands,clock,createSaveRepository(storage));
  const {FarmSim,FarmExpansion,ValleyGameplay,FarmProduction}=domain.queries;
+ const ValleyWorld=createEstateWorld(createValleyWorld(FarmExpansion,FarmSim),FarmExpansion);
  const app=await startController({session,FarmSim,FarmExpansion,ValleyGameplay,FarmProduction,F,
-  FarmArt:createFarmArt(FarmSim),ValleyWorld:createValleyWorld(FarmExpansion,FarmSim),FarmAtmosphere:createAtmosphere(FarmProduction),FarmWater:createWatering(reducedMotion),
+  FarmArt:createFarmArt(FarmSim),ValleyWorld,FarmAtmosphere:createAtmosphere(FarmProduction),FarmWater:createWatering(reducedMotion),
   ValleyUI:createValleyUI(FarmSim,FarmExpansion),GameplayUI:createGameplayUI(FarmSim,ValleyGameplay),ProductionUI:createProductionUI(FarmSim,FarmProduction),FarmPick,
   createCountryDetails,lifetime,diagnostics,graphics:graphicsPreferences(storage,reducedMotion)});
  if(!diagnostics.failed)attachBridge({inspect:app.inspect,lifetime,host:window,origin:location.origin,version:VERSION});
