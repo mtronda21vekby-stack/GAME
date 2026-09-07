@@ -30,12 +30,14 @@ async function openEstate(page:Page){
  await expect(direct).toBeVisible();await direct.click();
 }
 
-test('buying estate tier 2 visibly grows the rendered island beyond its original shoreline',async({page},testInfo)=>{
+test('buying estate tier 2 grows one radial buildable coastline around the original island',async({page},testInfo)=>{
  await fundedFreshFarm(page);
  const before=await info(page);
  expect(before.state.world.estate.tier).toBe(1);
- expect(before.world.estate.tierPads).toBe(0);
- expect(before.world.estate.bounds.base.x).toBe(14.75);
+ expect(before.world.estate.radial).toBe(true);
+ expect(before.world.estate.visibleRing).toBeNull();
+ expect(before.world.estate.bounds.base.rx).toBe(14.75);
+ expect(before.world.estate.bounds.current.rx).toBe(14.75);
 
  await openEstate(page);
  const expand=page.locator('[data-action="expandEstate"]');
@@ -43,14 +45,15 @@ test('buying estate tier 2 visibly grows the rendered island beyond its original
  await expand.click();
 
  await expect.poll(async()=> (await info(page)).state.world.estate.tier).toBe(2);
- await expect.poll(async()=> (await info(page)).world.estate.tierPads).toBe(1);
+ await expect.poll(async()=> (await info(page)).world.estate.visibleRing).toBe('2');
  const after=await info(page);
- expect(after.world.estate.bridges).toBe(1);
- expect(after.world.estate.bounds.tier2.x).toBeGreaterThan(after.world.estate.bounds.base.x+5);
+ expect(after.world.estate.buildableRing).toBe(true);
+ expect(after.world.estate.bounds.current.rx).toBeGreaterThan(after.world.estate.bounds.base.rx+3);
+ expect(after.world.estate.bounds.current.rz).toBeGreaterThan(after.world.estate.bounds.base.rz+2);
  expect(after.camera.size).toBeGreaterThan(before.camera.size);
 
  await page.locator('[data-close-modal]').click();
- await page.waitForTimeout(700);
- await page.screenshot({path:testInfo.outputPath('estate-tier2-visible-coast.png')});
+ await page.waitForTimeout(900);
+ await page.screenshot({path:testInfo.outputPath('estate-tier2-radial-coast.png')});
  await expect(page.locator('#error')).toBeHidden();
 });
