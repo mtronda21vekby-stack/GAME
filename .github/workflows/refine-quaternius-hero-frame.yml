@@ -1,0 +1,223 @@
+name: Refine Quaternius hero frame
+
+on:
+  push:
+    branches:
+      - feature/crown-front-art-reboot-hero-frame
+    paths:
+      - .github/workflows/refine-quaternius-hero-frame.yml
+
+permissions:
+  contents: write
+
+jobs:
+  refine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/crown-front-art-reboot-hero-frame
+          fetch-depth: 0
+
+      - name: Apply controlled presentation refinement
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('unity/crown-front/Assets/_Project/Runtime/CrownQuaterniusArtReboot.cs')
+          text = path.read_text(encoding='utf-8')
+
+          def swap(old: str, new: str, label: str, expected: int = 1) -> None:
+              global text
+              count = text.count(old)
+              if count != expected:
+                  raise SystemExit(f'{label}: expected {expected} occurrence(s), found {count}')
+              text = text.replace(old, new)
+
+          swap(
+              '            _hullDark = CreateMaterial(shader, "Q // Hull Dark", new Color(0.018f, 0.027f, 0.043f), 0.78f, 0.34f, Color.black);',
+              '            _hullDark = CreateMaterial(shader, "Q // Hull Dark", new Color(0.052f, 0.072f, 0.105f), 0.76f, 0.42f, new Color(0.004f, 0.008f, 0.016f));',
+              'hull dark material')
+          swap(
+              '            _hullMid = CreateMaterial(shader, "Q // Hull Mid", new Color(0.075f, 0.105f, 0.145f), 0.86f, 0.50f, Color.black);',
+              '            _hullMid = CreateMaterial(shader, "Q // Hull Mid", new Color(0.145f, 0.205f, 0.285f), 0.84f, 0.56f, new Color(0.008f, 0.016f, 0.030f));',
+              'hull mid material')
+          swap(
+              '            _hullEdge = CreateMaterial(shader, "Q // Hull Edge", new Color(0.28f, 0.35f, 0.43f), 0.91f, 0.66f, Color.black);',
+              '            _hullEdge = CreateMaterial(shader, "Q // Hull Edge", new Color(0.48f, 0.60f, 0.74f), 0.90f, 0.72f, new Color(0.020f, 0.035f, 0.060f));',
+              'hull edge material')
+          swap(
+              '            _blueArmor = CreateMaterial(shader, "Q // Vanguard Armor", new Color(0.025f, 0.19f, 0.50f), 0.72f, 0.62f, new Color(0f, 0.075f, 0.28f));',
+              '            _blueArmor = CreateMaterial(shader, "Q // Vanguard Armor", new Color(0.035f, 0.28f, 0.68f), 0.72f, 0.64f, new Color(0f, 0.10f, 0.38f));',
+              'blue armor material')
+          swap(
+              '            _redArmor = CreateMaterial(shader, "Q // Hostile Armor", new Color(0.50f, 0.030f, 0.014f), 0.74f, 0.58f, new Color(0.30f, 0.008f, 0f));',
+              '            _redArmor = CreateMaterial(shader, "Q // Hostile Armor", new Color(0.62f, 0.055f, 0.022f), 0.74f, 0.60f, new Color(0.40f, 0.012f, 0f));',
+              'red armor material')
+          swap(
+              '            _brass = CreateMaterial(shader, "Q // Crown Brass", new Color(0.42f, 0.25f, 0.055f), 0.94f, 0.62f, Color.black);',
+              '            _brass = CreateMaterial(shader, "Q // Crown Brass", new Color(0.56f, 0.35f, 0.075f), 0.94f, 0.68f, new Color(0.025f, 0.012f, 0.002f));',
+              'brass material')
+
+          swap(
+              '            DisableOlderPresentation();\n            ConfigureLighting();\n            BuildTitan();',
+              '            DisableOlderPresentation();\n            RestoreAuthoredAnatomy();\n            ConfigureLighting();\n            BuildTitan();',
+              'restore authored anatomy call')
+
+          restore_method = '''
+        private void RestoreAuthoredAnatomy()
+        {
+            Transform authored = null;
+            Transform[] transforms = _titan.GetComponentsInChildren<Transform>(true);
+            for (int i = 0; i < transforms.Length; i++)
+            {
+                if (transforms[i].name == "ART REBOOT // MECHANICAL KING")
+                {
+                    authored = transforms[i];
+                    break;
+                }
+            }
+            if (authored == null)
+            {
+                throw new InvalidOperationException("Authored mechanical-king anatomy is missing before the Quaternius refinement pass.");
+            }
+
+            Renderer[] renderers = authored.GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                Renderer renderer = renderers[i];
+                string label = renderer.transform.name.ToUpperInvariant();
+                Material material;
+                if (label.Contains("SHIELD") && (label.Contains("CONDUIT") || label.Contains("ENERGY"))) material = _blueEnergy;
+                else if (label.Contains("BLADE") && (label.Contains("CONDUIT") || label.Contains("ENERGY"))) material = _redEnergy;
+                else if (label.Contains("SHIELD")) material = _blueArmor;
+                else if (label.Contains("BLADE") || label.Contains("EYE")) material = _redArmor;
+                else if (label.Contains("SPINAL") || label.Contains("ENERGY")) material = _whiteEnergy;
+                else if (label.Contains("PRONG") || label.Contains("BRASS")) material = _brass;
+                else if (label.Contains("EDGE") || label.Contains("RIM") || label.Contains("FIN")) material = _hullEdge;
+                else if (label.Contains("DEEP") || label.Contains("UNDERDECK") || label.Contains("KEEL") || label.Contains("MASS")) material = _hullDark;
+                else material = _hullMid;
+
+                int count = Mathf.Max(1, renderer.sharedMaterials.Length);
+                Material[] materials = new Material[count];
+                for (int slot = 0; slot < count; slot++) materials[slot] = material;
+                renderer.sharedMaterials = materials;
+                renderer.enabled = true;
+                renderer.shadowCastingMode = ShadowCastingMode.On;
+                renderer.receiveShadows = true;
+            }
+        }
+
+'''
+          marker = '        private void ConfigureLighting()\n'
+          if text.count(marker) != 1:
+              raise SystemExit('ConfigureLighting insertion marker was not unique')
+          text = text.replace(marker, restore_method + marker)
+
+          swap(
+              '            BuildTorso(root);\n            BuildRoutes(root);\n            BuildHead(root);\n            BuildMachinery(root);',
+              '            BuildTorso(root);\n            BuildHead(root);\n            BuildMachinery(root);',
+              'remove weak Quaternius route segments')
+
+          swap('            RenderSettings.fogDensity = 0.0042f;', '            RenderSettings.fogDensity = 0.0018f;', 'fog density')
+          swap('            RenderSettings.ambientSkyColor = new Color(0.19f, 0.25f, 0.34f);', '            RenderSettings.ambientSkyColor = new Color(0.34f, 0.43f, 0.56f);', 'ambient sky')
+          swap('            RenderSettings.ambientEquatorColor = new Color(0.060f, 0.085f, 0.125f);', '            RenderSettings.ambientEquatorColor = new Color(0.15f, 0.21f, 0.30f);', 'ambient equator')
+          swap('            RenderSettings.ambientGroundColor = new Color(0.010f, 0.015f, 0.025f);', '            RenderSettings.ambientGroundColor = new Color(0.035f, 0.052f, 0.080f);', 'ambient ground')
+          swap('                    light.intensity = 1.08f;', '                    light.intensity = 1.55f;', 'directional intensity')
+
+          swap(
+              '            camera.fieldOfView = 30.5f;\n            CrownQuaterniusHeroCamera rig = camera.GetComponent<CrownQuaterniusHeroCamera>();',
+              '            camera.clearFlags = CameraClearFlags.SolidColor;\n            camera.backgroundColor = new Color(0.012f, 0.022f, 0.040f);\n            camera.allowHDR = true;\n            camera.fieldOfView = 29.0f;\n            CrownQuaterniusHeroCamera rig = camera.GetComponent<CrownQuaterniusHeroCamera>();',
+              'camera presentation settings')
+          swap(
+              '            rig.Configure(new Vector3(0f, 30.5f, -31.8f), new Vector3(0f, 2.15f, 1.25f));',
+              '            rig.Configure(new Vector3(0f, 25.0f, -30.0f), new Vector3(0f, 2.75f, 2.0f));',
+              'camera pose')
+
+          swap('                new Vector3(4.5f, 1.0f, 4.5f),', '                new Vector3(4.15f, 0.82f, 4.15f),', 'core base scale')
+          swap('                new Vector3(0f, 0.65f, 0f),', '                new Vector3(0f, 0.54f, 0f),', 'core dome position')
+          swap('                new Vector3(3.5f, 1.8f, 3.5f),', '                new Vector3(3.15f, 1.30f, 3.15f),', 'core dome scale')
+          swap('                new Vector3(0f, 1.45f, 0f),', '                new Vector3(0f, 1.08f, 0f),', 'core lens position')
+          swap('                new Vector3(1.55f, 1.55f, 1.55f),', '                new Vector3(0.88f, 0.88f, 0.88f),', 'core lens scale')
+          swap(
+              '            Accent(root, "Reactor White Center", new Vector3(0f, 1.52f, -0.72f), new Vector3(0.38f, 0.38f, 0.12f), _whiteEnergy);',
+              '            OrbAccent(root, "Reactor White Center", new Vector3(0f, 1.10f, -0.43f), new Vector3(0.24f, 0.24f, 0.16f), _whiteEnergy);',
+              'core white center')
+          swap('                Vector3 position = new Vector3(Mathf.Sin(radians) * 2.05f, 0.58f, Mathf.Cos(radians) * 2.05f);', '                Vector3 position = new Vector3(Mathf.Sin(radians) * 1.68f, 0.46f, Mathf.Cos(radians) * 1.68f);', 'stabilizer radius')
+          swap('                    new Vector3(0.82f, 1.18f, 0.82f),', '                    new Vector3(0.68f, 0.90f, 0.68f),', 'stabilizer scale')
+          swap(
+              '                Accent(orbit, "Stabilizer Energy", position + Vector3.up * 0.62f, new Vector3(0.16f, 0.42f, 0.16f), energy);',
+              '                OrbAccent(orbit, "Stabilizer Energy", position + Vector3.up * 0.48f, new Vector3(0.12f, 0.20f, 0.12f), energy);',
+              'stabilizer energy')
+
+          swap('                new Vector3(2.05f, 0.86f, 2.05f),', '                new Vector3(1.72f, 0.68f, 1.72f),', 'tower base scale')
+          swap('            yaw.localPosition = new Vector3(0f, 0.82f, 0f);', '            yaw.localPosition = new Vector3(0f, 0.69f, 0f);', 'tower yaw position')
+          swap('                new Vector3(1.55f, 1.15f, 1.55f),', '                new Vector3(1.12f, 0.84f, 1.12f),', 'tower head scale')
+          swap('                new Vector3(-0.38f, 0.14f, forward * 0.90f),', '                new Vector3(-0.32f, 0.16f, forward * 0.88f),', 'left tower rail position')
+          swap('                new Vector3(0.38f, 0.14f, forward * 0.90f),', '                new Vector3(0.32f, 0.16f, forward * 0.88f),', 'right tower rail position')
+          swap('                new Vector3(0.22f, 0.22f, 1.55f),', '                new Vector3(0.18f, 0.18f, 1.32f),', 'tower rail scale', expected=2)
+          swap(
+              '            Accent(yaw, "Tower Team Aperture", new Vector3(0f, 0.22f, forward * 0.86f), new Vector3(0.42f, 0.18f, 0.10f), energy);',
+              '            OrbAccent(yaw, "Tower Team Aperture", new Vector3(0f, 0.20f, forward * 0.80f), new Vector3(0.22f, 0.16f, 0.12f), energy);',
+              'tower aperture')
+          swap(
+              '            Accent(root, "Faction Energy Signature", new Vector3(0f, hover + 0.78f, 0.58f), new Vector3(0.24f, 0.10f, 0.08f), energy);',
+              '            OrbAccent(root, "Faction Energy Signature", new Vector3(0f, hover + 0.70f, 0.48f), new Vector3(0.16f, 0.10f, 0.08f), energy);',
+              'unit energy signature')
+
+          orb_method = '''
+        private static GameObject OrbAccent(Transform parent, string name, Vector3 position, Vector3 scale, Material material)
+        {
+            GameObject accent = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            accent.name = name;
+            accent.transform.SetParent(parent, false);
+            accent.transform.localPosition = position;
+            accent.transform.localScale = scale;
+            Renderer renderer = accent.GetComponent<Renderer>();
+            renderer.sharedMaterial = material;
+            Collider collider = accent.GetComponent<Collider>();
+            if (collider != null) Destroy(collider);
+            return accent;
+        }
+
+'''
+          marker = '        private static GameObject Accent(Transform parent, string name, Vector3 position, Vector3 scale, Material material)\n'
+          if text.count(marker) != 1:
+              raise SystemExit('Accent insertion marker was not unique')
+          text = text.replace(marker, orb_method + marker)
+
+          forbidden = [
+              'REACTOR DORMANT', 'REACTOR OFFLINE', 'ORDER // DEPLOY A SQUAD',
+              'DEPLOY TO LANE', 'PUSH', 'HOLD', 'FLANK'
+          ]
+          upper = text.upper()
+          remaining = [token for token in forbidden if token in upper]
+          if remaining:
+              raise SystemExit(f'Forbidden visual-rebirth tokens remain after refinement: {remaining}')
+
+          path.write_text(text, encoding='utf-8')
+          print('Controlled Quaternius refinement applied and source-token scan passed.')
+          PY
+
+          git rm .github/workflows/refine-quaternius-hero-frame.yml
+
+      - name: Commit and push refinement
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='feature/crown-front-art-reboot-hero-frame'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add unity/crown-front/Assets/_Project/Runtime/CrownQuaterniusArtReboot.cs
+          git diff --cached --check
+          git commit -m 'feat: refine Quaternius hero-frame readability'
+
+          for attempt in 1 2 3 4; do
+            git fetch origin "$branch"
+            git rebase "origin/$branch"
+            if git push origin "HEAD:$branch"; then exit 0; fi
+            sleep $((attempt * 2))
+          done
+          exit 1
