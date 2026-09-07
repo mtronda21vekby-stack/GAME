@@ -7,6 +7,8 @@ const OUT = path.join(ROOT, "dist");
 const SITE = path.join(ROOT, "apps/site/dist");
 const GAME = path.join(ROOT, "apps/game/dist");
 const LOBBY = path.join(ROOT, "apps/lobby/dist");
+const QUIET_VALLEY_RUNTIME = path.join(LOBBY, "runtime/quiet-valley");
+const QUIET_VALLEY_META = path.join(LOBBY, "worlds/quiet-valley");
 
 function rm(p) {
   fs.rmSync(p, { recursive: true, force: true });
@@ -31,6 +33,8 @@ function ensureExists(p, label) {
 ensureExists(SITE, "site dist");
 ensureExists(GAME, "game dist");
 ensureExists(LOBBY, "lobby dist");
+ensureExists(QUIET_VALLEY_RUNTIME, "Quiet Valley runtime");
+ensureExists(QUIET_VALLEY_META, "Quiet Valley metadata");
 
 rm(OUT);
 mkdir(OUT);
@@ -41,8 +45,13 @@ copyDir(SITE, OUT);
 // 2) game -> /game
 copyDir(GAME, path.join(OUT, "game"));
 
-// 3) lobby -> /lobby
+// 3) EvoFish lobby -> /lobby
 copyDir(LOBBY, path.join(OUT, "lobby"));
+
+// 4) Quiet Valley is a standalone BLACKCROWN game, not an EvoFish lobby world.
+// Re-home the generated runtime plus its preview/manifest under /games/quiet-valley.
+copyDir(QUIET_VALLEY_META, path.join(OUT, "games/quiet-valley"));
+copyDir(QUIET_VALLEY_RUNTIME, path.join(OUT, "games/quiet-valley"));
 
 // Root shared assets referenced as "/icons/..."
 const siteIcons = path.join(SITE, "icons");
@@ -52,15 +61,17 @@ if (fs.existsSync(siteIcons)) copyDir(siteIcons, path.join(OUT, "icons"));
 const sitePwa = path.join(SITE, "pwa");
 if (fs.existsSync(sitePwa)) copyDir(sitePwa, path.join(OUT, "pwa"));
 
-// Redirects for SPA routing (site + nested apps)
+// Redirects for SPA routing (site + nested apps + standalone games)
 const redirects = [
   "/game/*   /game/index.html   200",
   "/lobby/*  /lobby/index.html  200",
+  "/games    /games/index.html  200",
+  "/games/quiet-valley/*  /games/quiet-valley/index.html  200",
   "/*        /index.html        200"
 ].join("\n") + "\n";
 fs.writeFileSync(path.join(OUT, "_redirects"), redirects, "utf-8");
 
-// Headers: site can cache shell normally, game must be NO-CACHE (no-store)
+// Headers: site can cache shell normally, interactive games should not retain stale shells.
 const headers = [
   "/*",
   "  X-Content-Type-Options: nosniff",
@@ -86,6 +97,13 @@ const headers = [
   "  Cache-Control: no-store",
   "",
   "/lobby/*",
+  "  Cache-Control: no-cache",
+  "",
+  "/games/index.html",
+  "  Cache-Control: no-cache",
+  "  Content-Type: text/html; charset=utf-8",
+  "",
+  "/games/quiet-valley/*",
   "  Cache-Control: no-cache",
   "",
   "/games/crown-front/index.html",
@@ -117,6 +135,8 @@ fs.writeFileSync(path.join(OUT, "_headers"), headers, "utf-8");
 console.log("OK: dist/ assembled for single-domain deployment.");
 console.log("Routes:");
 console.log("  /        -> site");
-console.log("  /game/   -> game");
-console.log("  /lobby/  -> lobby");
+console.log("  /game/   -> EvoFish game");
+console.log("  /lobby/  -> EvoFish lobby");
+console.log("  /games/  -> BLACKCROWN game catalog");
+console.log("  /games/quiet-valley/ -> Quiet Valley standalone WebGL game");
 console.log("  /games/crown-front/ -> CROWN//FRONT WebGL alpha");
