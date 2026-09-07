@@ -18,10 +18,15 @@ namespace CrownFront.Editor
         public static void RebuildPrototypeScene()
         {
             Directory.CreateDirectory(SceneDirectory);
+            CrownBakedArenaGenerator.GenerateAll();
+            PlayerSettings.bundleVersion = CrownBuildInfo.Version;
 
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-            GameObject root = new GameObject("CrownEngineGame");
-            root.AddComponent<CrownEngineGame>();
+            GameObject root = new GameObject("CROWN FRONT APPLICATION");
+            root.AddComponent<CrownAppFlowController>();
+            GameObject gameplay = new GameObject("CrownEngineGame");
+            gameplay.transform.SetParent(root.transform, false);
+            gameplay.AddComponent<CrownEngineGame>();
 
             EditorSceneManager.MarkSceneDirty(scene);
             if (!EditorSceneManager.SaveScene(scene, ScenePath))
@@ -45,6 +50,9 @@ namespace CrownFront.Editor
             RebuildPrototypeScene();
             ConfigurePlayer();
             CrownVisualRebirthValidation.ValidateForBuild();
+            CrownMenuBakedBattleValidation.ValidateAppFlow();
+            CrownMenuBakedBattleValidation.ValidateDeck();
+            CrownMenuBakedBattleValidation.ValidateBakedArenaLayers();
 
             string outputPath =
                 ReadArgument("-outputPath") ??
@@ -93,7 +101,7 @@ namespace CrownFront.Editor
         {
             PlayerSettings.companyName = "BlackCrown";
             PlayerSettings.productName = "CROWN//FRONT — THE CROWN ENGINE";
-            PlayerSettings.bundleVersion = "0.3.0-alpha.3";
+            PlayerSettings.bundleVersion = CrownBuildInfo.Version;
             PlayerSettings.defaultScreenWidth = 1080;
             PlayerSettings.defaultScreenHeight = 1920;
             PlayerSettings.runInBackground = false;

@@ -1,0 +1,19 @@
+{
+  "name": "CrownFront.PlayModeTests",
+  "rootNamespace": "CrownFront.Tests.PlayMode",
+  "references": [
+    "CrownFront.Runtime"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

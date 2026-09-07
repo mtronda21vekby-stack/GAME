@@ -46,6 +46,11 @@ namespace CrownFront.Editor
                 throw new InvalidOperationException("CrownFront/EngineSurface shader was not imported.");
             }
 
+            if (Shader.Find("CrownFront/RuntimeUI") == null)
+            {
+                throw new InvalidOperationException("CrownFront/RuntimeUI shader was not imported.");
+            }
+
             Scene scene = SceneManager.GetActiveScene();
             CrownEngineGame game = UnityEngine.Object.FindAnyObjectByType<CrownEngineGame>();
             if (!scene.IsValid() || game == null)
@@ -62,7 +67,7 @@ namespace CrownFront.Editor
                 }
             }
 
-            Debug.Log("CROWN//FRONT visual rebirth validation PASS: shader, source scan, scene root, and serialized components are valid.");
+            Debug.Log("CROWN//FRONT visual rebirth validation PASS: surface/UI shaders, source scan, scene root, and serialized components are valid.");
         }
 
         [MenuItem("CROWN FRONT/Review/Capture Gameplay Frames")]
@@ -91,7 +96,7 @@ namespace CrownFront.Editor
 
             string directory = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", "..", "VisualReview"));
             Directory.CreateDirectory(directory);
-            string output = Path.Combine(directory, "CROWN_FRONT_0.3.0-alpha.3_match-start.png");
+            string output = Path.Combine(directory, "CROWN_FRONT_0.4.0-menu-baked-review-match-start.png");
             File.WriteAllBytes(output, image.EncodeToPNG());
 
             camera.targetTexture = null;
@@ -104,34 +109,7 @@ namespace CrownFront.Editor
         [MenuItem("CROWN FRONT/Review/Run Presentation Smoke Checks")]
         public static void RunPresentationSmokeChecks()
         {
-            CrownEngineCloudBuild.RebuildPrototypeScene();
-            CrownEngineGame game = UnityEngine.Object.FindAnyObjectByType<CrownEngineGame>();
-            MethodInfo awake = typeof(CrownEngineGame).GetMethod("Awake", BindingFlags.Instance | BindingFlags.NonPublic);
-            if (game == null || awake == null) throw new InvalidOperationException("Shipping runtime root is unavailable.");
-            awake.Invoke(game, null);
-
-            CrownBuilding[] buildings = UnityEngine.Object.FindObjectsByType<CrownBuilding>(FindObjectsInactive.Include);
-            CrownUnit[] units = UnityEngine.Object.FindObjectsByType<CrownUnit>(FindObjectsInactive.Include);
-            CrownProjectile[] projectiles = UnityEngine.Object.FindObjectsByType<CrownProjectile>(FindObjectsInactive.Include);
-            CrownImpact[] impacts = UnityEngine.Object.FindObjectsByType<CrownImpact>(FindObjectsInactive.Include);
-            CrownUnitPresentation[] unitPresentation = UnityEngine.Object.FindObjectsByType<CrownUnitPresentation>(FindObjectsInactive.Include);
-            CrownBuildingPresentation[] buildingPresentation = UnityEngine.Object.FindObjectsByType<CrownBuildingPresentation>(FindObjectsInactive.Include);
-            Renderer[] activeRenderers = UnityEngine.Object.FindObjectsByType<Renderer>(FindObjectsInactive.Exclude);
-            ParticleSystem[] particleSystems = UnityEngine.Object.FindObjectsByType<ParticleSystem>(FindObjectsInactive.Include);
-
-            Require(buildings.Length == 8, $"Expected 8 gameplay buildings, found {buildings.Length}.");
-            Require(units.Length == 2, $"Expected two opening units, found {units.Length}.");
-            Require(unitPresentation.Length == units.Length, "Every gameplay unit must own a separate presentation component.");
-            Require(buildingPresentation.Length == buildings.Length, "Every gameplay building must own a separate presentation component.");
-            Require(projectiles.Length == 64, $"Expected 64 prewarmed projectiles, found {projectiles.Length}.");
-            Require(impacts.Length == 72, $"Expected 72 prewarmed impacts, found {impacts.Length}.");
-            Require(game.SharedMaterialCount == 11, $"Expected 11 shared instanced materials, found {game.SharedMaterialCount}.");
-            Require(game.RealtimeLightCount == 1, $"Expected exactly one realtime light, found {game.RealtimeLightCount}.");
-
-            Component[] components = UnityEngine.Object.FindObjectsByType<Component>(FindObjectsInactive.Include);
-            for (int i = 0; i < components.Length; i++) Require(components[i] != null, "Runtime hierarchy contains a missing component.");
-
-            Debug.Log($"CROWN//FRONT presentation smoke PASS: 8 buildings, 2 opening units, 136 pooled VFX objects, 11 shared materials, 1 realtime light, {activeRenderers.Length} active renderers at match start, {particleSystems.Length} ParticleSystems, no missing runtime components.");
+            CrownMenuBakedBattleValidation.RunRuntimeFlowSmoke();
         }
 
         private static void Require(bool condition, string message)
