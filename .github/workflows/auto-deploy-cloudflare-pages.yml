@@ -120,23 +120,53 @@ jobs:
           expected_site=os.environ['EXPECTED_SITE_BRIDGE_CONTRACT']
           expected_version=os.environ['EXPECTED_BOT_VERSION']
           expected_contract=os.environ['EXPECTED_BOT_RELEASE_CONTRACT']
-          headers={'Accept':'application/json','Cache-Control':'no-cache','Pragma':'no-cache','User-Agent':'BLACK-CROWN-OPS/production-smoke-v44'}
-          def request_json(url):
-              req=urllib.request.Request(url,headers=headers,method='GET')
+          base_headers={'Cache-Control':'no-cache','Pragma':'no-cache','User-Agent':'BLACK-CROWN-OPS/production-smoke-v44-games'}
+
+          def request(url, accept='*/*'):
+              req=urllib.request.Request(url,headers={**base_headers,'Accept':accept},method='GET')
               try:
                   with urllib.request.urlopen(req,timeout=20) as response:
-                      status=response.status; body=response.read().decode('utf-8',errors='replace')
+                      status=response.status
+                      content_type=response.headers.get('Content-Type','')
+                      body=response.read().decode('utf-8',errors='replace')
               except urllib.error.HTTPError as exc:
-                  status=exc.code; body=exc.read().decode('utf-8',errors='replace')
+                  status=exc.code
+                  content_type=exc.headers.get('Content-Type','') if exc.headers else ''
+                  body=exc.read().decode('utf-8',errors='replace')
+              return status,content_type,body
+
+          def request_json(url):
+              status,content_type,body=request(url,'application/json')
               try: payload=json.loads(body)
               except Exception: payload=None
               return status,payload,body[:500]
+
+          def require_html(url, markers, label):
+              status,content_type,body=request(url,'text/html,application/xhtml+xml')
+              if status != 200 or 'text/html' not in content_type.lower():
+                  raise AssertionError(f'{label} unavailable: {status} {content_type} {body[:240]}')
+              missing=[marker for marker in markers if marker not in body]
+              if missing:
+                  raise AssertionError(f'{label} wrong document, missing {missing}: {body[:300]}')
+
           last_error='not started'
           for attempt in range(1,19):
               try:
                   status,payload,body=request_json(site+'/api/deploy-version')
                   if status != 200 or not isinstance(payload,dict) or payload.get('bridgeContract') != expected_site:
                       raise AssertionError(f'stale site deployment: {status} {body}')
+
+                  require_html(
+                      site+'/games/',
+                      ['<title>BLACKCROWN Games</title>','EvoFish Next','Quiet Valley'],
+                      'BLACKCROWN Games Hub',
+                  )
+                  require_html(
+                      site+'/games/quiet-valley/',
+                      ['<title>Quiet Valley — BLACKCROWN Game</title>','bc.world.quiet-valley.v1','Трёхмерная ферма Quiet Valley'],
+                      'Quiet Valley standalone game',
+                  )
+
                   status,payload,body=request_json(site+'/api/auth/session/verify')
                   if status != 401 or not isinstance(payload,dict) or payload.get('reason') != 'unauthorized':
                       raise AssertionError(f'session verifier contract mismatch: {status} {body}')
@@ -146,7 +176,14 @@ jobs:
                   release=payload.get('release')
                   if not isinstance(release,dict) or release.get('version') != expected_version or release.get('contract') != expected_contract:
                       raise AssertionError(f'stale bot release: {body}')
-                  print('production ecosystem smoke: clean',f'site_contract={expected_site}',f'bot_version={expected_version}',f'bot_contract={expected_contract}')
+                  print(
+                      'production ecosystem smoke: clean',
+                      f'site_contract={expected_site}',
+                      'games_hub=ready',
+                      'quiet_valley=ready',
+                      f'bot_version={expected_version}',
+                      f'bot_contract={expected_contract}',
+                  )
                   break
               except Exception as exc:
                   last_error=f'attempt {attempt}/18: {type(exc).__name__}: {exc}'
