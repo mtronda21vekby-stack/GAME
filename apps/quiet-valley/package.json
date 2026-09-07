@@ -1,13 +1,12 @@
 {
   "name": "@blackcrown/quiet-valley",
   "private": true,
-  "version": "0.6.1",
+  "version": "0.6.2",
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "dev": "node scripts/serve.mjs",
+    "dev": "node scripts/build.mjs && node scripts/serve.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node scripts/check.mjs",
-    "test:browser": "node scripts/browser.mjs"
+    "test": "node scripts/check-architecture.mjs && node scripts/build.mjs && node --test tests/*.test.mjs"
   }
 }

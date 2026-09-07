@@ -3,9 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build:quiet-valley": "node world-runtimes/quiet-valley/build.mjs",
-    "dev": "node world-runtimes/quiet-valley/build.mjs && vite",
-    "build": "node world-runtimes/quiet-valley/build.mjs && vite build",
+    "build:quiet-valley": "corepack pnpm --filter @blackcrown/quiet-valley build",
+    "dev": "vite",
+    "build": "vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "node -e \"process.exit(0)\"",
     "test:quiet-valley": "node --test world-runtimes/quiet-valley/tests/*.test.cjs",

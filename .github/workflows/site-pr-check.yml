@@ -7,6 +7,8 @@ on:
     paths:
       - "apps/site/**"
       - "apps/lobby/**"
+      - "apps/quiet-valley/**"
+      - "scripts/assemble.mjs"
       - "functions/api/commerce/**"
       - "functions/api/integrations/**"
       - "functions/api/auth/guest.ts"
@@ -67,7 +69,10 @@ jobs:
       - name: Typecheck lobby
         run: pnpm --filter @blackcrown/lobby typecheck
 
-      - name: Quiet Valley deterministic tests
+      - name: Quiet Valley architecture and transactional session tests
+        run: pnpm --filter @blackcrown/quiet-valley test
+
+      - name: Quiet Valley legacy simulation compatibility tests
         run: pnpm --filter @blackcrown/lobby test:quiet-valley
 
       - name: Validate BLACKCROWN world registry and runtimes
@@ -93,6 +98,17 @@ jobs:
 
       - name: Install Playwright browsers
         run: pnpm --filter @blackcrown/site exec playwright install --with-deps chromium webkit
+
+      - name: Restored Quiet Valley served-page gameplay (Chromium + WebKit)
+        run: pnpm --filter @blackcrown/site exec playwright test --config playwright.quiet-valley.config.ts
+
+      - name: Archive Quiet Valley screenshots and traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quiet-valley-browser-evidence
+          path: apps/quiet-valley/reports
+          retention-days: 7
 
       - name: Chromium and WebKit smoke tests
         run: pnpm --filter @blackcrown/site test:e2e

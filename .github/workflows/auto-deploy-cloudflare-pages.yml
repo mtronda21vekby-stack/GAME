@@ -61,6 +61,8 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Validate commerce trust boundary
         run: node scripts/check-commerce-trust.mjs
+      - name: Validate restored Quiet Valley architecture and domain
+        run: pnpm --filter @blackcrown/quiet-valley test
       - name: Build production output
         run: pnpm build:prod
       - name: Upload dist artifact
@@ -110,6 +112,8 @@ jobs:
           --branch=main
           --commit-hash=${GITHUB_SHA}
           --commit-dirty=true
+      - name: Verify deployed Quiet Valley release and every ES module
+        run: node apps/quiet-valley/scripts/verify-deployed.mjs "$BLACKCROWN_PRODUCTION_URL"
       - name: Production ecosystem smoke gate
         shell: bash
         run: |

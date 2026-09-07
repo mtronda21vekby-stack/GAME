@@ -7,7 +7,7 @@ const OUT = path.join(ROOT, "dist");
 const SITE = path.join(ROOT, "apps/site/dist");
 const GAME = path.join(ROOT, "apps/game/dist");
 const LOBBY = path.join(ROOT, "apps/lobby/dist");
-const QUIET_VALLEY_RUNTIME = path.join(LOBBY, "runtime/quiet-valley");
+const QUIET_VALLEY_RUNTIME = path.join(ROOT, "apps/quiet-valley/dist");
 const QUIET_VALLEY_META = path.join(LOBBY, "worlds/quiet-valley");
 
 function rm(p) {
@@ -35,6 +35,8 @@ ensureExists(GAME, "game dist");
 ensureExists(LOBBY, "lobby dist");
 ensureExists(QUIET_VALLEY_RUNTIME, "Quiet Valley runtime");
 ensureExists(QUIET_VALLEY_META, "Quiet Valley metadata");
+ensureExists(path.join(QUIET_VALLEY_RUNTIME, "manifest.json"), "Quiet Valley release manifest");
+ensureExists(path.join(SITE, "games/index.html"), "BLACKCROWN games hub");
 
 rm(OUT);
 mkdir(OUT);
@@ -49,7 +51,7 @@ copyDir(GAME, path.join(OUT, "game"));
 copyDir(LOBBY, path.join(OUT, "lobby"));
 
 // 4) Quiet Valley is a standalone BLACKCROWN game, not an EvoFish lobby world.
-// Re-home the generated runtime plus its preview/manifest under /games/quiet-valley.
+// Build output comes from its OWN application, never a generated EvoFish lobby payload.
 copyDir(QUIET_VALLEY_META, path.join(OUT, "games/quiet-valley"));
 copyDir(QUIET_VALLEY_RUNTIME, path.join(OUT, "games/quiet-valley"));
 
@@ -64,13 +66,16 @@ if (fs.existsSync(sitePwa)) copyDir(sitePwa, path.join(OUT, "pwa"));
 // Redirects for SPA routing (site + nested apps + standalone games).
 // Exact slash and no-slash entries keep mobile Safari/Cloudflare directory handling deterministic.
 const redirects = [
+  "/games/quiet-valley/assets/* /games/quiet-valley/assets/:splat 200",
+  "/games/quiet-valley/manifest.json /games/quiet-valley/manifest.json 200",
+  "/games/quiet-valley/preview.webp /games/quiet-valley/preview.webp 200",
+  "/lobby/runtime/quiet-valley/index.html /games/quiet-valley/ 302",
   "/game/*   /game/index.html   200",
   "/lobby/*  /lobby/index.html  200",
   "/games    /games/index.html  200",
   "/games/   /games/index.html  200",
   "/games/quiet-valley    /games/quiet-valley/index.html  200",
   "/games/quiet-valley/   /games/quiet-valley/index.html  200",
-  "/games/quiet-valley/*  /games/quiet-valley/index.html  200",
   "/*        /index.html        200"
 ].join("\n") + "\n";
 fs.writeFileSync(path.join(OUT, "_redirects"), redirects, "utf-8");
@@ -111,8 +116,14 @@ const headers = [
   "  Cache-Control: no-store",
   "  Content-Type: text/html; charset=utf-8",
   "",
-  "/games/quiet-valley/*",
+  "/games/quiet-valley/",
   "  Cache-Control: no-cache",
+  "",
+  "/games/quiet-valley/manifest.json",
+  "  Cache-Control: no-cache",
+  "",
+  "/games/quiet-valley/assets/*",
+  "  Cache-Control: public, max-age=31536000, immutable",
   "",
   "/games/crown-front/index.html",
   "  Cache-Control: no-cache",
