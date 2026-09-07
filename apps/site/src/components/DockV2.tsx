@@ -33,7 +33,7 @@ const DEFAULT_ITEMS: DockV2Item[] = [
     isActive: (path) => path === "/",
   },
   {
-    href: "/game/",
+    href: "/games/",
     label: "Играть",
     icon: SiteIcons.games,
     tone: "green",
