@@ -8,6 +8,7 @@ async function ready(page:Page){
  if(await page.locator('.intro-start').isVisible())await page.locator('.intro-start').click();
  const i=await info(page);expect(i.frames).toBeGreaterThan(0);expect(i.version).toBe(VERSION);
  expect(i.meshes).toBeGreaterThan(8500);expect(i.shadow).toBe(true);
+ expect(i.presentedRegion).toBe(i.state.world.region);expect(i.presentationPending).toBe(false);
 }
 async function open(page:Page){await page.goto(PATH);await ready(page);}
 async function tap(page:Page,x:number,y:number){
@@ -62,6 +63,10 @@ test('all four detailed locations survive travel without accumulating scene obje
   await page.locator('#quick-map').click();await page.locator(`[data-travel="${region}"]`).click();
   await expect.poll(async()=> (await info(page)).state.world.region).toBe(region);
   await expect(page.locator('#location-shade')).not.toHaveClass(/active/);
+  // State/labels alone can change before the GPU presents the destination.
+  await expect.poll(async()=>{const i=await info(page);return {region:i.presentedRegion,pending:i.presentationPending};})
+   .toEqual({region,pending:false});
+  await expect(page.locator('#error')).toBeHidden();
   await page.screenshot({path:testInfo.outputPath(region+'.png')});
  }
  expect((await info(page)).meshes).toBe(meshes);
