@@ -1,9 +1,9 @@
 import React from "react";
+import { BLACKCROWN_MUSIC_SRC } from "../audio/blackcrownMusic";
 import "../styles/site-music.css";
 
 const ENABLED_KEY = "bc.siteMusic.enabled.v9";
 const VOLUME_KEY = "bc.siteMusic.volume.v9";
-const AUDIO_SRC = "https://cdn1.suno.ai/9ffd5c5a-9995-47da-bf04-c212a6b02804.mp3";
 
 type MusicState = "ready" | "starting" | "playing" | "paused" | "error";
 
@@ -120,7 +120,7 @@ export function SiteMusic() {
     >
       <audio
         ref={audioRef}
-        src={AUDIO_SRC}
+        src={BLACKCROWN_MUSIC_SRC}
         preload="metadata"
         loop
         playsInline

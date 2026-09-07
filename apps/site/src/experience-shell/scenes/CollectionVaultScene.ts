@@ -1,17 +1,37 @@
 import * as THREE from "three";
 import type { CommerceCatalogItem } from "@blackcrown/commerce";
+import { inverseLerp, smootherstep } from "../../experience/core/math";
 import type { SceneEvaluationSnapshot } from "../core/SceneLifecycle";
 import type { AssetSlotRegistry } from "../core/AssetSlotRegistry";
+import { EXPERIENCE_PHASE_RANGES } from "../experienceShellConfig";
 import { getCollectionHousingKind, getFeaturedCollectionItems } from "../featuredCatalog";
 import { ForegroundOcclusionSystem } from "./ForegroundOcclusionSystem";
 import { SpatialSceneBase, energyMaterial, metalMaterial } from "./SpatialSceneBase";
 
 const RARITY_COLORS = { common: 0xcbd5db, rare: 0x58c9ed, epic: 0xa982f0, legendary: 0xf0b65b } as const;
+const FINAL_PASS_MIDPOINT = (
+  EXPERIENCE_PHASE_RANGES.finalCrownPass[0] + EXPERIENCE_PHASE_RANGES.finalCrownPass[1]
+) / 2;
+
+type FadeMaterialState = {
+  opacity: number;
+  transparent: boolean;
+  depthWrite: boolean;
+};
+
+export function getCollectionFinalVisibility(progress: number) {
+  return 1 - smootherstep(inverseLerp(
+    EXPERIENCE_PHASE_RANGES.finalCrownPass[0],
+    FINAL_PASS_MIDPOINT,
+    progress,
+  ));
+}
 
 export class CollectionVaultScene extends SpatialSceneBase {
   private authored: THREE.Group | null = null;
   private readonly rails: THREE.InstancedMesh;
   private readonly housings: THREE.Group[] = [];
+  private readonly fadeMaterials = new Map<THREE.Material, FadeMaterialState>();
   private readonly featured = getFeaturedCollectionItems(3);
   private readonly foreground = new ForegroundOcclusionSystem([
     { position: [-5.05, 0, 2.1], scale: [0.32, 7.1, 0.34], rotation: [0.02, 0.12, -0.16], travel: [0.8, 0.1, 0.65] },
@@ -53,6 +73,7 @@ export class CollectionVaultScene extends SpatialSceneBase {
       this.root.add(housing);
     });
     this.root.add(this.rails, this.foreground.root);
+    this.captureFadeMaterials(this.root);
   }
 
   async preload() {
@@ -62,6 +83,37 @@ export class CollectionVaultScene extends SpatialSceneBase {
     model.position.set(0.0, 0.15, -0.9);
     model.scale.setScalar(0.9);
     this.root.add(model);
+    this.captureFadeMaterials(model);
+  }
+
+  private captureFadeMaterials(root: THREE.Object3D) {
+    root.traverse((object) => {
+      const mesh = object as THREE.Mesh;
+      if (!mesh.isMesh || !mesh.material) return;
+      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      for (const material of materials) {
+        if (this.fadeMaterials.has(material)) continue;
+        this.fadeMaterials.set(material, {
+          opacity: material.opacity,
+          transparent: material.transparent,
+          depthWrite: material.depthWrite,
+        });
+      }
+    });
+  }
+
+  private applyFinalVisibility(snapshot: SceneEvaluationSnapshot) {
+    const visibility = getCollectionFinalVisibility(snapshot.globalProgress) * snapshot.weight;
+    for (const [material, base] of this.fadeMaterials) {
+      const transparent = base.transparent || visibility < 0.999;
+      const depthWrite = base.depthWrite && visibility >= 0.999;
+      if (material.transparent !== transparent || material.depthWrite !== depthWrite) {
+        material.transparent = transparent;
+        material.depthWrite = depthWrite;
+        material.needsUpdate = true;
+      }
+      material.opacity = base.opacity * visibility;
+    }
   }
 
   private createHousing(item: CommerceCatalogItem) {
@@ -128,5 +180,6 @@ export class CollectionVaultScene extends SpatialSceneBase {
       this.authored.scale.setScalar(0.82 + reveal * 0.08);
     }
     if (this.foreground.root.visible) this.foreground.evaluate(snapshot.localProgress, snapshot.quality, snapshot.reducedMotion);
+    this.applyFinalVisibility(snapshot);
   }
 }

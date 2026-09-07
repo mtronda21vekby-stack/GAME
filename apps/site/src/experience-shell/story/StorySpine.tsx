@@ -9,7 +9,12 @@ export function StorySpine() {
     <main ref={storyRef} className="bcNexusStory bcExperienceStory" id="bc-experience-story">
       <StoryNavigation />
       {EXPERIENCE_CHAPTERS.map((chapter) => (
-        <StoryChapter key={chapter.id} chapter={chapter} active={snapshot.chapterId === chapter.id} />
+        <StoryChapter
+          key={chapter.id}
+          chapter={chapter}
+          active={snapshot.chapterId === chapter.id}
+          progress={snapshot.progress}
+        />
       ))}
     </main>
   );

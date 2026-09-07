@@ -236,7 +236,7 @@ export class CrownPrototype implements CrownVisual {
     const idle = state.reducedMotion ? 0 : Math.sin(state.elapsedSeconds * 0.3) * 0.018 * state.idleAmount;
     this.root.rotation.y = -0.07 + state.inspection * 0.13 - state.portal * 0.06 + idle;
     this.root.rotation.x = -0.025 + state.open * 0.025;
-    this.root.rotation.z = state.reducedMotion ? 0 : Math.sin(state.elapsedSeconds * 0.18) * 0.006;
+    this.root.rotation.z = (state.reducedMotion ? 0 : Math.sin(state.elapsedSeconds * 0.18) * 0.006) + (state.rootRotationZOffset ?? 0);
 
     if (!state.reducedMotion) {
       this.coreContainment.rotation.y = state.elapsedSeconds * 0.08;

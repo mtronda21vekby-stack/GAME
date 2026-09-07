@@ -5,11 +5,10 @@ import { pathToFileURL } from "node:url";
 const baseUrl = process.env.BC_CAPTURE_URL || "http://127.0.0.1:5194";
 const output = "/tmp/blackcrown-blender-site-elements-v1/site";
 const chapters = [
-  ["world-gate", 0.295, 1],
-  ["crown-front-reactor", 0.6, 2],
-  ["network-architecture", 0.745, 3],
-  ["collection-vault", 0.865, 4],
-  ["identity-frame", 0.97, 5],
+  ["world-gate", 0.3325, 1],
+  ["crown-front-reactor", 0.635, 2],
+  ["network-architecture", 0.865, 3],
+  ["collection-vault", 0.935, 4],
 ];
 
 await mkdir(output, { recursive: true });
@@ -75,7 +74,7 @@ const mobile = await openExperience(browser, { width: 390, height: 844 });
 const auto = mobile.page.getByTitle("auto quality");
 if (await auto.count()) await auto.evaluate((element) => element.click());
 await mobile.page.waitForFunction(() => document.querySelector('[data-bc-experience-runtime="active"]')?.getAttribute("data-bc-crown-lod") === "low");
-await setProgress(mobile.page, 0.6);
+await setProgress(mobile.page, 0.76);
 await mobile.page.waitForTimeout(450);
 await mobile.page.screenshot({ path: `${output}/mobile-low-procedural-fallback.png` });
 const mobileMetrics = await mobile.runtime.evaluate((element) => ({

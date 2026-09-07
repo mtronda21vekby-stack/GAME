@@ -7,6 +7,7 @@ import type { ExperienceTimelineState } from "../types";
 export type CrownVisualState = ExperienceTimelineState & {
   elapsedSeconds: number;
   reducedMotion: boolean;
+  rootRotationZOffset?: number;
 };
 
 export interface CrownVisual {

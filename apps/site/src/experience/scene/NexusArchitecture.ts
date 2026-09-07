@@ -1,6 +1,10 @@
 import * as THREE from "three";
 import { clamp, smoothstep } from "../core/math";
 import { disposeObject3D } from "../core/Lifecycle";
+import { EXPERIENCE_PHASE_RANGES } from "../../experience-shell/experienceShellConfig";
+
+const COLLECTION_FADE_START = EXPERIENCE_PHASE_RANGES.networkCollection[0]
+  + (EXPERIENCE_PHASE_RANGES.networkCollection[1] - EXPERIENCE_PHASE_RANGES.networkCollection[0]) * 0.6;
 
 export class NexusArchitecture {
   readonly root = new THREE.Group();
@@ -56,8 +60,12 @@ export class NexusArchitecture {
   update(elapsedSeconds: number, progress: number, reducedMotion: boolean) {
     const reveal = smoothstep(clamp((progress - 0.08) / 0.28));
     const energy = smoothstep(clamp((progress - 0.38) / 0.28));
+    const finalFade = 1 - smoothstep(clamp(
+      (progress - COLLECTION_FADE_START)
+      / (EXPERIENCE_PHASE_RANGES.finalCrownPass[0] - COLLECTION_FADE_START),
+    ));
     this.materials.forEach((material, index) => {
-      material.opacity = reveal * (0.12 + (index % 3) * 0.035);
+      material.opacity = reveal * (0.12 + (index % 3) * 0.035) * finalFade;
       material.emissiveIntensity = 0.06 + energy * 0.14;
     });
     this.arcs.rotation.z = progress * -0.08 + (reducedMotion ? 0 : elapsedSeconds * 0.0025);

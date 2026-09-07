@@ -23,6 +23,14 @@ import { SceneRoot } from "./SceneRoot";
 import { AudioController } from "../audio/AudioController";
 import { getRuntimeLifecycleCounters, recordRuntimeDispose, recordRuntimeEntry } from "./RuntimeDiagnostics";
 import { ExperienceShellRuntime } from "../../experience-shell/core/ExperienceShellRuntime";
+import {
+  EXPERIENCE_FINAL_BLACKOUT_PROGRESS,
+  EXPERIENCE_PHASE_RANGES,
+} from "../../experience-shell/experienceShellConfig";
+
+const FINAL_CROWN_PASS_MIDPOINT = (
+  EXPERIENCE_PHASE_RANGES.finalCrownPass[0] + EXPERIENCE_PHASE_RANGES.finalCrownPass[1]
+) / 2;
 
 export type ExperienceRuntimeOptions = {
   container: HTMLElement;
@@ -45,6 +53,7 @@ export class ExperienceRuntime {
   private readonly sceneRoot: SceneRoot;
   private readonly camera: THREE.PerspectiveCamera;
   private readonly cameraRig: CameraRig;
+  private readonly crownCoreWorldPosition = new THREE.Vector3();
   private readonly scroll: ScrollDirector;
   private readonly pointer: PointerParallax;
   private readonly chapterDirector = new ChapterDirector();
@@ -206,13 +215,17 @@ export class ExperienceRuntime {
     this.frameSampler.add(deltaSeconds * 1000, now);
 
     this.snapshot = this.scroll.update(deltaSeconds);
+    this.audio.update(this.snapshot.progress, this.snapshot.reducedMotion);
     const timeline = this.chapterDirector.evaluate(this.snapshot);
     const pointer = this.pointer.update(deltaSeconds);
     const { viewportWidth, viewportHeight } = this.snapshot;
     const compactViewport = viewportWidth <= 820 || viewportHeight <= 520;
     const narrowViewport = viewportWidth <= 820 && viewportHeight > 520;
     const glbComposition = this.crownAssets.result.backend === "glb";
-    const identityReturn = Math.max(0, Math.min(1, (this.snapshot.progress - 0.89) / 0.08));
+    const identityReturn = Math.max(0, Math.min(1,
+      (this.snapshot.progress - EXPERIENCE_PHASE_RANGES.finalCrownPass[0])
+      / (FINAL_CROWN_PASS_MIDPOINT - EXPERIENCE_PHASE_RANGES.finalCrownPass[0]),
+    ));
     const gateCentering = Math.max(0, Math.min(1, (this.snapshot.progress - 0.18) / 0.12));
     const crownX = compactViewport ? 0 : 1.72 - gateCentering * 0.82 - identityReturn * 0.9;
     const crownY = narrowViewport
@@ -220,11 +233,11 @@ export class ExperienceRuntime {
       : viewportHeight <= 520 ? 0.35 : (glbComposition ? -0.04 + identityReturn * 0.76 : identityReturn * 0.7);
     this.rendererHost.resize(viewportWidth, viewportHeight);
     this.camera.aspect = Math.max(1, viewportWidth) / Math.max(1, viewportHeight);
-    this.cameraRig.update(this.snapshot, pointer, this.elapsedSeconds);
     this.crown.root.position.set(crownX, crownY, 0);
     const crownScale = identityReturn > 0 ? 0.72 + identityReturn * 0.16 : 1.05 + gateCentering * 0.1;
     this.crown.root.scale.setScalar(narrowViewport ? crownScale * 0.76 : compactViewport ? crownScale * 0.82 : crownScale);
     this.architecture.root.position.set(crownX, crownY, 0);
+    this.architecture.root.visible = this.snapshot.progress < EXPERIENCE_PHASE_RANGES.finalCrownPass[0];
     this.ecosystem.root.position.set(crownX, crownY, -0.4);
     this.portal.root.position.set(crownX, crownY - 0.12, -0.1);
     const shell = this.shellRuntime.update(
@@ -244,7 +257,20 @@ export class ExperienceRuntime {
     this.crown.setOpenProgress(timeline.open);
     this.crown.setCoreIntensity(timeline.coreIntensity);
     this.crown.setPortalProgress(timeline.portal);
-    this.crown.update(this.crown.root.visible ? deltaSeconds : 0, { ...timeline, elapsedSeconds: this.elapsedSeconds, reducedMotion: this.snapshot.reducedMotion });
+    this.crown.update(this.crown.root.visible ? deltaSeconds : 0, {
+      ...timeline,
+      elapsedSeconds: this.elapsedSeconds,
+      reducedMotion: this.snapshot.reducedMotion,
+      rootRotationZOffset: shell.crownRotationZOffset,
+    });
+    this.crown.root.updateMatrixWorld(true);
+    this.crown.core.getWorldPosition(this.crownCoreWorldPosition);
+    this.cameraRig.update(
+      this.snapshot,
+      pointer,
+      this.elapsedSeconds,
+      this.crown.root.visible ? this.crownCoreWorldPosition : undefined,
+    );
     this.particles.update(this.elapsedSeconds, this.snapshot.progress, this.snapshot.reducedMotion);
     this.architecture.update(this.elapsedSeconds, this.snapshot.progress, this.snapshot.reducedMotion);
     if (this.ecosystem.root.visible) this.ecosystem.update(this.elapsedSeconds, timeline.ecosystem, timeline.enter, this.snapshot.reducedMotion);
@@ -269,6 +295,8 @@ export class ExperienceRuntime {
       this.container.dataset.bcCrownPose = String(this.crown.root.userData.bcPoseSignature ?? "procedural");
     }
 
+    const finalBlackout = this.snapshot.progress >= EXPERIENCE_FINAL_BLACKOUT_PROGRESS;
+    const shouldIdle = this.scroll.isSettled() && (this.snapshot.reducedMotion || finalBlackout);
     const firstUiUpdate = !this.firstFrameRendered;
     if (firstUiUpdate) {
       this.firstFrameRendered = true;
@@ -278,7 +306,7 @@ export class ExperienceRuntime {
     }
 
     this.metricFrames += 1;
-    if (firstUiUpdate || now - this.lastUiUpdate >= 125) {
+    if (firstUiUpdate || shouldIdle || now - this.lastUiUpdate >= 125) {
       this.lastUiUpdate = now;
       this.onSnapshot({ ...this.snapshot });
       const elapsedWindow = Math.max(1, now - this.metricWindowStart);
@@ -337,7 +365,10 @@ export class ExperienceRuntime {
         activeSceneCount: this.shellRuntime.activeSceneCount,
         warnings,
       });
-      const lowAttention = this.snapshot.progress < 0.1 || this.snapshot.progress > 0.92;
+      const finalCrownClimax = this.snapshot.progress >= EXPERIENCE_PHASE_RANGES.finalCrownPass[0]
+        && this.snapshot.progress < EXPERIENCE_FINAL_BLACKOUT_PROGRESS;
+      const lowAttention = (this.snapshot.progress < 0.1 || this.snapshot.progress > 0.92)
+        && !finalCrownClimax;
       if (lowAttention) {
         const downgraded = this.quality.considerAutomaticDowngrade(sample);
         if (downgraded) {
@@ -353,7 +384,6 @@ export class ExperienceRuntime {
       }
     }
 
-    const shouldIdle = this.snapshot.reducedMotion && this.scroll.isSettled();
     if (!shouldIdle) this.requestFrame();
     else this.container.dataset.bcExperienceRaf = "0";
   };

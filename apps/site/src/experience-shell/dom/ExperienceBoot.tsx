@@ -15,8 +15,15 @@ const BOOT_LABELS: Record<ExperienceBootStage, string> = {
 };
 
 export function ExperienceBoot() {
-  const { bootStage, entered, enter, snapshot, webglAvailable } = useExperience();
+  const { bootStage, entered, enter, setSoundEnabled, snapshot, webglAvailable } = useExperience();
   const ready = bootStage === "ready" || bootStage === "fallback" || bootStage === "error";
+
+  const enterWithSound = () => {
+    // ENTER is the explicit user gesture that unlocks both the music bed and
+    // spatial ambience without relying on autoplay exceptions.
+    setSoundEnabled(true);
+    enter();
+  };
 
   React.useEffect(() => {
     if (ready && snapshot.reducedMotion) enter();
@@ -28,7 +35,7 @@ export function ExperienceBoot() {
       <div className="bcExperienceBoot__mark" aria-hidden="true"><i /><i /><i /></div>
       <span>{BOOT_LABELS[bootStage]}</span>
       <div className="bcExperienceBoot__progress" aria-hidden="true"><i data-stage={bootStage} /></div>
-      {ready ? <button type="button" onClick={enter}>ENTER</button> : null}
+      {ready ? <button type="button" onClick={enterWithSound}>ENTER</button> : null}
       {!webglAvailable ? <small>SPATIAL FALLBACK ACTIVE</small> : null}
     </div>
   );

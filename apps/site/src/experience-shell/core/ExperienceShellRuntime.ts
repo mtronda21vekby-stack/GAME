@@ -37,7 +37,7 @@ export class ExperienceShellRuntime {
     this.registry.register(new CrownFrontReactorScene(this.assets));
     this.registry.register(new NetworkCoreScene(this.assets));
     this.registry.register(new CollectionVaultScene(this.assets));
-    this.registry.register(new IdentityScene(this.assets));
+    this.registry.register(new IdentityScene());
   }
 
   update(
@@ -51,8 +51,8 @@ export class ExperienceShellRuntime {
     ecosystem: EcosystemNodes,
   ) {
     const lifecycle = this.registry.evaluate(progress, elapsedSeconds, reducedMotion, quality);
-    this.environment.update(progress, lifecycle, quality, reducedMotion, crown, particles, portal, ecosystem);
-    return lifecycle;
+    const environment = this.environment.update(progress, lifecycle, quality, reducedMotion, crown, particles, portal, ecosystem);
+    return { ...lifecycle, ...environment };
   }
 
   get activeSceneCount() { return this.registry.activeSceneCount; }

@@ -41,6 +41,22 @@ export const SCENE_LIGHTING_PROFILES: Readonly<Record<ExperienceSceneId, Readonl
   },
 };
 
+export const OCEAN_TO_VAULT_NEUTRAL_PROFILE: Readonly<SceneLightingProfile> = {
+  exposure: 0.89,
+  background: 0x03080b,
+  fogColor: 0x0a1519,
+  fogDensity: 0.059,
+  keyColor: 0xe4efef,
+  keyIntensity: 1.72,
+  rimColor: 0xa8dfe2,
+  rimIntensity: 1.78,
+  fillColor: 0x66767b,
+  fillIntensity: 0.48,
+  coreColor: 0xeaf5f2,
+  coreIntensity: 2.35,
+  bloomStrength: 0.09,
+};
+
 const COLOR_KEYS = ["background", "fogColor", "keyColor", "rimColor", "fillColor", "coreColor"] as const;
 const NUMBER_KEYS = ["exposure", "fogDensity", "keyIntensity", "rimIntensity", "fillIntensity", "coreIntensity", "bloomStrength"] as const;
 
@@ -78,12 +94,26 @@ export function resolveSceneLightingProfile(
 ) {
   const transition = lifecycle.transition;
   const profile = transition
-    ? interpolateLightingProfiles(
-      SCENE_LIGHTING_PROFILES[transition.from],
-      SCENE_LIGHTING_PROFILES[transition.to],
-      transition.amount,
-      target,
-    )
+    ? transition.id === "ocean-to-reactor"
+      ? transition.amount <= 0.5
+        ? interpolateLightingProfiles(
+          SCENE_LIGHTING_PROFILES[transition.from],
+          OCEAN_TO_VAULT_NEUTRAL_PROFILE,
+          transition.amount * 2,
+          target,
+        )
+        : interpolateLightingProfiles(
+          OCEAN_TO_VAULT_NEUTRAL_PROFILE,
+          SCENE_LIGHTING_PROFILES[transition.to],
+          (transition.amount - 0.5) * 2,
+          target,
+        )
+      : interpolateLightingProfiles(
+        SCENE_LIGHTING_PROFILES[transition.from],
+        SCENE_LIGHTING_PROFILES[transition.to],
+        transition.amount,
+        target,
+      )
     : interpolateLightingProfiles(
       SCENE_LIGHTING_PROFILES[lifecycle.primary],
       SCENE_LIGHTING_PROFILES[lifecycle.primary],
