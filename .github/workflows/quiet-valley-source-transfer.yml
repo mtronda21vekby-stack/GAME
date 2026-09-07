@@ -1,0 +1,23 @@
+name: Quiet Valley recovery source checkpoint
+on:
+  push:
+    branches: [work/quiet-valley-restoration-transfer]
+    paths: [.github/workflows/quiet-valley-source-transfer.yml]
+permissions:
+  contents: read
+jobs:
+  source-checkpoint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Archive source only, not credentials or environment
+        run: |
+          zip -qr /tmp/qv-recovery-sources.zip apps/quiet-valley apps/lobby/world-runtimes/quiet-valley apps/lobby/scripts apps/lobby/package.json apps/lobby/public/worlds/quiet-valley apps/lobby/src/worlds/catalog.ts apps/site/tests/e2e/quiet-valley.spec.ts apps/site/playwright.config.ts scripts/assemble.mjs package.json pnpm-workspace.yaml pnpm-lock.yaml .github/workflows/site-pr-check.yml .github/workflows/auto-deploy-cloudflare-pages.yml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qv-recovery-sources
+          path: /tmp/qv-recovery-sources.zip
+          retention-days: 1
