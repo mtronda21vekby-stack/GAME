@@ -161,24 +161,34 @@ function chooseFeature(key) {
 }
 function endBuild() { __qvPorts.buildType = null; document.body.classList.remove('construction'); __qvPorts.$('#build-controls').hidden = true; __qvPorts.world?.setPlacement(null, __qvPorts.state); }
 function startBuild(type) {
-    if (type !== 'remove' && !Object.hasOwn(__qvPorts.FarmExpansion.decor, type))
+    const building=type.startsWith('estate:')?type.slice(7):null;
+    if (type !== 'remove' && !(building?Object.hasOwn(__qvPorts.FarmExpansion.estateBuildings,building):Object.hasOwn(__qvPorts.FarmExpansion.decor, type)))
         return;
+    if(building&&__qvPorts.state.world.region!=='farm')run({type:'travel',region:'farm'});
     __qvPorts.closeModal();
+    document.getElementById('ui').classList.remove('menu-open');
+    document.getElementById('menu-toggle').setAttribute('aria-expanded','false');
     __qvPorts.selected = null;
     setTool('inspect', { applySelection: false });
     __qvPorts.buildType = type;
     __qvPorts.buildRotation = 0;
     document.body.classList.add('construction');
     __qvPorts.$('#build-controls').hidden = false;
-    const d = __qvPorts.FarmExpansion.decor[type];
+    const d = building?__qvPorts.FarmExpansion.estateBuildings[building]:__qvPorts.FarmExpansion.decor[type];
+    const moving=building&&__qvPorts.state.world.estate.buildings.includes(building);
     __qvPorts.$('#build-item-icon').textContent = d?.icon || '🪓';
     __qvPorts.$('#build-item-name').textContent = d?.name || 'Разобрать украшение';
-    __qvPorts.$('#build-item-price').textContent = d ? d.price + ' монет · за установку' : 'Возврат 50% цены';
+    __qvPorts.$('#build-item-price').textContent = building?(moving?'Перенос бесплатно':d.cost.coins+' 🪙 · '+d.cost.wood+' 🪵 · '+d.cost.stone+' 🪨 · после установки'):d ? d.price + ' монет · за установку' : 'Возврат 50% цены';
     __qvPorts.$('#build-rotate').hidden = type === 'remove';
     __qvPorts.$('#control-hint').textContent = type === 'remove' ? 'Нажмите на своё украшение · Грядки и постройки не удаляются' : 'Нажмите на свободную подсвеченную клетку · Перетаскивание вращает камеру';
     __qvPorts.world.setPlacement(type, __qvPorts.state, __qvPorts.buildRotation);
+    Object.assign(__qvPorts.R.camera,__qvPorts.world.focusCamera(__qvPorts.state.world.region,innerWidth<700));
     __qvPorts.R.camera.pitch = 1.05;
-    __qvPorts.R.camera.size = Math.min(__qvPorts.R.camera.size, innerWidth < 700 ? 18 : 12.8);
+    __qvPorts.R.cameraVP();
+    __qvPorts.$('#build-rotate').textContent='Поворот 0°';
+    __qvPorts.$('#build-finish').textContent=building?'Отмена':'Готово';
+    __qvPorts.$('#build-item-name').textContent=(moving?'Перенести: ':building?'Поставить: ':'')+(d?.name||'Разобрать украшение');
+    __qvPorts.$('#build-item-price').textContent+=' · нажмите на зелёную клетку';
 }
 function rotateBuild() { if (!__qvPorts.buildType || __qvPorts.buildType === 'remove')
     return; __qvPorts.buildRotation = (__qvPorts.buildRotation + 1) % 4; __qvPorts.world.setPlacement(__qvPorts.buildType, __qvPorts.state, __qvPorts.buildRotation); __qvPorts.$('#build-rotate').textContent = 'Поворот ' + __qvPorts.buildRotation * 90 + '°'; }

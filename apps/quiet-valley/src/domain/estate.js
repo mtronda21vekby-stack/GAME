@@ -1,5 +1,6 @@
 /* Island estate growth and staff automation. Composes on top of expansion without weakening save migration. */
 'use strict';
+import {estateMeadowCell,estateCollision,estateScale,terrainBounds,footprint,overlaps} from './estateLayout.js';
 export function createEstate(X, clock) {
  const S=X.sim,base={fresh:S.fresh,validate:S.validate,tick:S.tick,act:S.act};
  const own=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
@@ -26,13 +27,40 @@ export function createEstate(X, clock) {
   beekeeper:{name:'Пасечник',icon:'🐝',tier:3,cost:190,requires:'honey_house',desc:'Забирает готовый мёд с пасеки, когда он появляется.'},
   foreman:{name:'Прораб',icon:'🛠️',tier:4,cost:260,requires:'works_depot',desc:'Каждую рабочую смену добавляет древесину и камень для новых построек.'}
  };
- const freshEstate=now=>({tier:1,buildings:[],staff:[],lastShiftAt:now});
+ const freshEstate=now=>({layoutVersion:2,tier:1,buildings:[],placements:{},staff:[],lastShiftAt:now});
  const estate=s=>s.world.estate||(s.world.estate=freshEstate(clock.now()));
  const hasBuilding=(s,key)=>estate(s).buildings.includes(key);
  const hasStaff=(s,key)=>estate(s).staff.includes(key);
  const staffCapacity=s=>estateTiers[estate(s).tier].slots+estate(s).buildings.reduce((n,key)=>n+(estateBuildings[key]?.staffSlots||0),0);
  const buildingCapacity=s=>estateTiers[estate(s).tier].buildSlots;
- const estateStatus=s=>({tier:estate(s).tier,meta:estateTiers[estate(s).tier],next:estateTiers[estate(s).tier+1]||null,staffCapacity:staffCapacity(s),buildingCapacity:buildingCapacity(s),buildings:estate(s).buildings,staff:estate(s).staff});
+ const estateStatus=s=>({tier:estate(s).tier,meta:estateTiers[estate(s).tier],areaPercent:Math.round(estateScale(estate(s).tier)**2*100),next:estateTiers[estate(s).tier+1]||null,staffCapacity:staffCapacity(s),buildingCapacity:buildingCapacity(s),buildings:estate(s).buildings,staff:estate(s).staff});
+ function buildingPlacementCheck(s,key,x,z,rotation=0){
+  if(!own(estateBuildings,key))return 'Неизвестная постройка';
+  if(!Number.isInteger(rotation)||rotation<0||rotation>3)return 'Некорректный поворот';
+  const half=footprint(key,rotation);
+  if(!estateMeadowCell(estate(s).tier,x,z,half))return 'Вся постройка должна находиться на новой земле, за пределами старого двора.';
+  if(estateCollision(s,x,z,half,key))return 'Здесь уже стоит другое здание.';
+  if(s.world.decor.some(d=>d.region==='farm'&&overlaps({x,z},half,d,[.94,.94])))return 'Сначала уберите украшения с этого места.';
+  return '';
+ }
+ function placementError(s,type,x,z,rotation=0){return type?.startsWith('estate:')?
+  buildingPlacementCheck(s,type.slice(7),x,z,rotation):X.placementCheck(s,s.world.region,x,z);}
+ function placementCells(s,type='path',rotation=0){
+  const building=type.startsWith('estate:')?type.slice(7):null,tier=estate(s).tier,b=terrainBounds(tier),cells=[];
+  if(building&&(!own(estateBuildings,building)||s.world.region!=='farm'))return cells;
+  const mx=s.world.region==='farm'?Math.ceil(b.x/2)*2:12,mz=s.world.region==='farm'?Math.ceil(b.z/2)*2:10;
+  for(let x=-mx;x<=mx;x+=2)for(let z=-mz;z<=mz;z+=2){
+   const allowed=building?estateMeadowCell(tier,x,z,footprint(building,rotation)):X.allowedCell(s.world.region,x,z,tier);
+   if(allowed)cells.push({x,z,valid:!placementError(s,type,x,z,rotation)});
+  }
+  return cells;
+ }
+ function firstBuildingPosition(s,key){
+  // Also used to migrate the old, fixed satellite-platform buildings without charging again.
+  const region=s.world.region;s.world.region='farm';
+  const cells=placementCells(s,'estate:'+key).filter(c=>c.valid).sort((a,b)=>Math.hypot(a.x,a.z)-Math.hypot(b.x,b.z)||a.x-b.x||a.z-b.z);
+  s.world.region=region;const p=cells[0];return p?{x:p.x,z:p.z,rotation:0}:null;
+ }
  function canAfford(s,c){return s.coins>=c.coins&&s.world.materials.wood>=c.wood&&s.world.materials.stone>=c.stone;}
  function pay(s,c){s.coins-=c.coins;s.world.materials.wood-=c.wood;s.world.materials.stone-=c.stone;}
  function waterByStaff(s,now){
@@ -73,7 +101,17 @@ export function createEstate(X, clock) {
    const cap=estateTiers[e.tier].slots+e.buildings.reduce((n,k)=>n+(estateBuildings[k]?.staffSlots||0),0);e.staff=e.staff.slice(0,cap);
    e.lastShiftAt=Math.min(now,Math.max(1,Number.isFinite(r.lastShiftAt)?r.lastShiftAt:now));
   }
-  s.world.estate=e;return s;
+  s.world.estate=e;
+  for(const key of e.buildings){
+   const p=r?.placements?.[key];
+   if(p&&Number.isInteger(p.rotation)&&!buildingPlacementCheck(s,key,p.x,p.z,p.rotation))e.placements[key]={x:p.x,z:p.z,rotation:p.rotation};
+   else{
+    const next=firstBuildingPosition(s,key);
+    if(!next)throw Error('Не удалось безопасно восстановить размещение здания: '+key);
+    e.placements[key]=next;
+   }
+  }
+  return s;
  };
  S.tick=function(s,now=clock.now()){
   base.tick(s,now);if(!s.world?.estate)s.world.estate=freshEstate(now);
@@ -85,13 +123,23 @@ export function createEstate(X, clock) {
   if(a.type==='expandEstate'){
    if(e.tier>=4)return fail('Остров уже достиг максимального размера');const next=estateTiers[e.tier+1],c=next.cost;
    if(!canAfford(s,c))return fail('Для расширения нужно '+c.coins+' монет, '+c.wood+' древесины и '+c.stone+' камня');
-   pay(s,c);e.tier++;s.xp+=35;return done('Остров расширен: '+estateTiers[e.tier].name+' · территория '+estateTiers[e.tier].area+'% · +35 опыта','build');
+   pay(s,c);e.tier++;s.xp+=35;return done('Остров расширен по кругу: '+estateTiers[e.tier].name+' · размер '+estateTiers[e.tier].area+'% · +35 опыта','build');
   }
   if(a.type==='buildEstate'){
    const b=own(estateBuildings,a.key)?estateBuildings[a.key]:null;if(!b)return fail('Неизвестная хозяйственная постройка');
    if(e.tier<b.tier)return fail('Сначала расширьте остров до уровня '+b.tier);if(e.buildings.includes(a.key))return fail('Уже построено');
    if(e.buildings.length>=buildingCapacity(s))return fail('На этом уровне острова закончились места под крупные постройки');
-   if(!canAfford(s,b.cost))return fail('Не хватает ресурсов для строительства');pay(s,b.cost);e.buildings.push(a.key);s.xp+=20;return done(b.name+' построен · +20 опыта');
+   if(s.world.region!=='farm')return fail('Вернитесь на домашнюю ферму для строительства');
+   const p=a.x===undefined&&a.z===undefined&&a.rotation===undefined?firstBuildingPosition(s,a.key):a;
+   if(!p)return fail('Нет свободного места. Уберите украшения или расширьте остров');
+   const error=buildingPlacementCheck(s,a.key,p.x,p.z,p.rotation);if(error)return fail(error);
+   if(!canAfford(s,b.cost))return fail('Не хватает ресурсов для строительства');
+   pay(s,b.cost);e.buildings.push(a.key);e.placements[a.key]={x:p.x,z:p.z,rotation:p.rotation};s.xp+=20;return done(b.name+' построен · +20 опыта');
+  }
+  if(a.type==='moveEstate'){
+   if(s.world.region!=='farm'||!e.buildings.includes(a.key))return fail('Выберите своё здание на домашней ферме');
+   const error=buildingPlacementCheck(s,a.key,a.x,a.z,a.rotation);if(error)return fail(error);
+   e.placements[a.key]={x:a.x,z:a.z,rotation:a.rotation};return done('Постройка перемещена. Ресурсы не потрачены.');
   }
   if(a.type==='hireStaff'){
    const role=own(staffRoles,a.key)?staffRoles[a.key]:null;if(!role)return fail('Неизвестная профессия');if(e.tier<role.tier)return fail('Эта профессия откроется после расширения острова');
@@ -106,5 +154,5 @@ export function createEstate(X, clock) {
   if(result.ok&&a.type==='plant'&&hasBuilding(s,'greenhouse')){const p=s.plots[a.id];if(p?.crop&&p.readyAt>now)p.readyAt=now+Math.round((p.readyAt-now)*.85);}
   return result;
  };
- return {...X,sim:S,estateTiers,estateBuildings,staffRoles,estateStatus,hasBuilding,hasStaff,staffCapacity,buildingCapacity};
+ return {...X,sim:S,estateTiers,estateBuildings,staffRoles,estateStatus,buildingPlacementCheck,placementCells,placementError,hasBuilding,hasStaff,staffCapacity,buildingCapacity};
 }

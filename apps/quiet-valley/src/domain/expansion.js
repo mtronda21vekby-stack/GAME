@@ -2,6 +2,7 @@
  * All amounts are fictional game resources. Client-side saves are not secure online balances.
  */
 'use strict';
+import {estateMeadowCell,estateCollision,estateTier} from './estateLayout.js';
 export function createExpansion(S, clock) {
   const regions = {
     farm: {name:'Домашняя ферма',short:'Ферма',icon:'🏡',tag:'ЗДЕСЬ ВСЁ НАЧАЛОСЬ',description:'Уютный дом, огород и ваши животные. Проведите полив и обустройте двор.',color:'#b6c98c'},
@@ -56,10 +57,11 @@ export function createExpansion(S, clock) {
     for(let id=16;id<24;id++)s.plots.push(newPlot(id));return s;
   };
   // Placement grid is deliberately bounded, outside buildings, crops, waterways and work sites.
-  function allowedCell(region,x,z) {
+  function allowedCell(region,x,z,tier=1) {
     if(!own(regions,region)||!Number.isInteger(x)||!Number.isInteger(z)||x%2||z%2)return false;
     const reserved={farm:[[-10,-3.65,1.6],[-11,-6,1.4],[-11.8,-3,1.4],[-12,1,1.4],[-10,4.1,1.3],[-8.8,-3.1,1.2],[4.8,-8.9,1.1]],orchard:[[-6.8,-6.25,2.2],[5.5,5,2.4],[-7.6,-2.8,1.0],[-9,-5,1.2],[9,3,1.2]],river:[[-8,6,1.25],[-10,0,1.25]],forest:[[-3,-.5,2.2],[5,8,1.3],[-10,2,1.2]]};
     if(reserved[region].some(([rx,rz,r])=>Math.hypot(x-rx,z-rz)<r))return false;
+    if(region==='farm'&&estateMeadowCell(tier,x,z))return true;
     if(region==='farm')return x*x/170+z*z/100<.92 && ((x<=-10&&z<=4)||(z>=6&&x>=-2&&x<=0)||(z<=-8&&x>=2&&x<=6));
     if(x*x/115+z*z/85>.9)return false;
     if(region==='orchard')return (z>=4&&x<=4)||(x<=-8&&z<=2)||(x>=6&&z>=-2&&z<=4);
@@ -67,7 +69,8 @@ export function createExpansion(S, clock) {
     return (x<=-2&&z>=0&&z<=4)||(z>=6&&x>=-2&&x<=4);
   }
   function placementCheck(s,region,x,z,ignoreId=null) {
-    if(!allowedCell(region,x,z))return 'Здесь нельзя строить: выберите свободную подсвеченную клетку.';
+    if(!allowedCell(region,x,z,s.world.estate?.tier))return 'Здесь нельзя строить: выберите свободную подсвеченную клетку.';
+    if(region==='farm'&&estateCollision(s,x,z))return 'Здесь стоит хозяйственное здание. Выберите другую клетку.';
     if(s.world.decor.some(d=>d.region===region&&d.x===x&&d.z===z&&d.id!==ignoreId))return 'Эта клетка уже занята. Сначала уберите украшение.';
     if(resourceNodes.some(n=>n.region===region&&!s.world.cleared.includes(n.key)&&Math.hypot(n.x-x,n.z-z)<1.55))return 'Сначала уберите пень или камни рядом с этой клеткой.';
     return '';
@@ -78,6 +81,8 @@ export function createExpansion(S, clock) {
     s.version=2;s.inventory.apple=integer(raw.inventory?.apple,0,1e6);s.inventory.honey=integer(raw.inventory?.honey,0,1e6);
     const w=raw.version===2&&raw.world&&typeof raw.world==='object'?raw.world:null;
     s.world=defaults(now);const out=s.world;
+    // The estate layer validates buildings later; the tier is needed before validating decor.
+    out.estate={tier:estateTier(w?.estate?.tier)};
     if(w){
       out.region=own(regions,w.region)?w.region:'farm';
       out.materials={wood:integer(w.materials?.wood,0,1e5),stone:integer(w.materials?.stone,0,1e5)};
@@ -87,9 +92,9 @@ export function createExpansion(S, clock) {
         return {id:p.id,planted,waterAt:planted?bound(t?.waterAt,0,now):0,readyAt:planted?bound(t?.readyAt,0,now+86400000):0};});
       out.apiaryStock=level(s,'forest_apiary')?integer(w.apiaryStock,0,level(s,'forest_cabin')?6:3):0;
       out.apiaryAt=Math.min(now,Math.max(1,finite(w.apiaryAt,now)));
-      const ids=new Set();for(const d of (Array.isArray(w.decor)?w.decor:[]).slice(0,96)){
+      const ids=new Set();for(const d of (Array.isArray(w.decor)?w.decor:[]).slice(0,168)){
         if(!d||!Number.isSafeInteger(d.id)||d.id<1||ids.has(d.id)||!own(decor,d.type)||placementCheck(s,d.region,d.x,d.z))continue;
-        if(out.decor.filter(a=>a.region===d.region).length>=24)continue;ids.add(d.id);
+        if(out.decor.filter(a=>a.region===d.region).length>=decorCapacity(s,d.region))continue;ids.add(d.id);
         out.decor.push({id:d.id,type:d.type,region:d.region,x:d.x,z:d.z,rotation:integer(d.rotation,0,3)});
       }
       out.nextDecorId=Math.max(1,...out.decor.map(d=>d.id+1));
@@ -171,7 +176,7 @@ export function createExpansion(S, clock) {
       }
       case 'placeDecor':{
         if(!own(decor,a.key)||a.region!==w.region)return fail('Выберите украшение для текущего участка');
-        if(w.decor.filter(d=>d.region===a.region).length>=24)return fail('На участке уже 24 украшения');
+        if(w.decor.filter(d=>d.region===a.region).length>=decorCapacity(s,a.region))return fail('Лимит украшений достигнут — расширьте остров');
         const error=placementCheck(s,a.region,a.x,a.z);if(error)return fail(error);
         if(s.coins<decor[a.key].price)return fail('Недостаточно монет');s.coins-=decor[a.key].price;
         w.decor.push({id:w.nextDecorId++,type:a.key,region:a.region,x:a.x,z:a.z,rotation:integer(a.rotation,0,3)});
@@ -201,5 +206,6 @@ export function createExpansion(S, clock) {
     }
     return result;
   };
-  return {sim:S,regions,projects,decor,fruitSites,resourceNodes,level,plotRegion,irrigated,duration,projectCost,projectError,allowedCell,placementCheck};
+  function decorCapacity(s,region=s.world.region){return region==='farm'?24*estateTier(s.world.estate?.tier):24;}
+  return {sim:S,decorCapacity,regions,projects,decor,fruitSites,resourceNodes,level,plotRegion,irrigated,duration,projectCost,projectError,allowedCell,placementCheck};
 }
