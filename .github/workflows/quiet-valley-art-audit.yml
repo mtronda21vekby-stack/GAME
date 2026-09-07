@@ -1,0 +1,22 @@
+name: Quiet Valley art audit source
+on:
+  push:
+    branches: [work/quiet-valley-art-audit]
+    paths: [.github/workflows/quiet-valley-art-audit.yml]
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Archive tracked game sources, no credentials
+        run: git archive --format=zip -o /tmp/qv-art-audit-source.zip HEAD apps/quiet-valley apps/site/tests/quiet-valley apps/site/playwright.quiet-valley.config.ts apps/lobby/scripts/validate-worlds.mjs apps/lobby/package.json apps/lobby/src/worlds/catalog.ts apps/lobby/public/worlds/quiet-valley apps/lobby/world-runtimes/quiet-valley scripts/assemble.mjs package.json pnpm-lock.yaml pnpm-workspace.yaml .github/workflows/site-pr-check.yml .github/workflows/auto-deploy-cloudflare-pages.yml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qv-art-audit-source
+          path: /tmp/qv-art-audit-source.zip
+          retention-days: 1
