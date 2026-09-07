@@ -26,20 +26,19 @@ export class HarborView{
  async setMap(mapId){
   if(this.currentMap===mapId)return;this.clearShips();this.world?.dispose();this.ocean?.dispose();this.currentMap=mapId;
   const map=MAPS[mapId];this.world=buildArchipelago(this.scene,map);this.ocean=createOcean(this.scene,map);
-  if(this.beam)this.scene.remove(this.beam);
+  if(this.beam){this.scene.remove(this.beam);this.beam.geometry.dispose();this.beam.material.dispose();}
   const geo=new T.CylinderGeometry(.06,2.8,24,24,1,true);geo.translate(0,-12,0);geo.rotateX(Math.PI/2);
   this.beam=new T.Mesh(geo,new T.MeshBasicMaterial({color:'#ffdd97',transparent:true,opacity:.045,side:2,depthWrite:false,blending:T.AdditiveBlending}));this.beam.position.copy(this.world.lightTop);this.scene.add(this.beam);
-  // Precompile all vessel variants, not just the first boat, to avoid first-interaction stutter.
   const warm=[];for(const k of ['cargo','ferry','fishing']){const m=buildShip(k,COLORS[k]);m.position.y=-15;this.scene.add(m);warm.push(m);}
   if(this.renderer.compileAsync)await this.renderer.compileAsync(this.scene,this.camera);else this.renderer.compile(this.scene,this.camera);
-  for(const m of warm)this.scene.remove(m);
+  for(const m of warm)this.releaseVessel(m);
   this.renderer.render(this.scene,this.camera);
  }
  setQuality(q){this.quality=q;this.renderer.setPixelRatio(Math.min(devicePixelRatio,q==='high'?2:q==='low'?1:1.4));const size=q==='high'?2048:q==='low'?512:1024;
   this.sun.shadow.mapSize.set(size,size);if(this.sun.shadow.map){this.sun.shadow.map.dispose();this.sun.shadow.map=null;}this.resize();}
  resize(){const r=this.canvas.getBoundingClientRect();this.width=Math.max(1,r.width);this.height=Math.max(1,r.height);this.renderer.setPixelRatio(Math.min(devicePixelRatio||1,this.quality==='high'?2:this.quality==='low'?1:1.4));this.renderer.setSize(this.width,this.height,false);this.updateCamera();}
  updateCamera(){
-  const aspect=this.width/this.height;const half=aspect<.85?23/aspect:21.4;
+  const aspect=this.width/this.height;const half=aspect<.85?21/aspect:17.8;
   const hh=half/this.zoom;this.camera.left=-hh*aspect;this.camera.right=hh*aspect;this.camera.top=hh;this.camera.bottom=-hh;
   const verticalOffset=aspect<.85?2:1;
   this.camera.position.set(this.target.x+Math.sin(this.yaw)*40,this.target.y+37,this.target.z+Math.cos(this.yaw)*40);
@@ -51,7 +50,8 @@ export class HarborView{
  ground(x,y){const near=new T.Vector3(x/this.width*2-1,1-y/this.height*2,-1).unproject(this.camera),far=new T.Vector3(x/this.width*2-1,1-y/this.height*2,1).unproject(this.camera);const d=far.sub(near);const t=-near.y/d.y;return {x:near.x+d.x*t,z:near.z+d.z*t};}
  setDraft(points,valid=true){this.guide.geometry.dispose();this.guide.geometry=new T.BufferGeometry().setFromPoints(points.map(p=>new T.Vector3(p.x,.27,p.z)));this.guide.material.color.set(valid?'#fff4ce':'#ff8371');}
  routeLine(ship){let obj=this.paths.get(ship.id);if(!obj){obj={signature:'',line:new T.Line(new T.BufferGeometry(),new T.LineBasicMaterial({color:COLORS[ship.kind],transparent:true,opacity:.6,depthWrite:false}))};this.scene.add(obj.line);this.paths.set(ship.id,obj);}return obj;}
- clearShips(){for(const m of this.ships.values())this.scene.remove(m.root);for(const p of this.paths.values()){this.scene.remove(p.line);p.line.geometry.dispose();p.line.material.dispose();}this.ships.clear();this.paths.clear();}
+ releaseVessel(root){this.scene.remove(root);root.traverse(node=>{if(node.isMesh)node.geometry.dispose();});}
+ clearShips(){for(const m of this.ships.values()){this.releaseVessel(m.root);m.wake.material.dispose();}for(const p of this.paths.values()){this.scene.remove(p.line);p.line.geometry.dispose();p.line.material.dispose();}this.ships.clear();this.paths.clear();}
  burst(p,color){let count=0;for(const f of this.particles){if(f.ttl>0)continue;f.ttl=.8+Math.random()*.7;f.m.visible=true;f.m.position.set(p.x,.6,p.z);f.v.set((Math.random()-.5)*2.5,2+Math.random()*2,(Math.random()-.5)*2.5);f.m.material.color.set(color);if(++count>=14)break;}}
  update(s,dt,selected=null,demo=false){
   this.time+=Math.min(dt,.1);const t=this.time;
@@ -71,7 +71,7 @@ export class HarborView{
    else{const position=path.line.geometry.attributes.position;if(position){position.setXYZ(0,ship.x,.13,ship.z);position.needsUpdate=true;}}
    path.line.visible=ship.path.length>0&&!demo;path.line.material.opacity=selected===ship.id?.9:.34;
   }
-  for(const [id,m]of this.ships)if(!alive.has(id)){this.scene.remove(m.root);this.ships.delete(id);const p=this.paths.get(id);if(p){this.scene.remove(p.line);p.line.geometry.dispose();p.line.material.dispose();this.paths.delete(id);}}
+  for(const [id,m]of this.ships)if(!alive.has(id)){this.releaseVessel(m.root);m.wake.material.dispose();this.ships.delete(id);const p=this.paths.get(id);if(p){this.scene.remove(p.line);p.line.geometry.dispose();p.line.material.dispose();this.paths.delete(id);}}
   const active=s.ships.find(b=>b.id===selected);this.selection.visible=!!active&&!demo;if(active)this.selection.position.set(active.x,.20,active.z);
   this.rescueModel.visible=!!s.rescue;if(s.rescue){this.rescueModel.position.set(s.rescue.x,.16+Math.sin(t*2)*.08,s.rescue.z);this.rescueModel.rotation.z=Math.sin(t*2)*.1;}
   const zone=storm(s);this.stormMesh.visible=zone.active&&!demo;this.stormMesh.position.set(zone.x,.12,zone.z);this.stormMesh.rotation.z=t*.06;
@@ -81,5 +81,5 @@ export class HarborView{
   this.renderer.render(this.scene,this.camera);
  }
  diagnostics(){return {engine:'Three.js r170',webgl:this.renderer.getContext().getParameter(this.renderer.getContext().VERSION),calls:this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,geometries:this.renderer.info.memory.geometries,quality:this.quality,scene:this.currentMap};}
- dispose(){window.removeEventListener('resize',this.onResize);this.canvas.removeEventListener('webglcontextlost',this.onLost);this.clearShips();this.world?.dispose();this.ocean?.dispose();this.renderer.dispose();}
+ dispose(){window.removeEventListener('resize',this.onResize);this.canvas.removeEventListener('webglcontextlost',this.onLost);this.clearShips();this.world?.dispose();this.ocean?.dispose();if(this.beam){this.beam.geometry.dispose();this.beam.material.dispose();}this.guide.geometry.dispose();this.guide.material.dispose();this.selection.geometry.dispose();this.selection.material.dispose();this.stormMesh.geometry.dispose();this.stormMesh.material.dispose();this.releaseVessel(this.rescueModel);for(const f of this.particles){f.m.geometry.dispose();f.m.material.dispose();}this.renderer.dispose();}
 }

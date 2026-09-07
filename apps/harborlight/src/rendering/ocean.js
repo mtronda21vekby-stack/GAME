@@ -1,7 +1,7 @@
 import * as T from '../../vendor/three.js';
 export function createOcean(scene,map){
- const uniforms={time:{value:0},storm:{value:0},isles:{value:Array.from({length:8},(_,i)=>{const o=map.islands[i];return new T.Vector4(o?.x||100,o?.z||100,o?.r||0,o?.rz||0);})}};
- const mat=new T.MeshStandardMaterial({color:'#388d92',roughness:.30,metalness:.13});
+ const uniforms={time:{value:0},storm:{value:0},isles:{value:Array.from({length:8},(_,i)=>{const o=map.islands[i];return new T.Vector4(o?.x??100,o?.z??100,o?.r??0,o?.rz??0);})}};
+ const mat=new T.MeshStandardMaterial({color:'#388d92',roughness:.38,metalness:.10});
  mat.onBeforeCompile=shader=>{
   Object.assign(shader.uniforms,{uOceanTime:uniforms.time,uStorm:uniforms.storm,uIsles:uniforms.isles});
   shader.vertexShader=`uniform float uOceanTime; uniform float uStorm; varying vec3 vOcean;\n`+shader.vertexShader;
@@ -14,7 +14,7 @@ export function createOcean(scene,map){
   shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
     vec2 p=vOcean.xz;
     float coast=30.;
-    for(int i=0;i<8;i++){vec4 o=uIsles[i];float d=(length((p-o.xy)/max(o.zw,vec2(.1)))-1.)*min(o.z,o.w);coast=min(coast,d);}
+    for(int i=0;i<8;i++){vec4 o=uIsles[i];if(o.z<=0.||o.w<=0.)continue;float d=(length((p-o.xy)/max(o.zw,vec2(.1)))-1.)*min(o.z,o.w);coast=min(coast,d);}
     float streak=sin(p.x*.8+sin(p.y*.66+uOceanTime*.45)*2.4-uOceanTime*.4);
     float caustic=pow(max(0.,streak),10.)*(.5+.5*sin(p.y*1.8+p.x*.54+uOceanTime*.6));
     vec3 deep=vec3(.035,.19,.22),shallow=vec3(.12,.46,.41);
