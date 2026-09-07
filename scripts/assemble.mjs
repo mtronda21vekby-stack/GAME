@@ -61,11 +61,15 @@ if (fs.existsSync(siteIcons)) copyDir(siteIcons, path.join(OUT, "icons"));
 const sitePwa = path.join(SITE, "pwa");
 if (fs.existsSync(sitePwa)) copyDir(sitePwa, path.join(OUT, "pwa"));
 
-// Redirects for SPA routing (site + nested apps + standalone games)
+// Redirects for SPA routing (site + nested apps + standalone games).
+// Exact slash and no-slash entries keep mobile Safari/Cloudflare directory handling deterministic.
 const redirects = [
   "/game/*   /game/index.html   200",
   "/lobby/*  /lobby/index.html  200",
   "/games    /games/index.html  200",
+  "/games/   /games/index.html  200",
+  "/games/quiet-valley    /games/quiet-valley/index.html  200",
+  "/games/quiet-valley/   /games/quiet-valley/index.html  200",
   "/games/quiet-valley/*  /games/quiet-valley/index.html  200",
   "/*        /index.html        200"
 ].join("\n") + "\n";
@@ -101,6 +105,10 @@ const headers = [
   "",
   "/games/index.html",
   "  Cache-Control: no-cache",
+  "  Content-Type: text/html; charset=utf-8",
+  "",
+  "/games/quiet-valley/index.html",
+  "  Cache-Control: no-store",
   "  Content-Type: text/html; charset=utf-8",
   "",
   "/games/quiet-valley/*",
