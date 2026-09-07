@@ -7,10 +7,10 @@ export function createRadialEstate(X, clock){
  const own=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
  const integer=(n,a,b)=>Math.floor(Math.max(a,Math.min(b,Number.isFinite(+n)?+n:a)));
  const bounds={
-  1:{rx:12.7,rz:10.4},
-  2:{rx:15.8,rz:12.9},
-  3:{rx:18.3,rz:14.9},
-  4:{rx:20.8,rz:16.8}
+  1:{rx:14.75,rz:11.5},
+  2:{rx:18.0,rz:14.5},
+  3:{rx:21.0,rz:17.0},
+  4:{rx:24.0,rz:19.5}
  };
  const structures={
   garden_shed:{name:'Садовый сарай',icon:'🛖',price:85,tier:2,structure:true},
@@ -20,7 +20,7 @@ export function createRadialEstate(X, clock){
   workshop:{name:'Мастерская',icon:'🛠️',price:260,tier:4,structure:true}
  };
  Object.assign(X.decor,structures);
- const core={rx:12.7,rz:10.4};
+ const core=bounds[1];
  const tierOf=s=>Math.max(1,Math.min(4,s?.world?.estate?.tier||1));
  const even=(x,z)=>Number.isInteger(x)&&Number.isInteger(z)&&x%2===0&&z%2===0;
  function insideEllipse(x,z,b,margin=.82){return x*x/(b.rx*b.rx)+z*z/(b.rz*b.rz)<margin;}
