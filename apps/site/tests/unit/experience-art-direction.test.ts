@@ -1,8 +1,28 @@
+import * as THREE from "three";
 import { describe, expect, it } from "vitest";
-import { EXPERIENCE_CHAPTERS } from "../../src/experience-shell/experienceShellConfig";
+import { EXPERIENCE_CHAPTERS, EXPERIENCE_PHASE_RANGES, EXPERIENCE_STORY_HEIGHT } from "../../src/experience-shell/experienceShellConfig";
 import { getCollectionHousingKind, getFeaturedCollectionItems } from "../../src/experience-shell/featuredCatalog";
-import { interpolateLightingProfiles, SCENE_LIGHTING_PROFILES } from "../../src/experience-shell/core/SceneLightingProfiles";
+import {
+  interpolateLightingProfiles,
+  OCEAN_TO_VAULT_NEUTRAL_PROFILE,
+  resolveSceneLightingProfile,
+  SCENE_LIGHTING_PROFILES,
+} from "../../src/experience-shell/core/SceneLightingProfiles";
 import { foregroundActivation, getForegroundVisibleCount } from "../../src/experience-shell/scenes/ForegroundOcclusionSystem";
+import { EXPERIENCE_ASSET_SLOT_IDS } from "../../src/experience-shell/core/AssetSlotRegistry";
+import { CAMERA_KEYFRAMES } from "../../src/experience/camera/CameraKeyframes";
+import { CameraRig, getMobileCameraPullback } from "../../src/experience/camera/CameraRig";
+import { INITIAL_SCROLL_SNAPSHOT } from "../../src/experience/types";
+import {
+  getAssemblyFragmentSourceIndex,
+  ASSEMBLY_FRAGMENT_COUNTS,
+  evaluateAssemblyArc,
+  isCloseAssemblyFragmentSource,
+  shouldShowAssemblyFragments,
+} from "../../src/experience-shell/scenes/CrownChamberScene";
+import { evaluateFinalCrownPlate } from "../../src/experience-shell/scenes/IdentityScene";
+import { NETWORK_WORLD_SPECS } from "../../src/experience-shell/scenes/NetworkCoreScene";
+import { EXPERIENCE_WORLD_LINKS } from "../../src/experience-shell/dom/WorldIndex";
 
 describe("Experience art direction V3", () => {
   it("interpolates bounded lighting profiles deterministically in both directions", () => {
@@ -57,5 +77,144 @@ describe("Experience art direction V3", () => {
       "final-center",
     ]);
     expect(new Set(visualChapters.map((chapter) => chapter.layout)).size).toBe(visualChapters.length);
+  });
+
+  it("keeps the approved ten-phase directing spine contiguous", () => {
+    const phases = Object.values(EXPERIENCE_PHASE_RANGES);
+    expect(phases).toHaveLength(10);
+    expect(phases[0][0]).toBe(0);
+    expect(phases.at(-1)?.[1]).toBe(1);
+    phases.slice(1).forEach((phase, index) => expect(phase[0]).toBe(phases[index][1]));
+  });
+
+  it("provides enough native scroll travel for a 40–60 second cinematic read", () => {
+    expect(EXPERIENCE_STORY_HEIGHT.desktopVh).toBeGreaterThanOrEqual(6000);
+    expect(EXPERIENCE_STORY_HEIGHT.mobileVh).toBeGreaterThanOrEqual(5600);
+    expect(EXPERIENCE_STORY_HEIGHT.landscapeVh).toBeGreaterThanOrEqual(5800);
+    expect(EXPERIENCE_STORY_HEIGHT.reducedVh).toBeLessThan(EXPERIENCE_STORY_HEIGHT.mobileVh);
+  });
+
+  it("shows assembly fragments only during the 6–22 percent assembly beat", () => {
+    expect(shouldShowAssemblyFragments(0, false, true)).toBe(false);
+    expect(shouldShowAssemblyFragments(0.059, false, true)).toBe(false);
+    expect(shouldShowAssemblyFragments(0.061, false, true)).toBe(true);
+    expect(shouldShowAssemblyFragments(0.14, false, true)).toBe(true);
+    expect(shouldShowAssemblyFragments(0.22, false, true)).toBe(false);
+    expect(shouldShowAssemblyFragments(0.14, true, true)).toBe(false);
+  });
+
+  it("samples quality-tier assembly fragments across the full Crown width", () => {
+    const lowTierSources = Array.from({ length: ASSEMBLY_FRAGMENT_COUNTS.low }, (_, index) =>
+      getAssemblyFragmentSourceIndex(index, ASSEMBLY_FRAGMENT_COUNTS.low, 168));
+
+    expect(lowTierSources[0]).toBe(0);
+    expect(lowTierSources.at(-1)).toBe(167);
+    expect(new Set(lowTierSources).size).toBe(ASSEMBLY_FRAGMENT_COUNTS.low);
+    expect(lowTierSources.some((index) => index >= 80 && index <= 87)).toBe(true);
+    const closeFlyingSources = lowTierSources.filter(isCloseAssemblyFragmentSource);
+    expect(closeFlyingSources.some((index) => index < 84)).toBe(true);
+    expect(closeFlyingSources.some((index) => index >= 84)).toBe(true);
+  });
+
+  it("keeps nano assembly within the approved tier budgets and fully reversible", () => {
+    expect(ASSEMBLY_FRAGMENT_COUNTS).toEqual({ low: 32, medium: 72, high: 112 });
+    const sample = evaluateAssemblyArc(-4.2, 1.1, 1.8, 0.43);
+    expect(evaluateAssemblyArc(-4.2, 1.1, 1.8, 0.43)).toBe(sample);
+    expect(evaluateAssemblyArc(-4.2, 1.1, 1.8, 0)).toBeCloseTo(-4.2, 8);
+    expect(evaluateAssemblyArc(-4.2, 1.1, 1.8, 1)).toBeCloseTo(1.1, 8);
+  });
+
+  it("registers unique local slots for the generated cinematic V2 art", () => {
+    expect(new Set(EXPERIENCE_ASSET_SLOT_IDS).size).toBe(EXPERIENCE_ASSET_SLOT_IDS.length);
+    expect(EXPERIENCE_ASSET_SLOT_IDS).toEqual(expect.arrayContaining([
+      "blackcrown-final-open-plate",
+      "crown-ocean-bridge",
+      "evofish-backdrop",
+      "crown-front-backdrop",
+      "ocean-vault-bridge",
+      "network-collection-backdrop",
+      "collection-aurora-art",
+      "collection-founder-art",
+      "collection-starter-art",
+    ]));
+  });
+
+  it("shows the final beauty plate only during approach and releases the live core for crossing", () => {
+    expect(evaluateFinalCrownPlate(0.96, 0).opacity).toBe(0);
+    const locked = evaluateFinalCrownPlate(0.985, 0.625);
+    expect(locked.approach).toBeCloseTo(1, 8);
+    expect(locked.opacity).toBeGreaterThan(0.85);
+    expect(evaluateFinalCrownPlate(0.994, 0.85).opacity).toBe(0);
+    expect(evaluateFinalCrownPlate(0.98, 0.5)).toEqual(evaluateFinalCrownPlate(0.98, 0.5));
+    expect(evaluateFinalCrownPlate(0.985, 0.625, true).opacity).toBeLessThan(locked.opacity);
+    expect(locked.scale).toBeGreaterThan(evaluateFinalCrownPlate(0.965, 0.2).scale);
+    expect(locked.verticalOffset).toBeLessThan(evaluateFinalCrownPlate(0.965, 0.2).verticalOffset);
+  });
+
+  it("gives the five primary network worlds unique spatial housings", () => {
+    expect(NETWORK_WORLD_SPECS.map((world) => world.id)).toEqual(
+      EXPERIENCE_WORLD_LINKS.map(([label]) => label),
+    );
+    expect(NETWORK_WORLD_SPECS).toHaveLength(5);
+    expect(new Set(NETWORK_WORLD_SPECS.map((world) => world.kind)).size).toBe(5);
+    expect(new Set(NETWORK_WORLD_SPECS.map((world) => world.position.join(","))).size).toBe(5);
+    expect(new Set(NETWORK_WORLD_SPECS.map((world) => world.compactPosition.join(","))).size).toBe(5);
+  });
+
+  it("uses strong phase-specific mobile fit without altering the final core crossing", () => {
+    expect(getMobileCameraPullback(0.25, false)).toBeGreaterThan(5);
+    expect(getMobileCameraPullback(0.5, false)).toBeGreaterThan(7);
+    expect(getMobileCameraPullback(0.87, false)).toBeGreaterThan(5);
+    expect(getMobileCameraPullback(0.5, true)).toBeLessThan(getMobileCameraPullback(0.5, false));
+    expect(getMobileCameraPullback(1, false)).toBe(0);
+  });
+
+  it("passes ocean-to-vault lighting through a cold-white midpoint", () => {
+    const profile = resolveSceneLightingProfile({
+      primary: "crown-front-reactor",
+      partner: "evofish-abyss",
+      activeSceneIds: ["crown-front-reactor", "evofish-abyss"],
+      weights: new Map([["evofish-abyss", 0.5], ["crown-front-reactor", 0.5]]),
+      transition: {
+        id: "ocean-to-reactor",
+        from: "evofish-abyss",
+        to: "crown-front-reactor",
+        amount: 0.5,
+      },
+    }, "high", false);
+    expect(profile.coreColor).toBe(OCEAN_TO_VAULT_NEUTRAL_PROFILE.coreColor);
+    expect(profile.keyColor).toBe(OCEAN_TO_VAULT_NEUTRAL_PROFILE.keyColor);
+  });
+
+  it("locks the camera path to the directed chapter boundaries and crosses the final Crown", () => {
+    const progress = CAMERA_KEYFRAMES.map((keyframe) => keyframe.progress);
+    for (const boundary of [0.06, 0.22, 0.30, 0.43, 0.57, 0.70, 0.82, 0.91, 0.96, 1]) {
+      expect(progress).toContain(boundary);
+    }
+    progress.slice(1).forEach((value, index) => expect(value).toBeGreaterThan(progress[index]));
+    CAMERA_KEYFRAMES.forEach((keyframe) => {
+      expect([...keyframe.position, ...keyframe.target, keyframe.fov].every(Number.isFinite)).toBe(true);
+    });
+    expect(CAMERA_KEYFRAMES.find((keyframe) => keyframe.progress === 0.975)?.position[2]).toBeGreaterThan(0);
+    expect(CAMERA_KEYFRAMES.at(-1)?.position[2]).toBeLessThan(0);
+  });
+
+  it("locks the final mobile camera ray to the live Crown core", () => {
+    const camera = new THREE.PerspectiveCamera(36, 1, 0.05, 100);
+    const core = new THREE.Vector3(1.18, 1.86, 0.04);
+    new CameraRig(camera).update({
+      ...INITIAL_SCROLL_SNAPSHOT,
+      progress: 0.99,
+      targetProgress: 0.99,
+      viewportWidth: 390,
+      viewportHeight: 844,
+    }, { x: 0.5, y: -0.5 }, 3, core);
+
+    const direction = camera.getWorldDirection(new THREE.Vector3());
+    const travel = core.clone().sub(camera.position).dot(direction);
+    const closestPoint = camera.position.clone().addScaledVector(direction, travel);
+    expect(camera.position.x).toBeCloseTo(core.x, 5);
+    expect(camera.position.y).toBeCloseTo(core.y, 5);
+    expect(closestPoint.distanceTo(core)).toBeLessThan(0.0001);
   });
 });

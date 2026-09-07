@@ -1,9 +1,13 @@
 import React from "react";
+import {
+  BLACKCROWN_MUSIC_COMMAND,
+  BLACKCROWN_MUSIC_SRC,
+  type BlackCrownMusicCommand,
+} from "../audio/blackcrownMusic";
 import "../styles/site-music.css";
 
 const ENABLED_KEY = "bc.siteMusic.enabled.v9";
 const VOLUME_KEY = "bc.siteMusic.volume.v9";
-const AUDIO_SRC = "https://cdn1.suno.ai/9ffd5c5a-9995-47da-bf04-c212a6b02804.mp3";
 
 type MusicState = "ready" | "starting" | "playing" | "paused" | "error";
 
@@ -44,7 +48,7 @@ function clampVolume(volume: number) {
   return Math.max(0, Math.min(1, volume));
 }
 
-export function SiteMusic() {
+export function SiteMusic({ headless = false }: { headless?: boolean }) {
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const [volume, setVolume] = React.useState(readVolume);
   const [state, setState] = React.useState<MusicState>(() => (readEnabled() ? "ready" : "paused"));
@@ -58,7 +62,7 @@ export function SiteMusic() {
     audio.muted = false;
   }, [volume]);
 
-  const playFromTap = () => {
+  const playFromTap = React.useCallback(() => {
     const audio = audioRef.current;
     if (!audio) {
       setState("error");
@@ -83,7 +87,31 @@ export function SiteMusic() {
       console.warn("BlackCrown Suno MP3 play() failed", error);
       setState("error");
     }
-  };
+  }, [volume]);
+
+  React.useEffect(() => {
+    const onMusicCommand = (event: Event) => {
+      const command = event as CustomEvent<BlackCrownMusicCommand>;
+      if (command.detail?.enabled) {
+        playFromTap();
+        return;
+      }
+      audioRef.current?.pause();
+      storeEnabled(false);
+      setState("paused");
+    };
+    window.addEventListener(BLACKCROWN_MUSIC_COMMAND, onMusicCommand);
+    return () => window.removeEventListener(BLACKCROWN_MUSIC_COMMAND, onMusicCommand);
+  }, [playFromTap]);
+
+  React.useEffect(() => () => {
+    const audio = audioRef.current;
+    audio?.pause();
+    if (audio) {
+      audio.removeAttribute("src");
+      audio.load();
+    }
+  }, []);
 
   const toggle = () => {
     const audio = audioRef.current;
@@ -111,6 +139,21 @@ export function SiteMusic() {
             ? "OFF"
             : "TAP";
 
+  const audio = (
+    <audio
+      ref={audioRef}
+      src={BLACKCROWN_MUSIC_SRC}
+      preload={headless ? "none" : "metadata"}
+      loop
+      playsInline
+      onPlaying={() => setState("playing")}
+      onError={() => setState("error")}
+      aria-hidden="true"
+    />
+  );
+
+  if (headless) return audio;
+
   return (
     <aside
       className="bcSiteMusic"
@@ -118,16 +161,7 @@ export function SiteMusic() {
       data-expanded={expanded ? "true" : "false"}
       aria-label="Музыка BlackCrown"
     >
-      <audio
-        ref={audioRef}
-        src={AUDIO_SRC}
-        preload="metadata"
-        loop
-        playsInline
-        onPlaying={() => setState("playing")}
-        onError={() => setState("error")}
-        aria-hidden="true"
-      />
+      {audio}
 
       <button
         type="button"

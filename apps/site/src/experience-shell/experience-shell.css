@@ -115,6 +115,17 @@
 .bcExperienceChrome .bcNexusQuality button,
 .bcExperienceChrome .bcNexusSound { min-height: 44px; }
 
+.bcExperienceShell[data-hero-phase="true"] .bcExperienceChrome {
+  border-bottom-color: transparent;
+  background: linear-gradient(180deg, rgba(1, 4, 7, .72), transparent);
+}
+
+.bcExperienceShell[data-hero-phase="true"] .bcExperienceChapterRail,
+.bcExperienceShell[data-hero-phase="true"] .bcExperienceChrome__identity span {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .bcExperienceMenu { position: fixed; z-index: 120; inset: 0; display: grid; justify-items: end; }
 .bcExperienceMenu__backdrop { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: rgba(0, 2, 4, .76); }
 .bcExperienceMenu__panel {
@@ -156,15 +167,15 @@
   transition: opacity .18s linear, visibility .18s linear;
 }
 
-.bcExperienceStoryChapter[data-active="true"] .bcExperienceSceneCopy { opacity: 1; visibility: visible; pointer-events: auto; }
+.bcExperienceStoryChapter[data-copy-active="true"] .bcExperienceSceneCopy { opacity: 1; visibility: visible; pointer-events: auto; }
 .bcExperienceStoryChapter[data-layout="hero-left"] .bcExperienceSceneCopy { top: 48%; width: min(520px, 37vw); }
 .bcExperienceStoryChapter[data-layout="system-minimal"] .bcExperienceSceneCopy { top: auto; bottom: 11vh; width: min(410px, 32vw); transform: none; }
 .bcExperienceStoryChapter[data-layout="system-minimal"] .bcExperienceSceneCopy h2 { max-width: 14ch; font-size: clamp(2.2rem, 3.2vw, 3.7rem); line-height: .94; }
 .bcExperienceStoryChapter[data-layout="editorial-low-left"] .bcExperienceSceneCopy { top: auto; bottom: 9vh; width: min(510px, 38vw); transform: none; }
 .bcExperienceStoryChapter[data-layout="tactical-right"] .bcExperienceSceneCopy { top: auto; right: clamp(24px, 7vw, 112px); bottom: 10vh; left: auto; width: min(470px, 34vw); transform: none; text-align: right; }
 .bcExperienceStoryChapter[data-layout="tactical-right"] .bcExperienceSceneActions { justify-content: flex-end; }
-.bcExperienceStoryChapter[data-layout="network-right"] .bcExperienceSceneCopy { right: clamp(24px, 7vw, 112px); left: auto; width: min(500px, 36vw); }
-.bcExperienceStoryChapter[data-layout="vault-left"] .bcExperienceSceneCopy { top: 46%; width: min(490px, 35vw); }
+.bcExperienceStoryChapter[data-layout="network-right"] .bcExperienceSceneCopy { top: 48%; right: clamp(24px, 6vw, 96px); left: auto; width: min(390px, 30vw); }
+.bcExperienceStoryChapter[data-layout="vault-left"] .bcExperienceSceneCopy { top: 48%; width: min(410px, 31vw); }
 .bcExperienceStoryChapter[data-layout="final-center"] .bcExperienceSceneCopy { top: auto; right: 18vw; bottom: 5.5vh; left: 18vw; width: auto; text-align: center; transform: none; }
 .bcExperienceStoryChapter[data-layout="final-center"] .bcExperienceSceneCopy h2,
 .bcExperienceStoryChapter[data-layout="final-center"] .bcExperienceSceneCopy p { margin-right: auto; margin-left: auto; }
@@ -180,8 +191,8 @@
 .bcExperienceStoryChapter[data-layout="hero-left"] .bcExperienceSceneCopy h1 { font-size: clamp(3.2rem, 5.25vw, 5.7rem); }
 .bcExperienceStoryChapter[data-layout="editorial-low-left"] .bcExperienceSceneCopy h2 { font-size: clamp(3rem, 4.8vw, 5.2rem); }
 .bcExperienceStoryChapter[data-layout="tactical-right"] .bcExperienceSceneCopy h2 { max-width: 10ch; margin-left: auto; font-size: clamp(2.8rem, 4.1vw, 4.7rem); }
-.bcExperienceStoryChapter[data-layout="network-right"] .bcExperienceSceneCopy h2 { font-size: clamp(3rem, 4.7vw, 5.1rem); }
-.bcExperienceStoryChapter[data-layout="vault-left"] .bcExperienceSceneCopy h2 { font-size: clamp(3rem, 4.8vw, 5.2rem); }
+.bcExperienceStoryChapter[data-layout="network-right"] .bcExperienceSceneCopy h2 { max-width: 9ch; font-size: clamp(2.2rem, 3.25vw, 3.55rem); }
+.bcExperienceStoryChapter[data-layout="vault-left"] .bcExperienceSceneCopy h2 { max-width: 9ch; font-size: clamp(2.25rem, 3.35vw, 3.65rem); }
 .bcExperienceStoryChapter[data-layout="final-center"] .bcExperienceSceneCopy h2 { max-width: 13ch; font-size: clamp(2.8rem, 4.3vw, 4.8rem); }
 .bcExperienceSceneCopy p { max-width: 43ch; margin: 22px 0 0; color: rgba(218, 237, 239, .7); font: 400 clamp(1rem, 1.35vw, 1.15rem)/1.55 Inter, system-ui, sans-serif; }
 .bcExperienceSceneCopy > small { display: block; margin-top: 14px; color: rgba(255, 166, 108, .66); }
@@ -191,12 +202,12 @@
 .bcExperienceAction[data-kind="primary"] { border-color: transparent; color: #021014; background: #a5f4f8; }
 .bcExperienceAction[data-kind="tactical"] { border-color: rgba(255, 138, 69, .5); color: #ffd6bb; background: rgba(35, 12, 4, .72); }
 
-.bcExperienceWorldIndex { display: grid; grid-template-columns: repeat(3, minmax(92px, 1fr)); gap: 5px; margin-top: 24px; }
-.bcExperienceWorldIndex a { min-height: 44px; display: grid; place-items: center; border-bottom: 1px solid rgba(105, 233, 245, .18); color: rgba(224, 242, 244, .64); font: 700 9px/1 ui-monospace, monospace; }
+.bcExperienceWorldIndex { display: grid; grid-template-columns: repeat(2, minmax(112px, 1fr)); gap: 4px 10px; margin-top: 18px; }
+.bcExperienceWorldIndex a { min-height: 38px; display: flex; align-items: center; justify-content: flex-start; border-bottom: 1px solid rgba(105, 233, 245, .18); color: rgba(224, 242, 244, .64); font: 700 9px/1 ui-monospace, monospace; letter-spacing: .06em; }
 .bcExperienceWorldIndex a[data-priority="primary"] { color: #effdff; border-color: rgba(105, 233, 245, .42); }
 .bcExperienceWorldIndex a[data-priority="tertiary"] { opacity: .54; }
 
-.bcExperienceCollectionIndex { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 22px; }
+.bcExperienceCollectionIndex { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 16px; }
 .bcExperienceCollectionIndex > span { min-width: 0; padding: 9px 0 8px; border-top: 1px solid rgba(105, 233, 245, .18); color: rgba(226, 243, 245, .76); }
 .bcExperienceCollectionIndex strong,
 .bcExperienceCollectionIndex small { display: block; overflow: hidden; font: 700 9px/1.25 ui-monospace, monospace; text-overflow: ellipsis; white-space: nowrap; }
@@ -280,6 +291,17 @@
   .bcExperienceStoryChapter[data-layout="final-center"] .bcExperienceFooter { justify-content: flex-start; }
   .bcExperienceSceneCopy h1,
   .bcExperienceSceneCopy h2 { max-width: 12ch; margin-top: 12px; font-size: clamp(2.25rem, 10.4vw, 3.45rem); overflow-wrap: anywhere; }
+  .bcExperienceStoryChapter[data-layout="hero-left"] .bcExperienceSceneCopy h1 {
+    max-width: none;
+    font-size: clamp(2.2rem, 10vw, 2.75rem);
+    letter-spacing: -.045em;
+    white-space: nowrap;
+  }
+  .bcExperienceStoryChapter[data-layout="tactical-right"] .bcExperienceSceneCopy h2 {
+    max-width: none;
+    font-size: clamp(2.2rem, 9.6vw, 2.7rem);
+    overflow-wrap: normal;
+  }
   .bcExperienceSceneCopy p { max-width: 32ch; margin-top: 14px; font-size: .95rem; line-height: 1.45; }
   .bcExperienceSceneCopy p[data-mobile-hide="true"] { display: none; }
   .bcExperienceSceneActions { margin-top: 16px; }
@@ -313,4 +335,108 @@
   .bcExperienceStoryChapter { min-height: calc(var(--bc-chapter-reduced-vh) * 1svh); }
   .bcExperienceSceneCopy { transition: none; transform: translateY(-50%); }
   .bcExperienceStoryChapter[data-layout="system-minimal"] .bcExperienceSceneCopy { transform: none; }
+}
+
+/* The camera completes its Crown pass before the interface resolves to pure identity. */
+.bcExperienceShell[data-final-phase="true"]:not([data-final-blackout="true"])
+  .bcExperienceStoryChapter[data-layout="final-center"] .bcExperienceSceneCopy {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.bcExperienceShell[data-final-blackout="true"] {
+  background: #000;
+}
+
+.bcExperienceShell[data-final-blackout="true"] .bcExperienceCanvasHost,
+.bcExperienceShell[data-final-blackout="true"] .bcExperienceShell__fallbackGrid,
+.bcExperienceShell[data-final-blackout="true"] .bcExperienceShell__fallbackCore,
+.bcExperienceShell[data-final-blackout="true"] .bcExperienceSkip,
+.bcExperienceShell[data-final-blackout="true"] .bcExperienceChrome,
+.bcExperienceShell[data-final-blackout="true"] .bcExperienceMenu,
+.bcExperienceShell[data-final-blackout="true"] .bcExperienceSkeletonDebug,
+.bcExperienceShell[data-final-blackout="true"] .bcNexusDebug,
+.bcExperienceShell[data-final-blackout="true"] .bcNexusDeviceQa {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.bcExperienceShell[data-final-blackout="true"] .bcExperienceShell__fallback {
+  background: #000;
+}
+
+.bcExperienceShell[data-final-blackout="true"]
+  .bcExperienceStoryChapter[data-layout="final-center"] .bcExperienceSceneCopy {
+  position: fixed;
+  inset: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+  width: auto;
+  max-height: none;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  padding: 0;
+  overflow: visible;
+  opacity: 1;
+  visibility: visible;
+  background: none;
+  pointer-events: auto;
+  text-align: center;
+  transform: none;
+  transition: opacity .28s ease-out;
+}
+
+.bcExperienceShell[data-final-blackout="true"] .bcExperienceSceneCopy[data-final-copy="true"] > span {
+  color: rgba(244, 251, 252, .72);
+  font-size: 9px;
+  letter-spacing: .28em;
+}
+
+.bcExperienceShell[data-final-blackout="true"] .bcExperienceSceneCopy[data-final-copy="true"] h1 {
+  max-width: 16ch;
+  margin-top: 22px;
+  font-size: clamp(2.6rem, 5.4vw, 5.4rem);
+  line-height: .96;
+  letter-spacing: -.035em;
+}
+
+.bcExperienceShell[data-final-blackout="true"] .bcExperienceSceneCopy[data-final-copy="true"] .bcExperienceSceneActions {
+  justify-content: center;
+  margin-top: 34px;
+}
+
+.bcExperienceShell[data-final-blackout="true"] .bcExperienceSceneCopy[data-final-copy="true"] .bcExperienceAction {
+  min-width: 116px;
+  min-height: 46px;
+  justify-content: center;
+  border-color: rgba(244, 251, 252, .48);
+  color: #f4fbfc;
+  background: transparent;
+  letter-spacing: .16em;
+}
+
+@media (max-width: 720px), (pointer: coarse) {
+  .bcExperienceShell[data-final-blackout="true"]
+    .bcExperienceStoryChapter[data-layout="final-center"] .bcExperienceSceneCopy {
+    inset: max(22px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(22px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+  }
+
+  .bcExperienceShell[data-final-blackout="true"] .bcExperienceSceneCopy[data-final-copy="true"] h1 {
+    max-width: 12ch;
+    margin-top: 18px;
+    font-size: clamp(2.55rem, 12vw, 4.2rem);
+  }
+
+  .bcExperienceShell[data-final-blackout="true"] .bcExperienceSceneCopy[data-final-copy="true"] .bcExperienceSceneActions {
+    justify-content: center;
+    margin-top: 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bcExperienceShell[data-final-blackout="true"]
+    .bcExperienceStoryChapter[data-layout="final-center"] .bcExperienceSceneCopy {
+    transition: none;
+  }
 }

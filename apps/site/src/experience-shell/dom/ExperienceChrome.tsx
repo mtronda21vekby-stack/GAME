@@ -7,12 +7,17 @@ import { CHAPTER_BY_ID } from "../experienceShellConfig";
 import { ChapterRail } from "./ChapterRail";
 import { ExperienceMenu } from "./ExperienceMenu";
 
-export function ExperienceChrome() {
+export function ExperienceChrome({ finalBlackout }: { finalBlackout: boolean }) {
   const { snapshot } = useExperience();
   const [menuOpen, setMenuOpen] = React.useState(false);
   const triggerRef = React.useRef<HTMLButtonElement>(null);
   const chapter = CHAPTER_BY_ID.get(snapshot.chapterId) ?? CHAPTER_BY_ID.get("boot")!;
   const closeMenu = React.useCallback(() => setMenuOpen(false), []);
+  const menuVisible = menuOpen && !finalBlackout;
+
+  React.useEffect(() => {
+    if (finalBlackout) closeMenu();
+  }, [closeMenu, finalBlackout]);
 
   return (
     <>
@@ -26,13 +31,12 @@ export function ExperienceChrome() {
         <div className="bcExperienceChrome__controls">
           <QualityControl />
           <SoundControl />
-          <button ref={triggerRef} className="bcExperienceChrome__menuButton" type="button" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}>
+          <button ref={triggerRef} className="bcExperienceChrome__menuButton" type="button" aria-expanded={menuVisible} onClick={() => setMenuOpen(true)}>
             MENU
           </button>
         </div>
       </header>
-      <ExperienceMenu open={menuOpen} onClose={closeMenu} triggerRef={triggerRef} />
+      <ExperienceMenu open={menuVisible} onClose={closeMenu} triggerRef={triggerRef} />
     </>
   );
 }
-

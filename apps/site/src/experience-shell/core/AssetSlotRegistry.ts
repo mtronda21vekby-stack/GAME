@@ -5,11 +5,22 @@ import type { QualityTier } from "../../experience/types";
 
 export const EXPERIENCE_ASSET_SLOT_IDS = [
   "crown",
+  "blackcrown-hero-plate",
+  "blackcrown-final-open-plate",
+  "crown-ocean-bridge",
   "world-gate",
   "evofish-subject",
+  "evofish-legacy-subject",
+  "evofish-backdrop",
   "crown-front-environment",
+  "crown-front-backdrop",
+  "ocean-vault-bridge",
   "network-environment",
+  "network-collection-backdrop",
   "collection-item-housings",
+  "collection-aurora-art",
+  "collection-founder-art",
+  "collection-starter-art",
   "identity-core",
   "foreground-occluders",
 ] as const;
@@ -63,15 +74,70 @@ export class AssetSlotRegistry {
 
   constructor(private readonly signal: AbortSignal) {
     this.register("crown", {}, "procedural-crown");
+    this.register("blackcrown-hero-plate", {
+      high: "/experience/art/cinematic-v2/blackcrown-hero-high.webp",
+      medium: "/experience/art/cinematic-v2/blackcrown-hero-medium.webp",
+      low: "/experience/art/cinematic-v2/blackcrown-hero-low.webp",
+    }, "candidate-b-crown-silhouette");
+    this.register("blackcrown-final-open-plate", {
+      high: "/experience/art/cinematic-v2/blackcrown-final-open-high.webp",
+      medium: "/experience/art/cinematic-v2/blackcrown-final-open-medium.webp",
+      low: "/experience/art/cinematic-v2/blackcrown-final-open-low.webp",
+    }, "candidate-b-final-core-pass");
+    this.register("crown-ocean-bridge", {
+      high: "/experience/art/cinematic-v2/crown-ocean-bridge-high.webp",
+      medium: "/experience/art/cinematic-v2/crown-ocean-bridge-medium.webp",
+      low: "/experience/art/cinematic-v2/crown-ocean-bridge-low.webp",
+    }, "procedural-crown-ocean-bridge");
     this.register("world-gate", {}, "procedural-gate");
     this.register("evofish-subject", {
+      high: "/experience/art/cinematic-v2/evofish-subject-high.webp",
+      medium: "/experience/art/cinematic-v2/evofish-subject-medium.webp",
+      low: "/experience/art/cinematic-v2/evofish-subject-low.webp",
+    }, "approved-evofish-legacy-subject");
+    this.register("evofish-legacy-subject", {
       high: "/art/evofish-world.webp",
       medium: "/art/evofish-world.webp",
       low: "/art/evofish-world.webp",
     }, "procedural-evofish-volume");
+    this.register("evofish-backdrop", {
+      high: "/experience/art/cinematic-v2/evofish-abyss-high.webp",
+      medium: "/experience/art/cinematic-v2/evofish-abyss-medium.webp",
+      low: "/experience/art/cinematic-v2/evofish-abyss-low.webp",
+    }, "procedural-abyss-depth");
     this.register("crown-front-environment", {}, "procedural-reactor");
+    this.register("crown-front-backdrop", {
+      high: "/experience/art/cinematic-v2/crown-front-vault-high.webp",
+      medium: "/experience/art/cinematic-v2/crown-front-vault-medium.webp",
+      low: "/experience/art/cinematic-v2/crown-front-vault-low.webp",
+    }, "procedural-military-vault-depth");
+    this.register("ocean-vault-bridge", {
+      high: "/experience/art/cinematic-v2/ocean-vault-bridge-high.webp",
+      medium: "/experience/art/cinematic-v2/ocean-vault-bridge-medium.webp",
+      low: "/experience/art/cinematic-v2/ocean-vault-bridge-low.webp",
+    }, "procedural-ocean-vault-bridge");
     this.register("network-environment", {}, "procedural-network");
+    this.register("network-collection-backdrop", {
+      high: "/experience/art/cinematic-v2/network-collection-high.webp",
+      medium: "/experience/art/cinematic-v2/network-collection-medium.webp",
+      low: "/experience/art/cinematic-v2/network-collection-low.webp",
+    }, "procedural-network-depth");
     this.register("collection-item-housings", {}, "procedural-category-vault-housings");
+    this.register("collection-aurora-art", {
+      high: "/experience/art/cinematic-v2/collection-aurora-high.webp",
+      medium: "/experience/art/cinematic-v2/collection-aurora-medium.webp",
+      low: "/experience/art/cinematic-v2/collection-aurora-low.webp",
+    }, "procedural-aurora-skin");
+    this.register("collection-founder-art", {
+      high: "/experience/art/cinematic-v2/collection-founder-high.webp",
+      medium: "/experience/art/cinematic-v2/collection-founder-medium.webp",
+      low: "/experience/art/cinematic-v2/collection-founder-low.webp",
+    }, "procedural-founder-badge");
+    this.register("collection-starter-art", {
+      high: "/experience/art/cinematic-v2/collection-starter-high.webp",
+      medium: "/experience/art/cinematic-v2/collection-starter-medium.webp",
+      low: "/experience/art/cinematic-v2/collection-starter-low.webp",
+    }, "procedural-starter-bundle");
     this.register("identity-core", {}, "procedural-identity-ring");
     this.register("foreground-occluders", {}, "procedural-scene-occlusion");
   }

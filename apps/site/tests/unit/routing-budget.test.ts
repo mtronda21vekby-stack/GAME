@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { collectInitialAssets, validateBundle } from "../../scripts/check-bundle-budget.mjs";
-import { getSiteRouteMetadata, isExternalAppPath, normalizePath, SITE_PATHS } from "../../src/routes/routeMetadata";
+import {
+  getSiteRouteMetadata,
+  isExternalAppPath,
+  normalizePath,
+  resolveRouteChrome,
+  SITE_PATHS,
+} from "../../src/routes/routeMetadata";
 
 describe("route registry", () => {
   it("normalizes known routes and leaves unknown routes unmatched", () => {
@@ -16,6 +22,15 @@ describe("route registry", () => {
     expect(isExternalAppPath("/lobby/room")).toBe(true);
     expect(isExternalAppPath("/games/crown-front/")).toBe(true);
     expect(isExternalAppPath("/store")).toBe(false);
+  });
+
+  it("suppresses global chrome when the experience owns production home", () => {
+    const homeChrome = getSiteRouteMetadata("/")!.metadata.chrome;
+    const storeChrome = getSiteRouteMetadata("/store")!.metadata.chrome;
+
+    expect(resolveRouteChrome("/", homeChrome, true)).toEqual({ dock: false, footer: false, music: false });
+    expect(resolveRouteChrome("/", homeChrome, false)).toBe(homeChrome);
+    expect(resolveRouteChrome("/store", storeChrome, true)).toBe(storeChrome);
   });
 });
 

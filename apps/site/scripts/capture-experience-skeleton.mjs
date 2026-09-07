@@ -5,13 +5,14 @@ import { pathToFileURL } from "node:url";
 const output = "/tmp/blackcrown-experience-skeleton-v1";
 const baseUrl = process.env.BC_CAPTURE_URL || "http://127.0.0.1:5194";
 const chapters = [
-  ["01-crown", 0.14],
-  ["02-gate", 0.295],
-  ["03-evofish", 0.44],
-  ["04-crown-front", 0.6],
-  ["05-network", 0.745],
-  ["06-collection", 0.865],
-  ["07-identity", 0.97],
+  ["01-crown", 0.26],
+  ["02-gate", 0.365],
+  ["03-evofish", 0.5],
+  ["04-crown-front", 0.76],
+  ["05-network", 0.865],
+  ["06-collection", 0.935],
+  ["07-final-pass", 0.98],
+  ["08-identity", 0.999],
 ];
 
 await mkdir(output, { recursive: true });
@@ -130,7 +131,7 @@ const mobileMetrics = await captureViewport(browser, "mobile", { width: 390, hei
 await captureViewport(browser, "reduced", { width: 1440, height: 900 }, {
   reducedMotion: true,
   autoQuality: true,
-  selected: [["crown", 0.14], ["network", 0.745], ["final", 0.97]],
+  selected: [["crown", 0.26], ["network", 0.865], ["final", 0.999]],
 });
 
 const galleryFiles = [

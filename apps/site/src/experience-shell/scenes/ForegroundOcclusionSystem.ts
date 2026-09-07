@@ -20,6 +20,31 @@ export function foregroundActivation(localProgress: number, reducedMotion: boole
   return Math.min(1, Math.max(0, 0.2 + localProgress * 0.8));
 }
 
+export function createForegroundArmorGeometry() {
+  const outline = [
+    [-0.36, -0.5], [0.36, -0.5], [0.5, -0.36], [0.5, 0.36],
+    [0.36, 0.5], [-0.36, 0.5], [-0.5, 0.36], [-0.5, -0.36],
+  ] as const;
+  const positions: number[] = [];
+  for (const z of [0.5, -0.5]) {
+    for (const [x, y] of outline) positions.push(x, y, z);
+  }
+  const indices: number[] = [];
+  for (let index = 1; index < outline.length - 1; index += 1) {
+    indices.push(0, index, index + 1);
+    indices.push(8, 8 + index + 1, 8 + index);
+  }
+  for (let index = 0; index < outline.length; index += 1) {
+    const next = (index + 1) % outline.length;
+    indices.push(index, next, 8 + next, index, 8 + next, 8 + index);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
 export class ForegroundOcclusionSystem {
   readonly root = new THREE.Group();
   private readonly mesh: THREE.InstancedMesh;
@@ -33,7 +58,7 @@ export class ForegroundOcclusionSystem {
       metalness: 0.76,
       roughness: 0.48,
     });
-    this.mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), material, specs.length);
+    this.mesh = new THREE.InstancedMesh(createForegroundArmorGeometry(), material, specs.length);
     this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.mesh.frustumCulled = false;
     this.root.name = "SceneForegroundOcclusion";

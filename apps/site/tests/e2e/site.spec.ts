@@ -46,6 +46,22 @@ async function setNexusProgress(page: Page, progress: number) {
   }, { timeout: 10_000 }).toBeLessThan(0.0005);
 }
 
+function expectStableCandidateLod(requests: string[], candidate: "a" | "b", lod: string | null) {
+  const glbs = [...new Set(requests.filter((url) => new RegExp(`crown-candidate-${candidate}-lod\\d\\.glb$`, "u").test(url)))];
+  const expected = lod === "high" ? "lod0" : lod === "medium" ? "lod1" : "lod2";
+  expect(glbs.length).toBeGreaterThanOrEqual(1);
+  // Auto quality is allowed one absolute LOD replacement on a slow device;
+  // repeated requests would indicate churn or a disposal leak.
+  expect(glbs.length).toBeLessThanOrEqual(2);
+  expect(glbs.some((url) => url.includes(expected))).toBe(true);
+}
+
+async function lockDesktopReviewQuality(page: Page) {
+  if (test.info().project.name !== "chromium-lab") return;
+  await page.getByTitle("high quality").click();
+  await expect(page.getByTitle("high quality")).toHaveAttribute("aria-checked", "true");
+}
+
 test("@off Home preserves the current cinematic, key art, CTA and fast-scroll stability", async ({ page }) => {
   const requests: string[] = [];
   page.on("request", (request) => requests.push(request.url()));
@@ -171,12 +187,12 @@ test("@lab Nexus boots one runtime and scroll is reversible", async ({ page }) =
   for (const [progress, chapter] of [
     [0, "boot"],
     [0.1, "crown-chamber"],
-    [0.25, "world-gate"],
-    [0.42, "evofish-abyss"],
-    [0.58, "crown-front-reactor"],
-    [0.74, "network-core"],
-    [0.86, "collection-vault"],
-    [0.96, "identity-enter"],
+    [0.31, "world-gate"],
+    [0.5, "evofish-abyss"],
+    [0.72, "crown-front-reactor"],
+    [0.86, "network-core"],
+    [0.935, "collection-vault"],
+    [0.98, "identity-enter"],
   ] as const) {
     await setNexusProgress(page, progress);
     await expect(runtime).toHaveAttribute("data-bc-experience-chapter", chapter);
@@ -184,16 +200,33 @@ test("@lab Nexus boots one runtime and scroll is reversible", async ({ page }) =
     expect(Number(await runtime.getAttribute("data-bc-experience-active-scenes"))).toBeLessThanOrEqual(2);
   }
 
-  for (const progress of [0.235, 0.365, 0.525, 0.685, 0.81, 0.92]) {
+  for (const progress of [0.3325, 0.3975, 0.635, 0.865, 0.935, 0.98]) {
     await setNexusProgress(page, progress);
     expect(Number(await runtime.getAttribute("data-bc-experience-active-scenes"))).toBe(2);
     await expect(page.locator("canvas[data-bc-nexus-canvas]")).toBeVisible();
   }
 
-  await setNexusProgress(page, 0.865);
+  await setNexusProgress(page, 0.935);
   await expect(page.locator(".bcExperienceCollectionIndex")).toContainText("Aurora Skin");
   await expect(page.locator(".bcExperienceCollectionIndex")).toContainText("Founder Badge");
   await expect(page.locator(".bcExperienceCollectionIndex")).toContainText("Starter Bundle");
+
+  await setNexusProgress(page, 0.98);
+  await expect(page.locator(".bcExperienceShell")).toHaveAttribute("data-final-phase", "true");
+  await expect(page.locator(".bcExperienceShell")).toHaveAttribute("data-final-blackout", "false");
+  await expect(page.locator("canvas[data-bc-nexus-canvas]")).toBeVisible();
+  await expect(page.locator('[data-final-copy="true"]')).toBeHidden();
+
+  await setNexusProgress(page, 0.999);
+  await expect(page.locator(".bcExperienceShell")).toHaveAttribute("data-final-blackout", "true");
+  await expect(page.locator("canvas[data-bc-nexus-canvas]")).toBeHidden();
+  await expect(page.locator(".bcExperienceChrome")).toBeHidden();
+  await expect(page.getByRole("heading", { name: "ONE CROWN. ALL WORLDS.", exact: true })).toBeVisible();
+  await expect(page.locator('[data-final-copy="true"] [data-nexus-primary-cta="true"]')).toHaveCount(1);
+
+  await setNexusProgress(page, 0.935);
+  await expect(page.locator(".bcExperienceShell")).toHaveAttribute("data-final-phase", "false");
+  await expect(page.locator("canvas[data-bc-nexus-canvas]")).toBeVisible();
 
   if (test.info().project.name === "chromium-lab") {
     await page.getByTitle("low quality").click();
@@ -247,7 +280,7 @@ test("@lab authored Blender environments lazy-load without replacing the runtime
   await expect(page.getByTitle("high quality")).toHaveAttribute("aria-checked", "true");
   await expect(page.locator(".bcNexusDebug dd").nth(3)).toHaveText("high");
 
-  for (const [progress, expectedModels] of [[0.295, 1], [0.6, 2], [0.745, 3], [0.865, 4], [0.97, 5]] as const) {
+  for (const [progress, expectedModels] of [[0.3325, 1], [0.635, 2], [0.865, 3], [0.935, 4]] as const) {
     await setNexusProgress(page, progress);
     await expect.poll(
       async () => Number(await runtime.getAttribute("data-bc-experience-authored-models")),
@@ -256,7 +289,7 @@ test("@lab authored Blender environments lazy-load without replacing the runtime
     expect(Number(await runtime.getAttribute("data-bc-experience-active-scenes"))).toBeLessThanOrEqual(2);
   }
 
-  expect(requests.filter((url) => /\/experience\/environments\/blender-v1\/[^/]+\.glb$/u.test(url))).toHaveLength(5);
+  expect(requests.filter((url) => /\/experience\/environments\/blender-v1\/[^/]+\.glb$/u.test(url))).toHaveLength(4);
   expect(Number(await runtime.getAttribute("data-bc-experience-draw-calls"))).toBeLessThanOrEqual(75);
   await page.evaluate(() => { history.pushState(null, "", "/about"); dispatchEvent(new PopStateEvent("popstate")); });
   await expect(page.locator("canvas[data-bc-nexus-canvas]")).toHaveCount(0);
@@ -314,7 +347,7 @@ test("@lab reduced motion remains accessible and idles the RAF", async ({ page }
   await expect.poll(async () => page.locator(".bcNexusLab").getAttribute("data-boot-stage")).toMatch(/ready|fallback/);
   await expect(page.locator(".bcNexusBoot")).toHaveCount(0);
   expect(await page.locator(".bcNexusStory").evaluate((element) => element.getBoundingClientRect().height)).toBeLessThan(5_000);
-  await expect(page.getByRole("heading", { name: "NEXUS READY" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "BLACKCROWN" })).toBeVisible();
   const runtime = page.locator('[data-bc-experience-runtime="active"]');
   if (await runtime.count()) {
     await expect(runtime).toHaveAttribute("data-bc-experience-raf", "0", { timeout: 5_000 });
@@ -364,20 +397,19 @@ test("@lab Candidate A uses one allowlisted LOD and reverses its absolute pose",
   await expect(runtime).toHaveAttribute("data-bc-crown-backend", "glb", { timeout: 15_000 });
   await expect(runtime).toHaveAttribute("data-bc-crown-asset-id", "blackcrown-digital-crown-candidate-a-v1");
   await expect(page.locator("canvas[data-bc-nexus-canvas]")).toHaveCount(1);
+  await lockDesktopReviewQuality(page);
   const lod = await runtime.getAttribute("data-bc-crown-lod");
-  const candidateGlbs = requests.filter((url) => /crown-candidate-a-lod\d\.glb$/u.test(url));
-  expect(candidateGlbs).toHaveLength(1);
-  expect(candidateGlbs[0]).toContain(lod === "high" ? "lod0" : lod === "medium" ? "lod1" : "lod2");
+  expectStableCandidateLod(requests, "a", lod);
 
-  await setNexusProgress(page, 0.52);
+  await setNexusProgress(page, 0.315);
   const opened = await runtime.getAttribute("data-bc-crown-pose");
   expect(opened).not.toBe("procedural");
   await setNexusProgress(page, 0.18);
   expect(await runtime.getAttribute("data-bc-crown-pose")).not.toBe(opened);
-  await setNexusProgress(page, 0.52);
+  await setNexusProgress(page, 0.315);
   const restored = (await runtime.getAttribute("data-bc-crown-pose"))!.split(":").map(Number);
   opened.split(":").map(Number).forEach((value, index) => expect(restored[index]).toBeCloseTo(value, 2));
-  await setNexusProgress(page, 0.96);
+  await setNexusProgress(page, 1);
   const cta = page.locator('[data-nexus-primary-cta="true"]');
   await expect(cta).toBeVisible();
   await expect.poll(async () => cta.evaluate((element) => {
@@ -405,10 +437,9 @@ test("@lab Candidate B uses one allowlisted LOD, drives its iris and reverses it
   await expect(runtime).toHaveAttribute("data-bc-crown-backend", "glb", { timeout: 15_000 });
   await expect(runtime).toHaveAttribute("data-bc-crown-asset-id", "blackcrown-digital-crown-candidate-b-v1");
   await expect(page.locator("canvas[data-bc-nexus-canvas]")).toHaveCount(1);
+  await lockDesktopReviewQuality(page);
   const lod = await runtime.getAttribute("data-bc-crown-lod");
-  const candidateGlbs = requests.filter((url) => /crown-candidate-b-lod\d\.glb$/u.test(url));
-  expect(candidateGlbs).toHaveLength(1);
-  expect(candidateGlbs[0]).toContain(lod === "high" ? "lod0" : lod === "medium" ? "lod1" : "lod2");
+  expectStableCandidateLod(requests, "b", lod);
 
   await setNexusProgress(page, 0.68);
   const portalPose = (await runtime.getAttribute("data-bc-crown-pose"))!.split(":").map(Number);
@@ -476,7 +507,7 @@ test("@lab context loss exposes DOM fallback and restores one canvas", async ({ 
   const canvas = page.locator("canvas[data-bc-nexus-canvas]");
   await canvas.dispatchEvent("webglcontextlost", { cancelable: true });
   await expect(runtime).toHaveAttribute("data-bc-experience-context", "lost");
-  await expect(page.getByRole("heading", { name: "NEXUS READY" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "BLACKCROWN" })).toBeVisible();
   await canvas.dispatchEvent("webglcontextrestored");
   await expect(runtime).toHaveAttribute("data-bc-experience-context", "ready");
   await expect(canvas).toHaveCount(1);

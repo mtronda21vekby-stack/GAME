@@ -22,11 +22,11 @@ describe("deterministic experience math", () => {
 
   it("maps exact chapter boundaries and local progress", () => {
     expect(getChapterAtProgress(0)).toEqual({ chapterId: "boot", chapterProgress: 0 });
-    expect(getChapterAtProgress(0.05)).toEqual({ chapterId: "crown-chamber", chapterProgress: 0 });
-    expect(getChapterAtProgress(0.23)).toEqual({ chapterId: "world-gate", chapterProgress: 0 });
-    expect(getChapterAtProgress(0.36)).toEqual({ chapterId: "evofish-abyss", chapterProgress: 0 });
-    expect(getChapterAtProgress(0.68)).toEqual({ chapterId: "network-core", chapterProgress: 0 });
-    expect(getChapterAtProgress(0.865)).toMatchObject({ chapterId: "collection-vault", chapterProgress: expect.closeTo(0.5, 3) });
+    expect(getChapterAtProgress(0.06)).toEqual({ chapterId: "crown-chamber", chapterProgress: 0 });
+    expect(getChapterAtProgress(0.3)).toEqual({ chapterId: "world-gate", chapterProgress: 0 });
+    expect(getChapterAtProgress(0.43)).toEqual({ chapterId: "evofish-abyss", chapterProgress: 0 });
+    expect(getChapterAtProgress(0.82)).toEqual({ chapterId: "network-core", chapterProgress: 0 });
+    expect(getChapterAtProgress(0.935)).toMatchObject({ chapterId: "collection-vault", chapterProgress: expect.closeTo(0.5, 3) });
     expect(getChapterAtProgress(1)).toEqual({ chapterId: "identity-enter", chapterProgress: 1 });
   });
 
@@ -35,14 +35,14 @@ describe("deterministic experience math", () => {
     expect(getScrollDirection(normalizeScrollVelocity(0.8, 0.7, 1 / 60))).toBe(-1);
     expect(evaluateExperienceTimeline(0.56)).toEqual(evaluateExperienceTimeline(0.56));
     expect(evaluateExperienceTimeline(0.08).assembly).toBeLessThan(evaluateExperienceTimeline(0.15).assembly);
-    expect(evaluateExperienceTimeline(0.58).tacticalOrange).toBeGreaterThan(0.5);
-    expect(evaluateExperienceTimeline(0.75).tacticalOrange).toBe(0);
-    expect(evaluateExperienceTimeline(0.58)).toEqual(evaluateExperienceTimeline(0.58));
+    expect(evaluateExperienceTimeline(0.65).tacticalOrange).toBeGreaterThan(0.5);
+    expect(evaluateExperienceTimeline(0.91).tacticalOrange).toBe(0);
+    expect(evaluateExperienceTimeline(0.65)).toEqual(evaluateExperienceTimeline(0.65));
   });
 
   it("keeps reduced motion assembled and bounds the shell opening", () => {
     const start = evaluateExperienceTimeline(0, true);
-    const core = evaluateExperienceTimeline(0.24, true);
+    const core = evaluateExperienceTimeline(0.315, true);
     expect(start.assembly).toBe(1);
     expect(start.idleAmount).toBe(0);
     expect(core.open).toBeGreaterThan(0);
