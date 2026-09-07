@@ -27,26 +27,31 @@ test('island expansion unlocks buildings and staff capacity progressively',()=>{
 });
 
 test('estate 3D pads extend beyond the original farm shoreline and reveal per tier',()=>{
- const nodes=[];
- const R={
-  camera:{size:14,target:[0,0,0]},cameraVP(){},
-  group(p=[0,0,0],s=[1,1,1],r=[0,0,0],parent=null){const n={p,s,r,parent,visible:true};nodes.push(n);return n;},
-  add(type,p,s,c,r=[0,0,0],parent=null,alpha=1){const n={type,p,s,c,r,parent,alpha,visible:true};nodes.push(n);return n;}
- };
- const farm=R.group();
- const BaseWorld={make(){return {roots:{farm},sync(){},focusCamera(){return {size:14,target:[0,0,0]}},inspect(){return {}}};}};
- const world=createEstateWorld(BaseWorld,{}).make(R,{});
- const state={world:{region:'farm',estate:{tier:1,buildings:[],staff:[]}}};
- world.sync(state);
- let i=world.inspect().estate;
- assert.equal(i.tierPads,0);
- assert.equal(i.bounds.base.x,14.75);
- assert.ok(i.bounds.tier2.x>i.bounds.base.x+5,'tier 2 east coast must visibly exceed the old shoreline');
- assert.ok(Math.abs(i.bounds.tier3.x)>i.bounds.base.x+5,'tier 3 west coast must visibly exceed the old shoreline');
- assert.ok(i.bounds.tier4.z>i.bounds.base.z+7,'tier 4 north coast must visibly exceed the old shoreline');
- state.world.estate.tier=2;world.sync(state);i=world.inspect().estate;assert.equal(i.tierPads,1);assert.equal(i.bridges,1);
- state.world.estate.tier=4;world.sync(state);i=world.inspect().estate;assert.equal(i.tierPads,3);assert.equal(i.bridges,3);
- assert.ok(R.camera.size>=22.2,'max estate expansion must reframe the camera to show the new coast');
+ const priorWidth=globalThis.innerWidth;globalThis.innerWidth=1280;
+ try{
+  const nodes=[];
+  const R={
+   camera:{size:14,target:[0,0,0]},cameraVP(){},
+   group(p=[0,0,0],s=[1,1,1],r=[0,0,0],parent=null){const n={p,s,r,parent,visible:true};nodes.push(n);return n;},
+   add(type,p,s,c,r=[0,0,0],parent=null,alpha=1){const n={type,p,s,c,r,parent,alpha,visible:true};nodes.push(n);return n;}
+  };
+  const farm=R.group();
+  const BaseWorld={make(){return {roots:{farm},sync(){},focusCamera(){return {size:14,target:[0,0,0]}},inspect(){return {}}};}};
+  const world=createEstateWorld(BaseWorld,{}).make(R,{});
+  const state={world:{region:'farm',estate:{tier:1,buildings:[],staff:[]}}};
+  world.sync(state);
+  let i=world.inspect().estate;
+  assert.equal(i.tierPads,0);
+  assert.equal(i.bounds.base.x,14.75);
+  assert.ok(i.bounds.tier2.x>i.bounds.base.x+5,'tier 2 east coast must visibly exceed the old shoreline');
+  assert.ok(Math.abs(i.bounds.tier3.x)>i.bounds.base.x+5,'tier 3 west coast must visibly exceed the old shoreline');
+  assert.ok(i.bounds.tier4.z>i.bounds.base.z+7,'tier 4 north coast must visibly exceed the old shoreline');
+  state.world.estate.tier=2;world.sync(state);i=world.inspect().estate;assert.equal(i.tierPads,1);assert.equal(i.bridges,1);
+  state.world.estate.tier=4;world.sync(state);i=world.inspect().estate;assert.equal(i.tierPads,3);assert.equal(i.bridges,3);
+  assert.ok(R.camera.size>=22.2,'max estate expansion must reframe the camera to show the new coast');
+ }finally{
+  if(priorWidth===undefined)delete globalThis.innerWidth;else globalThis.innerWidth=priorWidth;
+ }
 });
 
 test('gardener and rancher perform real farm work on ticks',()=>{
