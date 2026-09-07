@@ -1,7 +1,15 @@
 import assert from 'node:assert/strict';
 import {VERSION} from '../src/app/version.js';
 const root=(process.argv[2]||'https://blackcrown.work').replace(/\/$/,'')+'/games/quiet-valley/';
-async function read(url){const r=await fetch(url,{signal:AbortSignal.timeout(20000),headers:{'Cache-Control':'no-cache'}});assert.equal(r.status,200,url);return {body:await r.text(),type:r.headers.get('content-type')||''};}
+// Use the same declared operations client as the existing production smoke gate.
+// Keep CDN/access failures fatal; never substitute a preview host for production.
+const headers={'Accept':'*/*','Cache-Control':'no-cache','Pragma':'no-cache','User-Agent':'BLACK-CROWN-OPS/production-smoke-v44'};
+async function read(url){
+ const r=await fetch(url,{signal:AbortSignal.timeout(20000),headers});
+ const body=await r.text();
+ assert.equal(r.status,200,`${url} returned HTTP ${r.status}; type=${r.headers.get('content-type')||'unknown'}; mitigation=${r.headers.get('cf-mitigated')||'none'}; ${r.status===200?'':body.slice(0,240).replace(/\s+/g,' ')}`);
+ return {body,type:r.headers.get('content-type')||''};
+}
 let last;
 for(let attempt=0;attempt<12;attempt++){
  try{
