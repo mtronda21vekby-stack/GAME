@@ -1,4 +1,3 @@
-import {terrainBounds} from '../domain/estateLayout.js';
 /** input/controls.js. Explicit view/interaction ports; no imported global game state. */
 export function createControls(__qvPorts) {
 function input() {
@@ -134,7 +133,7 @@ function input() {
             if (lastCenter) {
                 __qvPorts.R.cameraVP();
                 const before = __qvPorts.R.ground(lastCenter.x, lastCenter.y, .25), after = __qvPorts.R.ground(center.x, center.y, .25);
-                const extent=__qvPorts.state.world.region==='farm'?terrainBounds(__qvPorts.state.world.estate.tier):{x:12,z:10};
+                const extent=__qvPorts.state.world.region==='farm'?__qvPorts.FarmExpansion.terrainBounds(__qvPorts.state.world.estate.tier):{x:12,z:10};
                 __qvPorts.R.camera.target[0] = Math.max(-extent.x, Math.min(extent.x, __qvPorts.R.camera.target[0] + before[0] - after[0]));
                 __qvPorts.R.camera.target[2] = Math.max(-extent.z, Math.min(extent.z, __qvPorts.R.camera.target[2] + before[2] - after[2]));
             }

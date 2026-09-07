@@ -1,8 +1,8 @@
 /** Radial estate presentation. One continuous coast; no satellite pads or connecting tongues. */
-import {estateScale,terrainBounds} from '../domain/estateLayout.js';
 import {makeEstateModel} from './estateModels.js';
 import {mm,ortho,look,mul} from '../rendering/math.js';
 export function createEstateWorld(BaseWorld,X){
+ const {estateScale,terrainBounds}=X;
  return {make(R,art){
   const world=BaseWorld.make(R,art),farm=world.roots.farm,terrain=art.terrain;
   if(!terrain?.layers?.length)throw Error('Farm terrain bindings are missing');
