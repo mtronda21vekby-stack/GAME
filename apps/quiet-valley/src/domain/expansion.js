@@ -2,8 +2,7 @@
  * All amounts are fictional game resources. Client-side saves are not secure online balances.
  */
 'use strict';
-export function createExpansion(baseSim, clock) {
-  const S={...baseSim,PRODUCTS:baseSim.PRODUCTS};
+export function createExpansion(S, clock) {
   const regions = {
     farm: {name:'Домашняя ферма',short:'Ферма',icon:'🏡',tag:'ЗДЕСЬ ВСЁ НАЧАЛОСЬ',description:'Уютный дом, огород и ваши животные. Проведите полив и обустройте двор.',color:'#b6c98c'},
     orchard: {name:'Яблоневый сад',short:'Сад',icon:'🍎',tag:'ВРЕМЯ ПУСКАТЬ КОРНИ',description:'Расчистите старый сад. Посадите шесть яблонь, поливайте их и собирайте яблоки.',color:'#d8ba98'},

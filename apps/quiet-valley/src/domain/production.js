@@ -1,8 +1,8 @@
 /* Pure production commands. Inputs are reserved once; completed jobs are claimed once.
  * This remains a local game. A future server must own the same command invariants. */
 'use strict';
-export function createProduction(baseSim, ValleyGameplay, clock) {
-  const S={...baseSim,PRODUCTS:baseSim.PRODUCTS};
+export function createProduction(FarmSim, ValleyGameplay, clock) {
+  const S=FarmSim;
   const base = { fresh:S.fresh, validate:S.validate, tick:S.tick, act:S.act };
   const own = (object,key) => Object.prototype.hasOwnProperty.call(object,key);
   const integer = (value,max=1e6) => Math.max(0,Math.min(max,Math.floor(Number(value)||0)));
@@ -124,5 +124,5 @@ export function createProduction(baseSim, ValleyGameplay, clock) {
     if(!(p.crafted.bread>0))return {title:'Испеките деревенский хлеб',detail:'Мука + молоко + яйцо → 2 хлеба',step:4,total:5};
     return {title:p.festivalDelivered?'Праздник урожая состоялся':'Соберите корзину к празднику',detail:p.festivalDelivered?'Продолжайте историю и развивайте четыре участка':'4 хлеба · 2 конфитюра · 1 ткань',step:5,total:5};
   }
-  return {sim:S,GOODS,STATIONS,RECIPES,FESTIVAL,ensure,ingredients,missing,buildError,craftError,nextGoal};
+  return {GOODS,STATIONS,RECIPES,FESTIVAL,ensure,ingredients,missing,buildError,craftError,nextGoal};
 }

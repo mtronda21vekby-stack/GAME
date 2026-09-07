@@ -2,8 +2,8 @@
  * Deterministic local prototype logic. Online authority must live on a server later.
  */
 'use strict';
-export function createStory(X, clock){
- const S={...X.sim,PRODUCTS:X.sim.PRODUCTS},base={fresh:S.fresh,validate:S.validate,tick:S.tick,act:S.act};
+export function createStory(X, clock) {
+ const S=X.sim,base={fresh:S.fresh,validate:S.validate,tick:S.tick,act:S.act};
  const own=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
  const clamp=(n,a,b)=>Math.max(a,Math.min(b,Number.isFinite(+n)?+n:a));
  const int=(n,a,b)=>Math.floor(clamp(n,a,b));
@@ -122,5 +122,5 @@ export function createStory(X, clock){
   if(a.type==='collectHoney'&&preHoney>0){g.honeyCollected+=preHoney;if(w.key==='breeze'){s.inventory.honey+=1;g.honeyCollected++;result.message+=' 🍃 Ветер помог пчёлам: +1 мёд.';}}
   ensureOrders(s,now);return result;
  };
- return {sim:S,WEATHER,WEATHER_MS,DAY_MS,RENT_BASE,CHARACTERS,ORDER_TEMPLATES,STORY,weather,ensureOrders,canDeliver,orderPreview,storyStatus,projectsBuilt,relationship,rentPrice,leaseStatus,refreshCost,characterDialogue,characterPerk};
+ return {WEATHER,WEATHER_MS,DAY_MS,RENT_BASE,CHARACTERS,ORDER_TEMPLATES,STORY,weather,ensureOrders,canDeliver,orderPreview,storyStatus,projectsBuilt,relationship,rentPrice,leaseStatus,refreshCost,characterDialogue,characterPerk};
 }

@@ -1,3 +1,4 @@
+
  const TAU=Math.PI*2;
  const v=(x=0,y=0,z=0)=>[x,y,z];
  const add=(a,b)=>a.map((n,i)=>n+b[i]);

@@ -1,7 +1,7 @@
-import * as F from '../index.js';
+import * as F from '../rendering/index.js';
 /* All farm, vegetation and articulated animal models are generated here. No downloaded art. */
 'use strict';
-export function createFarmModels(FarmSim){
+export function createFarmArt(FarmSim) {
  function make(R){
   let seed=7163;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
   const colors={cream:'#eee4c8',wood:'#aa794d',dark:'#68452f',grass:'#8fa565',leaf:'#648543',mint:'#527b71',roof:'#bb7558',soil:'#694b32',water:'#5cb5b7'};

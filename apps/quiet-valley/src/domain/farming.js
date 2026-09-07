@@ -1,6 +1,6 @@
 /* Pure, deterministic local simulation. No client balance is authoritative online. */
 'use strict';
-export function createFarming(clock){
+export function createFarming(clock) {
  const CROPS={carrot:{name:'Морковь',icon:'🥕',cost:8,seconds:45,yield:4,price:7},wheat:{name:'Пшеница',icon:'🌾',cost:5,seconds:30,yield:4,price:4},pumpkin:{name:'Тыква',icon:'🎃',cost:18,seconds:75,yield:2,price:25}};
  const PRODUCTS={...CROPS,milk:{name:'Молоко',icon:'🥛',price:18},egg:{name:'Яйца',icon:'🥚',price:9},wool:{name:'Шерсть',icon:'🧶',price:24}};
  const SPECIES={cow:{name:'Корова',icon:'🐄',price:280,product:'milk',seconds:95},sheep:{name:'Овечка',icon:'🐑',price:190,product:'wool',seconds:110},chicken:{name:'Курочка',icon:'🐔',price:90,product:'egg',seconds:65}};

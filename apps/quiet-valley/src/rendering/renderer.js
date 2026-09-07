@@ -2,6 +2,7 @@ import {TAU,v,add,sub,mul,dot,cross,norm,ident,mm,trs,look,ortho,transform,rgb} 
 import {geometry} from './geometry.js';
 import vertex from './shaders/vertex.js';
 import frag from './shaders/frag.js';
+import depthFrag from './shaders/depthFrag.js';
 import screenVertex from './shaders/screenVertex.js';
 import screenFrag from './shaders/screenFrag.js';
 import depthVertex from './shaders/depthVertex.js';
@@ -25,7 +26,8 @@ import shadowFragment from './shaders/shadowFragment.js';
   }
   static async create(canvas,options){
    const renderer=new Renderer(canvas,options);
-   try{await renderer.initialize();return renderer;}catch(error){renderer.dispose();throw error;}
+   await renderer.initialize();
+   return renderer;
   }
   async initialize(){
    this.program=await this.compile(vertex,frag,'materials');
@@ -117,12 +119,12 @@ import shadowFragment from './shaders/shadowFragment.js';
    for(const p of [this.program,this.depth,this.post])if(p)gl.deleteProgram(p);
    for(const t of [this.shadow,this.sceneTex])if(t)gl.deleteTexture(t);
    for(const f of [this.fb,this.sceneFB])if(f)gl.deleteFramebuffer(f);
-   if(this.sceneDepth)gl.deleteRenderbuffer(this.sceneDepth);
-   if(this.screenVAO)gl.deleteVertexArray(this.screenVAO);
-   this.batches.clear();this.meshes.length=0;this.uniforms.clear();this.program=null;
+   if(this.sceneDepth)gl.deleteRenderbuffer(this.sceneDepth);if(this.screenVAO)gl.deleteVertexArray(this.screenVAO);
+   this.batches.clear();this.meshes.length=0;this.uniforms.clear();
   }
   draw(time=this.time){
-   if(this.disposed||!this.program)return;
+   if(this.disposed)return;
+   if(!this.program)return;
    this.drawStats={calls:0,triangles:0,instances:0};
    this.time=time;const gl=this.gl;this.update();this.cameraVP();gl.enable(gl.DEPTH_TEST);gl.depthMask(true);
    const render=(program,depth)=>{
@@ -138,4 +140,5 @@ import shadowFragment from './shaders/shadowFragment.js';
    if(this.postOK){gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.disable(gl.DEPTH_TEST);gl.disable(gl.BLEND);gl.useProgram(this.post);const u=this.locations(this.post);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,this.sceneTex);gl.uniform1i(u.uScene,0);gl.uniform2f(u.uPixel,1/this.canvas.width,1/this.canvas.height);gl.bindVertexArray(this.screenVAO);gl.drawArrays(gl.TRIANGLES,0,3);}
   }
  }
+
 export {Renderer,QUALITY};
