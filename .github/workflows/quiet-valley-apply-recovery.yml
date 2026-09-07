@@ -57,22 +57,24 @@ jobs:
             if(hash(result)!==r.s)throw Error('Source digest mismatch: '+r.p);
             output.set(r.p,result);
           }
-          // All bases have been read and verified. Replace only this staging-owned partial app.
           fs.rmSync('apps/quiet-valley',{recursive:true,force:true});
-          for(const [p,bytes] of output){fs.mkdirSync(path.dirname(p),{recursive:true});fs.writeFileSync(p,bytes);}
-          // Superseded setContent/UA-only test is replaced by the served-page game suite.
+          for(const [p,bytes] of output){
+            // Actions has Contents write only. Workflow edits are handled separately
+            // by the connected, authorized GitHub writer, never this token.
+            if(p.startsWith('.github/workflows/'))continue;
+            fs.mkdirSync(path.dirname(p),{recursive:true});fs.writeFileSync(p,bytes);
+          }
           fs.rmSync('apps/site/tests/e2e/quiet-valley-mobile.spec.ts',{force:true});
           fs.rmSync('.qv-transfer',{recursive:true,force:true});
-          fs.rmSync('.github/workflows/quiet-valley-source-transfer.yml',{force:true});
-          fs.rmSync('.github/workflows/quiet-valley-apply-recovery.yml',{force:true});
-          console.log('Verified and restored '+output.size+' source files. No encoded transport remains.');
+          console.log('Verified source delta. Workflow files are unchanged.');
           NODE
-      - name: Commit staging checkpoint, never main
+      - name: Commit content-only staging checkpoint, never main
         run: |
           test "$GITHUB_REF_NAME" = 'work/quiet-valley-restoration-transfer'
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
+          test -z "$(git diff --cached --name-only -- .github/workflows)"
           git diff --cached --stat
           git commit -m 'Restore detailed Quiet Valley as independent modular application'
           git push origin HEAD:work/quiet-valley-restoration-transfer
