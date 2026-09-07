@@ -16,12 +16,14 @@ on:
       - "functions/api/_lib/blackcrown-bot-bridge.ts"
       - "supabase/**"
       - "scripts/check-commerce-trust.mjs"
+      - "scripts/assemble.mjs"
       - "packages/**"
       - "package.json"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
       - "tsconfig*.json"
       - ".github/workflows/site-pr-check.yml"
+      - ".github/workflows/auto-deploy-cloudflare-pages.yml"
   workflow_dispatch:
 
 concurrency:
@@ -105,6 +107,16 @@ jobs:
 
       - name: Build production package
         run: npm run build:prod
+
+      - name: Validate assembled game entrypoints
+        shell: bash
+        run: |
+          test -f dist/games/index.html
+          test -f dist/games/quiet-valley/index.html
+          grep -Fq '<title>BLACKCROWN Games</title>' dist/games/index.html
+          grep -Fq '<title>Quiet Valley — BLACKCROWN Game</title>' dist/games/quiet-valley/index.html
+          grep -Fq '/games/   /games/index.html  200' dist/_redirects
+          grep -Fq '/games/quiet-valley/   /games/quiet-valley/index.html  200' dist/_redirects
 
       - name: Check workspace type debt
         id: workspace-typecheck
