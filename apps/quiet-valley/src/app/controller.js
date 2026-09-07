@@ -347,15 +347,17 @@ export async function startController({ session, FarmSim, FarmExpansion, ValleyG
             $('#intro-overlay').hidden = false;
         }
         let previous = performance.now(), uiAt = 0, labelAt = 0, frames = 0, started = performance.now();
+        let submittedRegion = null, presentedRegion = null, presenting = false;
         function frame(time) {
             if (diagnostics?.failed || lifetime.disposed)
                 return;
-            const dt = Math.min(.06, (time - previous) / 1000);
+            const elapsed = Math.max(0, (time - previous) / 1000);
+            const dt = Math.min(.06, elapsed);
             previous = time;
             if (!document.hidden) {
                 // A static backdrop behind dialogs avoids rendering a whole 3D world under a blurred sheet.
                 // The deterministic simulation below still advances while the map is open.
-                if (!modalKind || visualDirty || frames === 0) {
+                if (!presenting && (!modalKind || visualDirty || frames === 0)) {
                     art.animate(time / 1000, dt, state);
                     world.animate(time / 1000, dt, state);
                     atmosphere.animate(time / 1000, dt, state);
@@ -374,7 +376,8 @@ export async function startController({ session, FarmSim, FarmExpansion, ValleyG
                             p.node.visible = false;
                     }
                     const liveWeather = ValleyGameplay.weather(state, gameNow()), weatherLight = liveWeather.key === 'rain' ? .70 : liveWeather.key === 'cloud' ? .84 : 1;
-                    R.day += ((night ? .20 : weatherLight) - R.day) * Math.min(1, dt * 1.7);
+                    R.day += ((night ? .20 : weatherLight) - R.day) * (1 - Math.exp(-Math.min(1, elapsed) * 1.7));
+                    R.rain += ((liveWeather.key === 'rain' ? 1 : 0) - R.rain) * (1 - Math.exp(-Math.min(1, elapsed) * 1.25));
                     R.draw(time / 1000);
                     frames++;
                     visualDirty = false;
@@ -382,7 +385,25 @@ export async function startController({ session, FarmSim, FarmExpansion, ValleyG
                         const error = R.gl.getError();
                         if (error !== R.gl.NO_ERROR)
                             throw Error('WebGL draw error: ' + error);
-                        diagnostics?.ready();
+                    }
+                    // A submitted JS draw is not proof of a completed GPU frame. Keep the
+                    // transition veil until completion and one browser presentation opportunity.
+                    const region = state.world.region;
+                    if (submittedRegion !== region) {
+                        submittedRegion = region;
+                        presenting = true;
+                        R.waitForFrame().then(() => {
+                            if (lifetime.disposed || diagnostics.failed) return;
+                            lifetime.frame(() => {
+                                presenting = false;
+                                if (region !== state.world.region) return;
+                                presentedRegion = region;
+                                $('#location-shade').classList.remove('active');
+                                diagnostics?.ready();
+                            });
+                        }).catch(error => {
+                            if (!lifetime.disposed) diagnostics.fail(error);
+                        });
                     }
                 }
                 if (!modalKind && time - labelAt > 90) {
@@ -411,7 +432,7 @@ export async function startController({ session, FarmSim, FarmExpansion, ValleyG
         lifetime.on(window, 'resize', () => { R.resize(); R.cameraVP(); updateLabels(gameNow()); });
         if (loadWarning)
             lifetime.timeout(() => toast(loadWarning), 450);
-        window.FarmApp = { inspect: () => ({ version: '0.6.3-atelier.1', weather: ValleyGameplay.weather(state), story: ValleyGameplay.storyStatus(state), orders: state.game.orders.map(o => ({ ...o, deliverable: ValleyGameplay.canDeliver(state, o) })), world: world.inspect(), construction: { type: buildType, rotation: buildRotation }, graphics: { quality: R.quality, shadowSize: R.shadowSize, post: R.postOK, motion: R.motion, warnings: R.warnings }, waterFX: waterFX.inspect(), soilWetness: art.cropModels.map(m => m.wet), camera: { ...R.camera }, state: FarmSim.clone(state), tool, seed, selected, storageOK, saveCount, webgl: R.glVersion, shadow: R.shadowOK, meshes: R.meshes.length, drawBatches: R.batches.size, drawStats: R.drawStats, production: FarmSim.clone(state.production), persistence: store.inspect(), frames, elapsedMs: performance.now() - started }), projectPlot: (id, dx = 0, dz = 0) => { R.cameraVP(); let p = art.cropModels[id]; return R.project([p.x + dx, p.surface, p.z + dz]); }, projectWorld: (x, z) => { R.cameraVP(); return R.project([x, .25, z]); }, projectFeature: key => { const f = world.features.find(f => f.key === key); return f ? R.project(f.pos) : null; }, projectAnimal: id => { let m = art.animalModels.get(id); return m ? R.project([m.g.p[0], .8, m.g.p[2]]) : null; } };
+        window.FarmApp = { inspect: () => ({ version: '0.7.0-top.1', weather: ValleyGameplay.weather(state), story: ValleyGameplay.storyStatus(state), orders: state.game.orders.map(o => ({ ...o, deliverable: ValleyGameplay.canDeliver(state, o) })), world: world.inspect(), construction: { type: buildType, rotation: buildRotation }, graphics: { quality: R.quality, daylight: R.day, shadowSize: R.shadowSize, post: R.postOK, motion: R.motion, warnings: R.warnings }, waterFX: waterFX.inspect(), soilWetness: art.cropModels.map(m => m.wet), camera: { ...R.camera }, state: FarmSim.clone(state), tool, seed, selected, storageOK, saveCount, webgl: R.glVersion, shadow: R.shadowOK, meshes: R.meshes.length, drawBatches: R.batches.size, drawStats: R.drawStats, production: FarmSim.clone(state.production), persistence: store.inspect(), frames, presentedRegion, presentationPending: presenting, elapsedMs: performance.now() - started }), projectPlot: (id, dx = 0, dz = 0) => { R.cameraVP(); let p = art.cropModels[id]; return R.project([p.x + dx, p.surface, p.z + dz]); }, projectWorld: (x, z) => { R.cameraVP(); return R.project([x, .25, z]); }, projectFeature: key => { const f = world.features.find(f => f.key === key); return f ? R.project(f.pos) : null; }, projectAnimal: id => { let m = art.animalModels.get(id); return m ? R.project([m.g.p[0], .8, m.g.p[2]]) : null; } };
         window.render_game_to_text = () => JSON.stringify({ coordinates: 'Y up; plots use world X/Z; screen origin top-left', ...window.FarmApp.inspect() });
     }
     catch (e) {

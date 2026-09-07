@@ -71,9 +71,11 @@ export function createFarmArt(FarmSim) {
   box([0,1.58,0],[2.1,1.45,.16],'#7a6045',[0,0,0],orderBoard);box([0,1.58,.10],[1.86,1.20,.055],'#d8c99e',[0,0,0],orderBoard);
   for(let i=0;i<3;i++){const x=-.56+i*.56;box([x,1.58,.145],[.42,.72,.028],i===1?'#f0e8cc':'#fff5d8',[0,0,(i-1)*.04],orderBoard);ball([x,1.93,.18],[.035,.035,.025],'#b76c4e',orderBoard);}
   box([0,2.44,.03],[1.26,.27,.12],'#56745b',[0,0,0],orderBoard);
+  const orderLamp=ball([.92,2.35,.18],[.095,.095,.075],'#e7c46c',orderBoard);orderLamp.fx=[5,0,0,0];orderLamp.visible=false;
   // Four lightweight villagers make the farm feel inhabited. Their stories live in gameplay.js.
   function villager(id,name,pos,shirt,hair,route){
    const g=group([pos[0],.23,pos[1]],[1,1,1]),torso=group([0,0,0],[1,1,1],[0,0,0],g),head=group([0,0,0],[1,1,1],[0,0,0],g),arms=[],legs=[];
+   const contact=R.add('disc',[0,-.205,0],[.46,1,.31],'#1f3327',[0,0,0],g,.17);contact.fx=[10,0,0,0];
    cyl([0,1.12,0],[.31,.80,.31],shirt,[0,0,0],torso);head.p=[0,1.72,0];ball([0,0,0],[.27,.30,.27],'#d6ae8c',head);ball([0,.19,-.03],[.28,.14,.27],hair,head);
    if(id==='elena'){cyl([0,.25,0],[.44,.045,.39],'#d4b16d',[0,0,0],head);cyl([0,.35,0],[.25,.19,.23],'#dabd80',[0,0,0],head);cyl([0,.28,0],[.26,.055,.24],'#79634a',[0,0,0],head);}
    if(id==='mia'){cyl([0,.24,0],[.25,.17,.25],'#f0e7d2',[0,0,0],head);for(let i=0;i<3;i++)ball([(i-1)*.12,.40,0],[.15,.16,.20],'#f4ead6',head);box([0,1.02,.30],[.40,.55,.045],'#efe4c8',[0,0,0],torso);}
@@ -118,6 +120,7 @@ export function createFarmArt(FarmSim) {
   let wagon=group([-8.5,.2,6.7],[1,1,1],[0,.35,0]);box([0,.53,0],[1.3,.15,1.6],'#ac7d4d',[0,0,0],wagon);for(let x of [-.65,.65]){box([x,.88,0],[.08,.57,1.67],colors.wood,[0,0,0],wagon);for(let z of [-.52,.52]){cyl([x*1.15,.38,z],[.31,.12,.31],'#646147',[0,0,Math.PI/2],wagon);cyl([x*1.2,.38,z],[.11,.14,.11],colors.cream,[0,0,Math.PI/2],wagon);}}
   cyl([-3.9,.7,-5.12],[.42,.9,.42],'#a0aba0');cyl([-3.9,1.17,-5.12],[.45,.08,.45],'#6e877c');
   function animalModel(data){const kind=data.type;const g=group([3+data.id*.85,.23,-1+(data.id%3)*1.1],[1,1,1]);const head=group([0,0,0],[1,1,1],[0,0,0],g),legs=[],tail=group([0,0,0],[1,1,1],[0,0,0],g);let body;
+   const contactSize=kind==='cow'?[.74,1,.54]:kind==='sheep'?[.58,1,.43]:[.30,1,.24];const contact=R.add('disc',[0,-.205,0],contactSize,'#1e3126',[0,0,0],g,.18);contact.fx=[10,0,0,0];
    if(kind==='cow'){
     body=ball([0,.92,0],[.49,.49,.82],'#eee7d4',g);for(const [x,y,z,sx,sy,sz] of [[.40,1.07,-.22,.14,.26,.27],[-.42,1.0,.30,.12,.27,.26],[.13,1.31,-.28,.32,.11,.27],[.35,.83,.48,.16,.26,.2]])ball([x,y,z],[sx,sy,sz],'#565345',g);
     head.p=[0,1.03,.66];ball([0,.15,.23],[.31,.35,.37],'#eee7d4',head);ball([0,-.02,.54],[.31,.19,.2],'#d4a39a',head);for(let side of [-1,1]){let e=ball([side*.34,.33,.17],[.24,.08,.13],'#d6c1aa',head);e.r[2]=side*.3;cone([side*.19,.52,.12],[.07,.22,.07],'#cabc96',[0,0,side*-.26],head);ball([side*.27,.27,.43],[.065,.07,.03],'#fcf8e8',head);ball([side*.285,.27,.453],[.028,.039,.021],'#343b32',head);ball([side*.14,-.01,.715],[.04,.034,.018],'#9d776d',head);}
@@ -138,7 +141,7 @@ export function createFarmArt(FarmSim) {
     if(visible){const progress=p.waterAt?Math.max(0,Math.min(1,1-(p.readyAt-now)/Math.max(1,p.readyAt-p.waterAt))):.02,scale=.20+progress*.80;sp.g.s=[scale,scale,scale];}
    }
   }}
-  function animate(t,dt,state){for(const c of clouds){const p=(t*.16+c.phase)%1;c.n.p=[c.origin[0]+p*.4+Math.sin(t*.3)*.09,c.origin[1]+p*1.65,c.origin[2]];const scale=Math.sin(p*Math.PI);c.n.s=[(.14+p*.27)*scale,(.2+p*.25)*scale,(.14+p*.27)*scale];}for(const m of cropModels){m.wet+=(m.targetWet-m.wet)*Math.min(1,dt*5.5);m.dirt.fx[1]=m.wet;m.ridges.forEach(n=>n.fx[1]=m.wet);}sails.r[2]=t*.23;for(const o of treeTops)o.g.r[2]=Math.sin(t*.9+o.phase)*.013;ducks.forEach((d,i)=>{d.p[0]=5.4+Math.sin(t*.10+i*2.8)*1.35;d.p[2]=7.2+Math.cos(t*.10+i*2.8)*.7;d.r[1]=Math.PI/2-t*.10-i*2.8;});
+  function animate(t,dt,state){const readyOrder=state.game?.orders?.some(o=>Object.entries(o.items).every(([key,n])=>(state.inventory[key]||0)>=n));orderLamp.visible=!!readyOrder;if(readyOrder){const pulse=1+Math.sin(t*3.2)*.10;orderLamp.s=[.095*pulse,.095*pulse,.075*pulse];}for(const c of clouds){const p=(t*.16+c.phase)%1;c.n.p=[c.origin[0]+p*.4+Math.sin(t*.3)*.09,c.origin[1]+p*1.65,c.origin[2]];const scale=Math.sin(p*Math.PI);c.n.s=[(.14+p*.27)*scale,(.2+p*.25)*scale,(.14+p*.27)*scale];}for(const m of cropModels){m.wet+=(m.targetWet-m.wet)*Math.min(1,dt*5.5);m.dirt.fx[1]=m.wet;m.ridges.forEach(n=>n.fx[1]=m.wet);}sails.r[2]=t*.23;for(const o of treeTops)o.g.r[2]=Math.sin(t*.9+o.phase)*.013;ducks.forEach((d,i)=>{d.p[0]=5.4+Math.sin(t*.10+i*2.8)*1.35;d.p[2]=7.2+Math.cos(t*.10+i*2.8)*.7;d.r[1]=Math.PI/2-t*.10-i*2.8;});
    for(const a of state.animals){let m=animalModels.get(a.id)||animalModel(a),g=m.g;let chicken=a.type==='chicken';m.wait-=dt;let dx=m.target[0]-g.p[0],dz=m.target[1]-g.p[2],dist=Math.hypot(dx,dz);m.move=dist>.10&&m.pet<=0;
     if(m.move){let speed=chicken?.48:.38,step=Math.min(dist,speed*dt);g.p[0]+=dx/dist*step;g.p[2]+=dz/dist*step;let goal=Math.atan2(dx,dz),delta=Math.atan2(Math.sin(goal-g.r[1]),Math.cos(goal-g.r[1]));g.r[1]+=delta*Math.min(1,dt*5);g.p[1]=.23+Math.sin(t*9+m.phase)*.014;}
     else{g.p[1]=.23;if(m.wait<0){m.target=chicken?[3.2+rnd()*5.7,3.6+rnd()*1.7]:[3.1+rnd()*5.35,-4.2+rnd()*6.45];m.wait=4+rnd()*7;}}

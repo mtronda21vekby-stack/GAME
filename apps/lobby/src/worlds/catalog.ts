@@ -21,7 +21,7 @@ export const WORLD_CATALOG = [
     title: "Quiet Valley",
     eyebrow: "FARM GAME · ALPHA",
     description: "Самостоятельная 3D-ферма BLACKCROWN: растения, животные, заказы жителей, мягкая аренда, сюжет и развитие территории.",
-    version: "0.6.3-atelier.1",
+    version: "0.7.0-top.1",
     maturity: "alpha",
     lobbyRoute: "/games/quiet-valley/",
     runtimeUrl: "/games/quiet-valley/index.html",

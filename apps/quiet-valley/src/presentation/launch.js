@@ -14,7 +14,7 @@ export function createLaunchDiagnostics(lifetime){
   const title=document.createElement('h2');title.textContent='Ферма не смогла запуститься';
   const message=document.createElement('p');message.textContent=error?.message||String(error||'Неизвестная ошибка');
   const detail=document.createElement('textarea');detail.readOnly=true;detail.setAttribute('aria-label','Диагностика запуска');
-  detail.value='Quiet Valley 0.6.3-atelier.1\nЭтап: '+boot.stage+'\nОшибка: '+message.textContent+'\nБраузер: '+navigator.userAgent;
+  detail.value='Quiet Valley 0.7.0-top.1\nЭтап: '+boot.stage+'\nОшибка: '+message.textContent+'\nБраузер: '+navigator.userAgent;
   const retry=document.createElement('button');retry.className='primary';retry.textContent='Повторить запуск';retry.onclick=()=>location.reload();
   const back=document.createElement('a');back.href='/games/';back.textContent='Вернуться к играм BLACKCROWN';back.style.display='block';back.style.marginTop='12px';
   const note=document.createElement('p');note.textContent='Ваше сохранение не удаляется. Доступны лёгкие настройки графики; никаких изменений в настройках безопасности браузера не требуется.';

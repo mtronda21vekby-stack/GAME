@@ -33,6 +33,9 @@ import {TAU,norm} from './math.js';
     let na=norm([Math.cos(a),1-top,Math.sin(a)]),nb=norm([Math.cos(b),1-top,Math.sin(b)]);
     tri(pa,pd,pc,na,na,nb);tri(pa,pc,pb,na,nb,nb);tri([0,-.5,0],pa,pb,[0,-1,0]);if(top)tri([0,.5,0],pc,pd,[0,1,0]);
    }
+  } else if(type==='disc'){
+   const N=32,c=[0,0,0],n=[0,1,0],pt=i=>[Math.cos(i/N*TAU),0,Math.sin(i/N*TAU)];
+   for(let i=0;i<N;i++)tri(c,pt(i+1),pt(i),n);
   } else if(type==='ring'){
    const N=40,pt=(i,r)=>[Math.cos(i/N*TAU)*r,0,Math.sin(i/N*TAU)*r];
    for(let i=0;i<N;i++){let a=pt(i,.87),b=pt(i+1,.87),c=pt(i+1,1),d=pt(i,1);tri(a,c,d,[0,1,0]);tri(a,b,c,[0,1,0]);}
