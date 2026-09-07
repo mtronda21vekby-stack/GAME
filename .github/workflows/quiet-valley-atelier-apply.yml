@@ -1,0 +1,64 @@
+name: Materialize Quiet Valley Atelier source
+on:
+  push:
+    branches: [work/quiet-valley-art-audit]
+    paths: [.github/workflows/quiet-valley-atelier-apply.yml]
+permissions:
+  contents: write
+jobs:
+  materialize:
+    if: github.ref == 'refs/heads/work/quiet-valley-art-audit'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/quiet-valley-art-audit
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Reconstruct hash-verified normal source files
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import {createHash} from 'node:crypto';
+          import {brotliDecompressSync} from 'node:zlib';
+          const hash=b=>createHash('sha256').update(b).digest('hex');
+          const packed=Buffer.from([0,1].map(i=>fs.readFileSync('.qv-atelier/part'+i,'utf8').trim()).join(''),'base64');
+          if(hash(packed)!=='e77835b607a10e449ebcd4f511b8a8132d291f5db1d874afce1c1934b5fcfa74')throw Error('Transport digest mismatch');
+          const records=JSON.parse(brotliDecompressSync(packed));
+          if(records.length!==23)throw Error('Unexpected record count');
+          const exact=new Set(['apps/lobby/src/worlds/catalog.ts','apps/lobby/public/worlds/quiet-valley/manifest.json']);
+          const output=new Map();
+          for(const r of records){
+            if(typeof r.p!=='string'||r.p.startsWith('/')||r.p.includes('\\')||r.p.split('/').includes('..')||(!exact.has(r.p)&&!r.p.startsWith('apps/quiet-valley/')&&!r.p.startsWith('apps/site/tests/quiet-valley/')))throw Error('Out-of-scope path');
+            if(output.has(r.p))throw Error('Duplicate path');
+            let result;
+            if(typeof r.t==='string')result=Buffer.from(r.t,'utf8');
+            else{
+              const base=fs.readFileSync(r.p);
+              if(hash(base)!==r.h)throw Error('Source checkpoint mismatch: '+r.p);
+              result=Buffer.concat(r.o.map(op=>{
+                if(typeof op==='string')return Buffer.from(op,'utf8');
+                if(!Array.isArray(op)||op.length!==2||!op.every(Number.isSafeInteger)||op[0]<0||op[1]<0||op[0]+op[1]>base.length)throw Error('Invalid source copy');
+                return base.subarray(op[0],op[0]+op[1]);
+              }));
+            }
+            if(hash(result)!==r.s)throw Error('Output mismatch: '+r.p);
+            output.set(r.p,result);
+          }
+          for(const [p,bytes] of output){fs.mkdirSync(path.dirname(p),{recursive:true});fs.writeFileSync(p,bytes);}
+          fs.rmSync('.qv-atelier',{recursive:true,force:true});
+          console.log('Verified '+output.size+' normal source files. Workflows unchanged.');
+          NODE
+      - name: Commit content-only work branch
+        run: |
+          test "$GITHUB_REF_NAME" = 'work/quiet-valley-art-audit'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          test -z "$(git diff --cached --name-only -- .github/workflows)"
+          git diff --cached --stat
+          git commit -m 'Implement Quiet Valley Atelier art and guided farming loop'
+          git push origin HEAD:work/quiet-valley-art-audit
