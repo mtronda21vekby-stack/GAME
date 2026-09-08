@@ -1,9 +1,9 @@
-/* Quiet Valley v0.9.2 — Farm Rebuild II.
+/* Quiet Valley v0.9.3 — Crop Layout Lock.
  *
- * This pass performs a deterministic authored rebuild on top of the stable
- * v0.9.1 scene. Major landmarks are relocated as complete root groups, crop
- * beds are translated as complete footprints, old loose livestock clutter is
- * removed, and new paths / utility props are authored explicitly.
+ * v0.9.2 proved that post-construction crop translation is unsafe because a
+ * bed is authored from several unparented meshes plus grouped crop species.
+ * This release removes ALL runtime crop remapping. Beds stay exactly where
+ * farm.js creates every dirt slab, border, ridge, flag and crop model.
  */
 'use strict';
 
@@ -17,8 +17,7 @@ export function createFarmLayout(BaseFarmArt){
   const findRoot=(x,z)=>roots.find(g=>Array.isArray(g.p)&&near(g.p[0],x,.04)&&near(g.p[2],z,.04));
   const moveRoot=(from,to)=>{const g=findRoot(from[0],from[1]);if(!g)return false;g.p[0]=to[0];g.p[2]=to[1];if(to[2]!=null)g.r[1]=to[2];return true;};
 
-  // Large authored objects move only as complete root groups. No proximity
-  // translation of their children is allowed.
+  // Large authored objects may move only as complete root groups.
   const landmarkPlan={
    farmhouse:{from:[-6.5,-6.8],to:[-8.15,-6.15,.05]},
    cottage:{from:[-1.15,-7.85],to:[-3.55,-7.45,-.03]},
@@ -31,26 +30,13 @@ export function createFarmLayout(BaseFarmArt){
   };
   const moved={};for(const [id,p] of Object.entries(landmarkPlan))moved[id]=moveRoot(p.from,p.to);
 
-  // Rebuild the sixteen beds into two clean 2-column blocks with a wide
-  // central service aisle. Each bed footprint is moved exactly once.
-  const columns=[-7.25,-5.25,-2.05,-.05];
-  const rows=[-3.05,-1.00,1.05,3.10];
-  const oldCenters=(art.cropModels||[]).map(m=>[m.x,m.z]);
-  const newCenters=[];
-  for(const m of art.cropModels||[]){
-   const nx=columns[m.id%4],nz=rows[Math.floor(m.id/4)],ox=m.x,oz=m.z,dx=nx-ox,dz=nz-oz;
-   // Loose border, ridge, dirt and marker meshes occupy a non-overlapping
-   // footprint around each original bed. Move that exact footprint only.
-   for(const n of R.meshes||[]){
-    if(n.parent)continue;
-    if(Math.abs(n.p[0]-ox)<=.96&&Math.abs(n.p[2]-oz)<=.96&&n.p[1]>=.20&&n.p[1]<=1.35){n.p[0]+=dx;n.p[2]+=dz;}
-   }
-   for(const sp of Object.values(m.species||{})){sp.g.p[0]+=dx;sp.g.p[2]+=dz;}
-   m.x=nx;m.z=nz;newCenters.push([nx,nz]);
-  }
+  // CROP GEOMETRY LOCK: do not translate any crop mesh here. A crop bed is a
+  // compound authored object containing loose dirt/borders/ridges plus grouped
+  // species, so proximity translation can split or double-move it. The source
+  // generator is now the only owner of crop placement.
+  const plotCenters=(art.cropModels||[]).map(m=>[m.x,m.z]);
 
-  // Remove the old ungrouped hay / trough clutter by its exact authored
-  // coordinates. Recreate a cleaner utility station deeper inside the paddock.
+  // Remove old loose hay / trough clutter and recreate the utility station.
   let removedLoose=0;
   for(const n of R.meshes||[]){
    if(n.parent)continue;
@@ -72,14 +58,14 @@ export function createFarmLayout(BaseFarmArt){
   box([-.30,.73,0],[.10,1.20,.10],'#68452f',[0,0,-.16],tools);
   box([0,1.35,0],[1.05,.12,.12],'#aa794d',[0,0,0],tools);
 
-  // A real central working courtyard and service paths. These are low profile
-  // so they never cover crop hit targets.
+  // Keep paths outside the locked crop footprint. The v0.9.2 crop cross-aisle
+  // is intentionally removed because it visually cut through authored beds.
   const path=(x,z,w,d,r=0)=>R.add('island',[x,.305,z],[w,.075,d],'#d1bb94',[0,r,0]);
-  path(.72,-.25,.78,5.8);                    // main spine
-  path(-3.66,.10,2.15,.58);                  // crop cross-aisle
-  path(-6.30,4.55,3.1,.58,-.08);             // market approach
-  path(-5.85,-5.05,3.0,.58,.05);             // homes approach
-  path(4.20,3.65,4.0,.58,.02);               // coop / pasture route
+  path(.72,-4.65,.78,1.85);
+  path(.72,5.25,.78,1.50);
+  path(-6.30,4.55,3.1,.58,-.08);
+  path(-5.85,-5.05,3.0,.58,.05);
+  path(4.20,3.65,4.0,.58,.02);
   const plaza=R.group([.85,.20,4.35]);
   box([0,.13,0],[2.6,.16,2.0],'#c8b287',[0,0,0],plaza);
   box([0,.32,-.67],[1.65,.18,.34],'#aa794d',[0,0,0],plaza);
@@ -91,10 +77,11 @@ export function createFarmLayout(BaseFarmArt){
    coop:[8.15,4.65],trough:[7.05,-3.72],plaza:[.85,4.35]
   };
 
+  // Routes skirt the locked crop rectangle instead of crossing it.
   const routes={
-   elena:[[-7.65,-5.55],[-5.9,-5.0],[-3.7,-4.85],[-1.0,-4.85],[.70,-3.55],[-1.0,-4.85],[-3.7,-4.85],[-5.9,-5.0]],
-   mia:[[-7.60,5.55],[-6.1,5.85],[-4.8,5.25],[-2.7,4.65],[.55,4.30],[-2.7,4.65],[-4.8,5.25],[-6.1,5.85]],
-   fedor:[[-8.95,.25],[-8.1,-.5],[-7.5,-1.8],[-6.4,-3.2],[-5.8,-4.8],[-7.0,-3.0],[-8.2,-1.3]],
+   elena:[[-7.65,-5.55],[-5.9,-5.0],[-3.7,-4.85],[-1.0,-4.85],[.70,-4.65],[-1.0,-4.85],[-3.7,-4.85],[-5.9,-5.0]],
+   mia:[[-7.60,5.55],[-6.1,5.85],[-4.8,5.25],[-2.7,5.05],[.55,5.25],[-2.7,5.05],[-4.8,5.25],[-6.1,5.85]],
+   fedor:[[-8.95,.25],[-9.0,-1.1],[-9.05,-2.6],[-8.8,-4.0],[-7.7,-4.9],[-8.8,-4.0],[-9.05,-2.6],[-9.0,-1.1]],
    lea:[[7.80,4.55],[7.0,4.05],[5.8,3.65],[4.2,3.65],[2.2,4.05],[.85,4.35],[2.2,4.05],[5.8,3.65]]
   };
   for(const v of art.villagers||[]){
@@ -109,9 +96,9 @@ export function createFarmLayout(BaseFarmArt){
   art.troughPoint=[landmarks.trough[0],.8,landmarks.trough[1]];
 
   art.layoutWorld={
-   version:'0.9.2',rebuild:true,moved,removedLoose,plotCenters:newCenters,landmarks,routes,
+   version:'0.9.3',cropLayoutLocked:true,rebuild:true,moved,removedLoose,plotCenters,landmarks,routes,
    anchors:{market:[...art.marketPoint],orders:[...art.orderBoardPoint],trough:[...art.troughPoint]},
-   inspect(){return {version:'0.9.2',rebuild:true,moved:{...moved},removedLoose,plotCenters:newCenters.map(p=>[...p]),landmarks:Object.fromEntries(Object.entries(landmarks).map(([k,v])=>[k,[...v]])),routes:Object.fromEntries(Object.entries(routes).map(([k,v])=>[k,v.map(p=>[...p])])),anchors:{market:[...art.marketPoint],orders:[...art.orderBoardPoint],trough:[...art.troughPoint]}};}
+   inspect(){return {version:'0.9.3',cropLayoutLocked:true,rebuild:true,moved:{...moved},removedLoose,plotCenters:plotCenters.map(p=>[...p]),landmarks:Object.fromEntries(Object.entries(landmarks).map(([k,v])=>[k,[...v]])),routes:Object.fromEntries(Object.entries(routes).map(([k,v])=>[k,v.map(p=>[...p])])),anchors:{market:[...art.marketPoint],orders:[...art.orderBoardPoint],trough:[...art.troughPoint]}};}
   };
   return art;
  }};
