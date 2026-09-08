@@ -32,6 +32,11 @@ export async function startGame({lifetime,diagnostics}){
   FarmArt,ValleyWorld,FarmAtmosphere:createAtmosphere(FarmProduction),FarmWater:createWatering(reducedMotion),
   ValleyUI:createValleyUI(FarmSim,FarmExpansion),GameplayUI:createGameplayUI(FarmSim,ValleyGameplay),ProductionUI:createProductionUI(FarmSim,FarmProduction),FarmPick,
   createCountryDetails,lifetime,diagnostics,graphics:graphicsPreferences(storage,reducedMotion)});
+ // VERSION is the single release source of truth. Older controller diagnostics carried a
+ // historical literal, so normalize the public runtime inspection surface here as well as
+ // the BLACKCROWN bridge. This prevents a new bundle being reported as an older release.
+ const controllerInspect=window.FarmApp?.inspect;
+ if(controllerInspect)window.FarmApp.inspect=()=>({...controllerInspect(),version:VERSION});
  if(!diagnostics.failed)attachBridge({inspect:app.inspect,lifetime,host:window,origin:location.origin,version:VERSION});
  return app;
 }
