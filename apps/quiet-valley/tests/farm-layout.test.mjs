@@ -31,48 +31,48 @@ function baseFarm(){
  }};
 }
 
-test('layout pass spreads authored districts and removes duplicate loose stable clutter',()=>{
+test('layout pass separates utility, homes, market and livestock from crop footprints',()=>{
  const R=renderer(),art=createFarmLayout(baseFarm()).make(R);
  assert.equal(art.layoutWorld.moved.farmhouse,true);
  assert.equal(art.layoutWorld.moved.market,true);
  assert.equal(art.layoutWorld.moved.coop,true);
- assert.deepEqual(art._roots[0].p,[-9.0,.2,-6.15]);
- assert.deepEqual(art._roots[2].p,[-8.55,.2,.45]);
- assert.deepEqual(art._roots[3].p,[-8.0,.2,5.95]);
- assert.deepEqual(art._roots[5].p,[8.15,.2,5.15]);
+ assert.deepEqual(art._roots[0].p,[-8.65,.2,-6.10]);
+ assert.deepEqual(art._roots[2].p,[-8.05,.2,.65]);
+ assert.deepEqual(art._roots[3].p,[-8.45,.2,6.45]);
+ assert.deepEqual(art._roots[5].p,[8.05,.2,5.05]);
  assert.equal(art._duplicate.visible,false);
  assert.ok(art.layoutWorld.removedLoose>=1);
 });
 
-test('crop beds preserve IDs but open a service aisle through the old soil block',()=>{
+test('crop beds preserve IDs and leave a wide central service aisle',()=>{
  const R=renderer(),art=createFarmLayout(baseFarm()).make(R);
  assert.equal(art.cropModels.length,16);
- assert.deepEqual(art.layoutWorld.plotCenters[0],[-7.2,-2.6]);
- assert.deepEqual(art.layoutWorld.plotCenters[3],[-.3,-2.6]);
- assert.deepEqual(art.layoutWorld.plotCenters[15],[-.3,4.0]);
- assert.equal(art.cropModels[0].x,-7.2);
- assert.equal(art.cropModels[15].z,4.0);
+ assert.deepEqual(art.layoutWorld.plotCenters[0],[-6.35,-2.85]);
+ assert.deepEqual(art.layoutWorld.plotCenters[3],[.80,-2.85]);
+ assert.deepEqual(art.layoutWorld.plotCenters[15],[.80,3.75]);
+ assert.equal(art.cropModels[0].x,-6.35);
+ assert.equal(art.cropModels[15].z,3.75);
  const leftInner=art.layoutWorld.plotCenters[1][0],rightInner=art.layoutWorld.plotCenters[2][0];
- assert.ok(rightInner-leftInner>=2.6,'central crop aisle must remain visibly wider than normal bed spacing');
+ assert.ok(rightInner-leftInner>=2.9,'central crop aisle must remain clearly wider than normal bed spacing');
 });
 
-test('villager routes follow the redesigned paths and stay inside runtime bounds',()=>{
+test('villager routes follow redesigned paths and remain inside runtime bounds',()=>{
  const R=renderer(),art=createFarmLayout(baseFarm()).make(R);
  const mia=art.villagers.find(v=>v.id==='mia');
  const fedor=art.villagers.find(v=>v.id==='fedor');
  const lea=art.villagers.find(v=>v.id==='lea');
- assert.deepEqual(mia.g.p.slice(0,3),[-7.7,.2,5.75]);
- assert.deepEqual(lea.g.p.slice(0,3),[8.0,.2,4.95]);
+ assert.deepEqual(mia.g.p.slice(0,3),[-8.10,.2,6.20]);
+ assert.deepEqual(lea.g.p.slice(0,3),[7.95,.2,4.85]);
  assert.ok(mia.route.length>=6);
- assert.ok(lea.route.every(([x,z])=>x>=2&&x<=8.1&&z>=3.1&&z<=5.1));
+ assert.ok(lea.route.every(([x,z])=>x>=2&&x<=8.1&&z>=3.0&&z<=5.1));
  assert.ok(fedor.route.every(([x,z])=>x>=-8.2&&x<=8.4&&z>=-7.5&&z<=7.6));
  assert.deepEqual(art.livingWorld.villagerRoutes.mia,mia.route);
 });
 
 test('interaction anchors move with the visual market, order board and trough',()=>{
  const R=renderer(),art=createFarmLayout(baseFarm()).make(R);
- assert.deepEqual(art.marketPoint,[-8.0,2.0,5.95]);
- assert.deepEqual(art.orderBoardPoint,[-5.35,2.45,5.85]);
- assert.deepEqual(art.troughPoint,[3.65,.8,-4.05]);
+ assert.deepEqual(art.marketPoint,[-8.45,2.0,6.45]);
+ assert.deepEqual(art.orderBoardPoint,[-5.95,2.45,6.25]);
+ assert.deepEqual(art.troughPoint,[4.25,.8,-4.15]);
  assert.deepEqual(art.layoutWorld.anchors.market,art.marketPoint);
 });
