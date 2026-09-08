@@ -20,10 +20,10 @@ export function createFarmLayout(BaseFarmArt){
   const moved={
    farmhouse:moveRoot([-6.5,-6.8],[-8.65,-6.10]),
    cottage:moveRoot([-1.15,-7.85],[-4.65,-7.15]),
-   windmill:moveRoot([-10,-3.65],[-10.05,.65]),
+   windmill:moveRoot([-10,-3.65],[-8.05,.65]),
    market:moveRoot([-5.2,7.1],[-8.45,6.45]),
    orderBoard:moveRoot([-2.55,6.75],[-5.95,6.25]),
-   wagon:moveRoot([-8.5,6.7],[-10.15,5.10]),
+   wagon:moveRoot([-8.5,6.7],[-9.65,5.10]),
    coop:moveRoot([8.2,4.4],[8.05,5.05]),
    feedYard:moveRoot([7.55,-4.45],[7.25,-4.20]),
    workYard:moveRoot([-4.15,5.55],[-7.15,4.85]),
@@ -78,14 +78,14 @@ export function createFarmLayout(BaseFarmArt){
   };
 
   // Main circulation avoids all crop footprints.
-  path([-2.78,-5.05],[-2.78,5.30]);       // central service aisle
-  path([-2.78,5.30],[-5.75,5.75]);        // market/order-board spur
-  path([-5.75,5.75],[-8.05,6.15]);        // market approach
-  path([1.15,3.05],[5.75,3.05]);           // livestock lane
-  path([5.75,3.05],[7.90,4.30]);           // coop spur
-  path([-.20,-5.15],[-4.25,-5.15]);        // home/garden approach
-  path([-4.25,-5.15],[-7.80,-5.70]);       // farmhouse approach
-  path([-7.55,4.75],[-9.55,2.05]);         // utility/windmill spur
+  path([-2.78,-5.05],[-2.78,5.30]);
+  path([-2.78,5.30],[-5.75,5.75]);
+  path([-5.75,5.75],[-8.05,6.15]);
+  path([1.15,3.05],[5.75,3.05]);
+  path([5.75,3.05],[7.90,4.30]);
+  path([-.20,-5.15],[-4.25,-5.15]);
+  path([-4.25,-5.15],[-7.80,-5.70]);
+  path([-7.35,4.75],[-8.00,1.55]);
 
   // Compact forecourt on the service aisle; no overlap with beds.
   const court=group([-2.78,.23,.55]);
@@ -113,17 +113,16 @@ export function createFarmLayout(BaseFarmArt){
   box([0,.70,0],[1.08,.08,.10],'#7a6047',homeYard);
   const wash=cyl([.92,.28,.15],[.23,.34,.23],'#78908a',homeYard);wash.fx=[8,0,0,0];
 
-  // Small orientation marker at the junction, clear of livestock fence and crops.
   const sign=group([1.05,.23,4.55]);
   box([0,.70,0],[.10,1.35,.10],'#7d6047',sign);
   box([0,1.14,0],[1.35,.52,.12],'#c7b58c',sign,[0,.08,0]);
   box([0,1.14,.07],[1.12,.055,.03],'#7e8f68',sign,[0,.08,0]);
 
-  // NPC routes use the same corridors as the visible paths and never cut through plots.
+  // NPC routes use the same corridors as the visible paths and remain inside runtime bounds.
   const routes={
    elena:[[-8.05,-5.65],[-6.35,-5.45],[-4.35,-5.15],[-2.78,-5.00],[-2.78,-3.65],[-2.78,-5.00],[-6.00,-5.35]],
    mia:[[-8.10,6.20],[-6.60,5.95],[-5.75,5.75],[-3.90,5.45],[-2.78,5.25],[-3.90,5.45],[-6.10,5.80]],
-   fedor:[[-8.00,4.80],[-8.55,3.70],[-9.15,2.50],[-9.75,1.25],[-9.35,2.40],[-8.55,3.70],[-7.45,4.75]],
+   fedor:[[-8.00,4.75],[-8.10,3.65],[-8.05,2.55],[-8.00,1.40],[-7.90,2.50],[-7.80,3.65],[-7.35,4.70]],
    lea:[[7.95,4.85],[6.90,4.15],[5.70,3.10],[4.25,3.10],[2.35,3.35],[4.25,3.10],[6.50,4.00]]
   };
   for(const v of art.villagers||[]){
@@ -141,7 +140,7 @@ export function createFarmLayout(BaseFarmArt){
 
   art.layoutWorld={
    moved,removedLoose,routes,plotCenters,
-   districts:{homes:[-8.65,-4.65,-6.10,-7.15],market:[-8.45,-5.95,6.45,6.25],utility:[-10.05,.65],livestock:[4.25,8.05,-4.15,5.05]},
+   districts:{homes:[-8.65,-4.65,-6.10,-7.15],market:[-8.45,-5.95,6.45,6.25],utility:[-8.05,.65],livestock:[4.25,8.05,-4.15,5.05]},
    anchors:{market:[...art.marketPoint],orders:[...art.orderBoardPoint],trough:[...art.troughPoint]},
    inspect(){return {moved:{...moved},removedLoose,plotCenters:plotCenters.map(p=>[...p]),routes:Object.fromEntries(Object.entries(routes).map(([k,v])=>[k,v.map(p=>[...p])])),anchors:{market:[...art.marketPoint],orders:[...art.orderBoardPoint],trough:[...art.troughPoint]}};}
   };
