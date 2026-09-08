@@ -33,30 +33,27 @@ function baseFarm(){
  }};
 }
 
-test('v0.9.2 moves complete landmark groups into the new farm zones',()=>{
+test('v0.9.3 moves only complete landmark groups',()=>{
  const R=renderer(),art=createFarmLayout(baseFarm()).make(R);
- assert.equal(art.layoutWorld.version,'0.9.2');
- assert.equal(art.layoutWorld.rebuild,true);
+ assert.equal(art.layoutWorld.version,'0.9.3');
+ assert.equal(art.layoutWorld.cropLayoutLocked,true);
  assert.deepEqual(art._roots[0].p,[-8.15,.2,-6.15]);
  assert.deepEqual(art._roots[2].p,[-9.35,.2,.35]);
  assert.deepEqual(art._roots[3].p,[-8.05,.2,5.95]);
  assert.deepEqual(art._roots[6].p,[8.15,.2,4.65]);
- assert.equal(art.layoutWorld.moved.farmhouse,true);
- assert.equal(art.layoutWorld.moved.market,true);
- assert.equal(art.layoutWorld.moved.coop,true);
 });
 
-test('sixteen beds form two clean blocks with a wide service aisle',()=>{
+test('crop beds remain exactly at their authored coordinates with no remap',()=>{
  const R=renderer(),art=createFarmLayout(baseFarm()).make(R);
  assert.equal(art.cropModels.length,16);
- assert.deepEqual(art.layoutWorld.plotCenters[0],[-7.25,-3.05]);
- assert.deepEqual(art.layoutWorld.plotCenters[3],[-.05,-3.05]);
- assert.deepEqual(art.layoutWorld.plotCenters[15],[-.05,3.10]);
- assert.equal(art.cropModels[0].x,-7.25);
- assert.equal(art.cropModels[15].z,3.10);
- assert.ok(art.layoutWorld.plotCenters[2][0]-art.layoutWorld.plotCenters[1][0]>=3.1);
- const ids=art.cropModels.map(m=>m.id);
- assert.deepEqual(ids,[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]);
+ assert.deepEqual(art.layoutWorld.plotCenters[0],[-7.5,-2.35]);
+ assert.deepEqual(art.layoutWorld.plotCenters[3],[-1.38,-2.35]);
+ assert.deepEqual(art.layoutWorld.plotCenters[15],[-1.38,3.77]);
+ assert.equal(art.cropModels[0].x,-7.5);
+ assert.equal(art.cropModels[15].z,3.77);
+ assert.deepEqual(art.cropModels[0].dirt.p.slice(0,3),[-7.5,.29,-2.35]);
+ assert.deepEqual(art.cropModels[0].species.carrot.g.p.slice(0,3),[-7.5,.43,-2.35]);
+ assert.deepEqual(art.cropModels.map(m=>m.id),[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]);
 });
 
 test('old livestock clutter is removed and interaction anchors point at rebuilt utilities',()=>{
@@ -69,15 +66,15 @@ test('old livestock clutter is removed and interaction anchors point at rebuilt 
  assert.deepEqual(art.orderBoardPoint,[-5.45,2.45,6.15]);
 });
 
-test('villagers use the rebuilt roads rather than crossing crop or pasture interiors',()=>{
+test('villager routes skirt the locked crop footprint',()=>{
  const R=renderer(),art=createFarmLayout(baseFarm()).make(R);
  const mia=art.villagers.find(v=>v.id==='mia');
  const fedor=art.villagers.find(v=>v.id==='fedor');
  const lea=art.villagers.find(v=>v.id==='lea');
  assert.deepEqual(mia.g.p.slice(0,3),[-7.60,.2,5.55]);
  assert.deepEqual(lea.g.p.slice(0,3),[7.80,.2,4.55]);
- assert.ok(mia.route.length>=8);
- assert.ok(fedor.route.every(([x,z])=>x>=-9.0&&x<=-5.7&&z>=-4.9&&z<=.4));
+ assert.ok(mia.route.every(([,z])=>z>=5.0));
+ assert.ok(fedor.route.every(([x])=>x<=-7.7));
  assert.ok(lea.route.every(([x,z])=>x>=.8&&x<=7.9&&z>=3.6&&z<=4.6));
  assert.deepEqual(art.livingWorld.villagerRoutes.mia,mia.route);
 });
