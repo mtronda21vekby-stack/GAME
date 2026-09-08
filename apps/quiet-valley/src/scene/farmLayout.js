@@ -10,10 +10,11 @@ export function createFarmLayout(BaseFarmArt){
   const EPS=.08;
   const near=(a,b)=>Math.abs(a-b)<=EPS;
   const roots=new Set();
+  const protectedRoots=new Set();
   const rootOf=node=>{let p=node?.parent,last=null;while(p){last=p;p=p.parent;}return last;};
   for(const mesh of R.meshes||[]){const root=rootOf(mesh);if(root)roots.add(root);}
   const findRoot=(x,z)=>[...roots].find(g=>g?.p&&near(g.p[0],x)&&near(g.p[2],z));
-  const moveRoot=(from,to)=>{const g=findRoot(from[0],from[1]);if(!g)return false;g.p[0]=to[0];g.p[2]=to[1];return true;};
+  const moveRoot=(from,to)=>{const g=findRoot(from[0],from[1]);if(!g)return false;g.p[0]=to[0];g.p[2]=to[1];protectedRoots.add(g);return true;};
 
   // Strong zoning. Keep authored assets out of crop and circulation footprints.
   // West = utility/market, south-west = homes, centre-left = fields, east = livestock.
@@ -31,7 +32,8 @@ export function createFarmLayout(BaseFarmArt){
   };
 
   // Reposition every crop bed by gameplay ID. Two 2-column bands are separated by a
-  // wide service aisle, leaving clear space for houses, windmill and market.
+  // wide service aisle, leaving clear space for houses, windmill and market. Authored
+  // district roots already moved above are explicitly protected from this remap.
   const plotXs=[-6.35,-4.25,-1.30,.80];
   const plotZs=[-2.85,-.65,1.55,3.75];
   const plotCenters=[];
@@ -46,7 +48,7 @@ export function createFarmLayout(BaseFarmArt){
     if(Math.abs(mesh.p[0]-oldX)<=1.01&&Math.abs(mesh.p[2]-oldZ)<=1.01){mesh.p[0]+=dx;mesh.p[2]+=dz;}
    }
    for(const root of roots){
-    if(movedRoots.has(root)||!root?.p)continue;
+    if(protectedRoots.has(root)||movedRoots.has(root)||!root?.p)continue;
     if(Math.abs(root.p[0]-oldX)<=1.01&&Math.abs(root.p[2]-oldZ)<=1.01){root.p[0]+=dx;root.p[2]+=dz;movedRoots.add(root);}
    }
    m.x=newX;m.z=newZ;
