@@ -10,17 +10,12 @@ const Terms = React.lazy(() => import("./pages/Terms").then((module) => ({ defau
 const Store = React.lazy(() => import("./pages/Store").then((module) => ({ default: module.Store })));
 const Cart = React.lazy(() => import("./pages/Cart").then((module) => ({ default: module.Cart })));
 const Checkout = React.lazy(() => import("./pages/Checkout").then((module) => ({ default: module.Checkout })));
-const CheckoutSuccess = React.lazy(() =>
-  import("./pages/CheckoutSuccess").then((module) => ({ default: module.CheckoutSuccess })),
-);
+const CheckoutSuccess = React.lazy(() => import("./pages/CheckoutSuccess").then((module) => ({ default: module.CheckoutSuccess })));
 const Account = React.lazy(() => import("./pages/Account").then((module) => ({ default: module.Account })));
-const TelegramLink = React.lazy(() =>
-  import("./pages/TelegramLink").then((module) => ({ default: module.TelegramLink })),
-);
+const TelegramLink = React.lazy(() => import("./pages/TelegramLink").then((module) => ({ default: module.TelegramLink })));
 const Admin = React.lazy(() => import("./pages/Admin").then((module) => ({ default: module.Admin })));
-const NexusLab = React.lazy(() =>
-  import("../components/nexus/NexusLabPage").then((module) => ({ default: module.NexusLabPage })),
-);
+const NexusLab = React.lazy(() => import("../components/nexus/NexusLabPage").then((module) => ({ default: module.NexusLabPage })));
+const BreakoutGame = React.lazy(() => import("../games/breakout/BreakoutGame").then((module) => ({ default: module.BreakoutGame })));
 
 const components: Record<SitePath, React.ComponentType> = {
   "/": experienceConfig.mode === "home" ? NexusLab : HomeV3,
@@ -35,6 +30,7 @@ const components: Record<SitePath, React.ComponentType> = {
   "/account": Account,
   "/account/telegram": TelegramLink,
   "/admin": Admin,
+  "/games/breakout": BreakoutGame,
 };
 
 const coreRoutes = SITE_ROUTE_METADATA.map((route) => ({ ...route, component: components[route.path] }));
