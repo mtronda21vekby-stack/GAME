@@ -2,6 +2,8 @@ import React, { useEffect } from "react";
 import { attachConsoleAnalytics, ensureGuestSession, track } from "@blackcrown/core";
 import { DailyLoginReward } from "../components/DailyLoginReward";
 import { Router } from "../router";
+import { WorldDock } from "../worlds/WorldDock";
+import { WorldPortal } from "../worlds/WorldPortal";
 import { Leaderboard } from "./Leaderboard";
 import { Lobby } from "./Lobby";
 
@@ -45,11 +47,13 @@ export function App() {
           { path: "/", element: <Lobby /> },
           { path: "/lobby", element: <Lobby /> },
           { path: "/lobby/world/quiet-valley", element: <QuietValleyLegacyRedirect /> },
+          { path: "/lobby/world/breakout", element: <WorldPortal worldId="breakout" /> },
           { path: "/leaderboard", element: <Leaderboard /> },
           { path: "/top", element: <Leaderboard /> },
           { path: "/game/progress", element: <Leaderboard /> }
         ]}
       />
+      <WorldDock />
       <DailyLoginReward />
     </>
   );

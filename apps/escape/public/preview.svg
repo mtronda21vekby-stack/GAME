@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#05080b"/><stop offset="1" stop-color="#171f24"/></linearGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#2b3438"/><stop offset="1" stop-color="#141a1d"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="12"/></filter>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <path d="M260 670 760 360 1340 585 820 830Z" fill="url(#floor)" stroke="#3e4b51" stroke-width="4"/>
+  <g fill="#505b60" stroke="#78878e" stroke-width="2">
+    <path d="M260 670 760 360 760 305 260 610Z"/>
+    <path d="M760 360 1340 585 1340 525 760 305Z"/>
+    <path d="M510 514 770 438 770 393 510 467Z"/>
+    <path d="M975 468 1160 540 1160 495 975 425Z"/>
+  </g>
+  <g opacity=".7" fill="#ff4058" filter="url(#glow)"><ellipse cx="1110" cy="615" rx="120" ry="40"/><ellipse cx="610" cy="580" rx="95" ry="32"/></g>
+  <g fill="#1a2329" stroke="#dbe8ee" stroke-width="3"><circle cx="710" cy="585" r="30"/><circle cx="1025" cy="565" r="28"/></g>
+  <g fill="#ff4058"><circle cx="1025" cy="553" r="8"/></g>
+  <g fill="#58e6ff"><circle cx="710" cy="572" r="8"/></g>
+  <text x="110" y="150" fill="#7d8d94" font-family="Arial, sans-serif" font-size="28" letter-spacing="12">BLACKCROWN</text>
+  <text x="110" y="225" fill="#edf7fa" font-family="Arial, sans-serif" font-size="76" font-weight="700" letter-spacing="-2">// BREAKOUT</text>
+  <text x="114" y="274" fill="#58e6ff" font-family="Arial, sans-serif" font-size="20" font-weight="700" letter-spacing="7">PRISON SIMULATION · VERTICAL SLICE</text>
+  <text x="113" y="770" fill="#8ca0a9" font-family="Arial, sans-serif" font-size="22" letter-spacing="4">OBSERVE · PREPARE · BREACH · ESCAPE</text>
+</svg>

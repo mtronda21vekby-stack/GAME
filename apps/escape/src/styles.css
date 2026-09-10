@@ -1,0 +1,101 @@
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #e8f0f4;
+  background: #05080b;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+* { box-sizing: border-box; }
+html, body, #root { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #05080b; }
+button { font: inherit; }
+.gameShell { position: relative; width: 100%; height: 100%; min-height: 100dvh; overflow: hidden; background: #05080b; user-select: none; touch-action: none; }
+.world, .world canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at 52% 42%, transparent 20%, rgba(1,3,5,.1) 52%, rgba(1,3,5,.82) 100%), linear-gradient(180deg, rgba(2,4,6,.56), transparent 18%, transparent 75%, rgba(2,4,6,.72)); }
+.topbar { position: absolute; top: max(14px, env(safe-area-inset-top)); left: 18px; right: 18px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; pointer-events: none; }
+.brand, .clock, .security { display: flex; flex-direction: column; gap: 2px; letter-spacing: .13em; text-transform: uppercase; }
+.brand span, .clock span, .security span, .eyebrow { color: #7c8b93; font-size: 10px; font-weight: 700; }
+.brand b { font-size: 17px; letter-spacing: .09em; }
+.brand em, .clock em { color: #5d6b72; font-size: 9px; font-style: normal; }
+.clock { align-items: center; padding: 8px 20px; border: 1px solid rgba(192,217,229,.14); background: rgba(4,8,11,.72); backdrop-filter: blur(16px); }
+.clock b { font-size: 22px; line-height: 1; font-variant-numeric: tabular-nums; }
+.security { align-items: flex-end; }
+.security b { font-size: 14px; color: #62f0b0; }
+.security i { display: block; width: 42px; height: 2px; margin-top: 6px; background: #62f0b0; box-shadow: 0 0 16px currentColor; }
+.is-watched .security b, .is-watched .security i { color: #ffd16a; background: #ffd16a; }
+.is-danger .security b, .is-danger .security i { color: #ff4b5f; background: #ff4b5f; animation: pulse 1s infinite; }
+.missionPanel, .statsPanel { position: absolute; top: 112px; width: min(320px, 28vw); padding: 16px; border: 1px solid rgba(183,210,221,.12); background: linear-gradient(145deg, rgba(8,13,16,.88), rgba(5,8,11,.67)); backdrop-filter: blur(18px); box-shadow: 0 20px 50px rgba(0,0,0,.25); }
+.missionPanel { left: 18px; }
+.missionPanel h1 { margin: 7px 0 9px; font-size: clamp(15px, 1.2vw, 21px); line-height: 1.06; letter-spacing: .02em; }
+.missionPanel p { margin: 0; min-height: 48px; color: #aebbc1; font-size: 12px; line-height: 1.45; }
+.steps { display: grid; gap: 6px; margin-top: 14px; }
+.steps span { display: flex; align-items: center; gap: 9px; padding: 7px 8px; color: #5e6b71; border-left: 2px solid #283238; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+.steps span i { font-style: normal; color: #5f7078; }
+.steps .active { color: #dce9ee; border-color: #58e6ff; background: rgba(88,230,255,.06); }
+.steps .done { color: #77dcad; border-color: #52d89d; }
+.statsPanel { right: 18px; }
+.suspicionHead { display: flex; justify-content: space-between; color: #7d8c93; font-size: 10px; letter-spacing: .12em; }
+.suspicionHead b { color: #eef6f8; font-variant-numeric: tabular-nums; }
+.suspicionTrack { height: 5px; margin: 8px 0 15px; overflow: hidden; background: #20292e; }
+.suspicionTrack i { display: block; height: 100%; background: #ff4b5f; box-shadow: 0 0 14px rgba(255,75,95,.7); transition: width .2s ease; }
+.statGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.stat { padding: 8px; background: rgba(255,255,255,.035); }
+.stat span { display: block; color: #64747c; font-size: 9px; letter-spacing: .1em; }
+.stat b { display: block; margin-top: 3px; font-size: 14px; }
+.inventory { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.08); }
+.inventory span { display: block; color: #66757c; font-size: 9px; letter-spacing: .1em; }
+.inventory b { display: block; margin-top: 5px; color: #48545a; font-size: 11px; letter-spacing: .1em; }
+.inventory b.hasItem { color: #ffb3be; }
+.eventLog { position: absolute; left: 18px; bottom: 62px; width: min(520px, 58vw); pointer-events: none; }
+.eventLog p { margin: 3px 0; color: rgba(209,224,231,.56); font: 10px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace; text-shadow: 0 1px 2px #000; }
+.interaction { position: absolute; left: 50%; bottom: 80px; transform: translateX(-50%); padding: 12px 18px; border: 1px solid rgba(88,230,255,.34); background: rgba(7,14,18,.88); color: #eafaff; font-size: 11px; font-weight: 800; letter-spacing: .12em; box-shadow: 0 0 28px rgba(88,230,255,.1); }
+.desktopControls { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); color: #718087; font-size: 9px; letter-spacing: .14em; white-space: nowrap; }
+.touchControls { display: none; }
+.escapeCard { position: absolute; inset: 50% auto auto 50%; transform: translate(-50%, -50%); width: min(560px, calc(100vw - 36px)); padding: 28px; border: 1px solid rgba(88,230,255,.32); background: rgba(3,8,11,.94); backdrop-filter: blur(24px); box-shadow: 0 40px 90px rgba(0,0,0,.6), 0 0 70px rgba(88,230,255,.08); text-align: center; }
+.escapeCard > span { color: #58e6ff; font-size: 10px; letter-spacing: .24em; }
+.escapeCard h2 { margin: 8px 0 10px; font-size: clamp(24px, 4vw, 42px); letter-spacing: -.035em; }
+.escapeCard p { margin: 0 auto; max-width: 450px; color: #8fa1aa; font-size: 13px; line-height: 1.55; }
+.escapeCard div { display: flex; justify-content: center; gap: 9px; margin: 18px 0; }
+.escapeCard div b { padding: 7px 9px; background: rgba(88,230,255,.06); color: #caeaf2; font-size: 10px; letter-spacing: .08em; }
+.escapeCard button { border: 1px solid #58e6ff; background: #58e6ff; color: #061014; padding: 11px 18px; font-weight: 900; letter-spacing: .1em; }
+@keyframes pulse { 50% { opacity: .35; } }
+
+@media (max-width: 760px), (pointer: coarse) {
+  .topbar { left: 10px; right: 10px; top: max(8px, env(safe-area-inset-top)); grid-template-columns: 1fr auto; }
+  .brand em { display: none; }
+  .brand b { font-size: 13px; }
+  .clock { padding: 6px 9px; }
+  .clock b { font-size: 17px; }
+  .clock em { max-width: 120px; text-align: center; }
+  .security { display: none; }
+  .missionPanel { top: 78px; left: 10px; width: min(270px, 68vw); padding: 11px; }
+  .missionPanel h1 { font-size: 13px; }
+  .missionPanel p { font-size: 10px; min-height: 38px; }
+  .steps { margin-top: 8px; gap: 3px; }
+  .steps span { padding: 5px 6px; font-size: 8px; }
+  .statsPanel { top: 78px; right: 10px; width: 120px; padding: 9px; }
+  .statGrid { gap: 4px; }
+  .stat { padding: 5px; }
+  .stat span { font-size: 7px; }
+  .stat b { font-size: 11px; }
+  .inventory { margin-top: 6px; padding-top: 6px; }
+  .eventLog, .desktopControls { display: none; }
+  .interaction { bottom: 116px; padding: 9px 12px; font-size: 9px; }
+  .touchControls { position: absolute; left: 12px; right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); display: flex; justify-content: space-between; align-items: flex-end; pointer-events: none; }
+  .dpad { position: relative; width: 126px; height: 92px; pointer-events: auto; }
+  .actions { display: flex; gap: 10px; pointer-events: auto; }
+  .touchKey { position: absolute; width: 42px; height: 42px; border: 1px solid rgba(206,228,238,.18); background: rgba(7,12,15,.68); color: #d5e3e9; border-radius: 10px; backdrop-filter: blur(10px); font-size: 11px; font-weight: 800; -webkit-tap-highlight-color: transparent; }
+  .touchKey:active { background: rgba(88,230,255,.18); border-color: rgba(88,230,255,.5); }
+  .dpad .up { left: 42px; top: 0; }
+  .dpad .left { left: 0; bottom: 0; }
+  .dpad .right { right: 0; bottom: 0; }
+  .dpad .down { left: 42px; bottom: 0; }
+  .actions .touchKey { position: static; width: 56px; height: 56px; border-radius: 50%; }
+  .actions .use { color: #061014; background: rgba(88,230,255,.88); }
+  .escapeCard { padding: 22px 16px; }
+}
+
+@media (max-width: 520px) {
+  .statsPanel { display: none; }
+  .missionPanel { width: calc(100vw - 20px); max-width: 330px; }
+  .missionPanel h1 { max-width: 250px; }
+}
