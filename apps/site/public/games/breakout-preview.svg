@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-label="BLACKCROWN Breakout prison preview">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#11191e"/><stop offset="1" stop-color="#05080a"/></linearGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5b6262"/><stop offset="1" stop-color="#2b3235"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="18"/></filter>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <circle cx="1210" cy="155" r="190" fill="#5f7680" opacity=".16" filter="url(#glow)"/>
+  <g transform="translate(800 470) skewX(-25) scale(1 .72)" opacity=".95">
+    <rect x="-580" y="-300" width="1160" height="600" rx="16" fill="url(#floor)" stroke="#788388" stroke-width="8"/>
+    <path d="M-580-95H580M-175-300V300M215-300V300" stroke="#1d2529" stroke-width="24"/>
+    <path d="M-460-300V-95M-345-300V-95M-230-300V-95M-460 95V300M-345 95V300M-230 95V300" stroke="#a7afb0" stroke-width="10"/>
+    <rect x="-540" y="-260" width="310" height="135" fill="#343b3e"/><rect x="-540" y="125" width="310" height="135" fill="#343b3e"/>
+    <rect x="250" y="-250" width="285" height="180" fill="#544c42"/><rect x="250" y="60" width="285" height="200" fill="#454e50"/>
+    <circle cx="20" cy="15" r="115" fill="#33443c" stroke="#778879" stroke-width="7"/>
+  </g>
+  <g fill="#d9b56b"><circle cx="680" cy="475" r="18"/><rect x="665" y="490" width="30" height="72" rx="14"/></g>
+  <g fill="#547392"><circle cx="955" cy="390" r="16"/><rect x="942" y="404" width="26" height="66" rx="12"/><circle cx="1080" cy="580" r="16"/><rect x="1067" y="594" width="26" height="66" rx="12"/></g>
+  <text x="92" y="112" fill="#d9b56b" font-family="Arial, sans-serif" font-size="24" letter-spacing="8">BLACKRIDGE CORRECTIONAL</text>
+  <text x="88" y="190" fill="#f1f4f4" font-family="Arial Black, Arial, sans-serif" font-size="78" letter-spacing="-3">BLACKCROWN // BREAKOUT</text>
+  <text x="94" y="236" fill="#8f9ba0" font-family="Arial, sans-serif" font-size="24" letter-spacing="3">LIVE SCHEDULE · CONTRABAND · THREE ROUTES</text>
+  <g transform="translate(100 735)"><rect width="525" height="76" rx="18" fill="#0a1013" stroke="#ffffff" stroke-opacity=".12"/><text x="28" y="31" fill="#7f8b90" font-family="Arial, sans-serif" font-size="16" letter-spacing="3">CURRENT OBJECTIVE</text><text x="28" y="57" fill="#e9eeee" font-family="Arial, sans-serif" font-size="22">Survive the schedule. Build a route out.</text></g>
+</svg>
