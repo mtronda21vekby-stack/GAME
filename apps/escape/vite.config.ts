@@ -1,8 +1,7 @@
-import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-const threePath = fileURLToPath(new URL("../site/node_modules/three", import.meta.url));
+const threePath = decodeURIComponent(new URL("../site/node_modules/three", import.meta.url).pathname);
 
 export default defineConfig({
   plugins: [react()],
