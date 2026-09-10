@@ -11,6 +11,7 @@ export const SITE_PATHS = [
   "/account",
   "/account/telegram",
   "/admin",
+  "/games/breakout",
 ] as const;
 
 export type SitePath = (typeof SITE_PATHS)[number];
@@ -142,6 +143,15 @@ export const SITE_ROUTE_METADATA: readonly RouteMetadataDefinition[] = [
       noIndex: true,
     },
   },
+  {
+    path: "/games/breakout",
+    metadata: {
+      title: "BLACKCROWN // BREAKOUT — Prison Escape",
+      description: "Изометрическая браузерная игра о жизни внутри Blackridge: распорядок, NPC, контрабанда, крафт и три маршрута побега.",
+      chrome: focusedChrome,
+      noIndex: true,
+    },
+  },
 ] as const;
 
 const metadataByPath = new Map<string, RouteMetadataDefinition>(SITE_ROUTE_METADATA.map((route) => [route.path, route]));
@@ -155,6 +165,7 @@ export function isSitePath(path: string): path is SitePath {
 }
 
 export function isExternalAppPath(path: string) {
+  if (path === "/games/breakout") return false;
   return (
     path === "/game" ||
     path.startsWith("/game/") ||

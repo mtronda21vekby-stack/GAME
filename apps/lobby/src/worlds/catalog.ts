@@ -33,6 +33,23 @@ export const WORLD_CATALOG = [
     capabilities: ["3D WebGL", "touch", "local save", "story", "characters", "terrain upgrades", "estate growth", "staff automation", "restored shared renderer", "mobile premium materials"],
     roadmap: ["cloud save", "friend visits", "player market", "seasons"],
   },
+  {
+    id: "breakout",
+    title: "BLACKCROWN // BREAKOUT",
+    eyebrow: "PRISON ESCAPE · PROTOTYPE",
+    description: "Изометрический 3D-побег из Blackridge: живой распорядок, охрана, NPC, работа, контрабанда, крафт и три маршрута на свободу.",
+    version: "0.1.0",
+    maturity: "prototype",
+    lobbyRoute: "/games/breakout",
+    runtimeUrl: "/games/breakout",
+    runtimeKind: "external-app",
+    previewAsset: "/games/breakout-preview.svg",
+    accent: "#d9b56b",
+    saveNamespace: "bc.breakout.save.v1",
+    bridgeChannel: WORLD_BRIDGE_CHANNEL,
+    capabilities: ["Three.js", "isometric 3D", "touch", "local save", "NPC schedules", "guard patrols", "crafting", "contraband", "three escape routes"],
+    roadmap: ["auth-bound cloud save", "second prison", "dynamic quests", "daily events", "shared BLACKCROWN progression"],
+  },
 ] as const satisfies readonly WorldDefinition[];
 
 const WORLD_BY_ID = new Map<WorldId, WorldDefinition>(
