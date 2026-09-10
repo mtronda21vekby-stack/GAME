@@ -1,4 +1,4 @@
-export type WorldId = "evofish" | "quiet-valley";
+export type WorldId = "evofish" | "quiet-valley" | "breakout";
 export type WorldRuntimeKind = "external-app" | "isolated-html";
 export type WorldMaturity = "live" | "alpha" | "prototype";
 
