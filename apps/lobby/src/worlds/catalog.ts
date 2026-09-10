@@ -33,6 +33,23 @@ export const WORLD_CATALOG = [
     capabilities: ["3D WebGL", "touch", "local save", "story", "characters", "terrain upgrades", "estate growth", "staff automation", "restored shared renderer", "mobile premium materials"],
     roadmap: ["cloud save", "friend visits", "player market", "seasons"],
   },
+  {
+    id: "breakout",
+    title: "BLACKCROWN // BREAKOUT",
+    eyebrow: "PRISON SIM · VERTICAL SLICE",
+    description: "Живой тюремный комплекс: расписание, патрули, подозрение, контрабанда и многошаговые планы побега.",
+    version: "0.1.0",
+    maturity: "prototype",
+    lobbyRoute: "/lobby/world/breakout",
+    runtimeUrl: "/games/breakout/index.html",
+    runtimeKind: "isolated-html",
+    previewAsset: "/games/breakout/preview.svg",
+    accent: "#58e6ff",
+    saveNamespace: "bc.world.breakout.v1",
+    bridgeChannel: WORLD_BRIDGE_CHANNEL,
+    capabilities: ["3D WebGL", "touch", "schedule simulation", "guard patrols", "suspicion", "contraband", "escape route"],
+    roadmap: ["NPC relationships", "jobs", "crafting", "cell searches", "multiple escape plans", "cloud save"],
+  },
 ] as const satisfies readonly WorldDefinition[];
 
 const WORLD_BY_ID = new Map<WorldId, WorldDefinition>(

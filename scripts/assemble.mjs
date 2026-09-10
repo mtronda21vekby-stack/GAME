@@ -9,6 +9,7 @@ const GAME = path.join(ROOT, "apps/game/dist");
 const LOBBY = path.join(ROOT, "apps/lobby/dist");
 const QUIET_VALLEY_RUNTIME = path.join(ROOT, "apps/quiet-valley/dist");
 const QUIET_VALLEY_META = path.join(LOBBY, "worlds/quiet-valley");
+const BREAKOUT_RUNTIME = path.join(ROOT, "apps/escape/dist");
 
 function rm(p) {
   fs.rmSync(p, { recursive: true, force: true });
@@ -36,6 +37,7 @@ ensureExists(LOBBY, "lobby dist");
 ensureExists(QUIET_VALLEY_RUNTIME, "Quiet Valley runtime");
 ensureExists(QUIET_VALLEY_META, "Quiet Valley metadata");
 ensureExists(path.join(QUIET_VALLEY_RUNTIME, "manifest.json"), "Quiet Valley release manifest");
+ensureExists(BREAKOUT_RUNTIME, "BLACKCROWN BREAKOUT runtime");
 ensureExists(path.join(SITE, "games/index.html"), "BLACKCROWN games hub");
 
 rm(OUT);
@@ -55,6 +57,9 @@ copyDir(LOBBY, path.join(OUT, "lobby"));
 copyDir(QUIET_VALLEY_META, path.join(OUT, "games/quiet-valley"));
 copyDir(QUIET_VALLEY_RUNTIME, path.join(OUT, "games/quiet-valley"));
 
+// 5) BREAKOUT is an isolated Three.js runtime launched from the BLACKCROWN world portal.
+copyDir(BREAKOUT_RUNTIME, path.join(OUT, "games/breakout"));
+
 // Root shared assets referenced as "/icons/..."
 const siteIcons = path.join(SITE, "icons");
 if (fs.existsSync(siteIcons)) copyDir(siteIcons, path.join(OUT, "icons"));
@@ -69,6 +74,8 @@ const redirects = [
   "/games/quiet-valley/assets/* /games/quiet-valley/assets/:splat 200",
   "/games/quiet-valley/manifest.json /games/quiet-valley/manifest.json 200",
   "/games/quiet-valley/preview.webp /games/quiet-valley/preview.webp 200",
+  "/games/breakout/assets/* /games/breakout/assets/:splat 200",
+  "/games/breakout/preview.svg /games/breakout/preview.svg 200",
   "/lobby/runtime/quiet-valley/index.html /games/quiet-valley/ 302",
   "/game/*   /game/index.html   200",
   "/lobby/*  /lobby/index.html  200",
@@ -76,6 +83,8 @@ const redirects = [
   "/games/   /games/index.html  200",
   "/games/quiet-valley    /games/quiet-valley/index.html  200",
   "/games/quiet-valley/   /games/quiet-valley/index.html  200",
+  "/games/breakout    /games/breakout/index.html  200",
+  "/games/breakout/   /games/breakout/index.html  200",
   "/*        /index.html        200"
 ].join("\n") + "\n";
 fs.writeFileSync(path.join(OUT, "_redirects"), redirects, "utf-8");
@@ -125,6 +134,16 @@ const headers = [
   "/games/quiet-valley/assets/*",
   "  Cache-Control: public, max-age=31536000, immutable",
   "",
+  "/games/breakout/index.html",
+  "  Cache-Control: no-store",
+  "  Content-Type: text/html; charset=utf-8",
+  "",
+  "/games/breakout/",
+  "  Cache-Control: no-cache",
+  "",
+  "/games/breakout/assets/*",
+  "  Cache-Control: public, max-age=31536000, immutable",
+  "",
   "/games/crown-front/index.html",
   "  Cache-Control: no-cache",
   "  Content-Type: text/html; charset=utf-8",
@@ -158,4 +177,5 @@ console.log("  /game/   -> EvoFish game");
 console.log("  /lobby/  -> EvoFish lobby");
 console.log("  /games/  -> BLACKCROWN game catalog");
 console.log("  /games/quiet-valley/ -> Quiet Valley standalone WebGL game");
+console.log("  /games/breakout/ -> BLACKCROWN BREAKOUT Three.js vertical slice");
 console.log("  /games/crown-front/ -> CROWN//FRONT WebGL alpha");
