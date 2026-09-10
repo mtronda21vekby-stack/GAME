@@ -18,6 +18,7 @@ const TelegramLink = React.lazy(() =>
   import("./pages/TelegramLink").then((module) => ({ default: module.TelegramLink })),
 );
 const Admin = React.lazy(() => import("./pages/Admin").then((module) => ({ default: module.Admin })));
+const Breakout = React.lazy(() => import("../games/breakout/BreakoutGame").then((module) => ({ default: module.BreakoutGame })));
 const NexusLab = React.lazy(() =>
   import("../components/nexus/NexusLabPage").then((module) => ({ default: module.NexusLabPage })),
 );
@@ -35,6 +36,7 @@ const components: Record<SitePath, React.ComponentType> = {
   "/account": Account,
   "/account/telegram": TelegramLink,
   "/admin": Admin,
+  "/games/breakout": Breakout,
 };
 
 const coreRoutes = SITE_ROUTE_METADATA.map((route) => ({ ...route, component: components[route.path] }));
