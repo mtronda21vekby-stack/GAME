@@ -16,6 +16,7 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "baseUrl": ".",
+    "typeRoots": ["../site/node_modules/@types", "../../node_modules/@types"],
     "paths": {
       "three": ["../site/node_modules/three"],
       "three/*": ["../site/node_modules/three/*"]
