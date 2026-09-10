@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { attachConsoleAnalytics, ensureGuestSession, track } from "@blackcrown/core";
 import { DailyLoginReward } from "../components/DailyLoginReward";
 import { Router } from "../router";
+import { WorldDock } from "../worlds/WorldDock";
 import { WorldPortal } from "../worlds/WorldPortal";
 import { Leaderboard } from "./Leaderboard";
 import { Lobby } from "./Lobby";
@@ -52,6 +53,7 @@ export function App() {
           { path: "/game/progress", element: <Leaderboard /> }
         ]}
       />
+      <WorldDock />
       <DailyLoginReward />
     </>
   );
