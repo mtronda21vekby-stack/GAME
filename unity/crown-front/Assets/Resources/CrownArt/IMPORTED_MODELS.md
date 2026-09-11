@@ -1,0 +1,34 @@
+# Imported CC0 models
+
+- `unity/crown-front/Assets/Resources/CrownArt/SpaceKit/astronautA.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/SpaceKit/astronautB.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/SpaceKit/turret_double.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/SpaceKit/turret_single.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/SpaceKit/weapon_gun.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/SpaceKit/weapon_rifle.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/SpaceKit/machine_generator.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/SpaceKit/machine_generatorLarge.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/SpaceKit/machine_wireless.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/SpaceKit/machine_wirelessCable.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/SpaceKit/platform_center.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/SpaceKit/platform_large.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/SpaceKit/platform_long.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/SpaceKit/platform_side.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/SpaceKit/platform_cornerRound.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/SpaceKit/corridor_wall.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/SpaceKit/corridor_wallCorner.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/SpaceKit/pipe_straight.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/SpaceKit/pipe_cornerRoundLarge.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/SpaceKit/pipe_ringHigh.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/SpaceKit/satelliteDish_detailed.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/FactoryKit/machine.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/FactoryKit/machine-fortified.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/FactoryKit/machine-bed.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/FactoryKit/robot-arm-a.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/FactoryKit/robot-arm-b.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/FactoryKit/pipe-large.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/FactoryKit/pipe-large-bend.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/FactoryKit/pipe-large-junction.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/FactoryKit/screen-panel-wide.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/FactoryKit/screen-panel-small.fbx`
+- `unity/crown-front/Assets/Resources/CrownArt/FactoryKit/structure-wall.fbx`

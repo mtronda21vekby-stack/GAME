@@ -1,0 +1,4 @@
+CROWN//FRONT Quaternius review trigger
+source_fix=c1f14271f03b91fc7e5743679ecf32f74ad6fe21
+purpose=run real Unity validation and capture only
+production_deploy=false
