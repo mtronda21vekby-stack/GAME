@@ -1,0 +1,128 @@
+name: Site Integration QA (no deploy)
+
+on:
+  push:
+    branches: [repair/site-integration-qa]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: site-integration-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    if: github.ref == 'refs/heads/repair/site-integration-qa'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Preserve exact source for independent review
+        run: |
+          git rev-parse HEAD > /tmp/blackcrown-source-sha.txt
+          git archive --format=tar.gz HEAD apps packages scripts functions .github package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json wrangler.toml > /tmp/blackcrown-source.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: blackcrown-qa-source
+          path: |
+            /tmp/blackcrown-source.tar.gz
+            /tmp/blackcrown-source-sha.txt
+          retention-days: 7
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: pnpm
+      - run: corepack enable
+      - name: Install exact lockfile
+        run: pnpm install --frozen-lockfile
+      - name: Static checks and domain tests
+        id: checks
+        continue-on-error: true
+        shell: bash
+        run: |
+          mkdir -p apps/site/reports/integration-qa
+          failed=0
+          check() {
+            name="$1"; shift
+            if "$@" > "apps/site/reports/integration-qa/$name.log" 2>&1; then
+              printf '%s\tPASS\n' "$name" | tee -a apps/site/reports/integration-qa/gates.tsv
+            else
+              failed=1
+              printf '%s\tFAIL\n' "$name" | tee -a apps/site/reports/integration-qa/gates.tsv
+              tail -60 "apps/site/reports/integration-qa/$name.log"
+            fi
+          }
+          check reliability node apps/site/scripts/check-site-reliability.mjs
+          check commerce-trust node scripts/check-commerce-trust.mjs
+          check site-types pnpm --filter @blackcrown/site typecheck
+          check lobby-types pnpm --filter @blackcrown/lobby typecheck
+          check key-art pnpm --filter @blackcrown/site test:assets
+          check crown-asset pnpm --filter @blackcrown/site test:crown-asset
+          check environments pnpm --filter @blackcrown/site test:environment-assets
+          check site-units pnpm --filter @blackcrown/site test
+          check quiet-valley pnpm --filter @blackcrown/quiet-valley test
+          check lobby-worlds pnpm --filter @blackcrown/lobby test:worlds
+          exit "$failed"
+      - name: Build actual production-mode package without deploying
+        id: build
+        continue-on-error: true
+        env:
+          VITE_BC_EXPERIENCE_MODE: home
+          VITE_BC_EXPERIENCE_DEBUG: '0'
+          VITE_BC_EXPERIENCE_QUALITY: auto
+          VITE_BC_CROWN_ASSET_MODE: auto
+          VITE_BC_CROWN_ASSET_OVERRIDE: candidate-b
+          VITE_BC_ENVIRONMENT_ASSET_MODE: blender
+        run: npm run build:prod
+      - name: Check bundle budgets
+        id: budgets
+        if: steps.build.outcome == 'success'
+        continue-on-error: true
+        run: node apps/site/scripts/check-bundle-budget.mjs
+      - name: Install browser engines
+        run: pnpm --filter @blackcrown/site exec playwright install --with-deps chromium webkit
+      - name: Existing Chromium and WebKit tests
+        id: browser
+        continue-on-error: true
+        run: pnpm --filter @blackcrown/site test:e2e
+      - name: Built home, mobile menus, account and mock commerce
+        id: home
+        if: steps.build.outcome == 'success'
+        continue-on-error: true
+        run: pnpm --filter @blackcrown/site exec playwright test --config playwright.home.config.ts
+      - name: Preserve logs, rendered pages and production candidate
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blackcrown-site-integration-evidence
+          path: |
+            apps/site/reports/integration-qa
+            apps/site/test-results
+            /tmp/blackcrown-experience-traces/playwright
+            dist
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Require every gate, including browser gates
+        if: always()
+        env:
+          CHECKS: ${{ steps.checks.outcome }}
+          BUILD: ${{ steps.build.outcome }}
+          BUDGETS: ${{ steps.budgets.outcome }}
+          BROWSER: ${{ steps.browser.outcome }}
+          HOME: ${{ steps.home.outcome }}
+        run: |
+          for gate in "$CHECKS" "$BUILD" "$BUDGETS" "$BROWSER" "$HOME"; do
+            if [ "$gate" != success ]; then
+              echo '::error::Integration candidate has failed, skipped, or unexecuted gates.'
+              exit 1
+            fi
+          done
+# Deliberately no deployment command, environment, write token or production secret.
