@@ -1,3 +1,4 @@
+import { isPlainLinkActivation } from "../../lib/linkActivation";
 import type { ExperienceChapterId } from "../experienceShellConfig";
 import { chapterFromHash, hashForChapter, scrollTopForChapter } from "../story/SpatialRouteMap";
 
@@ -37,9 +38,11 @@ export class SpatialRouter {
   }
 
   private handleClick = (event: MouseEvent) => {
-    if (event.defaultPrevented || event.button !== 0) return;
+    if (!isPlainLinkActivation(event)) return;
     const anchor = (event.target as HTMLElement | null)?.closest<HTMLAnchorElement>("a[data-bc-spatial-chapter]");
-    if (!anchor) return;
+    if (!anchor || (anchor.target && anchor.target.toLowerCase() !== "_self") || anchor.hasAttribute("download")) return;
+    const target = new URL(anchor.href, window.location.href);
+    if (target.origin !== window.location.origin || target.pathname !== window.location.pathname || target.search !== window.location.search) return;
     const chapterId = chapterFromHash(anchor.hash);
     if (!chapterId) return;
     event.preventDefault();

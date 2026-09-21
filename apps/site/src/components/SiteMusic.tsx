@@ -1,4 +1,5 @@
 import React from "react";
+import { DEFAULT_MUSIC_VOLUME, parseMusicVolume } from "../lib/musicPreferences";
 import "../styles/site-music.css";
 
 const ENABLED_KEY = "bc.siteMusic.enabled.v9";
@@ -17,10 +18,9 @@ function readEnabled() {
 
 function readVolume() {
   try {
-    const value = Number(localStorage.getItem(VOLUME_KEY));
-    return Number.isFinite(value) && value >= 0 && value <= 1 ? value : 0.42;
+    return parseMusicVolume(localStorage.getItem(VOLUME_KEY));
   } catch {
-    return 0.42;
+    return DEFAULT_MUSIC_VOLUME;
   }
 }
 
@@ -74,8 +74,9 @@ export function SiteMusic() {
     try {
       const promise = audio.play();
       void promise
-        .then(() => setState("playing"))
+        .then(() => { if (!audio.paused) setState("playing"); })
         .catch((error) => {
+          if (error instanceof DOMException && error.name === "AbortError") return;
           console.warn("BlackCrown Suno MP3 play() rejected", error);
           setState("error");
         });
@@ -87,7 +88,7 @@ export function SiteMusic() {
 
   const toggle = () => {
     const audio = audioRef.current;
-    if (state === "playing" || (audio && !audio.paused)) {
+    if (state === "starting" || state === "playing" || (audio && !audio.paused)) {
       audio?.pause();
       storeEnabled(false);
       setState("paused");
@@ -125,6 +126,7 @@ export function SiteMusic() {
         loop
         playsInline
         onPlaying={() => setState("playing")}
+        onPause={() => setState((current) => current === "error" ? current : "paused")}
         onError={() => setState("error")}
         aria-hidden="true"
       />

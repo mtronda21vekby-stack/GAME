@@ -84,24 +84,40 @@
         } catch (_) {}
 
         window.addEventListener("DOMContentLoaded", function () {
-          window.setTimeout(function () {
-            var root = document.getElementById("root");
-            if (root && root.childElementCount > 0) return;
-            if (root) root.style.display = "none";
-            var fallback = document.getElementById("bc-boot-fallback");
-            if (fallback) fallback.classList.add("is-visible");
+          var root = document.getElementById("root");
+          var fallback = document.getElementById("bc-boot-fallback");
+          var timer = 0;
+          var observer;
+          function settleIfMounted() {
+            if (!root || root.childElementCount === 0) return false;
+            window.clearTimeout(timer);
+            if (observer) observer.disconnect();
+            root.removeAttribute("aria-busy");
+            if (fallback) fallback.classList.remove("is-visible");
+            return true;
+          }
+          if (settleIfMounted()) return;
+          if (root) {
+            root.setAttribute("aria-busy", "true");
+            observer = new MutationObserver(settleIfMounted);
+            observer.observe(root, { childList: true });
+          }
+          timer = window.setTimeout(function () {
+            if (!settleIfMounted() && fallback) fallback.classList.add("is-visible");
           }, 5500);
+          // Do not hide #root: a slow bundle may still mount successfully.
         });
       })();
     </script>
   </head>
   <body>
+    <noscript><p style="padding:24px;color:#f4fbff;background:#02060a">Для интерактивного BlackCrown нужен JavaScript. Включи его в настройках браузера и перезагрузи страницу.</p></noscript>
     <div id="root"></div>
     <main id="bc-boot-fallback" role="alert">
       <section class="bc-boot-card">
         <div class="bc-boot-label">BLACKCROWN BOOT GUARD</div>
         <h1>Сайт не загрузился</h1>
-        <p>Вместо чёрного экрана BlackCrown остановил запуск. Нажми кнопку — будет очищен только технический кэш сайта и загружена свежая сборка.</p>
+        <p>Загрузка занимает больше времени, чем обычно. Можно подождать: сайт появится автоматически, когда будет готов. Если загрузка не продолжается, попробуй восстановление.</p>
         <button type="button" onclick="window.__bcRecover && window.__bcRecover()">Восстановить BlackCrown</button>
       </section>
     </main>

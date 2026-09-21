@@ -26,7 +26,7 @@ export function ExperienceChrome() {
         <div className="bcExperienceChrome__controls">
           <QualityControl />
           <SoundControl />
-          <button ref={triggerRef} className="bcExperienceChrome__menuButton" type="button" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}>
+          <button ref={triggerRef} className="bcExperienceChrome__menuButton" type="button" aria-expanded={menuOpen} aria-controls={menuOpen ? "bc-experience-menu" : undefined} aria-haspopup="dialog" onClick={() => setMenuOpen(true)}>
             MENU
           </button>
         </div>

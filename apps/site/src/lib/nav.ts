@@ -1,11 +1,11 @@
 import type { SitePath } from "../routes/routeMetadata";
+import { isPlainLinkActivation } from "./linkActivation";
+import { pushSiteLocation } from "./siteNavigation";
 
 export type SiteHref = SitePath | `${SitePath}?${string}` | `${SitePath}#${string}`;
 
 export function nav(path: SiteHref) {
-  window.history.pushState(null, "", path);
-  window.dispatchEvent(new PopStateEvent("popstate"));
-  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  pushSiteLocation(new URL(path, window.location.href));
 }
 
 export function navExternal(url: string) {
@@ -23,10 +23,7 @@ type LinkClickLikeEvent = {
 };
 
 export function navLink(e: LinkClickLikeEvent, path: SiteHref) {
-  if (e.defaultPrevented) return;
-  // только левый клик без модификаторов
-  if (e.button !== 0) return;
-  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  if (!isPlainLinkActivation(e)) return;
   e.preventDefault();
   nav(path);
 }

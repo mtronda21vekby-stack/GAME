@@ -1,0 +1,21 @@
+/* Keep every chapter and footer link reachable in short/landscape viewports. */
+.bcExperienceMenu .bcExperienceMenu__panel {
+  min-height: 0;
+  max-height: 100dvh;
+  box-sizing: border-box;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+.bcExperienceMenu .bcExperienceMenu__panel nav {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  align-content: start;
+  -webkit-overflow-scrolling: touch;
+}
+.bcExperienceMenu .bcExperienceMenu__panel :focus-visible {
+  outline: 2px solid var(--bc-shell-cyan, #69e9f5);
+  outline-offset: -2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bcExperienceMenu .bcExperienceMenu__panel nav { scroll-behavior: auto; }
+}
