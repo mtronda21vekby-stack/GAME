@@ -87,6 +87,15 @@ jobs:
         if: steps.build.outcome == 'success'
         continue-on-error: true
         run: node apps/site/scripts/check-bundle-budget.mjs
+      - name: Archive compiled candidate before browser tests
+        if: steps.build.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: blackcrown-built-candidate
+          path: |
+            dist
+            apps/site/reports/integration-qa
+          retention-days: 7
       - name: Install browser engines
         run: pnpm --filter @blackcrown/site exec playwright install --with-deps chromium webkit
       - name: Existing Chromium and WebKit tests

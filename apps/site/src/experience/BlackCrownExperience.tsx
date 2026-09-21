@@ -20,7 +20,19 @@ export function BlackCrownExperience() {
     if (!container || !story) return;
     let disposed = false;
     let runtime: import("./core/ExperienceRuntime").ExperienceRuntime | null = null;
-
+    const onContextLost = () => {
+      setWebglAvailable(false);
+      setBootStage("fallback");
+    };
+    const onContextRestored = () => {
+      if (!runtime || disposed) return;
+      setWebglAvailable(true);
+      setBootStage("ready");
+    };
+    // Context events do not bubble; capture also covers a canvas created later.
+    container.addEventListener("webglcontextlost", onContextLost, true);
+    container.addEventListener("webglcontextrestored", onContextRestored, true);
+    setWebglAvailable(true);
     setBootStage("renderer");
     void import("./core/ExperienceRuntime")
       .then(({ ExperienceRuntime }) => {
@@ -46,6 +58,8 @@ export function BlackCrownExperience() {
 
     return () => {
       disposed = true;
+      container.removeEventListener("webglcontextlost", onContextLost, true);
+      container.removeEventListener("webglcontextrestored", onContextRestored, true);
       runtime?.dispose();
       setRuntime(null);
       delete container.dataset.bcExperienceFallback;

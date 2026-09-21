@@ -8,7 +8,7 @@ import { ChapterRail } from "./ChapterRail";
 import { ExperienceMenu } from "./ExperienceMenu";
 
 export function ExperienceChrome() {
-  const { snapshot } = useExperience();
+  const { snapshot, webglAvailable } = useExperience();
   const [menuOpen, setMenuOpen] = React.useState(false);
   const triggerRef = React.useRef<HTMLButtonElement>(null);
   const chapter = CHAPTER_BY_ID.get(snapshot.chapterId) ?? CHAPTER_BY_ID.get("boot")!;
@@ -20,7 +20,7 @@ export function ExperienceChrome() {
       <header className="bcExperienceChrome" aria-label="BlackCrown experience navigation">
         <div className="bcExperienceChrome__identity">
           <button type="button" onClick={() => nav("/")}>BLACKCROWN</button>
-          <span>{chapter.index} / {chapter.label}</span>
+          <span>{webglAvailable ? `${chapter.index} / ${chapter.label}` : "STATIC / ALL WORLDS"}</span>
         </div>
         <ChapterRail />
         <div className="bcExperienceChrome__controls">

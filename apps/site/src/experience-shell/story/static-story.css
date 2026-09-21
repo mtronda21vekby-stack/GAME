@@ -1,0 +1,53 @@
+/* WebGL failure must not leave every useful chapter inert behind the boot slide.
+   These rules are scoped to the fallback DOM; the authored 3D layout is unchanged. */
+.bcExperienceStory[data-bc-static-mode="true"] {
+  min-height: 0;
+  padding-top: calc(92px + env(safe-area-inset-top));
+  padding-bottom: calc(90px + env(safe-area-inset-bottom));
+}
+.bcExperienceStaticNotice {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 16px 24px;
+  color: #cbdde3;
+  font: 400 14px/1.6 system-ui, sans-serif;
+}
+.bcExperienceShell .bcExperienceStory[data-bc-static-mode="true"] .bcExperienceStoryChapter {
+  min-height: 0;
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 64px 24px;
+  border-top: 1px solid rgba(134, 225, 233, .12);
+  scroll-margin-top: calc(88px + env(safe-area-inset-top));
+}
+.bcExperienceShell .bcExperienceStory[data-bc-static-mode="true"] [data-chapter="boot"] { display: none; }
+.bcExperienceShell .bcExperienceStory[data-bc-static-mode="true"] .bcExperienceStoryChapter[data-layout] .bcExperienceSceneCopy {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  max-width: 44rem;
+  max-height: none;
+  padding: 0;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: none;
+  transition: none;
+  text-align: left;
+  background: none;
+}
+.bcExperienceShell .bcExperienceStory[data-bc-static-mode="true"] .bcExperienceSceneCopy :is(h1, h2) {
+  max-width: 100%;
+  margin-left: 0;
+  font-size: clamp(1.8rem, 6vw, 3.5rem);
+  overflow-wrap: anywhere;
+}
+.bcExperienceShell .bcExperienceStory[data-bc-static-mode="true"] .bcExperienceSceneCopy p {
+  display: block;
+  max-width: 42rem;
+  margin-left: 0;
+}
+.bcExperienceShell .bcExperienceStory[data-bc-static-mode="true"] :is(.bcExperienceSceneActions, .bcExperienceFooter) {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}

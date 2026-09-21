@@ -37,3 +37,26 @@
     height: auto;
   }
 }
+
+/* The cinematic shell owns its modal layers. Global chrome must not sit above
+   ENTER or intercept its menu, even across nested stacking contexts. */
+.bcAppContent:has(.bcExperienceMenu, .bcExperienceBoot) > :is(.bcSiteMusic, .bcDockV2) {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Preserve the music player, but leave the landscape MENU hit target clear. */
+@media (max-height: 560px) and (orientation: landscape) {
+  html[data-bc-route="/"] .bcSiteMusic {
+    top: calc(var(--bc-safe-top) + 62px);
+  }
+}
+
+/* The mobile dock belongs to the outer site shell; fixed chapter actions need
+   its clearance too, not just the normal-flow page container. */
+@media (max-width: 820px) {
+  .bcRouteView[data-route="/"] .bcExperienceStory:not([data-bc-static-mode="true"]) .bcExperienceStoryChapter[data-layout] .bcExperienceSceneCopy {
+    bottom: calc(var(--bc-content-bottom-clearance) + 8px);
+    max-height: calc(100svh - var(--bc-content-bottom-clearance) - var(--bc-safe-top) - 88px);
+  }
+}

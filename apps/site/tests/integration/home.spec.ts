@@ -10,13 +10,17 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-async function enterHome(page: Page) {
-  await page.goto("/");
+async function enterHome(page: Page, href = "/") {
+  await page.goto(href);
   const shell = page.locator("[data-bc-nexus-shell]");
   await expect(shell).toHaveCount(1);
   await expect(shell).toHaveAttribute("data-boot-stage", /^(ready|fallback|error)$/, { timeout: 50_000 });
   const enter = page.getByRole("button", { name: /^ENTER$/ });
-  if (await enter.isVisible()) await enter.click();
+  if (await enter.isVisible()) {
+    await expect(page.locator(".bcSiteMusic")).toBeHidden();
+    await expect(page.locator(".bcDockV2")).toBeHidden();
+    await enter.click();
+  }
   await expect(page.locator(".bcExperienceBoot")).toHaveCount(0);
   return shell;
 }
@@ -26,6 +30,7 @@ async function snapshot(page: Page, name: string) {
 }
 
 test("production home uses a single real WebGL runtime and survives returning to the top", async ({ page }) => {
+  test.setTimeout(120_000);
   await installApiAdapter(page);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -35,9 +40,29 @@ test("production home uses a single real WebGL runtime and survives returning to
   await expect(page.locator('[data-bc-experience-runtime="active"]')).toHaveCount(1);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
   await snapshot(page, "home-top");
-  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight * 0.45));
-  await page.waitForTimeout(1000);
-  await snapshot(page, "home-middle");
+  const runtime = page.locator('[data-bc-experience-runtime="active"]');
+  await expect(runtime).toHaveAttribute("data-bc-crown-backend", "glb", { timeout: 30_000 });
+  const chapters = [
+    [0.10, "crown-chamber"], [0.27, "world-gate"], [0.42, "evofish-abyss"],
+    [0.60, "crown-front-reactor"], [0.73, "network-core"],
+    [0.86, "collection-vault"], [0.96, "identity-enter"],
+  ] as const;
+  for (const [progress, chapter] of chapters) {
+    await page.evaluate((target) => {
+      const story = document.querySelector<HTMLElement>("#bc-experience-story")!;
+      const top = story.getBoundingClientRect().top + window.scrollY;
+      const height = window.visualViewport?.height ?? window.innerHeight;
+      window.scrollTo(0, top + target * Math.max(1, story.offsetHeight - height));
+    }, progress);
+    await expect(runtime).toHaveAttribute("data-bc-experience-chapter", chapter);
+    const actions = page.locator(`[data-chapter="${chapter}"] .bcExperienceAction`);
+    if (await actions.count()) await actions.first().click({ trial: true, timeout: 10_000 });
+    await snapshot(page, `home-${chapter}`);
+  }
+  await test.info().attach("runtime-diagnostics", {
+    body: JSON.stringify(await runtime.evaluate((element: HTMLElement) => ({ ...element.dataset })), null, 2),
+    contentType: "application/json",
+  });
   await page.evaluate(() => window.scrollTo(0, 0));
   await expect(page.locator("canvas[data-bc-nexus-canvas]")).toHaveCount(1);
   expect(errors).toEqual([]);
@@ -50,6 +75,8 @@ test("menu fits the actual viewport, owns focus and links to the real store", as
   await trigger.click();
   const dialog = page.getByRole("dialog", { name: "BlackCrown worlds menu" });
   await expect(dialog).toBeVisible();
+  await expect(page.locator(".bcSiteMusic")).toBeHidden();
+  await expect(page.locator(".bcDockV2")).toBeHidden();
   await expect(page.locator("html")).toHaveCSS("overflow", "hidden");
   const store = dialog.getByRole("link", { name: "STORE", exact: true });
   const bounds = await store.boundingBox();
@@ -126,10 +153,33 @@ test("WebGL-unavailable visitors can enter and use the site menu", async ({ page
     } as typeof original;
   });
   await installApiAdapter(page);
-  const shell = await enterHome(page);
+  const shell = await enterHome(page, "/#evofish");
   await expect(shell).toHaveAttribute("data-webgl", "fallback");
+  const story = page.locator("#bc-experience-story");
+  await expect(story).toHaveAttribute("data-bc-static-mode", "true");
+  await expect(page.getByRole("heading", { name: "EVOLUTION BEGINS IN THE DEEP" })).toBeInViewport();
+  expect(await story.locator('section:not([data-chapter="boot"])[inert]').count()).toBe(0);
   await page.getByRole("button", { name: "MENU", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "BlackCrown worlds menu" });
   await expect(dialog.getByRole("link", { name: "STORE", exact: true })).toBeVisible();
+  await dialog.locator('a[href="#evofish"]').click();
+  await expect(page.getByRole("heading", { name: "EVOLUTION BEGINS IN THE DEEP" })).toBeInViewport();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
   await snapshot(page, "webgl-fallback");
+});
+
+
+test("context loss exposes readable chapters and restoration keeps one renderer", async ({ page }) => {
+  await installApiAdapter(page);
+  const shell = await enterHome(page);
+  const canvas = page.locator("canvas[data-bc-nexus-canvas]");
+  await expect(canvas).toHaveCount(1);
+  await canvas.dispatchEvent("webglcontextlost", { cancelable: true });
+  await expect(shell).toHaveAttribute("data-webgl", "fallback");
+  await expect(page.locator("#bc-experience-story")).toHaveAttribute("data-bc-static-mode", "true");
+  await expect(page.getByRole("heading", { name: "EVOLUTION BEGINS IN THE DEEP" })).toBeVisible();
+  await canvas.dispatchEvent("webglcontextrestored");
+  await expect(shell).toHaveAttribute("data-webgl", "ready");
+  await expect(page.locator("#bc-experience-story")).not.toHaveAttribute("data-bc-static-mode", "true");
+  await expect(canvas).toHaveCount(1);
 });

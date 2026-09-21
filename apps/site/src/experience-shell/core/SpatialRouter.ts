@@ -26,8 +26,13 @@ export class SpatialRouter {
     const hash = hashForChapter(chapterId);
     if (historyMode === "push" && window.location.hash !== hash) window.history.pushState({ bcChapter: chapterId }, "", hash);
     if (historyMode === "replace" && window.location.hash !== hash) window.history.replaceState({ bcChapter: chapterId }, "", hash);
-    const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
-    window.scrollTo({ top: scrollTopForChapter(this.story, chapterId, viewportHeight), behavior: "auto" });
+    if (this.story.dataset.bcStaticMode === "true") {
+      // Static chapters have natural heights rather than timeline-sized spacers.
+      this.story.querySelector<HTMLElement>(`[data-chapter="${chapterId}"]`)?.scrollIntoView({ block: "start", behavior: "auto" });
+    } else {
+      const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+      window.scrollTo({ top: scrollTopForChapter(this.story, chapterId, viewportHeight), behavior: "auto" });
+    }
     this.onNavigate?.(chapterId);
   }
 
