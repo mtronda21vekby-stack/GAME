@@ -476,9 +476,15 @@ test("@lab context loss exposes DOM fallback and restores one canvas", async ({ 
   const canvas = page.locator("canvas[data-bc-nexus-canvas]");
   await canvas.dispatchEvent("webglcontextlost", { cancelable: true });
   await expect(runtime).toHaveAttribute("data-bc-experience-context", "lost");
-  await expect(page.getByRole("heading", { name: "NEXUS READY" })).toBeVisible();
+  // Context loss now exposes real, usable chapters rather than only the boot title.
+  const story = page.locator("#bc-experience-story");
+  await expect(story).toHaveAttribute("data-bc-static-mode", "true");
+  await expect(page.getByRole("heading", { name: "ONE CROWN. CONNECTED WORLDS." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "EVOLUTION BEGINS IN THE DEEP" })).toBeVisible();
+  await expect(story.locator('section:not([data-chapter="boot"])[inert]')).toHaveCount(0);
   await canvas.dispatchEvent("webglcontextrestored");
   await expect(runtime).toHaveAttribute("data-bc-experience-context", "ready");
+  await expect(story).not.toHaveAttribute("data-bc-static-mode", "true");
   await expect(canvas).toHaveCount(1);
 });
 

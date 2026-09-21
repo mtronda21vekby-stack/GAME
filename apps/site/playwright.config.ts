@@ -9,7 +9,7 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
   workers: 1,
-  reporter: [["list"]],
+  reporter: [["list"], ["json", { outputFile: "reports/integration-qa/legacy-results.json" }]],
   outputDir: "/tmp/blackcrown-experience-traces/playwright",
   use: {
     trace: "retain-on-failure",
