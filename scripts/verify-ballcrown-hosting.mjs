@@ -89,6 +89,8 @@ console.log(JSON.stringify({
   sourceArchiveSHA256: manifest.sourceArchiveSHA256,
   transportManifestSHA256: createHash("sha256").update(manifestBytes).digest("hex"),
   filesPassed: results.length, totalBytes: results.reduce((sum, file) => sum + file.bytes, 0),
+  rawRuntimeFilesPassed: results.length - htmlDelivery.filter(file =>
+    file.path === manifest.publicBase + "index.html" && file.transformation !== "none").length,
   launcherSHA256: createHash("sha256").update(launcherSource).digest("hex"),
   nativeHTMLSHA256: manifest.runtimeFiles.find(file => file.path === "index.html").sha256,
   htmlDelivery,

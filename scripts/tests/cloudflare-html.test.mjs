@@ -19,6 +19,12 @@ test("Only the exact Cloudflare JSD template is accounted for and both hashes re
   assert.notEqual(evidence.sourceSHA256, evidence.deliveredSHA256);
   assert.equal(evidence.sourceBytes, source.length);
 });
+test("Observed production bootstrap has exactly the captured 938 bytes", () => {
+  const observed = CLOUDFLARE_JSD_TEMPLATE.replace("__RAY__", "a49aaa497e1d4531")
+    .replace("__TIME__", "MTc5MTg1NTkyOQ==");
+  assert.equal(Buffer.byteLength(observed), 938);
+  assert.equal(verifyCloudflareHTML(inject(observed), source, "/game/").injectedBytes, 938);
+});
 for (const [name, html] of [
   ["duplicate JSD injection", inject(script + script)],
   ["JSD in unexpected document position", Buffer.from(source.toString().replace("</head>", `${script}</head>`))],

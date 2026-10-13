@@ -2,9 +2,10 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 
 // Cloudflare's existing zone-wide JavaScript Detections adds this deferred,
-// same-origin bootstrap to HTML. Only its request ray and encoded timestamp vary.
+// same-origin bootstrap to HTML. Exact production shape captured from run
+// 38333515595 on 2026-10-13; only its request ray and encoded timestamp vary.
 // https://developers.cloudflare.com/cloudflare-challenges/challenge-types/javascript-detections/
-export const CLOUDFLARE_JSD_TEMPLATE = `<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'__RAY__',t:'__TIME__'};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);if('loading'!==document.readyState){document.onreadystatechange=e;c()}}}}})();</script>`;
+export const CLOUDFLARE_JSD_TEMPLATE = `<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'__RAY__',t:'__TIME__'};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>`;
 const sha256 = value => createHash("sha256").update(value).digest("hex");
 
 export function verifyCloudflareHTML(actualBytes, sourceBytes, pathname) {
