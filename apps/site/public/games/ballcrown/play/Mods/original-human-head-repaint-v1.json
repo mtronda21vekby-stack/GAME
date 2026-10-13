@@ -1,0 +1,24 @@
+{
+  "id": "original-human-head-repaint-v1",
+  "name": "Шлем · обновлённый",
+  "group": "head",
+  "parts": [
+    {
+      "symbol": 758,
+      "texture": "RepaintParts/SsHead",
+      "left": -24.070994994994994,
+      "top": -21.32533222120277,
+      "width": 66.74085285285284,
+      "height": 35.07450629743932
+    }
+  ],
+  "sourceSHA256": "7c1946bb185fc1d59c0bcfbb2c62af64240b9428887df5d8f9dea84a771f13be",
+  "actualResolution": [
+    1752,
+    898
+  ],
+  "is4K": false,
+  "nativeRigAnchorsChanged": false,
+  "actorCollisionChanged": false,
+  "calibration": "Read-only alpha bounding rectangles mapped to original visual occupied bounds; no raster image editing or resampling."
+}

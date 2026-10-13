@@ -7,19 +7,23 @@ type ExperienceChromeProps = {
   statusSource: string;
 };
 
-export function ExperienceChrome({ activeScene, statusSource }: ExperienceChromeProps) {
+export function ExperienceChrome({ activeScene }: ExperienceChromeProps) {
   return (
-    <div className="bcCinematic__chrome" aria-hidden="true">
+    <header className="bcCinematic__chrome">
       <div className="bcCinematic__brand">
         <strong>BLACKCROWN</strong>
         <span>INTERACTIVE NETWORK</span>
       </div>
-      <div className="bcCinematic__progress">
+      <div className="bcCinematic__progress" aria-hidden="true">
         {CINEMATIC_TIMELINE.map((scene) => (
           <i key={scene.id} data-active={scene.id === activeScene ? "true" : "false"} />
         ))}
       </div>
-      <span className="bcCinematic__source">SIGNAL / {statusSource.toUpperCase()}</span>
-    </div>
+      <nav className="bcCinematic__nav" aria-label="Разделы BlackCrown">
+        <a href="/about">О проекте</a>
+        <a href="/store">Store</a>
+        <a href="/account">Профиль</a>
+      </nav>
+    </header>
   );
 }

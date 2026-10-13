@@ -1,1 +1,4 @@
+/games/ballcrown /games/ballcrown/ 301
+/games/ballcrown/play /games/ballcrown/play/ 301
+/games/ballcrown/* /games/ballcrown/:splat 200
 /*    /index.html   200

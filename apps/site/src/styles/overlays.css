@@ -37,3 +37,24 @@
     height: auto;
   }
 }
+
+/* Content headers wrap on phones; keep their audio controls above the dock. */
+@media (max-width: 820px), (pointer: coarse), (max-height: 560px) and (orientation: landscape) {
+  html:is(
+    [data-bc-route="/about"],
+    [data-bc-route="/support"],
+    [data-bc-route="/privacy"],
+    [data-bc-route="/terms"],
+    [data-bc-route="/account"]
+  ) .bcSiteMusic {
+    top: auto;
+    bottom: calc(var(--bc-dock-height) + 2 * var(--bc-overlay-gap) + var(--bc-safe-bottom));
+  }
+}
+
+@media (max-width: 820px), (pointer: coarse) {
+  html[data-bc-route="/"][data-bc-home-story-active="false"] .bcSiteMusic {
+    top: auto;
+    bottom: calc(var(--bc-dock-height) + 2 * var(--bc-overlay-gap) + var(--bc-safe-bottom));
+  }
+}

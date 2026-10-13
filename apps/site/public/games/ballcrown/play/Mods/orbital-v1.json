@@ -1,0 +1,271 @@
+{
+  "id": "orbital-v1",
+  "name": "Orbital",
+  "description": "New modular rescue trooper, nine individually generated parts calibrated to source visual occupied bounds. Source anatomy endpoints still require animation/visual QA.",
+  "schemaVersion": 1,
+  "bindings": [
+    {
+      "id": "orbital-head-v1",
+      "name": "Orbital",
+      "group": "head",
+      "index": 1,
+      "parts": [
+        {
+          "symbol": 457,
+          "texture": "OrbitalParts/SsNeck",
+          "left": -10.640980735551663,
+          "top": -12.782897033158813,
+          "width": 20.314360770577935,
+          "height": 19.969895287958114
+        },
+        {
+          "symbol": 758,
+          "texture": "OrbitalParts/SsHead",
+          "left": -23.890184749342644,
+          "top": -21.465457593027157,
+          "width": 66.06445484719168,
+          "height": 35.24205967147167
+        }
+      ]
+    },
+    {
+      "id": "orbital-body-v1",
+      "name": "Orbital",
+      "group": "body",
+      "index": 1,
+      "parts": [
+        {
+          "symbol": 315,
+          "texture": "OrbitalParts/SsUpperArm",
+          "left": -8.57174692094218,
+          "top": -21.72281365945672,
+          "width": 21.026369808031927,
+          "height": 43.63316991574059
+        },
+        {
+          "symbol": 371,
+          "texture": "OrbitalParts/SsLowerArm",
+          "left": -7.731660572437272,
+          "top": -14.994073891625616,
+          "width": 14.277987643424536,
+          "height": 29.699999999999996
+        },
+        {
+          "symbol": 402,
+          "texture": "OrbitalParts/SsHand",
+          "left": -5.09451871657754,
+          "top": -5.739118677243226,
+          "width": 10.235851158645277,
+          "height": 11.410590295662924
+        },
+        {
+          "symbol": 682,
+          "texture": "OrbitalParts/SsBody",
+          "left": -15.935331875683271,
+          "top": -27.66087775982768,
+          "width": 29.910192097454317,
+          "height": 53.894722670974694
+        }
+      ]
+    },
+    {
+      "id": "orbital-legs-v1",
+      "name": "Orbital",
+      "group": "legs",
+      "index": 1,
+      "parts": [
+        {
+          "symbol": 487,
+          "texture": "OrbitalParts/SsFoot",
+          "left": -14.491961934290892,
+          "top": -8.000096415607986,
+          "width": 25.127710640841258,
+          "height": 14.42417763157895
+        },
+        {
+          "symbol": 551,
+          "texture": "OrbitalParts/SsLowerLeg",
+          "left": -13.06418304234368,
+          "top": -20.03834678008474,
+          "width": 27.331941581003736,
+          "height": 42.81850943978181
+        },
+        {
+          "symbol": 617,
+          "texture": "OrbitalParts/SsUpperLeg",
+          "left": -10.405446194225721,
+          "top": -22.52563645282818,
+          "width": 21.302493438320212,
+          "height": 47.441550733778456
+        }
+      ]
+    }
+  ],
+  "artwork": [
+    {
+      "name": "SsNeck",
+      "source": "Artwork/Sources/orbital-ssneck-v1.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "is4K": false,
+      "sourceSHA256": "2d85d39ec5961dbac7b36c0816d7acc4af37682d9760735de5cd0da677640e39",
+      "originalAlphaWorldBounds": [
+        -9.75,
+        -11.7,
+        18.5,
+        18.25
+      ],
+      "originalAnchorsChanged": false,
+      "collisionChanged": false
+    },
+    {
+      "name": "SsHead",
+      "source": "Artwork/Sources/orbital-head-v1.png",
+      "size": [
+        1751,
+        898
+      ],
+      "is4K": false,
+      "sourceSHA256": "df674daad768c07e29ae5b783194ca64d190434b22bcd3f2483c6578a1dec500",
+      "originalAlphaWorldBounds": [
+        -5.176324324324327,
+        -16.638315789473687,
+        23.656432432432428,
+        24.645894736842106
+      ],
+      "originalAnchorsChanged": false,
+      "collisionChanged": false
+    },
+    {
+      "name": "SsUpperArm",
+      "source": "Artwork/Sources/orbital-ssupperarm-v1.png",
+      "size": [
+        860,
+        1828
+      ],
+      "is4K": false,
+      "sourceSHA256": "0295fa2c4527c20b1b8e545723d2eb0f78e2eb6b3d126e152aa7a2ff85d447d2",
+      "originalAlphaWorldBounds": [
+        -6.518008474576271,
+        -16.471556886227546,
+        18.06800847457627,
+        32.128143712574854
+      ],
+      "originalAnchorsChanged": false,
+      "collisionChanged": false
+    },
+    {
+      "name": "SsLowerArm",
+      "source": "Artwork/Sources/orbital-sslowerarm-v1.png",
+      "size": [
+        861,
+        1827
+      ],
+      "is4K": false,
+      "sourceSHA256": "81a1e42cef9af32a8f53a6c24f884d96e432e463b68ddf4655b93d2ddd01a45a",
+      "originalAlphaWorldBounds": [
+        -7.4,
+        -13.384714285714287,
+        11.956363636363635,
+        24.985714285714284
+      ],
+      "originalAnchorsChanged": false,
+      "collisionChanged": false
+    },
+    {
+      "name": "SsHand",
+      "source": "Artwork/Sources/orbital-sshand-v2-v1.png",
+      "size": [
+        1163,
+        1352
+      ],
+      "is4K": false,
+      "sourceSHA256": "c07c69a5ce53a5fe8ee3b5ed5bcc7ec1f55ea662689fb246956376ee21318854",
+      "originalAlphaWorldBounds": [
+        -3.316666666666667,
+        -4.852941176470588,
+        6.583333333333334,
+        9.638235294117647
+      ],
+      "originalAnchorsChanged": false,
+      "collisionChanged": false
+    },
+    {
+      "name": "SsBody",
+      "source": "Artwork/Sources/orbital-body-v1.png",
+      "size": [
+        962,
+        1634
+      ],
+      "is4K": false,
+      "sourceSHA256": "ed5fc4e7da5dac7277db00e5ad273def4c7f78db01f2c0bebe286d8b80ebc689",
+      "originalAlphaWorldBounds": [
+        -10.432105263157894,
+        -20.833333333333336,
+        20.95578947368421,
+        40.833333333333336
+      ],
+      "originalAnchorsChanged": false,
+      "collisionChanged": false
+    },
+    {
+      "name": "SsFoot",
+      "source": "Artwork/Sources/orbital-ssfoot-v1.png",
+      "size": [
+        1750,
+        899
+      ],
+      "is4K": false,
+      "sourceSHA256": "9c3387d8aeede4dc2abc4242cd380b6fe828bc6be3935a867b7deb1a0613f536",
+      "originalAlphaWorldBounds": [
+        -12.768918918918919,
+        -5.801973684210527,
+        20.777027027027028,
+        10.236513157894738
+      ],
+      "originalAnchorsChanged": false,
+      "collisionChanged": false
+    },
+    {
+      "name": "SsLowerLeg",
+      "source": "Artwork/Sources/orbital-sslowerleg-v1.png",
+      "size": [
+        977,
+        1610
+      ],
+      "is4K": false,
+      "sourceSHA256": "69f90540d83dd8220cb0a05efa19d84087129518ad32fdc9859eeb9152e9d668",
+      "originalAlphaWorldBounds": [
+        -6.014388489208633,
+        -18.336244541484717,
+        13.959712230215828,
+        35.7707423580786
+      ],
+      "originalAnchorsChanged": false,
+      "collisionChanged": false
+    },
+    {
+      "name": "SsUpperLeg",
+      "source": "Artwork/Sources/orbital-ssupperleg-v1.png",
+      "size": [
+        860,
+        1829
+      ],
+      "is4K": false,
+      "sourceSHA256": "b77b69fbaae13578335495952c99ac1559cf8bfe547804ae98a75f560537bc4f",
+      "originalAlphaWorldBounds": [
+        -5.6,
+        -18.505166051660517,
+        12.583333333333334,
+        39.60811808118081
+      ],
+      "originalAnchorsChanged": false,
+      "collisionChanged": false
+    }
+  ],
+  "source4KArtwork": false,
+  "runtimeImport": "Rebuild required; dynamic external mod loading still pending",
+  "calibration": "Only mesh/UV placement; original raster sources unchanged. No motion, anchor, hitbox or weapon model edits."
+}

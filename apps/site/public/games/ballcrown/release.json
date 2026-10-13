@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "available": true,
+  "entry": "./play/",
+  "version": "0.22.0 / v19",
+  "revision": "v19-direct-twin-stick-angle-visible-guide",
+  "archiveSHA256": "bca48fdbeba199708b7801c4deb7bf781402846b2b09892821e162f3416c16d5",
+  "wasmSHA256": "a3e41704a1dacd49b18ab9d30d03fe669016e161c058236f081fdba16e6ceb7d"
+}

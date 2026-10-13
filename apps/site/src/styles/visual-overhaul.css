@@ -1,10 +1,10 @@
 /*
  * BlackCrown cinematic visual system
  * Loaded after the legacy site styles so the existing routes and business logic
- * keep working while presentation is upgraded globally.
+ * keep their presentation without changing the shared application shell.
  */
 
-:root {
+.bcSiteRoot {
   --bc-page: #030303;
   --bc-page-soft: #080807;
   --bc-surface: rgba(15, 15, 14, 0.72);
@@ -41,67 +41,38 @@
     "SF Pro Text", "Segoe UI", sans-serif;
 }
 
-html {
-  background: var(--bc-page);
-  scrollbar-color: rgba(var(--bc-gold-rgb), 0.55) rgba(255, 255, 255, 0.04);
-  scrollbar-width: thin;
-}
-
-body {
-  min-width: 320px;
-  background: var(--bc-page) !important;
-  color: var(--bc-copy);
-  font-family: inherit;
-  letter-spacing: -0.012em;
-}
-
-body,
-button,
-input,
-textarea,
-select {
+:where(.bcSiteRoot) button,
+:where(.bcSiteRoot) input,
+:where(.bcSiteRoot) textarea,
+:where(.bcSiteRoot) select {
   font-family: inherit;
 }
 
-::selection {
+:where(.bcSiteRoot) ::selection {
   color: #120d04;
   background: var(--bc-gold-bright);
 }
 
-/* ---------- global shell ---------- */
+/* ---------- content page root ---------- */
 
-.bcAppShell,
-.bcShell {
-  min-height: var(--app-vh, 100vh);
-  background:
-    radial-gradient(circle at 50% -15%, rgba(var(--bc-gold-rgb), 0.08), transparent 34%),
-    var(--bc-page) !important;
-  overflow-x: clip;
-  isolation: isolate;
-}
-
-.bcAppContent,
-.bcShellContent {
-  position: relative;
-  z-index: 2;
-  min-height: var(--app-vh, 100vh);
-  background: transparent !important;
-}
-
-.bcMatrixLayer,
-.bcMatrixBg {
+:where(.bcSiteRoot) .bcMatrixLayer,
+:where(.bcSiteRoot) .bcMatrixBg {
   display: none !important;
 }
 
 .bcSiteRoot {
   position: relative;
   min-height: var(--app-vh, 100vh);
-  background: transparent;
+  background: radial-gradient(circle at 50% -15%, rgba(var(--bc-gold-rgb), 0.08), transparent 34%), var(--bc-page);
+  color: var(--bc-copy);
+  letter-spacing: -0.012em;
+  scrollbar-color: rgba(var(--bc-gold-rgb), 0.55) rgba(255, 255, 255, 0.04);
+  scrollbar-width: thin;
 }
 
 /* ---------- cinematic atmosphere ---------- */
 
-.bcAtmosphere {
+:where(.bcSiteRoot) .bcAtmosphere {
   position: fixed;
   inset: 0;
   z-index: 0;
@@ -114,20 +85,20 @@ select {
   contain: strict;
 }
 
-.bcAtmosphere__base,
-.bcAtmosphere__cursor,
-.bcAtmosphere__beam,
-.bcAtmosphere__grid,
-.bcAtmosphere__orbit,
-.bcAtmosphere__sigil,
-.bcAtmosphere__scan,
-.bcAtmosphere__grain,
-.bcAtmosphere__vignette {
+:where(.bcSiteRoot) .bcAtmosphere__base,
+:where(.bcSiteRoot) .bcAtmosphere__cursor,
+:where(.bcSiteRoot) .bcAtmosphere__beam,
+:where(.bcSiteRoot) .bcAtmosphere__grid,
+:where(.bcSiteRoot) .bcAtmosphere__orbit,
+:where(.bcSiteRoot) .bcAtmosphere__sigil,
+:where(.bcSiteRoot) .bcAtmosphere__scan,
+:where(.bcSiteRoot) .bcAtmosphere__grain,
+:where(.bcSiteRoot) .bcAtmosphere__vignette {
   position: absolute;
   pointer-events: none;
 }
 
-.bcAtmosphere__base {
+:where(.bcSiteRoot) .bcAtmosphere__base {
   inset: -20%;
   background:
     conic-gradient(
@@ -143,7 +114,7 @@ select {
   will-change: transform;
 }
 
-.bcAtmosphere__cursor {
+:where(.bcSiteRoot) .bcAtmosphere__cursor {
   position: fixed;
   inset: 0;
   background: radial-gradient(
@@ -155,7 +126,7 @@ select {
   opacity: 0.86;
 }
 
-.bcAtmosphere__beam {
+:where(.bcSiteRoot) .bcAtmosphere__beam {
   width: min(62vw, 960px);
   height: min(62vw, 960px);
   border-radius: 50%;
@@ -164,21 +135,21 @@ select {
   mix-blend-mode: screen;
 }
 
-.bcAtmosphere__beam--one {
+:where(.bcSiteRoot) .bcAtmosphere__beam--one {
   top: -38%;
   right: -14%;
   background: radial-gradient(circle, rgba(var(--bc-gold-rgb), 0.13), transparent 66%);
   animation: bcAtmosphereFloatOne 17s var(--bc-ease-out) infinite alternate;
 }
 
-.bcAtmosphere__beam--two {
+:where(.bcSiteRoot) .bcAtmosphere__beam--two {
   left: -28%;
   bottom: -48%;
   background: radial-gradient(circle, rgba(var(--bc-ice-rgb), 0.075), transparent 67%);
   animation: bcAtmosphereFloatTwo 21s var(--bc-ease-out) infinite alternate;
 }
 
-.bcAtmosphere__grid {
+:where(.bcSiteRoot) .bcAtmosphere__grid {
   left: 50%;
   top: 47%;
   width: 160vw;
@@ -196,7 +167,7 @@ select {
   will-change: background-position;
 }
 
-.bcAtmosphere__orbit {
+:where(.bcSiteRoot) .bcAtmosphere__orbit {
   left: 74%;
   top: 31%;
   border: 1px solid rgba(var(--bc-gold-rgb), 0.15);
@@ -207,7 +178,7 @@ select {
     0 0 60px rgba(var(--bc-gold-rgb), 0.025);
 }
 
-.bcAtmosphere__orbit::after {
+:where(.bcSiteRoot) .bcAtmosphere__orbit::after {
   content: "";
   position: absolute;
   top: 50%;
@@ -219,20 +190,20 @@ select {
   box-shadow: 0 0 20px rgba(var(--bc-gold-rgb), 0.9);
 }
 
-.bcAtmosphere__orbit--one {
+:where(.bcSiteRoot) .bcAtmosphere__orbit--one {
   width: min(44vw, 660px);
   aspect-ratio: 1;
   animation: bcOrbitOne 24s linear infinite;
 }
 
-.bcAtmosphere__orbit--two {
+:where(.bcSiteRoot) .bcAtmosphere__orbit--two {
   width: min(35vw, 520px);
   aspect-ratio: 1;
   border-color: rgba(var(--bc-ice-rgb), 0.11);
   animation: bcOrbitTwo 19s linear infinite reverse;
 }
 
-.bcAtmosphere__orbit--three {
+:where(.bcSiteRoot) .bcAtmosphere__orbit--three {
   width: min(25vw, 380px);
   aspect-ratio: 1;
   border-style: dashed;
@@ -240,7 +211,7 @@ select {
   animation: bcOrbitThree 15s linear infinite;
 }
 
-.bcAtmosphere__sigil {
+:where(.bcSiteRoot) .bcAtmosphere__sigil {
   left: 74%;
   top: 31%;
   width: min(17vw, 250px);
@@ -256,7 +227,7 @@ select {
   transition: transform 380ms var(--bc-ease-out);
 }
 
-.bcAtmosphere__sigil img {
+:where(.bcSiteRoot) .bcAtmosphere__sigil img {
   position: relative;
   z-index: 2;
   width: 38%;
@@ -269,19 +240,19 @@ select {
     drop-shadow(0 0 30px rgba(var(--bc-gold-rgb), 0.34));
 }
 
-.bcAtmosphere__sigilHalo,
-.bcAtmosphere__sigilRing {
+:where(.bcSiteRoot) .bcAtmosphere__sigilHalo,
+:where(.bcSiteRoot) .bcAtmosphere__sigilRing {
   position: absolute;
   inset: 0;
   border-radius: 50%;
 }
 
-.bcAtmosphere__sigilHalo {
+:where(.bcSiteRoot) .bcAtmosphere__sigilHalo {
   background: radial-gradient(circle, rgba(var(--bc-gold-rgb), 0.12), transparent 68%);
   animation: bcSigilPulse 5.4s ease-in-out infinite;
 }
 
-.bcAtmosphere__sigilRing {
+:where(.bcSiteRoot) .bcAtmosphere__sigilRing {
   inset: 19%;
   border: 1px solid rgba(var(--bc-gold-rgb), 0.2);
   box-shadow:
@@ -289,7 +260,7 @@ select {
     0 0 44px rgba(var(--bc-gold-rgb), 0.05);
 }
 
-.bcAtmosphere__scan {
+:where(.bcSiteRoot) .bcAtmosphere__scan {
   inset: 0;
   background: linear-gradient(
     180deg,
@@ -306,7 +277,7 @@ select {
   animation: bcScan 11s linear infinite;
 }
 
-.bcAtmosphere__grain {
+:where(.bcSiteRoot) .bcAtmosphere__grain {
   inset: 0;
   opacity: 0.065;
   background-image:
@@ -327,7 +298,7 @@ select {
   mix-blend-mode: soft-light;
 }
 
-.bcAtmosphere__vignette {
+:where(.bcSiteRoot) .bcAtmosphere__vignette {
   inset: 0;
   background:
     linear-gradient(180deg, rgba(0, 0, 0, 0.08), transparent 22%, rgba(0, 0, 0, 0.58) 100%),
@@ -336,7 +307,7 @@ select {
 
 /* ---------- progress ---------- */
 
-.bcScrollProgress {
+:where(.bcSiteRoot) .bcScrollProgress {
   position: fixed;
   top: 0;
   left: 0;
@@ -346,7 +317,7 @@ select {
   pointer-events: none;
 }
 
-.bcScrollProgress span {
+:where(.bcSiteRoot) .bcScrollProgress span {
   display: block;
   width: calc(var(--bc-scroll-progress, 0) * 100%);
   height: 100%;
@@ -357,7 +328,7 @@ select {
 
 /* ---------- navigation ---------- */
 
-.bcTop {
+:where(.bcSiteRoot) .bcTop {
   position: fixed !important;
   z-index: 200 !important;
   top: max(12px, env(safe-area-inset-top, 0px)) !important;
@@ -376,7 +347,7 @@ select {
   transform: translate3d(-50%, 0, 0) !important;
 }
 
-.bcBrand {
+:where(.bcSiteRoot) .bcBrand {
   min-height: 42px;
   padding: 8px 11px !important;
   gap: 9px !important;
@@ -385,7 +356,7 @@ select {
   letter-spacing: -0.035em;
 }
 
-.bcBrand img {
+:where(.bcSiteRoot) .bcBrand img {
   width: 21px;
   height: 21px;
   filter:
@@ -395,16 +366,16 @@ select {
     drop-shadow(0 0 12px rgba(var(--bc-gold-rgb), 0.42));
 }
 
-.bcBrand:hover {
+:where(.bcSiteRoot) .bcBrand:hover {
   border-color: rgba(var(--bc-gold-rgb), 0.2) !important;
   background: rgba(var(--bc-gold-rgb), 0.055) !important;
 }
 
-.bcNav {
+:where(.bcSiteRoot) .bcNav {
   gap: 3px !important;
 }
 
-.bcNav .bcLink {
+:where(.bcSiteRoot) .bcNav .bcLink {
   position: relative;
   padding: 9px 11px !important;
   border: 0 !important;
@@ -416,22 +387,22 @@ select {
   text-transform: uppercase;
 }
 
-.bcNav .bcLink:hover,
-.bcNav .bcLink[aria-current="page"] {
+:where(.bcSiteRoot) .bcNav .bcLink:hover,
+:where(.bcSiteRoot) .bcNav .bcLink[aria-current="page"] {
   color: var(--bc-gold-bright) !important;
   background: rgba(var(--bc-gold-rgb), 0.075) !important;
   text-shadow: 0 0 20px rgba(var(--bc-gold-rgb), 0.45) !important;
 }
 
-.bcNav .bcLink::after {
+:where(.bcSiteRoot) .bcNav .bcLink::after {
   display: none !important;
 }
 
-.bcRight {
+:where(.bcSiteRoot) .bcRight {
   gap: 7px !important;
 }
 
-.bcAccountPill {
+:where(.bcSiteRoot) .bcAccountPill {
   min-height: 42px !important;
   max-width: 190px;
   overflow: hidden;
@@ -445,7 +416,7 @@ select {
   font-weight: 750 !important;
 }
 
-.bcAccountPill:hover {
+:where(.bcSiteRoot) .bcAccountPill:hover {
   border-color: rgba(var(--bc-gold-rgb), 0.22) !important;
   color: var(--bc-copy) !important;
   background: rgba(var(--bc-gold-rgb), 0.06) !important;
@@ -516,7 +487,7 @@ select {
 
 /* ---------- hero ---------- */
 
-.bcHero {
+:where(.bcSiteRoot) .bcHero {
   position: relative;
   padding:
     clamp(112px, 13vh, 148px)
@@ -525,11 +496,11 @@ select {
   overflow: visible !important;
 }
 
-.bcHeroBg {
+:where(.bcSiteRoot) .bcHeroBg {
   display: none !important;
 }
 
-.bcHeroGrid {
+:where(.bcSiteRoot) .bcHeroGrid {
   width: min(1240px, 100%);
   min-height: calc(var(--app-vh, 100vh) - 186px);
   margin: 0 auto !important;
@@ -537,8 +508,8 @@ select {
   align-items: stretch !important;
 }
 
-.bcHeroCopy,
-.bcHeroPanel {
+:where(.bcSiteRoot) .bcHeroCopy,
+:where(.bcSiteRoot) .bcHeroPanel {
   position: relative;
   isolation: isolate;
   min-width: 0;
@@ -551,7 +522,7 @@ select {
   -webkit-backdrop-filter: blur(18px) saturate(1.08) !important;
 }
 
-.bcHeroCopy {
+:where(.bcSiteRoot) .bcHeroCopy {
   display: flex;
   min-height: min(720px, calc(var(--app-vh, 100vh) - 186px));
   flex-direction: column;
@@ -564,7 +535,7 @@ select {
     rgba(8, 8, 7, 0.72) !important;
 }
 
-.bcHeroCopy::before {
+:where(.bcSiteRoot) .bcHeroCopy::before {
   content: "";
   position: absolute;
   z-index: -1;
@@ -586,7 +557,7 @@ select {
   transition: transform 500ms var(--bc-ease-out);
 }
 
-.bcHeroCopy::after {
+:where(.bcSiteRoot) .bcHeroCopy::after {
   content: "BLACKCROWN / INTERACTIVE WORLDS";
   position: absolute;
   top: 24px;
@@ -598,7 +569,7 @@ select {
   letter-spacing: 0.18em;
 }
 
-.bcKicker {
+:where(.bcSiteRoot) .bcKicker {
   width: fit-content;
   padding: 8px 11px !important;
   border-color: rgba(var(--bc-gold-rgb), 0.25) !important;
@@ -610,7 +581,7 @@ select {
   text-transform: uppercase;
 }
 
-.bcH1 {
+:where(.bcSiteRoot) .bcH1 {
   max-width: 12.5ch;
   margin: 18px 0 16px !important;
   color: var(--bc-copy);
@@ -622,11 +593,11 @@ select {
   text-shadow: 0 16px 58px rgba(0, 0, 0, 0.34);
 }
 
-.bcH1::first-line {
+:where(.bcSiteRoot) .bcH1::first-line {
   color: var(--bc-gold-bright);
 }
 
-.bcLead {
+:where(.bcSiteRoot) .bcLead {
   max-width: 62ch !important;
   color: var(--bc-copy-muted) !important;
   font-size: clamp(14px, 1.3vw, 17px);
@@ -634,24 +605,24 @@ select {
   line-height: 1.66 !important;
 }
 
-.bcLead b {
+:where(.bcSiteRoot) .bcLead b {
   color: rgba(255, 255, 255, 0.94);
   font-weight: 720;
 }
 
-.bcCtas {
+:where(.bcSiteRoot) .bcCtas {
   margin-top: 24px !important;
   gap: 9px !important;
 }
 
-.bcBadges {
+:where(.bcSiteRoot) .bcBadges {
   margin-top: 28px !important;
   gap: 7px !important;
 }
 
-.bcBadges > span,
-.bcHeroCopy > span,
-.bcSection span[style*="borderRadius: 999"] {
+:where(.bcSiteRoot) .bcBadges > span,
+:where(.bcSiteRoot) .bcHeroCopy > span,
+:where(.bcSiteRoot) .bcSection span[style*="borderRadius: 999"] {
   border-color: rgba(255, 255, 255, 0.09) !important;
   background: rgba(255, 255, 255, 0.035) !important;
   color: rgba(255, 255, 255, 0.52) !important;
@@ -662,7 +633,7 @@ select {
   text-transform: uppercase;
 }
 
-.bcHeroPanel {
+:where(.bcSiteRoot) .bcHeroPanel {
   display: flex;
   min-height: min(720px, calc(var(--app-vh, 100vh) - 186px));
   flex-direction: column;
@@ -684,7 +655,7 @@ select {
     box-shadow 260ms var(--bc-ease-out);
 }
 
-.bcHeroPanel::before {
+:where(.bcSiteRoot) .bcHeroPanel::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -697,7 +668,7 @@ select {
   pointer-events: none;
 }
 
-.bcPanelTitle {
+:where(.bcSiteRoot) .bcPanelTitle {
   position: relative;
   margin: 0 0 15px !important;
   color: rgba(255, 255, 255, 0.43);
@@ -708,7 +679,7 @@ select {
   text-transform: uppercase;
 }
 
-.bcPanelRow {
+:where(.bcSiteRoot) .bcPanelRow {
   position: relative;
   align-items: center;
   min-height: 68px;
@@ -724,7 +695,7 @@ select {
     box-shadow 220ms ease !important;
 }
 
-.bcPanelRow::after {
+:where(.bcSiteRoot) .bcPanelRow::after {
   content: "↗";
   position: absolute;
   top: 50%;
@@ -735,23 +706,23 @@ select {
   transition: color 180ms ease, transform 220ms var(--bc-ease-out);
 }
 
-.bcPanelRow + .bcPanelRow {
+:where(.bcSiteRoot) .bcPanelRow + .bcPanelRow {
   margin-top: 8px !important;
 }
 
-.bcPanelRow:hover {
+:where(.bcSiteRoot) .bcPanelRow:hover {
   translate: 0 -2px;
   border-color: rgba(var(--bc-gold-rgb), 0.24) !important;
   background: rgba(var(--bc-gold-rgb), 0.065) !important;
   box-shadow: 0 16px 46px rgba(0, 0, 0, 0.24) !important;
 }
 
-.bcPanelRow:hover::after {
+:where(.bcSiteRoot) .bcPanelRow:hover::after {
   color: var(--bc-gold-bright);
   transform: translate(2px, -52%);
 }
 
-.bcDot {
+:where(.bcSiteRoot) .bcDot {
   width: 7px !important;
   height: 7px !important;
   margin-top: 0 !important;
@@ -761,12 +732,12 @@ select {
     0 0 18px rgba(var(--bc-gold-rgb), 0.42) !important;
 }
 
-.bcPanelH {
+:where(.bcSiteRoot) .bcPanelH {
   font-size: 14px;
   font-weight: 760 !important;
 }
 
-.bcPanelP {
+:where(.bcSiteRoot) .bcPanelP {
   color: rgba(255, 255, 255, 0.49) !important;
   font-size: 12px;
   font-weight: 520 !important;
@@ -774,7 +745,7 @@ select {
 
 /* ---------- sections and cards ---------- */
 
-.bcSection {
+:where(.bcSiteRoot) .bcSection {
   width: min(1320px, 100%);
   margin: 0 auto;
   padding:
@@ -784,12 +755,12 @@ select {
   contain-intrinsic-size: 720px;
 }
 
-.bcSectionHead {
+:where(.bcSiteRoot) .bcSectionHead {
   max-width: 1240px !important;
   margin: 0 auto clamp(24px, 3vw, 38px) !important;
 }
 
-.bcSectionTitle {
+:where(.bcSiteRoot) .bcSectionTitle {
   color: var(--bc-copy);
   font-size: clamp(2rem, 4.1vw, 4rem) !important;
   font-weight: 790 !important;
@@ -798,7 +769,7 @@ select {
   text-wrap: balance;
 }
 
-.bcSectionSub {
+:where(.bcSiteRoot) .bcSectionSub {
   max-width: 66ch;
   margin-top: 12px !important;
   color: var(--bc-copy-muted) !important;
@@ -807,14 +778,14 @@ select {
   line-height: 1.62 !important;
 }
 
-.bcCards {
+:where(.bcSiteRoot) .bcCards {
   max-width: 1240px !important;
   grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
   gap: clamp(13px, 1.55vw, 20px) !important;
   counter-reset: bc-card;
 }
 
-.bcHotCard {
+:where(.bcSiteRoot) .bcHotCard {
   --bc-card-lift: 0px;
   position: relative;
   isolation: isolate;
@@ -847,7 +818,7 @@ select {
     box-shadow 280ms var(--bc-ease-out) !important;
 }
 
-.bcHotCard:nth-child(1) {
+:where(.bcSiteRoot) .bcHotCard:nth-child(1) {
   grid-column: span 7;
   background:
     radial-gradient(circle at 84% 12%, rgba(var(--bc-ice-rgb), 0.12), transparent 38%),
@@ -855,7 +826,7 @@ select {
     rgba(7, 11, 13, 0.84) !important;
 }
 
-.bcHotCard:nth-child(2) {
+:where(.bcSiteRoot) .bcHotCard:nth-child(2) {
   grid-column: span 5;
   background:
     radial-gradient(circle at 78% 8%, rgba(255, 115, 48, 0.12), transparent 36%),
@@ -863,25 +834,25 @@ select {
     rgba(11, 9, 8, 0.86) !important;
 }
 
-.bcHotCard:nth-child(4n + 3) {
+:where(.bcSiteRoot) .bcHotCard:nth-child(4n + 3) {
   background:
     radial-gradient(circle at 70% 8%, rgba(167, 120, 255, 0.105), transparent 36%),
     rgba(10, 9, 12, 0.86) !important;
 }
 
-.bcHotCard:nth-child(4n + 4) {
+:where(.bcSiteRoot) .bcHotCard:nth-child(4n + 4) {
   background:
     radial-gradient(circle at 78% 12%, rgba(var(--bc-gold-rgb), 0.12), transparent 38%),
     rgba(11, 10, 8, 0.86) !important;
 }
 
-.bcHotCard:nth-child(4n + 5) {
+:where(.bcSiteRoot) .bcHotCard:nth-child(4n + 5) {
   background:
     radial-gradient(circle at 80% 12%, rgba(70, 228, 182, 0.09), transparent 38%),
     rgba(8, 11, 10, 0.86) !important;
 }
 
-.bcHotCard::before {
+:where(.bcSiteRoot) .bcHotCard::before {
   content: "";
   position: absolute;
   z-index: 0;
@@ -896,7 +867,7 @@ select {
   pointer-events: none;
 }
 
-.bcHotCard::after {
+:where(.bcSiteRoot) .bcHotCard::after {
   content: "0" counter(bc-card);
   position: absolute;
   z-index: 3;
@@ -909,24 +880,24 @@ select {
   letter-spacing: 0.14em;
 }
 
-.bcHotCard > div {
+:where(.bcSiteRoot) .bcHotCard > div {
   position: relative;
   z-index: 2;
 }
 
-.bcHotCard > div:first-child {
+:where(.bcSiteRoot) .bcHotCard > div:first-child {
   padding: clamp(22px, 2.4vw, 32px) !important;
   transform: translateZ(28px);
 }
 
-.bcHotCard > div:last-child {
+:where(.bcSiteRoot) .bcHotCard > div:last-child {
   position: relative;
   margin-top: auto;
   padding: 0 16px 16px !important;
   transform: translateZ(18px);
 }
 
-.bcHotCard > div:last-child::after {
+:where(.bcSiteRoot) .bcHotCard > div:last-child::after {
   content: "";
   position: absolute;
   inset: 0 16px 16px;
@@ -943,7 +914,7 @@ select {
   pointer-events: none;
 }
 
-.bcHotCard img {
+:where(.bcSiteRoot) .bcHotCard img {
   height: clamp(190px, 18vw, 250px) !important;
   border: 1px solid rgba(255, 255, 255, 0.075) !important;
   border-radius: 22px !important;
@@ -955,12 +926,12 @@ select {
     opacity 400ms ease;
 }
 
-.bcHotCard [style*="fontWeight: 950"],
-.bcHotCard [style*="fontWeight: 980"] {
+:where(.bcSiteRoot) .bcHotCard [style*="fontWeight: 950"],
+:where(.bcSiteRoot) .bcHotCard [style*="fontWeight: 980"] {
   color: var(--bc-copy);
 }
 
-.bcCrownFrontCard {
+:where(.bcSiteRoot) .bcCrownFrontCard {
   border-color: rgba(var(--bc-gold-rgb), 0.22) !important;
   box-shadow:
     0 34px 100px rgba(0, 0, 0, 0.38),
@@ -968,7 +939,7 @@ select {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .bcHotCard:hover {
+  :where(.bcSiteRoot) .bcHotCard:hover {
     --bc-card-lift: -8px;
     border-color: rgba(var(--bc-gold-rgb), 0.26) !important;
     box-shadow:
@@ -977,18 +948,18 @@ select {
       inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
   }
 
-  .bcHotCard:hover::before {
+  :where(.bcSiteRoot) .bcHotCard:hover::before {
     opacity: 1;
   }
 
-  .bcHotCard:hover img {
+  :where(.bcSiteRoot) .bcHotCard:hover img {
     transform: scale(1.035);
     filter: saturate(1.04) contrast(1.08) brightness(0.94);
     opacity: 1 !important;
   }
 }
 
-/* Generic content panels used by About, Support, Store and Account. */
+/* Generic content panels used by About, Support and Account. */
 .bcSiteRoot .glassStrong:not(.bcHeroCopy):not(.bcHeroPanel):not(.bcHotCard) {
   border-color: rgba(255, 255, 255, 0.1) !important;
   border-radius: var(--bc-radius-lg) !important;
@@ -1013,7 +984,7 @@ select {
 
 /* ---------- progressive reveal ---------- */
 
-.bcMotionReady .bcReveal {
+:where(.bcSiteRoot) .bcMotionReady .bcReveal {
   opacity: 0;
   translate: 0 24px;
   filter: blur(4px);
@@ -1024,7 +995,7 @@ select {
   transition-delay: calc(var(--bc-reveal-order, 0) * 55ms);
 }
 
-.bcMotionReady .bcReveal.is-visible {
+:where(.bcSiteRoot) .bcMotionReady .bcReveal.is-visible {
   opacity: 1;
   translate: 0 0;
   filter: blur(0);
@@ -1033,75 +1004,75 @@ select {
 /* ---------- responsive ---------- */
 
 @media (min-width: 980px) {
-  .bcHeroGrid {
+  :where(.bcSiteRoot) .bcHeroGrid {
     grid-template-columns: minmax(0, 1.42fr) minmax(300px, 0.58fr) !important;
   }
 }
 
 @media (max-width: 1080px) {
-  .bcNav .bcLink {
+  :where(.bcSiteRoot) .bcNav .bcLink {
     padding-inline: 8px !important;
     letter-spacing: 0.055em !important;
   }
 
-  .bcAccountPill {
+  :where(.bcSiteRoot) .bcAccountPill {
     max-width: 150px;
   }
 }
 
 @media (max-width: 979px) {
-  .bcHeroGrid {
+  :where(.bcSiteRoot) .bcHeroGrid {
     min-height: auto;
     grid-template-columns: minmax(0, 1fr) !important;
   }
 
-  .bcHeroCopy {
+  :where(.bcSiteRoot) .bcHeroCopy {
     min-height: min(680px, calc(var(--app-vh, 100vh) - 160px));
   }
 
-  .bcHeroPanel {
+  :where(.bcSiteRoot) .bcHeroPanel {
     min-height: auto;
   }
 
-  .bcCards {
+  :where(.bcSiteRoot) .bcCards {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
-  .bcHotCard,
-  .bcHotCard:nth-child(1),
-  .bcHotCard:nth-child(2) {
+  :where(.bcSiteRoot) .bcHotCard,
+  :where(.bcSiteRoot) .bcHotCard:nth-child(1),
+  :where(.bcSiteRoot) .bcHotCard:nth-child(2) {
     grid-column: span 1;
   }
 
-  .bcHotCard:nth-child(1) {
+  :where(.bcSiteRoot) .bcHotCard:nth-child(1) {
     grid-column: 1 / -1;
   }
 
-  .bcAtmosphere__sigil,
-  .bcAtmosphere__orbit {
+  :where(.bcSiteRoot) .bcAtmosphere__sigil,
+  :where(.bcSiteRoot) .bcAtmosphere__orbit {
     left: 78%;
     top: 27%;
   }
 
-  .bcAtmosphere__orbit--one {
+  :where(.bcSiteRoot) .bcAtmosphere__orbit--one {
     width: min(72vw, 580px);
   }
 
-  .bcAtmosphere__orbit--two {
+  :where(.bcSiteRoot) .bcAtmosphere__orbit--two {
     width: min(58vw, 460px);
   }
 
-  .bcAtmosphere__orbit--three {
+  :where(.bcSiteRoot) .bcAtmosphere__orbit--three {
     width: min(42vw, 330px);
   }
 
-  .bcAtmosphere__sigil {
+  :where(.bcSiteRoot) .bcAtmosphere__sigil {
     width: min(28vw, 210px);
   }
 }
 
 @media (max-width: 760px) {
-  .bcTop {
+  :where(.bcSiteRoot) .bcTop {
     top: max(8px, env(safe-area-inset-top, 0px)) !important;
     width: calc(100% - 20px) !important;
     padding: 5px 5px 5px 7px !important;
@@ -1110,18 +1081,18 @@ select {
     -webkit-backdrop-filter: blur(18px) saturate(1.08) !important;
   }
 
-  .bcTop .bcNav,
-  .bcTop .bcAccountPill,
-  .bcTop .bcRight > .bcBtn--secondary {
+  :where(.bcSiteRoot) .bcTop .bcNav,
+  :where(.bcSiteRoot) .bcTop .bcAccountPill,
+  :where(.bcSiteRoot) .bcTop .bcRight > .bcBtn--secondary {
     display: none !important;
   }
 
-  .bcBrand {
+  :where(.bcSiteRoot) .bcBrand {
     min-height: 40px;
     padding: 7px 9px !important;
   }
 
-  .bcBrand div {
+  :where(.bcSiteRoot) .bcBrand div {
     font-size: 14px;
   }
 
@@ -1131,171 +1102,168 @@ select {
     border-radius: 13px !important;
   }
 
-  .bcHero {
+  :where(.bcSiteRoot) .bcHero {
     padding:
       92px
       12px
       58px !important;
   }
 
-  .bcHeroCopy,
-  .bcHeroPanel {
+  :where(.bcSiteRoot) .bcHeroCopy,
+  :where(.bcSiteRoot) .bcHeroPanel {
     border-radius: 25px !important;
   }
 
-  .bcHeroCopy {
+  :where(.bcSiteRoot) .bcHeroCopy {
     min-height: min(650px, calc(var(--app-vh, 100vh) - 112px));
     padding: 27px 22px !important;
   }
 
-  .bcHeroCopy::after {
+  :where(.bcSiteRoot) .bcHeroCopy::after {
     top: 20px;
     left: 22px;
     font-size: 8px;
   }
 
-  .bcHeroCopy::before {
+  :where(.bcSiteRoot) .bcHeroCopy::before {
     right: -25%;
     top: -10%;
     width: 82%;
   }
 
-  .bcH1 {
+  :where(.bcSiteRoot) .bcH1 {
     max-width: 11.6ch;
     font-size: clamp(2.7rem, 13vw, 4.15rem) !important;
   }
 
-  .bcLead {
+  :where(.bcSiteRoot) .bcLead {
     font-size: 14px;
   }
 
-  .bcCtas {
+  :where(.bcSiteRoot) .bcCtas {
     display: grid !important;
     grid-template-columns: 1fr 1fr;
   }
 
-  .bcCtas .bcBtn {
+  :where(.bcSiteRoot) .bcCtas .bcBtn {
     width: 100%;
   }
 
-  .bcCtas .bcBtn:first-child {
+  :where(.bcSiteRoot) .bcCtas .bcBtn:first-child {
     grid-column: 1 / -1;
   }
 
-  .bcBadges {
+  :where(.bcSiteRoot) .bcBadges {
     margin-top: 22px !important;
   }
 
-  .bcBadges > span:nth-child(n + 4) {
+  :where(.bcSiteRoot) .bcBadges > span:nth-child(n + 4) {
     display: none !important;
   }
 
-  .bcHeroPanel {
+  :where(.bcSiteRoot) .bcHeroPanel {
     padding: 20px !important;
     transform: none;
   }
 
-  .bcSection {
+  :where(.bcSiteRoot) .bcSection {
     padding: 58px 12px !important;
   }
 
-  .bcCards {
+  :where(.bcSiteRoot) .bcCards {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 
-  .bcHotCard,
-  .bcHotCard:nth-child(1),
-  .bcHotCard:nth-child(2) {
+  :where(.bcSiteRoot) .bcHotCard,
+  :where(.bcSiteRoot) .bcHotCard:nth-child(1),
+  :where(.bcSiteRoot) .bcHotCard:nth-child(2) {
     grid-column: 1 / -1;
     min-height: 390px;
     border-radius: 24px !important;
     transform: none;
   }
 
-  .bcHotCard > div:first-child {
+  :where(.bcSiteRoot) .bcHotCard > div:first-child {
     padding: 23px !important;
   }
 
-  .bcHotCard img {
+  :where(.bcSiteRoot) .bcHotCard img {
     height: 210px !important;
   }
 
-  .bcAtmosphere__cursor,
-  .bcAtmosphere__scan,
-  .bcAtmosphere__orbit--two,
-  .bcAtmosphere__orbit--three {
+  :where(.bcSiteRoot) .bcAtmosphere__cursor,
+  :where(.bcSiteRoot) .bcAtmosphere__scan,
+  :where(.bcSiteRoot) .bcAtmosphere__orbit--two,
+  :where(.bcSiteRoot) .bcAtmosphere__orbit--three {
     display: none;
   }
 
-  .bcAtmosphere__grid {
+  :where(.bcSiteRoot) .bcAtmosphere__grid {
     top: 53%;
     width: 210vw;
     opacity: 0.2;
   }
 
-  .bcAtmosphere__orbit,
-  .bcAtmosphere__sigil {
+  :where(.bcSiteRoot) .bcAtmosphere__orbit,
+  :where(.bcSiteRoot) .bcAtmosphere__sigil {
     left: 84%;
     top: 22%;
   }
 
-  .bcAtmosphere__orbit--one {
+  :where(.bcSiteRoot) .bcAtmosphere__orbit--one {
     width: 86vw;
   }
 
-  .bcAtmosphere__sigil {
+  :where(.bcSiteRoot) .bcAtmosphere__sigil {
     width: 36vw;
   }
 }
 
 @media (max-width: 420px) {
-  .bcCtas {
+  :where(.bcSiteRoot) .bcCtas {
     grid-template-columns: 1fr;
   }
 
-  .bcCtas .bcBtn:first-child {
+  :where(.bcSiteRoot) .bcCtas .bcBtn:first-child {
     grid-column: auto;
   }
 }
 
 @media (hover: none), (pointer: coarse) {
-  .bcHeroPanel,
-  .bcHotCard {
+  :where(.bcSiteRoot) .bcHeroPanel,
+  :where(.bcSiteRoot) .bcHotCard {
     transform: none;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
 
-  .bcAtmosphere__base,
-  .bcAtmosphere__beam,
-  .bcAtmosphere__grid,
-  .bcAtmosphere__orbit,
-  .bcAtmosphere__sigilHalo,
-  .bcAtmosphere__scan {
+  :where(.bcSiteRoot) .bcAtmosphere__base,
+  :where(.bcSiteRoot) .bcAtmosphere__beam,
+  :where(.bcSiteRoot) .bcAtmosphere__grid,
+  :where(.bcSiteRoot) .bcAtmosphere__orbit,
+  :where(.bcSiteRoot) .bcAtmosphere__sigilHalo,
+  :where(.bcSiteRoot) .bcAtmosphere__scan {
     animation: none !important;
   }
 
-  .bcAtmosphere__cursor {
+  :where(.bcSiteRoot) .bcAtmosphere__cursor {
     display: none;
   }
 
-  .bcMotionReady .bcReveal,
-  .bcMotionReady .bcReveal.is-visible {
+  :where(.bcSiteRoot) .bcMotionReady .bcReveal,
+  :where(.bcSiteRoot) .bcMotionReady .bcReveal.is-visible {
     opacity: 1;
     translate: none;
     filter: none;
     transition: none;
   }
 
-  .bcHeroPanel,
-  .bcHotCard,
-  .bcPanelRow,
+  :where(.bcSiteRoot) .bcHeroPanel,
+  :where(.bcSiteRoot) .bcHotCard,
+  :where(.bcSiteRoot) .bcPanelRow,
   .bcSiteRoot .bcBtn,
-  .bcHotCard img {
+  :where(.bcSiteRoot) .bcHotCard img {
     transform: none !important;
     translate: none !important;
     transition: none !important;
@@ -1303,9 +1271,9 @@ select {
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .bcTop,
-  .bcHeroCopy,
-  .bcHeroPanel,
+  :where(.bcSiteRoot) .bcTop,
+  :where(.bcSiteRoot) .bcHeroCopy,
+  :where(.bcSiteRoot) .bcHeroPanel,
   .bcSiteRoot .glassStrong {
     background-color: rgba(12, 12, 11, 0.96) !important;
   }

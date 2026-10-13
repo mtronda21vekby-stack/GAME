@@ -1,0 +1,108 @@
+{
+  "schema": "raze-native-character-source-pack/1",
+  "id": "original-human-01",
+  "sourceSHA256": "c6ab1373d6ddfbbb0ee9493ff5d4e6248e62b552635bf20d9cc094103e49093f",
+  "skin": 1,
+  "parts": {
+    "head": [
+      {
+        "symbol": 457,
+        "texture": "OriginalParts/SsNeck",
+        "left": -9.75,
+        "top": -11.7,
+        "width": 18.5,
+        "height": 18.25,
+        "file": "Assets/Resources/OriginalParts/SsNeck.png",
+        "sha256": "caf583617185215204966eeeb7f87d52b55311cec6b032ff676e57523a3d0ea7"
+      },
+      {
+        "symbol": 758,
+        "texture": "OriginalParts/SsHead",
+        "left": -27.5,
+        "top": -22.55,
+        "width": 77.05,
+        "height": 39.55,
+        "file": "Assets/Resources/OriginalParts/SsHead.png",
+        "sha256": "32c3542698f74395cb1a85ef24f3031bb48eb7748495e1432c5cbf6feb09d4e7"
+      }
+    ],
+    "body": [
+      {
+        "symbol": 315,
+        "texture": "OriginalParts/SsUpperArm",
+        "left": -8.1,
+        "top": -20.55,
+        "width": 19.65,
+        "height": 41.7,
+        "file": "Assets/Resources/OriginalParts/SsUpperArm.png",
+        "sha256": "421b518b366827968b2f5abb62c2503cdf7207965267f8061c6596fab7c53f9a"
+      },
+      {
+        "symbol": 371,
+        "texture": "OriginalParts/SsLowerArm",
+        "left": -7.4,
+        "top": -15.8,
+        "width": 13.7,
+        "height": 29.15,
+        "file": "Assets/Resources/OriginalParts/SsLowerArm.png",
+        "sha256": "684b650e16589e57699109757a9747f7d74630f26676e58db2c54597189c576e"
+      },
+      {
+        "symbol": 402,
+        "texture": "OriginalParts/SsHand",
+        "left": -4.15,
+        "top": -5.85,
+        "width": 9.75,
+        "height": 11.3,
+        "file": "Assets/Resources/OriginalParts/SsHand.png",
+        "sha256": "0d280afc86c83153496a02face4d6a2ffb1859983bb88e7ccf26e87c29dff9dd"
+      },
+      {
+        "symbol": 682,
+        "texture": "OriginalParts/SsBody",
+        "left": -17.75,
+        "top": -29.0,
+        "width": 31.6,
+        "height": 53.75,
+        "file": "Assets/Resources/OriginalParts/SsBody.png",
+        "sha256": "4c8bf3fe5a924a98d0db38753021324430b6c25796f08425806c78177a32e3dd"
+      }
+    ],
+    "legs": [
+      {
+        "symbol": 487,
+        "texture": "OriginalParts/SsFoot",
+        "left": -13.6,
+        "top": -7.3,
+        "width": 24.6,
+        "height": 12.65,
+        "file": "Assets/Resources/OriginalParts/SsFoot.png",
+        "sha256": "cf866f695dd1a06cff44d267450b1b1f71c62e414c0598229ace9b891be76983"
+      },
+      {
+        "symbol": 551,
+        "texture": "OriginalParts/SsLowerLeg",
+        "left": -11.0,
+        "top": -20.0,
+        "width": 23.1,
+        "height": 38.1,
+        "file": "Assets/Resources/OriginalParts/SsLowerLeg.png",
+        "sha256": "5a6fad06bf23d6cdd220be145a5603b62a5aa0438632f79314bbc234e554a034"
+      },
+      {
+        "symbol": 617,
+        "texture": "OriginalParts/SsUpperLeg",
+        "left": -10.85,
+        "top": -22.0,
+        "width": 21.25,
+        "height": 45.1,
+        "file": "Assets/Resources/OriginalParts/SsUpperLeg.png",
+        "sha256": "9a8ca8ae26ffcdb48121c1418a275a1f9a70cdb34eb76ab643857b3e3d88ddfe"
+      }
+    ]
+  },
+  "animationRig": "Assets/Resources/OriginalHumanRig.json",
+  "runtimeImportAvailable": false,
+  "art": "Unchanged private source exports; not new 4K art",
+  "mechanics": "Default source movement/weapon data are separate; changing part graphics does not change physical hitboxes."
+}

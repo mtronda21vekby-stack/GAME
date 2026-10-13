@@ -73,7 +73,7 @@
   left: 0;
   min-height: calc(66px + env(safe-area-inset-top));
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) auto minmax(220px, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
   gap: 20px;
   padding: max(10px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) 10px max(18px, env(safe-area-inset-left));
@@ -111,27 +111,40 @@
 .bcExperienceChapterRail a[aria-current="step"] { color: var(--bc-shell-cyan); border-color: var(--bc-shell-cyan); }
 
 .bcExperienceChrome__controls { justify-self: end; display: flex; align-items: center; gap: 4px; }
-.bcExperienceChrome__menuButton { min-width: 58px; font-size: 9px; font-family: ui-monospace, monospace; }
+.bcExperienceChrome__menuButton { min-width: 58px; font-size: 10px; font-family: ui-monospace, monospace; }
 .bcExperienceChrome .bcNexusQuality button,
 .bcExperienceChrome .bcNexusSound { min-height: 44px; }
+.bcExperienceChrome .bcNexusQuality button,
+.bcExperienceChrome .bcNexusSound { color: rgba(220, 241, 248, .72); }
+.bcExperienceChrome .bcNexusQuality button[aria-checked="true"],
+.bcExperienceChrome .bcNexusSound[aria-pressed="true"] { color: var(--bc-shell-cyan); }
 
-.bcExperienceMenu { position: fixed; z-index: 120; inset: 0; display: grid; justify-items: end; }
+.bcExperienceContinue { position: fixed; z-index: 8; bottom: max(20px, env(safe-area-inset-bottom)); left: clamp(24px, 7vw, 112px); min-height: 44px; display: inline-flex; align-items: center; gap: 16px; color: rgba(215, 239, 242, .72); font: 700 10px/1 ui-monospace, monospace; }
+.bcExperienceContinue::before { content: ""; width: 40px; height: 1px; background: rgba(105, 233, 245, .48); }
+.bcExperienceContinue > span:last-child { color: var(--bc-shell-cyan); font-size: 18px; }
+
+.bcExperienceMenu { position: fixed; z-index: 120; inset: 0; display: grid; justify-items: end; overscroll-behavior: contain; }
 .bcExperienceMenu__backdrop { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: rgba(0, 2, 4, .76); }
 .bcExperienceMenu__panel {
   position: relative;
   width: min(460px, 100%);
-  height: 100%;
+  box-sizing: border-box;
+  height: 100dvh;
+  max-height: 100%;
+  min-height: 0;
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   padding: max(18px, env(safe-area-inset-top)) max(22px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) 28px;
   border-left: 1px solid rgba(105, 233, 245, .2);
   background: #04090d;
 }
 .bcExperienceMenu__panel header { min-height: 58px; display: flex; align-items: center; justify-content: space-between; gap: 18px; color: var(--bc-shell-cyan); font: 700 10px/1 ui-monospace, monospace; }
 .bcExperienceMenu__panel button { min-width: 64px; min-height: 44px; border: 0; color: #effbfc; background: transparent; font: 700 9px/1 ui-monospace, monospace; }
-.bcExperienceMenu__panel nav { display: grid; align-content: center; }
+.bcExperienceMenu__panel nav { min-height: 0; display: grid; align-content: safe center; overflow-y: auto; overscroll-behavior: contain; }
 .bcExperienceMenu__panel nav a { min-height: 58px; display: grid; grid-template-columns: 42px 1fr; align-items: center; border-bottom: 1px solid rgba(114, 204, 212, .11); color: rgba(235, 248, 249, .82); font: 800 14px/1 Inter, system-ui, sans-serif; }
 .bcExperienceMenu__panel nav a span { color: rgba(105, 233, 245, .56); font: 700 9px/1 ui-monospace, monospace; }
+.bcExperienceMenu__panel nav a[aria-current="step"] { color: var(--bc-shell-cyan); }
+.bcExperienceMenu__panel nav a:hover { color: #effdff; background: rgba(105, 233, 245, .05); }
 .bcExperienceMenu__panel footer { min-height: 54px; display: flex; align-items: center; gap: 22px; }
 .bcExperienceMenu__panel footer a { min-height: 44px; display: flex; align-items: center; color: rgba(213, 235, 238, .62); font: 700 9px/1 ui-monospace, monospace; }
 
@@ -176,7 +189,7 @@
 .bcExperienceStoryChapter[data-tone="tactical"] .bcExperienceSceneCopy > span,
 .bcExperienceStoryChapter[data-tone="tactical"] .bcExperienceSceneCopy > small { color: var(--bc-shell-orange); }
 .bcExperienceSceneCopy h1,
-.bcExperienceSceneCopy h2 { max-width: 11ch; margin: 18px 0 0; font: 900 clamp(3rem, 5.5vw, 5.9rem)/.9 Inter, system-ui, sans-serif; letter-spacing: 0; text-wrap: balance; }
+.bcExperienceSceneCopy h2 { max-width: 11ch; margin: 18px 0 0; font: 900 clamp(3rem, 5.5vw, 5.9rem)/.95 Inter, system-ui, sans-serif; letter-spacing: -.035em; text-wrap: balance; }
 .bcExperienceStoryChapter[data-layout="hero-left"] .bcExperienceSceneCopy h1 { font-size: clamp(3.2rem, 5.25vw, 5.7rem); }
 .bcExperienceStoryChapter[data-layout="editorial-low-left"] .bcExperienceSceneCopy h2 { font-size: clamp(3rem, 4.8vw, 5.2rem); }
 .bcExperienceStoryChapter[data-layout="tactical-right"] .bcExperienceSceneCopy h2 { max-width: 10ch; margin-left: auto; font-size: clamp(2.8rem, 4.1vw, 4.7rem); }
@@ -190,6 +203,9 @@
 .bcExperienceAction { min-height: 46px; display: inline-flex; align-items: center; padding: 0 17px; border: 1px solid rgba(127, 218, 226, .22); border-radius: 4px; color: #effbfc; background: rgba(2, 9, 13, .66); font: 800 10px/1 Inter, system-ui, sans-serif; }
 .bcExperienceAction[data-kind="primary"] { border-color: transparent; color: #021014; background: #a5f4f8; }
 .bcExperienceAction[data-kind="tactical"] { border-color: rgba(255, 138, 69, .5); color: #ffd6bb; background: rgba(35, 12, 4, .72); }
+.bcExperienceAction:hover { border-color: rgba(127, 218, 226, .62); background: rgba(10, 30, 37, .9); }
+.bcExperienceAction[data-kind="primary"]:hover { background: #d8fcfe; }
+.bcExperienceAction[data-kind="tactical"]:hover { border-color: #ff8a45; background: rgba(60, 22, 8, .9); }
 
 .bcExperienceWorldIndex { display: grid; grid-template-columns: repeat(3, minmax(92px, 1fr)); gap: 5px; margin-top: 24px; }
 .bcExperienceWorldIndex a { min-height: 44px; display: grid; place-items: center; border-bottom: 1px solid rgba(105, 233, 245, .18); color: rgba(224, 242, 244, .64); font: 700 9px/1 ui-monospace, monospace; }
@@ -205,7 +221,7 @@
 
 .bcExperienceFooter { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin-top: 24px; padding-top: 14px; border-top: 1px solid rgba(116, 208, 216, .12); }
 .bcExperienceFooter a,
-.bcExperienceFooter span { min-height: 36px; display: inline-flex; align-items: center; color: rgba(198, 222, 225, .5); font: 700 8px/1 ui-monospace, monospace; }
+.bcExperienceFooter span { min-height: 44px; display: inline-flex; align-items: center; color: rgba(198, 222, 225, .64); font: 700 10px/1 ui-monospace, monospace; }
 
 .bcExperienceBoot {
   position: fixed;
@@ -256,6 +272,7 @@
   .bcExperienceChrome__controls { gap: 0; }
   .bcExperienceChrome .bcNexusSound { min-width: 62px; }
   .bcExperienceChrome__menuButton { min-width: 52px; }
+  .bcExperienceContinue { bottom: max(8px, env(safe-area-inset-bottom)); left: max(18px, env(safe-area-inset-left)); font-size: 9px; }
   .bcExperienceStoryChapter { min-height: calc(var(--bc-chapter-mobile-vh) * 1svh); padding: 88px 18px 92px; }
   .bcExperienceSceneCopy,
   .bcExperienceStoryChapter[data-layout] .bcExperienceSceneCopy {
@@ -278,8 +295,8 @@
   .bcExperienceStoryChapter[data-layout="tactical-right"] .bcExperienceSceneActions,
   .bcExperienceStoryChapter[data-layout="final-center"] .bcExperienceSceneActions,
   .bcExperienceStoryChapter[data-layout="final-center"] .bcExperienceFooter { justify-content: flex-start; }
-  .bcExperienceSceneCopy h1,
-  .bcExperienceSceneCopy h2 { max-width: 12ch; margin-top: 12px; font-size: clamp(2.25rem, 10.4vw, 3.45rem); overflow-wrap: anywhere; }
+  .bcExperienceStoryChapter[data-layout] .bcExperienceSceneCopy h1,
+  .bcExperienceStoryChapter[data-layout] .bcExperienceSceneCopy h2 { max-width: 13ch; margin: 12px 0 0; font-size: clamp(2rem, 9.2vw, 3.1rem); line-height: .98; overflow-wrap: normal; }
   .bcExperienceSceneCopy p { max-width: 32ch; margin-top: 14px; font-size: .95rem; line-height: 1.45; }
   .bcExperienceSceneCopy p[data-mobile-hide="true"] { display: none; }
   .bcExperienceSceneActions { margin-top: 16px; }
@@ -295,18 +312,23 @@
 }
 
 @media (max-height: 520px) and (orientation: landscape) {
+  .bcExperienceSkeletonDebug,
+  .bcExperienceShell .bcNexusDebug { display: none; }
   .bcExperienceChrome { min-height: 48px; grid-template-columns: auto 1fr auto; padding: max(3px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) 2px max(8px, env(safe-area-inset-left)); }
   .bcExperienceChrome__identity span { display: none; }
   .bcExperienceChapterRail { display: flex; }
   .bcExperienceChapterRail a { width: 34px; }
   .bcExperienceStoryChapter { min-height: calc(var(--bc-chapter-landscape-vh) * 1svh); }
+  .bcExperienceContinue { right: max(16px, env(safe-area-inset-right)); bottom: max(8px, env(safe-area-inset-bottom)); left: auto; }
   .bcExperienceSceneCopy,
   .bcExperienceStoryChapter[data-layout] .bcExperienceSceneCopy { top: 54px; right: auto; bottom: auto; left: max(24px, env(safe-area-inset-left)); width: min(440px, 54vw); max-height: calc(100svh - 62px); padding: 10px 20px 12px 0; background: linear-gradient(90deg, rgba(1, 4, 7, .94), rgba(1, 4, 7, .54) 78%, transparent); text-align: left; transform: none; }
-  .bcExperienceSceneCopy h1,
-  .bcExperienceSceneCopy h2 { margin-top: 8px; font-size: clamp(2rem, 6.6vw, 3.2rem); }
+  .bcExperienceStoryChapter[data-layout] .bcExperienceSceneCopy h1,
+  .bcExperienceStoryChapter[data-layout] .bcExperienceSceneCopy h2 { margin-top: 8px; font-size: clamp(2rem, 5vw, 2.6rem); line-height: .98; }
   .bcExperienceSceneCopy p { margin-top: 9px; font-size: .84rem; line-height: 1.35; }
   .bcExperienceSceneActions { margin-top: 10px; }
-  .bcExperienceWorldIndex { margin-top: 10px; }
+  .bcExperienceWorldIndex { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 10px; }
+  .bcExperienceStoryChapter[data-layout="network-right"] .bcExperienceSceneCopy { padding-bottom: 8px; }
+  .bcExperienceStoryChapter[data-layout="network-right"] .bcExperienceSceneCopy h2 { font-size: clamp(2rem, 4.5vw, 2.35rem); }
 }
 
 @media (prefers-reduced-motion: reduce) {

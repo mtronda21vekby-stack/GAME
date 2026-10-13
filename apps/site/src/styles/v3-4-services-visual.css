@@ -1,65 +1,27 @@
-/* BLACKCROWN V3.4 — premium service scene pass. Scoped to V3 homepage sections only. */
-
-.bcPlatformV3__shell,
-.bcStoreV3__shell,
-.bcCoachV3__shell {
+/* BLACKCROWN Home services: a shared rhythm, type scale and purposeful surfaces. */
+.bcPlatformV3__shell {
   position: relative;
   overflow: hidden;
-  border-color: rgba(121, 229, 255, 0.12) !important;
-  box-shadow:
-    0 42px 120px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.055) !important;
+  border-color: rgba(121, 229, 255, .12) !important;
+  box-shadow: 0 42px 120px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .055) !important;
 }
 
-.bcPlatformV3__shell::before,
-.bcStoreV3__shell::before,
-.bcCoachV3__shell::before {
+.bcPlatformV3__shell::before {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background:
-    linear-gradient(115deg, rgba(255,255,255,.025), transparent 24% 68%, rgba(255,255,255,.018)),
-    radial-gradient(circle at 12% 8%, rgba(0,229,255,.075), transparent 30%);
-}
-
-.bcStoreV3__shell::before {
-  background:
-    linear-gradient(115deg, rgba(255,255,255,.028), transparent 24% 70%, rgba(255,255,255,.018)),
-    radial-gradient(circle at 76% 18%, rgba(255,112,52,.12), transparent 34%),
-    radial-gradient(circle at 92% 72%, rgba(126,92,255,.07), transparent 30%);
-}
-
-.bcCoachV3__shell::before {
-  background:
-    linear-gradient(115deg, rgba(255,255,255,.025), transparent 24% 70%, rgba(255,255,255,.016)),
-    radial-gradient(circle at 18% 22%, rgba(126,92,255,.12), transparent 35%),
-    radial-gradient(circle at 88% 76%, rgba(0,229,255,.07), transparent 28%);
+  background: linear-gradient(115deg, rgba(255,255,255,.025), transparent 24% 68%, rgba(255,255,255,.018)), radial-gradient(circle at 12% 8%, rgba(0,229,255,.075), transparent 30%);
 }
 
 .bcPlatformV3__copy,
-.bcStoreV3__copy,
-.bcCoachV3__copy,
-.bcPlatformV3__visual,
-.bcStoreV3__visual,
-.bcCoachV3__visual {
+.bcPlatformV3__visual {
   position: relative;
   z-index: 2;
 }
 
-.bcPlatformV3__visual,
-.bcCoachV3__visual {
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.065),
-    0 30px 90px rgba(0,0,0,.42),
-    0 0 0 1px rgba(0,229,255,.055);
-}
-
-.bcCoachV3__visual {
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.065),
-    0 30px 90px rgba(0,0,0,.42),
-    0 0 70px rgba(126,92,255,.065);
+.bcPlatformV3__visual {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.065), 0 30px 90px rgba(0,0,0,.42), 0 0 0 1px rgba(0,229,255,.055);
 }
 
 .bcPlatformV3__module {
@@ -75,151 +37,177 @@
   box-shadow: 0 0 14px rgba(var(--module-rgb), .72);
 }
 
-.bcStoreV3__features article {
+.bcStoreV3,
+.bcCoachV3,
+.bcLiveFeedV3 {
   position: relative;
-  overflow: hidden;
-  min-height: 118px;
-  background:
-    linear-gradient(145deg, rgba(255,255,255,.025), transparent 32%),
-    rgba(4,8,13,.62);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+  z-index: 2;
+  width: min(1280px, calc(100% - 64px));
+  margin: clamp(64px, 7vw, 100px) auto 0;
+  padding: 0;
 }
 
-.bcStoreV3__features article::after {
-  content: "";
-  position: absolute;
-  left: 14px;
-  right: 14px;
-  bottom: 0;
-  height: 1px;
-  background: linear-gradient(90deg, rgba(255,115,55,.62), transparent);
-  opacity: .5;
+.bcLiveFeedV3 {
+  margin-bottom: 112px;
 }
 
-.bcStoreV3__orb {
-  width: 64%;
-  background:
-    radial-gradient(circle at 36% 27%, rgba(255,255,255,.74), rgba(255,130,64,.25) 16%, rgba(126,92,255,.14) 47%, transparent 70%);
-  box-shadow:
-    0 0 90px rgba(255,105,45,.18),
-    0 0 150px rgba(126,92,255,.07);
+.bcStoreV3__shell,
+.bcCoachV3__shell {
+  display: block;
+  padding: clamp(28px, 4vw, 52px);
+  border: 1px solid rgba(123, 230, 246, .16);
+  border-radius: 26px;
+  background: linear-gradient(135deg, #101c28, #050b12 70%);
+  box-shadow: 0 24px 72px rgba(0, 0, 0, .24), inset 0 1px 0 rgba(255, 255, 255, .04);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
-.bcStoreV3__card {
-  backdrop-filter: blur(16px) saturate(1.15);
-  -webkit-backdrop-filter: blur(16px) saturate(1.15);
-  box-shadow:
-    0 34px 90px rgba(0,0,0,.62),
-    0 0 44px rgba(255,105,45,.05),
-    inset 0 1px 0 rgba(255,255,255,.11);
+.bcCoachV3__shell {
+  border-color: rgba(167, 151, 244, .2);
+  background: linear-gradient(135deg, #101322, #060b13 70%);
 }
 
-.bcCoachV3__features span {
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+.bcStoreV3__shell .bcGlassSurface__noise,
+.bcCoachV3__shell .bcGlassSurface__noise,
+.bcLiveFeedV3__block .bcGlassSurface__noise {
+  display: none;
 }
 
-.bcLiveFeedV3__head {
-  padding: 0 2px;
+.bcStoreV3__eyebrow,
+.bcCoachV3__eyebrow {
+  color: #96d3df;
+  font: 650 11px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: .12em;
 }
 
-.bcLiveFeedV3__block {
-  position: relative;
-  overflow: hidden;
-  border-color: rgba(0,229,255,.11) !important;
-  box-shadow:
-    0 28px 78px rgba(0,0,0,.4),
-    inset 0 1px 0 rgba(255,255,255,.04) !important;
+.bcCoachV3__eyebrow {
+  color: #b6a9ed;
 }
 
-.bcLiveFeedV3__block::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(circle at 92% 6%, rgba(0,229,255,.07), transparent 34%);
+.bcStoreV3 h2,
+.bcCoachV3__copy h2 {
+  max-width: 14ch;
+  margin: 18px 0 0;
+  color: #f2f8fc;
+  font-size: clamp(38px, 4.4vw, 64px);
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -.05em;
+  text-wrap: balance;
 }
 
-.bcLiveFeedV3__cards article {
-  position: relative;
-  overflow: hidden;
-  min-height: 96px;
-  background: linear-gradient(145deg, rgba(7,18,26,.68), rgba(2,7,12,.52));
+.bcStoreV3__copy > p,
+.bcCoachV3__copy > p {
+  max-width: 48ch;
+  margin: 22px 0 0;
+  color: #aabcc9;
+  font-size: 16px;
+  line-height: 1.65;
 }
 
-.bcLiveFeedV3__cards article::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 14px;
-  bottom: 14px;
-  width: 2px;
-  border-radius: 99px;
-  background: rgb(0,229,255);
-  box-shadow: 0 0 14px rgba(0,229,255,.7);
-  opacity: .52;
+.bcStoreV3__actions,
+.bcCoachV3__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 30px;
 }
 
-@media (hover:hover) and (pointer:fine) {
-  .bcStoreV3__features article,
-  .bcLiveFeedV3__cards article {
-    transition: transform 240ms cubic-bezier(.16,1,.3,1), border-color 240ms ease, box-shadow 240ms ease;
+.bcHomeV3 .bcServiceV3__button {
+  min-height: 48px !important;
+  padding: 12px 18px !important;
+  border-radius: 12px !important;
+  font-size: 14px !important;
+  font-weight: 650 !important;
+  line-height: 1.4;
+  gap: 18px !important;
+}
+
+.bcHomeV3 .bcServiceV3__button--primary {
+  color: #041019 !important;
+  border-color: #a5edfa !important;
+  background: linear-gradient(135deg, #b1f0fa, #70d4e9) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35);
+}
+
+.bcHomeV3 .bcServiceV3__button--secondary {
+  color: #d8e7ef !important;
+  border-color: rgba(172, 205, 221, .3) !important;
+  background: rgba(173, 211, 234, .035) !important;
+}
+
+@media (hover: hover) {
+  .bcHomeV3 .bcServiceV3__button--primary:hover {
+    background: #b8f3fc !important;
   }
-  .bcStoreV3__features article:hover,
-  .bcLiveFeedV3__cards article:hover {
-    transform: translateY(-3px);
-    border-color: rgba(0,229,255,.2);
-    box-shadow: 0 20px 54px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05);
+
+  .bcHomeV3 .bcServiceV3__button--secondary:hover {
+    border-color: rgba(172, 205, 221, .6) !important;
+    background: rgba(173, 211, 234, .08) !important;
   }
 }
 
-@media (max-width:600px) {
-  .bcPlatformV3,
-  .bcStoreV3,
-  .bcCoachV3,
-  .bcLiveFeedV3 {
+@media (max-width: 600px) {
+  .bcPlatformV3 {
     width: min(100% - 20px, 1460px);
   }
 
-  .bcPlatformV3__shell,
-  .bcStoreV3__shell,
-  .bcCoachV3__shell {
+  .bcPlatformV3__shell {
     border-radius: 27px !important;
   }
 
-  .bcPlatformV3__visual,
-  .bcCoachV3__visual {
+  .bcPlatformV3__visual {
     min-height: 300px;
     border-radius: 21px;
   }
 
-  .bcStoreV3__shell {
-    padding: 18px;
-    gap: 12px;
+  .bcStoreV3,
+  .bcCoachV3,
+  .bcLiveFeedV3 {
+    width: calc(100% - 32px);
+    margin-top: 56px;
   }
 
-  .bcStoreV3__visual {
-    min-height: 360px;
-    margin-top: -8px;
+  .bcLiveFeedV3 {
+    margin-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
   }
 
-  .bcStoreV3__features {
-    gap: 8px;
+  .bcStoreV3__shell,
+  .bcCoachV3__shell {
+    padding: 22px;
+    border-radius: 22px;
   }
 
-  .bcStoreV3__features article {
-    min-height: 100px;
-    padding: 15px;
+  .bcStoreV3 h2,
+  .bcCoachV3__copy h2 {
+    margin-top: 16px;
+    font-size: clamp(34px, 9.3vw, 48px);
+    line-height: 1.08;
+    letter-spacing: -.045em;
   }
 
-  .bcLiveFeedV3__head h2 {
-    max-width: 9ch;
+  .bcStoreV3__copy > p,
+  .bcCoachV3__copy > p {
+    margin-top: 18px;
+    font-size: 15px;
+  }
+
+  .bcStoreV3__actions,
+  .bcCoachV3__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 24px;
+  }
+
+  .bcHomeV3 .bcServiceV3__button {
+    width: 100%;
   }
 }
 
-@media (prefers-reduced-motion:reduce) {
-  .bcStoreV3__features article,
-  .bcLiveFeedV3__cards article {
+@media (prefers-reduced-motion: reduce) {
+  .bcHomeV3 .bcServiceV3__button {
     transition: none !important;
-    transform: none !important;
   }
 }

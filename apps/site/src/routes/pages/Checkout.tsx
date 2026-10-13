@@ -4,10 +4,11 @@ import CommerceHeader from "../../components/CommerceHeader";
 import { nav } from "../../lib/nav";
 import { formatCoins } from "../../lib/store";
 import {
-  clearCart,
+  clearCartIfUnchanged,
   createCheckoutIdempotencyKey,
   getCartCount,
   getCartItems,
+  isCartUnchanged,
   requestCommerceQuote,
   submitMockCheckout,
   type CommerceQuote,
@@ -20,7 +21,9 @@ export function Checkout() {
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState("");
   const idempotencyKeyRef = React.useRef(createCheckoutIdempotencyKey());
+  const submittingRef = React.useRef(false);
   const cartItems = React.useMemo(getCartItems, []);
+  const cartLines = React.useMemo(() => cartItems.map(({ item, quantity }) => ({ itemId: item.id, quantity })), [cartItems]);
   const cartCount = cartItems.reduce((sum, line) => sum + line.quantity, 0);
   const fallbackTotal = cartItems.reduce((sum, line) => sum + line.lineTotal, 0);
 
@@ -33,7 +36,7 @@ export function Checkout() {
     const controller = new AbortController();
     setLoading(true);
     setError("");
-    void requestCommerceQuote(controller.signal)
+    void requestCommerceQuote(cartLines, controller.signal)
       .then((nextQuote) => setQuote(nextQuote))
       .catch((reason: unknown) => {
         if (!controller.signal.aborted) {
@@ -45,19 +48,25 @@ export function Checkout() {
       });
 
     return () => controller.abort();
-  }, [cartItems.length]);
+  }, [cartLines]);
 
   async function placeOrder() {
-    if (submitting || !cartItems.length) return;
+    if (submittingRef.current || loading || !quote || !cartItems.length) return;
+    if (!isCartUnchanged(cartLines)) {
+      setError("Корзина изменилась. Вернись в корзину и проверь заказ перед оплатой.");
+      return;
+    }
+    submittingRef.current = true;
     setSubmitting(true);
     setError("");
 
     try {
-      const order = await submitMockCheckout(idempotencyKeyRef.current);
-      clearCart();
+      const order = await submitMockCheckout(idempotencyKeyRef.current, cartLines);
+      clearCartIfUnchanged(cartLines);
       nav(`/checkout/success?order=${encodeURIComponent(order.id)}`);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Не удалось создать заказ.");
+      submittingRef.current = false;
       setSubmitting(false);
     }
   }

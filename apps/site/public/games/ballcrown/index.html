@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#03080d">
+  <meta name="description" content="BALLCROWN в BLACKCROWN. Запуск браузерной игры с клавиатурой, сенсорным управлением или совместимым геймпадом.">
+  <title>BALLCROWN — BLACKCROWN</title>
+  <link rel="stylesheet" href="./launcher.css">
+  <script type="module" src="./launcher.mjs"></script>
+</head>
+<body>
+  <main class="launcher" aria-labelledby="game-title">
+    <header class="masthead">
+      <a class="wordmark" href="/" aria-label="BLACKCROWN — на главную">BLACKCROWN<span aria-hidden="true"> / </span><span>PLAY</span></a>
+      <span class="mode-label">WEB GAME</span>
+    </header>
+
+    <section class="game-entry">
+      <div class="game-copy">
+        <p class="eyebrow"><span aria-hidden="true"></span> BLACKCROWN WORLD</p>
+        <h1 id="game-title">BALL<span>CROWN</span></h1>
+        <p class="intro">Игра в твоём браузере.</p>
+        <p class="description">Запусти игру прямо в браузере. Выбери клавиатуру, сенсорное управление или подключи совместимый Xbox-геймпад.</p>
+
+        <div class="actions" aria-label="Запуск игры">
+          <button class="action action-primary" id="start-button" type="button" data-shell-action aria-describedby="release-status"><span>Играть</span><span aria-hidden="true">↗</span></button>
+          <button class="action action-secondary" id="controls-button" type="button" data-shell-action aria-haspopup="dialog">Управление</button>
+          <a class="action action-back" id="back-button" href="/" data-shell-action><span aria-hidden="true">←</span> На сайт</a>
+        </div>
+
+        <div class="release-note" role="status" aria-live="polite" aria-atomic="true">
+          <span class="status-mark" aria-hidden="true"></span>
+          <p id="release-status">Сборка подключается. Нажми «Играть», чтобы проверить готовность.</p>
+        </div>
+      </div>
+
+      <div class="game-art" aria-hidden="true">
+        <div class="orbit orbit-outer"></div>
+        <div class="orbit orbit-inner"></div>
+        <div class="sphere"><div class="sphere-seam"></div><div class="sphere-seam sphere-seam-cross"></div></div>
+        <div class="art-caption"><span>01 / BALLCROWN</span><span>BLACKCROWN</span></div>
+      </div>
+    </section>
+
+    <footer class="launcher-footer">
+      <div class="controller-note"><span class="controller-dot" id="controller-dot" aria-hidden="true"></span><p id="controller-status">Подключи геймпад и нажми любую кнопку.</p></div>
+      <p class="navigation-hint"><kbd>↑</kbd><kbd>↓</kbd> выбрать <kbd>A</kbd> открыть <kbd>B</kbd> назад</p>
+      <p class="save-note">Локальные сохранения привязаны к этому браузеру. Запуск на консоли Xbox требует проверки её браузера.</p>
+    </footer>
+  </main>
+
+  <dialog id="controls-dialog" aria-labelledby="controls-title">
+    <div class="controls-card">
+      <p class="eyebrow">BEFORE YOU PLAY</p>
+      <h2 id="controls-title">Выбери управление</h2>
+      <p>В этой оболочке используй D-pad или левый стик для выбора, A для подтверждения и B для возврата. Клавиатура: стрелки, Tab, Enter и Escape.</p>
+      <p>Для обнаружения геймпада подключи его к устройству и нажми кнопку, пока страница активна. В игре действует её собственное управление.</p>
+      <p>Полный экран и звук включаются средствами игры. Браузер может потребовать нажатие или касание на странице.</p>
+      <p class="controls-footnote">Сохранения зависят от данных этого браузера. Очистка данных сайта удаляет локальный прогресс.</p>
+      <button class="action action-primary" id="close-controls" type="button" data-shell-action>Понятно <span aria-hidden="true">↗</span></button>
+    </div>
+  </dialog>
+</body>
+</html>

@@ -1,0 +1,514 @@
+{
+  "schemaVersion": 1,
+  "version": "0.22.0",
+  "revision": "v19-direct-twin-stick-angle-visible-guide",
+  "sourceArchiveSHA256": "bca48fdbeba199708b7801c4deb7bf781402846b2b09892821e162f3416c16d5",
+  "sourceReceiptSHA256": "70144849a4c4656f2b7ae2b2595cdbb7eae9ce59eb5b5ac6c96bd240c248a6b1",
+  "chunkBytes": 16777216,
+  "publicBase": "/games/ballcrown/play/",
+  "virtualFiles": [
+    {
+      "path": "Build/BuildWeb.data",
+      "bytes": 46347813,
+      "sha256": "ea119797a5db26fe883c184cdb7db2b8b676a773dd9b5fedee6ff96dc36461d3",
+      "contentType": "application/octet-stream",
+      "chunks": [
+        {
+          "path": "Build/chunks/BuildWeb.data.ea119797a5db26fe883c184cdb7db2b8b676a773dd9b5fedee6ff96dc36461d3.000.bin",
+          "offset": 0,
+          "bytes": 16777216,
+          "sha256": "8cc1856224408917975fe69bb2dd3205c7b4b8f08fd6a5ff1380a04af20227ec"
+        },
+        {
+          "path": "Build/chunks/BuildWeb.data.ea119797a5db26fe883c184cdb7db2b8b676a773dd9b5fedee6ff96dc36461d3.001.bin",
+          "offset": 16777216,
+          "bytes": 16777216,
+          "sha256": "ce30ade605ba8254e5af5ff4c7743a1c31b47c4f5bc658ba2a21ae372fa780d5"
+        },
+        {
+          "path": "Build/chunks/BuildWeb.data.ea119797a5db26fe883c184cdb7db2b8b676a773dd9b5fedee6ff96dc36461d3.002.bin",
+          "offset": 33554432,
+          "bytes": 12793381,
+          "sha256": "b94be99ffa0a8037bb7ae4b8dd2be280890b407501751bef1e9db8cebf567786"
+        }
+      ]
+    },
+    {
+      "path": "Build/BuildWeb.wasm",
+      "bytes": 26514842,
+      "sha256": "a3e41704a1dacd49b18ab9d30d03fe669016e161c058236f081fdba16e6ceb7d",
+      "contentType": "application/wasm",
+      "chunks": [
+        {
+          "path": "Build/chunks/BuildWeb.wasm.a3e41704a1dacd49b18ab9d30d03fe669016e161c058236f081fdba16e6ceb7d.000.bin",
+          "offset": 0,
+          "bytes": 16777216,
+          "sha256": "343946b921e6b63b242eb5a1c7d4877e7b2f7c149e16af3350f7edfe87f0ef59"
+        },
+        {
+          "path": "Build/chunks/BuildWeb.wasm.a3e41704a1dacd49b18ab9d30d03fe669016e161c058236f081fdba16e6ceb7d.001.bin",
+          "offset": 16777216,
+          "bytes": 9737626,
+          "sha256": "a6f6c377ad6c9387a76eecae62ce4107e0cca3a4fd3dec2ceced30b099721d41"
+        }
+      ]
+    }
+  ],
+  "runtimeFiles": [
+    {
+      "path": "Build/BuildWeb.data",
+      "bytes": 46347813,
+      "sha256": "ea119797a5db26fe883c184cdb7db2b8b676a773dd9b5fedee6ff96dc36461d3"
+    },
+    {
+      "path": "Build/BuildWeb.framework.js",
+      "bytes": 365388,
+      "sha256": "855f4d8dd4e95e0eddf34a8fc2f8d658b6ef6b006fc5199b0659f7fa79bf018d"
+    },
+    {
+      "path": "Build/BuildWeb.loader.js",
+      "bytes": 27221,
+      "sha256": "fd62344bf40322b31f231aa7b37b7c1f69669bb2f679fe8c8c4ee3f688564b4a"
+    },
+    {
+      "path": "Build/BuildWeb.wasm",
+      "bytes": 26514842,
+      "sha256": "a3e41704a1dacd49b18ab9d30d03fe669016e161c058236f081fdba16e6ceb7d"
+    },
+    {
+      "path": "Licenses/Box2D-Upstream-Notice.txt",
+      "bytes": 1429,
+      "sha256": "30e8ce0858f30ae5cf25aba44d5b65367bfcf61700a48dbc104e3aba3b3a73dd"
+    },
+    {
+      "path": "Licenses/Inter-OFL.txt",
+      "bytes": 4380,
+      "sha256": "262481e844521b326f5ecd053e59b98c8b2da78c8ee1bdbb6e8174305e54935a"
+    },
+    {
+      "path": "Mods/README_RU.txt",
+      "bytes": 4841,
+      "sha256": "c93c59cc5e8a19b8db3872e8d4758d0240ebda46ab9e962e60b3f3abf0167729"
+    },
+    {
+      "path": "Mods/orbital-example/Atlas.png",
+      "bytes": 942791,
+      "sha256": "1b464f49e6624d41cbbc16ec32cf9c57a94475236283af18fc867b849fec8810"
+    },
+    {
+      "path": "Mods/orbital-example/manifest.json",
+      "bytes": 3839,
+      "sha256": "c4679f973d4ab93a9f91a724e01ef2147121d3c2a73b11f1726cd89dc0e4c1a9"
+    },
+    {
+      "path": "Mods/orbital-example/ready-to-import.json",
+      "bytes": 1258946,
+      "sha256": "bf20e5c62c4f2f2540eb3344a772bf35b4133a43c1ce7a3c8da6c4be37570803"
+    },
+    {
+      "path": "Mods/orbital-v1.json",
+      "bytes": 7439,
+      "sha256": "952f0f75a88b554f00914a7fda58db08317530265afdb65ccb02a79d54e3a48d"
+    },
+    {
+      "path": "Mods/original-human-01.json",
+      "bytes": 3471,
+      "sha256": "9840110e90198250f987f33882d17a68a08680f31b231e00b9e12951e0094cf5"
+    },
+    {
+      "path": "Mods/original-human-head-repaint-v1.json",
+      "bytes": 697,
+      "sha256": "777bda4396e49803495255bdce049d41ada244252b27ef3006151c0a87d36d23"
+    },
+    {
+      "path": "Mods/vanguard-example/Atlas.png",
+      "bytes": 924224,
+      "sha256": "10963bc5a34fea0a0a2a0bdac9280d55fd8148292dbfc77ea6fddd05a6630528"
+    },
+    {
+      "path": "Mods/vanguard-example/manifest.json",
+      "bytes": 3881,
+      "sha256": "64c48dad827a9157099d0f27884f61ff5f74ae99ade3d3cd2e5d35348c280aac"
+    },
+    {
+      "path": "Mods/vanguard-example/ready-to-import.json",
+      "bytes": 1234230,
+      "sha256": "0f6b15f8b47a7b883b05c3d947f1d3f191821e8e7921599085136ae043a1ae90"
+    },
+    {
+      "path": "NOTICE.txt",
+      "bytes": 2657,
+      "sha256": "e9d5f3820bdbe25b8b7bab690d077520b38f0a4016fe7380d4c16e38b318e60b"
+    },
+    {
+      "path": "StreamingAssets/NewMusic/circuit-breaker.m4a",
+      "bytes": 1096346,
+      "sha256": "45cf89bee835c6ca52e627aec62e2e4e4b7f8983804b5e4adaac07c1e560f7ef"
+    },
+    {
+      "path": "StreamingAssets/NewMusic/final-vector.m4a",
+      "bytes": 921454,
+      "sha256": "b6efd5bff57e26483370a47d2e839219378884ff3553493a327759a2fffeee99"
+    },
+    {
+      "path": "StreamingAssets/NewMusic/zero-gravity.m4a",
+      "bytes": 995252,
+      "sha256": "ad8aa84829a51541d25aa6521e35c75ee92e705e2112f667d0d6d224cf8d97c2"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/Assault_Clipin.mp3",
+      "bytes": 1560,
+      "sha256": "49d29f545d4f07d7534c013f4f90ea1e9a7481caf40fcbd8f77ad0d6bfe1826e"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/Assault_Clipout.mp3",
+      "bytes": 1248,
+      "sha256": "2c6354b26a8dbf546df691877bc700911a1166ff4b9d30e62f6db1c5d8c68256"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/Assault_Slide.mp3",
+      "bytes": 1456,
+      "sha256": "536993a8cccb848251f84b6d531571a45f58a83eb5c50a19f10784cdd419f42e"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/M_Acid.mp3",
+      "bytes": 281528,
+      "sha256": "6ed8e856141efab8c4983e57f700a5de50258097d935ae6105ef165ac50e41a2"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/M_Baby.mp3",
+      "bytes": 250224,
+      "sha256": "551a1eabda8f5feff30feec94d90f74ce201f4c3f970ff3256b49ec5d41d38a6"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/M_Boss.mp3",
+      "bytes": 236392,
+      "sha256": "f139336031de1d1f80f49d3c21f8fe961a935e1e9159dd8311859b1a10cb9b98"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/M_Crowd.mp3",
+      "bytes": 687544,
+      "sha256": "d92b380b218048dc9c99066c414d0675d1cd976caa4ba4ed0aba3157a85f8b31"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/M_Dnb.mp3",
+      "bytes": 176904,
+      "sha256": "94b28506154413642f1835af6a13a3d2bb35291e9039feac6ec2b3d162b9d898"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/M_Menu.mp3",
+      "bytes": 198016,
+      "sha256": "52742e9c40c509563302502c98ab2a0f517bf89f2a3f4ccd0dce4b8eeb694683"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/M_Protos.mp3",
+      "bytes": 364832,
+      "sha256": "8008f36413beefd8e98f32263c968e7b217f88375f0ffd44ef8c0d9264351c70"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/M_Rocket.mp3",
+      "bytes": 439192,
+      "sha256": "aace36560a6446b4ad4e2b62b28da9735300feb7234341ce916d47fc319afc3e"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/SGClip.mp3",
+      "bytes": 1248,
+      "sha256": "76d1b3114fad1dee04972c8899be3a6460d6bdb85c2974eb5332b10a76043bed"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_Arifle2.mp3",
+      "bytes": 3432,
+      "sha256": "ccae49e309fb3c8be5eb77b081bd794856efe78cef7a88c96c19f7c3cfe3206d"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_Beep.mp3",
+      "bytes": 1352,
+      "sha256": "3e3a92032df5a3192e1d8c7f5da8acf29efb8533582f94ba59c991975d442211"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_BossFire.mp3",
+      "bytes": 7280,
+      "sha256": "c1af730a01f6bc4ff3912ab377a477b0204060560d9a4bd69ee254266814bc22"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_Chainfire.mp3",
+      "bytes": 5015,
+      "sha256": "6bb59cf17fd2095af028e24863e300ff891a6cbf11608aa39d97315dc722f878"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_GunClick.mp3",
+      "bytes": 728,
+      "sha256": "b2d0a639ba8148074045a32b5423695cb4d8ee2c1c0d6849a8e58a4bbfd43f7b"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_Headshot1.mp3",
+      "bytes": 2184,
+      "sha256": "44486d3858aad6eafe57d21cda80bdd1029c7c9282a43d2d67f3fb95c256a4ea"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_Headshot2.mp3",
+      "bytes": 2496,
+      "sha256": "012f704da1c70c28462c36f52fd761cb8cfcd5ae605f4ca5dc31d258cdc3650b"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_Headshot3.mp3",
+      "bytes": 1872,
+      "sha256": "35968e3f56ef823360f9e5fad0ac10f775ac249d398a03d58d87eebd9b2e91a5"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_Lightning.mp3",
+      "bytes": 3536,
+      "sha256": "061c15346eb624cf799683c205612544495f80b4b8846c6923ba285c881440ea"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_Medal.mp3",
+      "bytes": 4517,
+      "sha256": "7b9734e12eeeacc4a0b84ae93821b78b6b1cdab04facdb14ae2b57994055bb96"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_Nadeout.mp3",
+      "bytes": 832,
+      "sha256": "78c057c9d8a8aa0db0a63a7d76044b6f12d449eda13fff61215569e6adab8e81"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_PistolFire.mp3",
+      "bytes": 2496,
+      "sha256": "b993923e93a93ab274c6c5dd37c20cbe6b4017bf680b2a1ef36599e540c68830"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_PistolReload.mp3",
+      "bytes": 4264,
+      "sha256": "dd4fe5285743a56a995c27014e0e010187a8a6c5eea9e5808669d6d56b0b77a1"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_Pull.mp3",
+      "bytes": 1040,
+      "sha256": "1310d3c6bec6c3344e331e3b6d4b084c2c30a4c4b03d574a09ffc0b3ad148298"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_RailReload.mp3",
+      "bytes": 3016,
+      "sha256": "d2c963db754c1574c54fa2c7ae4fb2128939502fb6309dae0b0a053315b0885b"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_Rocket.mp3",
+      "bytes": 1664,
+      "sha256": "584f5eac821fba876bad7ff6afc26a88f31bdc302f750c58ee9d9faae4b67b17"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_ShotgunFire.mp3",
+      "bytes": 3640,
+      "sha256": "82430317f99b1f893c86df47d397742171963bd1e9af73874b2332b5a45107c0"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_ShotgunPump.mp3",
+      "bytes": 1040,
+      "sha256": "8da559003110f239c641123ef60da5639ccb03f09ebfac228af5b89b702f2387"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_ShotgunShell.mp3",
+      "bytes": 1040,
+      "sha256": "309540a1739658f4b3a56b2415f858832697937056e92917c6f67d450dd5441a"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_SniperFire.mp3",
+      "bytes": 2288,
+      "sha256": "0bd59aafdd5ffd27f9892f6b2668f53f2a4dc461207a99d0f66331439f2aca18"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_Uzi1.mp3",
+      "bytes": 1456,
+      "sha256": "e446c98c908d5f8b3e70f233741500a204775b7dc8730070e9a70a6455f617f3"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_Uzi2.mp3",
+      "bytes": 1248,
+      "sha256": "24f3a6ebe4e686e08d6b14b0c7204167eae0ecdd37c4578fb28924c9321fa8d3"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_Zapper.mp3",
+      "bytes": 2184,
+      "sha256": "51c6cfd69aa768bf49418e3ab31799e0bd8e7b5153f82a77349e44828ef4773b"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_explodenade.mp3",
+      "bytes": 2912,
+      "sha256": "d95a007f25081be225282e4056b35b26cebfa5fa518a6f92b9f51c40d0a1d776"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_nadeClipin.mp3",
+      "bytes": 1456,
+      "sha256": "7690a8146bd62aa94bdd07fae22c16df6dc5b64be43b94b9e72692514d99da1a"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_nadeClipout.mp3",
+      "bytes": 832,
+      "sha256": "505dc0a2c7f3ba35810bcf6fd87c62948dc9aa47ca6dfd2d93fe707e5b1bd5bc"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_rocketexplode.mp3",
+      "bytes": 2912,
+      "sha256": "8a125c58ad27bbbb92432aa61ccfd26cc8de3b01f674d34697b0b220c1143f56"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_winddown.mp3",
+      "bytes": 2808,
+      "sha256": "3fa38f6a8f43cdb6a09ba95a010b1c0c18be7babb09905b79cdbe54cc6993650"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/S_windup.mp3",
+      "bytes": 1872,
+      "sha256": "14399c5e3065695bcc5d6de1e2b7b969b8815b8b75adef3fadf8aba4b4223608"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/SourceSound2006.mp3",
+      "bytes": 1456,
+      "sha256": "6b7ec5347af71d27a7e6cc81b5bbba89e09d1c50e8b98bb27601b3e6ebadbe56"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/SourceSound2007.mp3",
+      "bytes": 9360,
+      "sha256": "1822aad942787ceb1acaa907c3e10639956e1cae2a8b2db466c74397bb35cb7f"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/SourceSound2011.mp3",
+      "bytes": 2392,
+      "sha256": "208afbf2ea5fe9900b9860137e4ca1797aa85c5f9de44218ba72e7b17e5bb4ac"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/SourceSound2012.mp3",
+      "bytes": 3744,
+      "sha256": "3b77d3760cbf2e5d60636ccf37ecd4431f8f30dadde8d2d2ef10623e5ad187e0"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/SourceSound2013.mp3",
+      "bytes": 1664,
+      "sha256": "2f77ba9ec217a924d532184bda4d8e756e692de970fcc61823b399d88e27d9b2"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/SourceSound2014.mp3",
+      "bytes": 1040,
+      "sha256": "bb055642b8d62e03769075b4d4f02e2facfa3489d54526bb344fa6d018684690"
+    },
+    {
+      "path": "StreamingAssets/OriginalAudio/SourceSound2015.mp3",
+      "bytes": 1144,
+      "sha256": "e73124d304e67775480dff4192d4861a925203e21e7033f6279d6aae776e2bc9"
+    },
+    {
+      "path": "TemplateData/MemoryProfiler.png",
+      "bytes": 665,
+      "sha256": "0ce87be20d0c24ab6cb73b57de2004da261cc2a641e69319c6ae3fe11fc85483"
+    },
+    {
+      "path": "TemplateData/favicon.ico",
+      "bytes": 2305,
+      "sha256": "9c13beb90ee8f70580d52a21d5233970d1c89e71e4a34a462c22610941c3c77f"
+    },
+    {
+      "path": "TemplateData/fullscreen-button.png",
+      "bytes": 175,
+      "sha256": "21221581673a54b8139d408d4a3f8d2b879e86827d4b6fc53b995ff7a99ee3e9"
+    },
+    {
+      "path": "TemplateData/progress-bar-empty-dark.png",
+      "bytes": 96,
+      "sha256": "bbee7131afe8a3365906240d89184dc86234c119467f390bc4bc6802328fdb4d"
+    },
+    {
+      "path": "TemplateData/progress-bar-empty-light.png",
+      "bytes": 109,
+      "sha256": "143696c060ad43d6c30f19ff5f49000927a139a2a1e4c9f45fafaa2b90d7d2be"
+    },
+    {
+      "path": "TemplateData/progress-bar-full-dark.png",
+      "bytes": 74,
+      "sha256": "3306a6244dcb3926fca38a28e3ced589df8ff1beed955eb17c0bbf01c918bc62"
+    },
+    {
+      "path": "TemplateData/progress-bar-full-light.png",
+      "bytes": 84,
+      "sha256": "12395ea785480c5cdf12fade6e6cbf49666d5bb1cef7240c113dbcba6bdc5c87"
+    },
+    {
+      "path": "TemplateData/style.css",
+      "bytes": 1448,
+      "sha256": "8e3625e108a61dcd1d31303376d9e02d7bdc08921d254e8f4359b892b3825caa"
+    },
+    {
+      "path": "TemplateData/unity-logo-dark.png",
+      "bytes": 3042,
+      "sha256": "c1b72d26c096487dabc948b54bc203f8dac7ed4e3f5733918798e858acb4b159"
+    },
+    {
+      "path": "TemplateData/unity-logo-light.png",
+      "bytes": 3077,
+      "sha256": "002990aea0d946833cadc1519d5b7e50a4570bd537a0517dd79a59d3eec84da7"
+    },
+    {
+      "path": "TemplateData/unity-logo-title-footer.png",
+      "bytes": 1151,
+      "sha256": "9e8b3bdb67c2446d16362fe59449d892100931dbbadfe6a9d923a4142b57a79f"
+    },
+    {
+      "path": "TemplateData/webmemd-icon.png",
+      "bytes": 1670,
+      "sha256": "c56f5494640cedda273aad38d58e6ab9da625d5b3f4d875c0ff92c6192a569c2"
+    },
+    {
+      "path": "icons/apple-touch-icon.png",
+      "bytes": 4596,
+      "sha256": "e0202a8cf61489a95d7dfc32c2aa773c313b5c554c3667742bdfb8612b913c8e"
+    },
+    {
+      "path": "icons/icon-192.png",
+      "bytes": 4930,
+      "sha256": "7c8af01b6ca93f00bd2d50b61866f38bd7bfe6086d6223823cb73d790b1c5663"
+    },
+    {
+      "path": "icons/icon-512.png",
+      "bytes": 16448,
+      "sha256": "6dd2e442c253ba7c1e5933d2f369d05f7a960981db95b8976e7219b74d7cb953"
+    },
+    {
+      "path": "icons/icon-maskable-512.png",
+      "bytes": 16448,
+      "sha256": "6dd2e442c253ba7c1e5933d2f369d05f7a960981db95b8976e7219b74d7cb953"
+    },
+    {
+      "path": "index.html",
+      "bytes": 33675,
+      "sha256": "92db477a18c9654dbde74e1fa03d872cd2eaa18d2f26695fbe2ea1658e939a85"
+    },
+    {
+      "path": "manifest.webmanifest",
+      "bytes": 672,
+      "sha256": "26250bd1b019a2c19ff354d00d11a875bbb212955b511ae99595dab22bd41ffb"
+    },
+    {
+      "path": "src/LegacyBox2D.js",
+      "bytes": 344278,
+      "sha256": "e15562fc08d81fa649007564fd890ac31bed7a6a506d56d4d6d239c436ba06f8"
+    },
+    {
+      "path": "src/LegacyRagdolls.js",
+      "bytes": 5758,
+      "sha256": "d73f1f05bc633166f386b08c6433900e4e767578f7281bae29dde97535e939aa"
+    },
+    {
+      "path": "src/gamepad-mapping.mjs",
+      "bytes": 3622,
+      "sha256": "4be078e2a2cebe008580fad22269517cf08daafedb1571dcf47328c8faf78ee3"
+    },
+    {
+      "path": "src/native-gamepad.mjs",
+      "bytes": 7925,
+      "sha256": "42ece926abce2fa337c3b5b83ed6b2dd85cea5c7220c69d1c013369a5d59fbc8"
+    },
+    {
+      "path": "src/native-screen-mode.mjs",
+      "bytes": 2979,
+      "sha256": "ce075893adb8473c3bad06eb3781fc09e0ddfa59863a20a62257571d0dbc308a"
+    }
+  ]
+}

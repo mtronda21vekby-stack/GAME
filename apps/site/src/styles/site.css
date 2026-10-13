@@ -1,4 +1,4 @@
-:root{
+.bcSiteRoot{
   --bg0:#000000;
   --bg1:#000000;
   --text:rgba(255,255,255,0.92);
@@ -21,65 +21,28 @@
   --bc-accent-34: rgba(255,106,0,0.34);
 
   color-scheme: dark;
-}
 
-*{ box-sizing:border-box; }
-
-img{ border:0; outline:0; }
-canvas, iframe{ border:0 !important; outline:0 !important; }
-button{ -webkit-tap-highlight-color: transparent; }
-a{ -webkit-tap-highlight-color: transparent; }
-
-/* ===== baseline ===== */
-html, body{
-  min-height:100%;
-  height:auto;
-  background: transparent !important;
-}
-
-body{
-  margin:0;
   color:var(--text);
-  -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;
-  overscroll-behavior: none;
-
-  /* safe-area */
-  padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* Root must stay transparent so the fixed Matrix layer is the real background */
-#root{
-  min-height:100%;
-  height:auto;
-  background: transparent !important;
-}
+:where(.bcSiteRoot) *{ box-sizing:border-box; }
+
+:where(.bcSiteRoot) img{ border:0; outline:0; }
+:where(.bcSiteRoot) canvas, :where(.bcSiteRoot) iframe{ border:0 !important; outline:0 !important; }
+:where(.bcSiteRoot) button{ -webkit-tap-highlight-color: transparent; }
+:where(.bcSiteRoot) a{ -webkit-tap-highlight-color: transparent; }
 
 /* Site root */
 .bcSiteRoot{ min-height:100%; }
 
-/* Shell for global background */
-.bcAppShell{
-  position:relative;
-  min-height:100%;
-  background: transparent !important;
-}
-
-.bcAppContent{
-  position:relative;
-  z-index:1;
-  min-height:100%;
-  background: transparent !important;
-}
-
 /* Motion baseline */
-.bc-motion{
+:where(.bcSiteRoot) .bc-motion{
   will-change: transform, opacity, box-shadow;
   transform: translateZ(0);
 }
 
 /* Hero */
-.bcHero{
+:where(.bcSiteRoot) .bcHero{
   position:relative;
   min-height: calc(var(--app-vh, 100vh));
   padding: max(14px, env(safe-area-inset-top)) 14px 24px;
@@ -87,18 +50,18 @@ body{
 }
 
 /* IMPORTANT: background layers must not steal clicks */
-.bcHeroBg, .bcHeroVignette, .bcHeroNoise, .bcHeroAurora { pointer-events: none !important; }
+:where(.bcSiteRoot) .bcHeroBg, :where(.bcSiteRoot) .bcHeroVignette, :where(.bcSiteRoot) .bcHeroNoise, :where(.bcSiteRoot) .bcHeroAurora { pointer-events: none !important; }
 
-.bcHeroBg{
+:where(.bcSiteRoot) .bcHeroBg{
   position:absolute;
   inset:-20px;
 }
 
 /* если где-то ещё остались aurora/noise — убираем, чтобы был чистый Matrix */
-.bcHeroAurora{ display:none !important; }
-.bcHeroNoise{ display:none !important; }
+:where(.bcSiteRoot) .bcHeroAurora{ display:none !important; }
+:where(.bcSiteRoot) .bcHeroNoise{ display:none !important; }
 
-.bcHeroVignette{
+:where(.bcSiteRoot) .bcHeroVignette{
   position:absolute;
   inset:0;
   background:
@@ -108,7 +71,7 @@ body{
 }
 
 /* Top bar */
-.bcTop{
+:where(.bcSiteRoot) .bcTop{
   position:relative;
   z-index:2;
   display:flex;
@@ -124,7 +87,7 @@ body{
   box-shadow: 0 20px 80px rgba(0,0,0,0.22);
 }
 
-.bcBrand{
+:where(.bcSiteRoot) .bcBrand{
   display:inline-flex;
   align-items:center;
   gap:10px;
@@ -136,16 +99,16 @@ body{
   cursor:pointer;
 }
 
-.bcNav{
+:where(.bcSiteRoot) .bcNav{
   display:none;
   gap:14px;
   align-items:center;
 }
 @media (min-width: 820px){
-  .bcNav{ display:flex; }
+  :where(.bcSiteRoot) .bcNav{ display:flex; }
 }
 
-.bcLink{
+:where(.bcSiteRoot) .bcLink{
   color: rgba(255,255,255,0.84);
   text-decoration:none;
   font-weight:850;
@@ -155,13 +118,13 @@ body{
   border: 1px solid transparent;
 }
 
-.bcRight{
+:where(.bcSiteRoot) .bcRight{
   display:flex;
   align-items:center;
   gap:10px;
 }
 
-.bcAccountPill{
+:where(.bcSiteRoot) .bcAccountPill{
   border:1px solid rgba(255,255,255,0.12);
   background: rgba(255,255,255,0.06);
   color: rgba(255,255,255,0.88);
@@ -173,7 +136,7 @@ body{
 }
 
 /* Hero layout */
-.bcHeroGrid{
+:where(.bcSiteRoot) .bcHeroGrid{
   position:relative;
   z-index:2;
   display:grid;
@@ -181,14 +144,14 @@ body{
   margin-top: 16px;
 }
 @media (min-width: 980px){
-  .bcHeroGrid{
+  :where(.bcSiteRoot) .bcHeroGrid{
     grid-template-columns: 1.2fr 0.8fr;
     align-items: start;
   }
 }
 
 /* Glass */
-.glassStrong{
+:where(.bcSiteRoot) .glassStrong{
   border-radius: var(--radius);
   border: 1px solid rgba(255,255,255,0.10);
   background: rgba(255,255,255,0.06);
@@ -197,9 +160,9 @@ body{
   box-shadow: var(--shadow);
 }
 
-.bcHeroCopy{ padding: 18px; overflow:hidden; }
+:where(.bcSiteRoot) .bcHeroCopy{ padding: 18px; overflow:hidden; }
 
-.bcKicker{
+:where(.bcSiteRoot) .bcKicker{
   display:inline-flex;
   align-items:center;
   gap:10px;
@@ -213,7 +176,7 @@ body{
   letter-spacing: 0.02em;
 }
 
-.bcH1{
+:where(.bcSiteRoot) .bcH1{
   margin: 12px 0 8px;
   font-size: 40px;
   line-height: 1.02;
@@ -221,10 +184,10 @@ body{
   font-weight: 980;
 }
 @media (min-width: 980px){
-  .bcH1{ font-size: 54px; }
+  :where(.bcSiteRoot) .bcH1{ font-size: 54px; }
 }
 
-.bcLead{
+:where(.bcSiteRoot) .bcLead{
   margin: 0;
   color: rgba(255,255,255,0.80);
   line-height: 1.55;
@@ -232,14 +195,14 @@ body{
   max-width: 60ch;
 }
 
-.bcCtas{
+:where(.bcSiteRoot) .bcCtas{
   margin-top: 14px;
   display:flex;
   gap: 10px;
   flex-wrap: wrap;
 }
 
-.bcBadges{
+:where(.bcSiteRoot) .bcBadges{
   margin-top: 14px;
   display:flex;
   gap:10px;
@@ -247,16 +210,16 @@ body{
   opacity: 0.95;
 }
 
-.bcHeroPanel{ padding: 18px; }
+:where(.bcSiteRoot) .bcHeroPanel{ padding: 18px; }
 
-.bcPanelTitle{
+:where(.bcSiteRoot) .bcPanelTitle{
   font-weight: 950;
   opacity: 0.92;
   margin-bottom: 10px;
   letter-spacing: -0.01em;
 }
 
-.bcPanelRow{
+:where(.bcSiteRoot) .bcPanelRow{
   display:flex;
   gap: 12px;
   padding: 12px;
@@ -265,9 +228,9 @@ body{
   background: rgba(255,255,255,0.04);
   cursor: pointer;
 }
-.bcPanelRow + .bcPanelRow{ margin-top: 10px; }
+:where(.bcSiteRoot) .bcPanelRow + .bcPanelRow{ margin-top: 10px; }
 
-.bcDot{
+:where(.bcSiteRoot) .bcDot{
   width: 10px;
   height: 10px;
   margin-top: 6px;
@@ -276,9 +239,9 @@ body{
   box-shadow: 0 0 0 6px rgba(122,168,255,0.10);
 }
 
-.bcPanelH{ font-weight: 950; letter-spacing: -0.01em; }
+:where(.bcSiteRoot) .bcPanelH{ font-weight: 950; letter-spacing: -0.01em; }
 
-.bcPanelP{
+:where(.bcSiteRoot) .bcPanelP{
   margin-top: 4px;
   color: rgba(255,255,255,0.72);
   font-weight: 750;
@@ -286,42 +249,42 @@ body{
 }
 
 /* Sections */
-.bcSection{
+:where(.bcSiteRoot) .bcSection{
   position:relative;
   padding: 18px 14px 28px;
 }
 
 /* MONOLITH: убираем разделитель */
-.bcSection::before{
+:where(.bcSiteRoot) .bcSection::before{
   display:none !important;
 }
 
-.bcSectionHead{
+:where(.bcSiteRoot) .bcSectionHead{
   max-width: 980px;
   margin: 0 auto 12px;
 }
 
-.bcSectionTitle{
+:where(.bcSiteRoot) .bcSectionTitle{
   font-size: 18px;
   font-weight: 950;
   letter-spacing: -0.01em;
 }
 
-.bcSectionSub{
+:where(.bcSiteRoot) .bcSectionSub{
   margin-top: 6px;
   color: rgba(255,255,255,0.74);
   font-weight: 750;
   line-height: 1.45;
 }
 
-.bcCards{
+:where(.bcSiteRoot) .bcCards{
   max-width: 980px;
   margin: 0 auto;
   display:grid;
   gap: 12px;
 }
 
-.bcCrownFrontCard{
+:where(.bcSiteRoot) .bcCrownFrontCard{
   border-color: rgba(49, 220, 255, .32) !important;
   background:
     radial-gradient(circle at 18% 16%, rgba(49, 220, 255, .16), transparent 38%),
@@ -333,66 +296,66 @@ body{
     0 0 0 1px rgba(255, 111, 33, .05) !important;
 }
 
-.bcCrownFrontCard img{
+:where(.bcSiteRoot) .bcCrownFrontCard img{
   background: #050a11;
   box-shadow: inset 0 0 0 1px rgba(49, 220, 255, .12);
 }
 
-.bcCrownFrontCard :where(.bcBtn, button):first-of-type{
+:where(.bcSiteRoot) .bcCrownFrontCard :where(.bcBtn, button):first-of-type{
   border-color: rgba(49, 220, 255, .58);
   background: linear-gradient(135deg, rgba(6, 95, 129, .98), rgba(157, 52, 14, .94));
   box-shadow: 0 10px 34px rgba(0, 185, 230, .14), 0 8px 26px rgba(255, 94, 20, .11);
 }
 @media (min-width: 980px){
-  .bcCards{ grid-template-columns: repeat(3, 1fr); }
+  :where(.bcSiteRoot) .bcCards{ grid-template-columns: repeat(3, 1fr); }
 }
 
 /* =========================
    Premium micro-motion
    ========================= */
 @media (prefers-reduced-motion: no-preference){
-  .glassStrong.bc-motion{
+  :where(.bcSiteRoot) .glassStrong.bc-motion{
     transition:
       transform 220ms cubic-bezier(.2,.8,.2,1),
       box-shadow 220ms cubic-bezier(.2,.8,.2,1),
       background 220ms ease,
       border-color 220ms ease;
   }
-  .glassStrong.bc-motion:hover{
+  :where(.bcSiteRoot) .glassStrong.bc-motion:hover{
     transform: translateY(-2px) translateZ(0);
     background: rgba(255,255,255,0.075);
     border-color: rgba(255,255,255,0.13);
   }
 
-  .bcPanelRow{
+  :where(.bcSiteRoot) .bcPanelRow{
     transition:
       transform 180ms cubic-bezier(.2,.8,.2,1),
       background 180ms ease,
       border-color 180ms ease,
       box-shadow 180ms ease;
   }
-  .bcPanelRow:hover{
+  :where(.bcSiteRoot) .bcPanelRow:hover{
     transform: translateY(-1px) translateZ(0);
   }
 
-  .bcBrand, .bcAccountPill{
+  :where(.bcSiteRoot) .bcBrand, :where(.bcSiteRoot) .bcAccountPill{
     transition:
       background 180ms ease,
       border-color 180ms ease,
       transform 180ms cubic-bezier(.2,.8,.2,1),
       box-shadow 180ms ease;
   }
-  .bcBrand:hover{
+  :where(.bcSiteRoot) .bcBrand:hover{
     background: rgba(255,255,255,0.05);
     transform: translateY(-1px);
   }
-  .bcAccountPill:hover{
+  :where(.bcSiteRoot) .bcAccountPill:hover{
     background: rgba(255,255,255,0.07);
     border-color: rgba(255,255,255,0.16);
     transform: translateY(-1px);
   }
 
-  .bcLink{
+  :where(.bcSiteRoot) .bcLink{
     transition:
       background 180ms ease,
       border-color 180ms ease,
@@ -401,22 +364,23 @@ body{
       color 180ms ease,
       text-shadow 180ms ease;
   }
-  .bcLink:hover{ transform: translateY(-1px); }
+  :where(.bcSiteRoot) .bcLink:hover{ transform: translateY(-1px); }
 }
 
 /* =========================
    Orange Accent Interactions
    ========================= */
-.bcSiteRoot :where(a, button, [role="button"]):focus-visible{
-  outline: none;
+.bcSiteRoot :where(a, button, input, textarea, select, [role="button"], [tabindex]):focus-visible{
+  outline: 2px solid var(--bc-accent) !important;
   box-shadow:
     0 0 0 3px var(--bc-accent-26),
     0 18px 80px var(--bc-accent-10);
+  outline-offset:3px;
 }
 
-.bcNav .bcLink{ position: relative; }
+:where(.bcSiteRoot) .bcNav .bcLink{ position: relative; }
 
-.bcNav .bcLink::after{
+:where(.bcSiteRoot) .bcNav .bcLink::after{
   content:"";
   position:absolute;
   inset:-8px -12px;
@@ -429,26 +393,26 @@ body{
 }
 
 @media (hover:hover){
-  .bcNav .bcLink:hover{
+  :where(.bcSiteRoot) .bcNav .bcLink:hover{
     color: var(--bc-accent);
     text-shadow: 0 0 16px var(--bc-accent-glow);
     border-color: rgba(255,255,255,0.10);
     background: rgba(255,255,255,0.05);
   }
-  .bcNav .bcLink:hover::after{
+  :where(.bcSiteRoot) .bcNav .bcLink:hover::after{
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-.bcNav .bcLink:active{
+:where(.bcSiteRoot) .bcNav .bcLink:active{
   color: var(--bc-accent);
   text-shadow: 0 0 18px var(--bc-accent-glow);
   transform: translateY(1px);
 }
 
 @media (hover:hover){
-  .bcPanelRow:hover{
+  :where(.bcSiteRoot) .bcPanelRow:hover{
     background: linear-gradient(180deg, var(--bc-accent-08) 0%, rgba(255,255,255,0.04) 100%);
     box-shadow:
       0 0 0 1px var(--bc-accent-18) inset,
@@ -457,10 +421,10 @@ body{
   }
 }
 
-.bcPanelRow:active{ transform: translateY(1px); }
+:where(.bcSiteRoot) .bcPanelRow:active{ transform: translateY(1px); }
 
 @media (hover:hover){
-  .glassStrong.bc-motion:hover{
+  :where(.bcSiteRoot) .glassStrong.bc-motion:hover{
     box-shadow:
       0 44px 140px rgba(0,0,0,0.38),
       0 0 0 1px var(--bc-accent-18) inset,
@@ -468,7 +432,7 @@ body{
   }
 }
 
-.glassStrong.bc-motion:active{
+:where(.bcSiteRoot) .glassStrong.bc-motion:active{
   box-shadow:
     0 34px 120px rgba(0,0,0,0.30),
     0 0 0 1px var(--bc-accent-26) inset,

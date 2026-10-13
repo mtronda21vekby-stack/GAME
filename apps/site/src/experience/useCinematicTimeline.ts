@@ -32,13 +32,14 @@ export function useCinematicTimeline(rootRef: React.RefObject<HTMLElement>): Cin
 
     const write = () => {
       frame = 0;
+      const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+      document.documentElement.dataset.bcHomeStoryActive = String(!isReduced && window.scrollY < rootTop + rootHeight - viewportHeight / 2);
       if (isReduced) {
         root.dataset.progress = "reduced";
         root.dataset.phase = "all";
         return;
       }
 
-      const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
       if (window.scrollY + viewportHeight < rootTop || window.scrollY > rootTop + rootHeight) return;
 
       const progress = Math.max(0, Math.min(1, (window.scrollY - rootTop) / travel));
@@ -107,6 +108,7 @@ export function useCinematicTimeline(rootRef: React.RefObject<HTMLElement>): Cin
       motionQuery.removeEventListener("change", onMotionChange);
       document.removeEventListener("visibilitychange", onVisibilityChange);
       if (frame) window.cancelAnimationFrame(frame);
+      delete document.documentElement.dataset.bcHomeStoryActive;
       for (const property of Object.keys(getTimelineVariables(0))) root.style.removeProperty(property);
     };
   }, [rootRef]);

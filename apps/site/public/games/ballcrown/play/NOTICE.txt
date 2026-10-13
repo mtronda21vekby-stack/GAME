@@ -1,0 +1,44 @@
+Raze source and new local media notices
+
+Raze © 2010 — Juice-Tin, AddisonR; original sponsor Armor Games.
+The supplied original SWF and its preserved source snapshot remain unchanged.
+Original Main.as context-menu attribution is retained in the source audit.
+Original embedded font copyright fields and third-party notices remain there.
+No separate original-game reuse licence was present in the supplied package.
+This project and its delivery are private; no public deployment was performed.
+
+The new native interface does not add the original advertising, branding intro
+or external navigation destinations. Original game/creator attribution remains
+visible in the native menus and pause interface and in this notice.
+
+Interface typography uses Inter Regular and SemiBold under the SIL Open Font
+License; the complete licence is in Licenses/Inter-OFL.txt. Original embedded
+font programs are not redistributed by this browser project.
+
+The browser corpse solver is translated from the recovered original AS3 Box2D
+classes. Box2DFlashAS3 is an open source port of Erin Catto's Box2D library;
+upstream project: https://box2dflash.sourceforge.net/ . The recovered compiled
+bytecode does not contain the upstream source-comment licence headers. This
+local translation retains its recovered game provenance; it does not claim
+that a newer Box2D release is the original game's solver.
+The upstream reference notice and altered-version identification are in
+Licenses/Box2D-Upstream-Notice.txt.
+The original game motion, collision, actor rigs and weapon/match definitions
+remain distinct from new visual assets and interface code.
+
+New menu/arena illustrations were created for this private redesign with
+imagegen. Refined classic skins and weapon art preserve the original forms,
+points of attachment and attribution; their SVG sources and 4096px masters
+are kept in the single Unity project. Orbital and Vanguard are new authored
+vector kits based on separate generated concepts. Their actual 4096×4096
+PNG masters were rendered directly from the vectors, without raster upscaling
+or adding empty borders. Runtime parts and local mod atlases are smaller.
+
+Circuit Breaker, Zero Gravity and Final Vector are new synth compositions.
+Their original source program and stereo WAV masters are in
+Artwork/OriginalMusic; runtime AAC files are in Web/StreamingAssets/NewMusic.
+They use no outside samples and do not adapt the original Raze melodies.
+Original Raze sound-effect assets and their event names remain attributed
+to the original game and are preserved alongside the new music.
+
+AFTER YOU 0.14.0 and other personal files were not changed by this project.

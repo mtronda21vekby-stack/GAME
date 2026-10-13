@@ -17,7 +17,9 @@ function readEnabled() {
 
 function readVolume() {
   try {
-    const value = Number(localStorage.getItem(VOLUME_KEY));
+    const storedVolume = localStorage.getItem(VOLUME_KEY);
+    if (storedVolume === null || storedVolume.trim() === "") return 0.42;
+    const value = Number(storedVolume);
     return Number.isFinite(value) && value >= 0 && value <= 1 ? value : 0.42;
   } catch {
     return 0.42;
@@ -121,7 +123,7 @@ export function SiteMusic() {
       <audio
         ref={audioRef}
         src={AUDIO_SRC}
-        preload="metadata"
+        preload="none"
         loop
         playsInline
         onPlaying={() => setState("playing")}

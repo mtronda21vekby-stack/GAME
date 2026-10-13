@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "id": "vanguard-local-demo",
+  "name": "Авангард — локальный мод",
+  "author": "Local Raze redesign · authored vectors from private imagegen concept",
+  "license": "Private original vector reconstruction; original Raze attribution retained in NOTICE.",
+  "rigSHA256": "afedd6f40046e399f1e40896c012899b3736c3f467765fecde73b7474d921c75",
+  "bindings": [
+    {
+      "id": "vanguard-head-vector4k",
+      "name": "Авангард",
+      "group": "head",
+      "index": 1,
+      "parts": [
+        {
+          "symbol": 758,
+          "texture": "atlas",
+          "left": -9,
+          "top": -20,
+          "width": 30,
+          "height": 31,
+          "uv": [
+            0.02634408602150538,
+            0.6883333333333332,
+            0.2806451612903226,
+            0.29
+          ]
+        },
+        {
+          "symbol": 457,
+          "texture": "atlas",
+          "left": -9,
+          "top": -11,
+          "width": 18,
+          "height": 19,
+          "uv": [
+            0.3626315789473684,
+            0.6883333333333332,
+            0.27473684210526317,
+            0.29
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vanguard-body-vector4k",
+      "name": "Авангард",
+      "group": "body",
+      "index": 1,
+      "parts": [
+        {
+          "symbol": 682,
+          "texture": "atlas",
+          "left": -12,
+          "top": -23,
+          "width": 25,
+          "height": 46,
+          "uv": [
+            0.7545289855072465,
+            0.6883333333333332,
+            0.15760869565217392,
+            0.29
+          ]
+        },
+        {
+          "symbol": 315,
+          "texture": "atlas",
+          "left": -8,
+          "top": -18,
+          "width": 22,
+          "height": 36,
+          "uv": [
+            0.07805555555555556,
+            0.355,
+            0.1772222222222222,
+            0.29
+          ]
+        },
+        {
+          "symbol": 371,
+          "texture": "atlas",
+          "left": -8,
+          "top": -15,
+          "width": 15,
+          "height": 30,
+          "uv": [
+            0.4275,
+            0.355,
+            0.145,
+            0.29
+          ]
+        },
+        {
+          "symbol": 402,
+          "texture": "atlas",
+          "left": -4.5,
+          "top": -6,
+          "width": 10,
+          "height": 12,
+          "uv": [
+            0.7125,
+            0.3550000000000001,
+            0.24166666666666667,
+            0.29
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vanguard-legs-vector4k",
+      "name": "Авангард",
+      "group": "legs",
+      "index": 1,
+      "parts": [
+        {
+          "symbol": 617,
+          "texture": "atlas",
+          "left": -7,
+          "top": -20,
+          "width": 17,
+          "height": 44,
+          "uv": [
+            0.11064393939393939,
+            0.021666666666666612,
+            0.11204545454545455,
+            0.29
+          ]
+        },
+        {
+          "symbol": 551,
+          "texture": "atlas",
+          "left": -8,
+          "top": -20,
+          "width": 18,
+          "height": 40,
+          "uv": [
+            0.43475,
+            0.021666666666666834,
+            0.13049999999999998,
+            0.29
+          ]
+        },
+        {
+          "symbol": 487,
+          "texture": "atlas",
+          "left": -14,
+          "top": -7,
+          "width": 25,
+          "height": 14,
+          "uv": [
+            0.6883333333333334,
+            0.08546666666666658,
+            0.29,
+            0.1624
+          ]
+        }
+      ]
+    }
+  ],
+  "textures": [
+    {
+      "id": "atlas",
+      "file": "Atlas.png",
+      "width": 1536,
+      "height": 1536,
+      "sha256": "10963bc5a34fea0a0a2a0bdac9280d55fd8148292dbfc77ea6fddd05a6630528"
+    }
+  ],
+  "sourceMaster": "Artwork/Modular4K/vanguard/vanguard-master-4k.svg",
+  "runtimePixels": 2359296
+}

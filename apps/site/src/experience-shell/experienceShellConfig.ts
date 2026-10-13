@@ -1,4 +1,4 @@
-import { EVOFISH_GAME_PATH, GAMES_HUB_PATH } from "../lib/gameRoutes";
+import { BALLCROWN_GAME_PATH, EVOFISH_GAME_PATH, GAMES_HUB_PATH } from "../lib/gameRoutes";
 
 export const EXPERIENCE_CHAPTER_IDS = [
   "boot",
@@ -77,8 +77,8 @@ export const EXPERIENCE_CHAPTERS: readonly ExperienceChapterConfig[] = [
     title: "ONE CROWN. CONNECTED WORLDS.",
     body: "A living identity core coordinates worlds, progression and the collection around it.",
     actions: [
-      { label: "EXPLORE", href: "#gate", kind: "primary" },
-      { label: "ENTER CROWN//FRONT", href: "/games/crown-front/", kind: "secondary" },
+      { label: "ИГРАТЬ В BALLCROWN", href: BALLCROWN_GAME_PATH, kind: "primary" },
+      { label: "ОТКРЫТЬ МИРЫ", href: "#gate", kind: "secondary" },
     ],
     range: [0.05, 0.23],
     sceneId: "crown-chamber",

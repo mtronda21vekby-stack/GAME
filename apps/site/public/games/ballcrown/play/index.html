@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ballcrown</title>
+<meta name="theme-color" content="#101820">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ballcrown">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<style>
+*{box-sizing:border-box}html,body{height:100%;margin:0;background:#080f18;color:#daeaf3;font:14px system-ui}body{display:flex;flex-direction:column}header{height:67px;padding:10px 22px;display:flex;gap:20px;align-items:center;border-bottom:1px solid #233344}h1{font-size:22px;margin:0;letter-spacing:5px;color:#8ee8e2}small{color:#8aabba;letter-spacing:1px;font-size:10px;display:block}nav{display:flex;gap:8px;margin-left:auto}button{padding:9px 15px;color:#daeaf3;background:#162739;border:1px solid #365368;border-radius:5px;cursor:pointer}button:hover{background:#234456}button:disabled{opacity:.4;cursor:wait}#stage{position:relative;flex:1;min-height:350px}canvas{display:block;width:100%;height:100%;outline:0;touch-action:none}#loading,#pause{position:absolute;inset:0;display:grid;place-content:center;text-align:center;background:#080f18dd;color:#bcffff;z-index:2}#pause{display:none;background:#080f18bb}#pause strong{font-size:28px;letter-spacing:4px}#loading span{font-size:12px;margin-top:8px;color:#87a7bb}footer{padding:9px 22px;background:#0e1c2a;border-top:1px solid #233344;line-height:1.6;font-size:12px;color:#a4bece}#qa-status{display:none;color:#6f929f;font-size:10px}#phase-status{display:none}#reticle{position:absolute;pointer-events:none;width:18px;height:18px;border:1px solid #b6ffedaa;border-radius:50%;transform:translate(-50%,-50%);display:none}#reticle:after{content:'';position:absolute;left:7px;top:7px;width:2px;height:2px;background:#b6ffed}#limit{color:#d7caa7}a{color:#a4e1ed}
+</style>
+<style>
+body{height:100dvh;overflow:hidden;padding:0}#stage{min-height:0}
+header,footer{display:none}
+body.in-game header,body.in-game footer{display:none}
+body.in-game{padding:0}
+@media(max-width:700px),(max-height:600px){
+ body{padding-top:0}header{display:none}
+ footer{padding:4px 12px calc(4px + env(safe-area-inset-bottom));font-size:10px;line-height:1.2}
+ footer>span,footer>br,#gamepad-status,#qa-status{display:none}#credits{display:block}
+}
+</style>
+<header><div><h1>ballcrown</h1><small>ПЕРЕНОС В РАБОТЕ · 0.22</small></div></header>
+<button id="fullscreen-toggle" title="Полный экран" aria-label="Полный экран" style="display:none">⛶</button>
+<div id="screen-mode-help" role="dialog" aria-modal="true" aria-label="Без панелей браузера" hidden><p id="screen-mode-help-text"></p><button id="screen-mode-help-close">Понятно</button></div>
+<style>
+#fullscreen-toggle{position:fixed;top:calc(env(safe-area-inset-top) + 8px);right:calc(env(safe-area-inset-right) + 8px);width:48px;height:48px;padding:0;font-size:27px;z-index:4;color:#dce6eb;background:#15212de8;border-color:#425462;border-radius:12px}
+body.in-game #fullscreen-toggle{top:calc(env(safe-area-inset-top) + 66px);width:44px;height:44px}
+#screen-mode-help{position:fixed;z-index:6;inset:0;margin:auto;width:min(360px,calc(100vw - 48px));height:max-content;padding:22px;background:#14212bf5;color:#e7edf0;border:1px solid #425462;border-radius:16px;box-shadow:0 16px 60px #0009;font:15px/1.55 system-ui}
+#screen-mode-help[hidden]{display:none}#screen-mode-help p{margin:0 0 18px}#screen-mode-help button{width:100%;min-height:48px}
+:fullscreen{background:#080f18}:-webkit-full-screen{background:#080f18}
+body.standalone{padding-top:0}
+</style>
+<script type="module">
+// Fullscreen is requested only by the user's DOM button gesture.
+// iOS preview views may expose an API yet reject it; standalone is separate.
+function installScreenMode({button,help,helpText,close,release,layout,environment=globalThis}) {
+ const w=environment,d=w.document,root=d.documentElement;
+ const media=w.matchMedia?.('(display-mode: standalone)');
+ const active=()=>!!(d.fullscreenElement||d.webkitFullscreenElement);
+ const standalone=()=>!!(w.navigator?.standalone||media?.matches);
+ const supported=()=>!!(root.requestFullscreen||root.webkitRequestFullscreen)&&(d.fullscreenEnabled!==false||d.webkitFullscreenEnabled===true);
+ const state={supported:supported(),fullscreen:active(),standalone:standalone(),lastError:''};
+ let lastScreen;
+ function sync(){state.supported=supported();state.fullscreen=active();state.standalone=standalone();d.body.classList.toggle('standalone',state.standalone);button.textContent=state.fullscreen?'⤢':'⛶';button.setAttribute('aria-label',state.fullscreen?'Выйти из полного экрана':'Полный экран');button.title=state.fullscreen?'Выйти из полного экрана':'Полный экран';button.style.display=state.standalone?'none':lastScreen==='game'&&!w.razePlayableState?.paused?'none':'block'}
+ function explain(){helpText.textContent=/iPhone|iPad|iPod/.test(w.navigator?.userAgent||'')?'Для игры без панелей Safari откройте игру в Safari, выберите «Поделиться» → «На экран Домой» и запускайте созданный значок. Предпросмотр в редакторе — отдельный режим.':'Полный экран недоступен в этом окне. Откройте игру в обычном браузере или запускайте её из установленного значка.';help.hidden=false;close.focus?.()}
+ async function toggle(){
+  release?.();
+  try{
+   if(active()){const exit=d.exitFullscreen||d.webkitExitFullscreen;await exit?.call(d)}
+   else if(supported()){const request=root.requestFullscreen||root.webkitRequestFullscreen;await request.call(root,{navigationUI:'hide'})}
+   else explain();
+   state.lastError='';
+  }catch(error){state.lastError=error?.name||String(error);explain()}
+  sync();layout?.();
+ }
+ function changed(){release?.();sync();layout?.();w.requestAnimationFrame?.(()=>layout?.())}
+ button.addEventListener('click',toggle);close.addEventListener('click',()=>{help.hidden=true;button.focus?.()});
+ d.addEventListener('fullscreenchange',changed);d.addEventListener('webkitfullscreenchange',changed);
+ w.addEventListener('raze-frame',event=>{lastScreen=event.detail?.uiScreen;sync()});media?.addEventListener?.('change',changed);
+ sync();return{state,toggle,dispose(){button.removeEventListener('click',toggle);d.removeEventListener('fullscreenchange',changed);d.removeEventListener('webkitfullscreenchange',changed)}};
+}
+
+window.ballcrownScreenMode=installScreenMode({button:document.getElementById('fullscreen-toggle'),help:document.getElementById('screen-mode-help'),helpText:document.getElementById('screen-mode-help-text'),close:document.getElementById('screen-mode-help-close'),release:()=>window.ballcrownInput?.release(),layout:()=>window.dispatchEvent(new Event('resize'))});
+</script>
+<div id="stage"><canvas id="unity-canvas" width="1200" height="680" tabindex="0" aria-label="Игра ballcrown"></canvas><div id="reticle"></div><div id="loading">Загрузка арены<span id="load-progress">Unity Web…</span></div><div id="pause"><strong>ПАУЗА</strong><p>Esc / P — продолжить</p></div></div>
+<footer><span>A / D или ← / → — движение · W / ↑ / пробел — прыжок, повторно — двойной · S / ↓ — присесть · мышь — прицел · ЛКМ — огонь · R — перезарядка · Esc / P — пауза</span><br><span id="limit">Локальная версия · Сохранение в этом браузере · Комплекты персонажей из файла.</span><div id="gamepad-status">Геймпад: подключите контроллер и нажмите кнопку</div><small id="credits" style="font-size:10px;letter-spacing:0">Raze © 2010 · Juice-Tin · AddisonR</small><div id="qa-status">Локальная версия. Проверки механики выполняются при сборке.</div><span id="phase-status"></span></footer>
+<script src="src/LegacyBox2D.js"></script>
+<script src="src/LegacyRagdolls.js"></script>
+<script src="Build/BuildWeb.loader.js"></script>
+<script>
+let pilot=null,reported=false,viewportInitialized=false,lastCanvasLayout='';
+window.razeConsoleErrors=[];
+window.razeUnityConsole=[];
+for(const level of ['log','warn']){const previous=console[level].bind(console);console[level]=(...args)=>{const message=args.map(String).join(' ');window.razeUnityConsole.push({level,message});if(window.razeUnityConsole.length>90)window.razeUnityConsole.shift();previous(...args)}}
+
+const originalConsoleError=console.error.bind(console);
+console.error=(...args)=>{window.razeConsoleErrors.push(args.map(String).join(' '));originalConsoleError(...args)};
+const canvas=document.getElementById('unity-canvas'),status=document.getElementById('qa-status');
+const events=[];window.razeInputEvents=events;
+const pointerEvents=[];window.razePointerEvents=pointerEvents;
+function send(method,arg){if(pilot&&window.razePlayableState?.ready)pilot.SendMessage('ballcrownRuntime',method,arg)}
+function initializeViewportIfReady(){
+ if(viewportInitialized||!pilot||!window.razePlayableState?.ready)return;
+ viewportInitialized=true;requestAnimationFrame(updateViewportInsets);
+}
+function focusGame(){canvas.focus({preventScroll:true})}
+const codes={KeyA:65,KeyD:68,KeyW:87,KeyS:83,KeyR:82,KeyQ:81,KeyE:69,Tab:9,F8:119,Digit1:49,Digit2:50,Digit3:51,Digit4:52,Digit5:53,Digit6:54,Digit7:55,Digit8:56,Digit9:57,Digit0:48,ArrowLeft:37,ArrowRight:39,ArrowUp:38,ArrowDown:40,Space:32,KeyP:80,Escape:27,ShiftLeft:16,ShiftRight:16,ControlLeft:17,ControlRight:17,Enter:13,End:35};
+for(const type of ['keydown','keyup'])window.addEventListener(type,event=>{
+ const code=codes[event.code]||codes[({a:'KeyA',d:'KeyD',w:'KeyW',s:'KeyS',r:'KeyR',q:'KeyQ',e:'KeyE',p:'KeyP',' ':'Space',Escape:'Escape',Tab:'Tab',Enter:'Enter',ArrowLeft:'ArrowLeft',ArrowRight:'ArrowRight',ArrowUp:'ArrowUp',ArrowDown:'ArrowDown'})[event.key]]||event.keyCode;if(!Object.values(codes).includes(code)||!window.razePlayableState?.ready||event.target?.matches?.('input,textarea,[contenteditable=true]'))return;
+ event.preventDefault();if(type==='keydown'&&event.repeat)return;
+ events.push({type,code,trusted:event.isTrusted,frame:window.razePlayableState.frame});if(events.length>1000)events.shift();
+ webInput('keyboard','key',{code,down:type==='keydown'});
+});
+canvas.addEventListener('wheel',event=>{if(window.razePlayableState?.uiScreen==='game'){event.preventDefault();send('WeaponWheel',event.deltaY<0?'1':'-1')}},{passive:false});
+function releaseBrowserInput(){for(const [id,route] of touchRoutes){send(route==='interface'?'InterfaceTouchEvent':'TouchEvent',JSON.stringify({id,phase:'cancel',normalized:true,x:0,y:0}));}touchRoutes.clear();send('ClearKeys');window.razeGamepad?.reset();document.getElementById('reticle').style.display='none'}
+window.addEventListener('blur',releaseBrowserInput);window.addEventListener('pagehide',releaseBrowserInput);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)releaseBrowserInput()});
+function rememberPointer(e){pointerEvents.push({type:e.type,trusted:e.isTrusted,button:e.button,frame:window.razePlayableState?.frame});if(pointerEvents.length>500)pointerEvents.shift()}
+function nativeTouch(event,phase){
+ const r=canvas.getBoundingClientRect();
+ send('TouchEvent',JSON.stringify({id:event.pointerId,phase,normalized:true,x:(event.clientX-r.left)/r.width,y:(event.clientY-r.top)/r.height}));
+}
+function webInput(source,action,values={}){send('WebInputEvent',JSON.stringify({source,action,...values}))}
+function pointNative(event){const r=canvas.getBoundingClientRect();webInput('mouse','pointer',{normalized:true,x:(event.clientX-r.left)/r.width,y:(event.clientY-r.top)/r.height})}
+window.ballcrownInput={send:webInput,release:releaseBrowserInput};
+const touchRoutes=new Map();
+function overNativeInterface(event){
+ const state=window.razePlayableState;if(!state||state.uiScreen!=='game')return true;
+ if(state.gameInterfacePage&&state.gameInterfacePage!=='hud')return true;
+ const r=canvas.getBoundingClientRect(),x=(event.clientX-r.left)/r.width,y=(event.clientY-r.top)/r.height;
+ return (state.interfaceHitRegions||[]).some(rect=>x>=rect.x&&x<=rect.x+rect.width&&y>=rect.y&&y<=rect.y+rect.height);
+}
+function overNativeRespawn(event){
+ const state=window.razePlayableState;if(state?.uiScreen!=='game'||!state.playerDead||!state.canRespawn)return false;
+ const r=canvas.getBoundingClientRect(),x=(event.clientX-r.left)/r.width,y=(event.clientY-r.top)/r.height;
+ return (state.interfaceHitRegions||[]).some(hit=>hit.label==='respawn'&&x>=hit.x&&x<=hit.x+hit.width&&y>=hit.y&&y<=hit.y+hit.height);
+}
+function interfaceTouch(event,phase){const r=canvas.getBoundingClientRect();send('InterfaceTouchEvent',JSON.stringify({id:event.pointerId,phase,x:(event.clientX-r.left)/r.width,y:(event.clientY-r.top)/r.height}))}
+function inAcceptedTouchPad(event){
+ const state=window.razePlayableState;
+ if(state?.uiScreen!=='game'||state.paused||state.gameInterfacePage&&state.gameInterfacePage!=='hud')return false;
+ const r=canvas.getBoundingClientRect(),w=state.viewportPixelWidth||canvas.width,h=state.viewportPixelHeight||canvas.height;
+ const scale=h>w*1.1?w/420:Math.max(w/r.width,h/600),x=(event.clientX-r.left)/r.width*w/scale,y=(event.clientY-r.top)/r.height*h/scale;
+ return (state.touchPads||[]).some(p=>!p.disabled&&(!state.playerDead||p.role==='pause')&&(Number.isFinite(p.nx)?(event.clientX-r.left)/r.width>=p.nx&&(event.clientX-r.left)/r.width<=p.nx+p.nwidth&&(event.clientY-r.top)/r.height>=p.ny&&(event.clientY-r.top)/r.height<=p.ny+p.nheight:x>=p.x&&x<=p.x+p.width&&y>=p.y&&y<=p.y+p.height));
+}
+function capturePointer(e){if(e.isTrusted){try{canvas.setPointerCapture?.(e.pointerId)}catch{}}}
+canvas.addEventListener('pointerdown',e=>{
+ focusGame();rememberPointer(e);capturePointer(e);
+ if(e.pointerType==='touch'||e.pointerType==='pen'){
+  document.getElementById('reticle').style.display='none';
+  // A ready-button UI contact preserves the visible HUD until release.
+  // A first touch after a mouse must not move that button under the thumb.
+  if(!window.razePlayableState?.playerDead)webInput('touch','activity');
+  // Native touch pads own their accepted bounds. This also protects two
+  // downs in the same browser task before the old keyboard HUD is repainted.
+  const activatedPad=inAcceptedTouchPad(e);
+  const route=!activatedPad&&(window.razePlayableState?.playerDead||overNativeInterface(e))?'interface':'game';touchRoutes.set(e.pointerId,route);
+  if(route==='interface')interfaceTouch(e,'down');else nativeTouch(e,'down');
+ }else if(e.button===0){if(overNativeRespawn(e)){touchRoutes.set(e.pointerId,'interface');interfaceTouch(e,'down');return;}webInput('mouse','activity');if(!overNativeInterface(e)){pointNative(e);webInput('mouse','shoot',{down:true})}}
+});
+function releasePointer(e,phase){
+ rememberPointer(e);
+ if(e.pointerType==='touch'||touchRoutes.has(e.pointerId)){
+  const route=touchRoutes.get(e.pointerId);if(route==='interface')interfaceTouch(e,phase);else if(route==='game')nativeTouch(e,phase);touchRoutes.delete(e.pointerId);
+ }else if(e.button===0||phase==='cancel')webInput('mouse',phase==='cancel'?'release':'shoot',{down:false});
+}
+canvas.addEventListener('pointerup',e=>releasePointer(e,'up'));
+canvas.addEventListener('pointercancel',e=>releasePointer(e,'cancel'));
+canvas.addEventListener('lostpointercapture',e=>releasePointer(e,'cancel'));
+window.addEventListener('pointerup',e=>{if(e.target!==canvas)releasePointer(e,'up')});
+canvas.addEventListener('pointermove',event=>{
+ rememberPointer(event);
+ if(event.pointerType==='touch'||event.pointerType==='pen'||touchRoutes.has(event.pointerId)){
+  document.getElementById('reticle').style.display='none';
+  const route=touchRoutes.get(event.pointerId);if(route==='interface')interfaceTouch(event,'move');else if(route==='game')nativeTouch(event,'move');return;
+ }
+ if(window.razePlayableState?.uiScreen!=='game'||window.razePlayableState?.gameInterfacePage&&window.razePlayableState.gameInterfacePage!=='hud'){document.getElementById('reticle').style.display='none';return;}
+ const r=canvas.getBoundingClientRect();pointNative(event);
+ const reticle=document.getElementById('reticle');reticle.style.display='block';reticle.style.left=(event.clientX-r.left)+'px';reticle.style.top=(event.clientY-r.top)+'px';
+});
+window.addEventListener('pointermove',event=>{
+ if(event.target===canvas||!touchRoutes.has(event.pointerId))return;
+ const route=touchRoutes.get(event.pointerId);if(route==='interface')interfaceTouch(event,'move');else nativeTouch(event,'move');
+});
+window.addEventListener('pointercancel',event=>{if(event.target!==canvas&&touchRoutes.has(event.pointerId))releasePointer(event,'cancel')});
+let lastTouchEpoch=null,lastTouchScreen=null;
+canvas.addEventListener('pointerleave',()=>document.getElementById('reticle').style.display='none');
+window.addEventListener('raze-frame',e=>{
+ const state=e.detail;
+ const touchScreen=state.uiScreen+':'+(state.gameInterfacePage||'');
+ const invalidate=lastTouchEpoch!==null&&(state.touchCaptureEpoch!==lastTouchEpoch||touchScreen!==lastTouchScreen);
+ lastTouchEpoch=state.touchCaptureEpoch;lastTouchScreen=touchScreen;
+ if(invalidate){
+  const cancelled=[...touchRoutes];touchRoutes.clear();
+  // Clear published ownership before SendMessage can synchronously report.
+  for(const [id,route] of cancelled)send(route==='interface'?'InterfaceTouchEvent':'TouchEvent',JSON.stringify({id,phase:'cancel',normalized:true,x:0,y:0}));
+ }
+ initializeViewportIfReady();
+ const game=state.uiScreen==='game';if(document.body.classList.contains('in-game')!==game){document.body.classList.toggle('in-game',game);requestAnimationFrame(updateViewportInsets);}
+ document.getElementById('loading').style.display='none';
+ document.getElementById('pause').style.display='none'; // Pause is drawn by the native Unity interface.
+ if(!reported){reported=true;focusGame();if(window.webkit?.messageHandlers?.qa)window.webkit.messageHandlers.qa.postMessage({progress:true,stage:'Native character ready'})}
+});
+function updateViewportInsets(){
+ const probe=document.createElement('div');probe.style.cssText='position:absolute;visibility:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)';document.body.appendChild(probe);
+ const style=getComputedStyle(probe),r=canvas.getBoundingClientRect();
+ const layout=JSON.stringify({width:r.width,height:r.height,pixelRatio:Math.min(window.devicePixelRatio||1,1.5)});
+ if(pilot&&window.razePlayableState?.ready&&layout!==lastCanvasLayout){lastCanvasLayout=layout;send('CanvasLayout',layout)}
+ send('ViewportInsets',JSON.stringify({left:(parseFloat(style.paddingLeft)||0)/r.width,top:(parseFloat(style.paddingTop)||0)/r.height,right:(parseFloat(style.paddingRight)||0)/r.width,bottom:(parseFloat(style.paddingBottom)||0)/r.height}));probe.remove();
+ if(navigator.maxTouchPoints>0)send('EnableTouchControls','1');
+}
+window.addEventListener('resize',()=>{releaseBrowserInput();updateViewportInsets()});
+window.visualViewport?.addEventListener('resize',()=>{releaseBrowserInput();updateViewportInsets()});
+window.addEventListener('orientationchange',()=>{releaseBrowserInput();requestAnimationFrame(updateViewportInsets)});
+if(typeof ResizeObserver!=='undefined')new ResizeObserver(()=>{if(pilot&&window.razePlayableState?.ready)updateViewportInsets()}).observe(canvas);
+window.addEventListener('error',e=>{document.getElementById('load-progress').textContent=e.message;window.pilotError=e.message;window.razeConsoleErrors.push(e.message)});
+// Native Screen.SetResolution owns the render buffer. Automatic CSS matching
+// would resize it again while Unity retained the requested low-resolution
+// viewport, cropping the world after CleanFrame returns to a saved quality.
+const initialCanvasRect=canvas.getBoundingClientRect(),initialDensity=Math.min(window.devicePixelRatio||1,1.5);
+canvas.width=Math.max(1,Math.round(initialCanvasRect.width*initialDensity));canvas.height=Math.max(1,Math.round(initialCanvasRect.height*initialDensity));
+createUnityInstance(canvas,{dataUrl:'Build/BuildWeb.data',frameworkUrl:'Build/BuildWeb.framework.js',codeUrl:'Build/BuildWeb.wasm',streamingAssetsUrl:'StreamingAssets',matchWebGLToCanvasSize:false,devicePixelRatio:initialDensity,companyName:'ballcrown',productName:'ballcrown',productVersion:'0.22.0',
+ showBanner:(message,type)=>{if(type==='error'){document.getElementById('load-progress').textContent=message;window.pilotError=message}}
+},p=>document.getElementById('load-progress').textContent=Math.round(p*100)+'%').then(instance=>{pilot=instance;window.pilot=instance;focusGame();initializeViewportIfReady()}).catch(e=>{document.getElementById('load-progress').textContent='Unity: '+e;window.pilotError=String(e)});
+
+</script><script type="module">
+/** Standard Gamepad API -> the pinned Ruffle 0.7.1 DOM input listeners.
+ * Ruffle's canvas listens for PointerEvent; its window keyboard listeners require
+ * focus on the player. Neither path rejects untrusted events in the pinned build.
+ * Keep Ruffle gamepadButtonMapping:{}: this adapter owns the complete mapping.
+ */
+const DEFAULT_GAMEPAD_OPTIONS = Object.freeze({enabled:true, deadzone:0.18, sensitivity:1, invertY:false});
+const KEY_BINDINGS = Object.freeze({
+  KeyA:{key:'a',keyCode:65}, KeyD:{key:'d',keyCode:68},
+  KeyS:{key:'s',keyCode:83}, KeyW:{key:'w',keyCode:87},
+  KeyR:{key:'r',keyCode:82}, KeyQ:{key:'q',keyCode:81},
+  KeyE:{key:'e',keyCode:69}, Tab:{key:'Tab',keyCode:9}
+});
+const clamp = (value,min,max) => Math.max(min,Math.min(max,value));
+const axis = value => Number.isFinite(value) ? clamp(value,-1,1) : 0;
+
+function validateGamepadOptions(input = {}) {
+  const next = {...DEFAULT_GAMEPAD_OPTIONS,...input};
+  for(const name of ['enabled','invertY']) if(typeof next[name] !== 'boolean') throw new TypeError(`Неверная настройка геймпада: ${name}`);
+  if(!Number.isFinite(next.deadzone) || next.deadzone < 0 || next.deadzone > 0.6) throw new RangeError('Мёртвая зона должна быть от 0 до 0.6.');
+  if(!Number.isFinite(next.sensitivity) || next.sensitivity < 0.25 || next.sensitivity > 3) throw new RangeError('Чувствительность должна быть от 0.25 до 3.');
+  return {enabled:next.enabled,deadzone:next.deadzone,sensitivity:next.sensitivity,invertY:next.invertY};
+}
+
+function radialDeadzone(x,y,deadzone = DEFAULT_GAMEPAD_OPTIONS.deadzone) {
+  x = axis(x); y = axis(y);
+  if(!Number.isFinite(deadzone) || deadzone < 0 || deadzone >= 1) throw new RangeError('Неверная мёртвая зона.');
+  const length = Math.hypot(x,y);
+  if(length <= deadzone) return {x:0,y:0};
+  const scaled = (Math.min(1,length)-deadzone)/(1-deadzone);
+  return {x:x/length*scaled,y:y/length*scaled};
+}
+
+function pressed(button,threshold = 0.5) {
+  return !!button && (button.pressed === true || (Number.isFinite(button.value) && button.value > threshold));
+}
+
+/** No controller-name heuristics: the browser must expose the standard layout. */
+function mapStandardGamepad(gamepad,options = DEFAULT_GAMEPAD_OPTIONS) {
+  const config = validateGamepadOptions(options);
+  const empty = {supported:false,keys:[],aim:{x:0,y:0},fire:false,menuClick:false,pause:false,activity:false};
+  if(!gamepad || gamepad.connected === false || gamepad.mapping !== 'standard' || !gamepad.axes || !gamepad.buttons || gamepad.axes.length < 4 || gamepad.buttons.length < 16) return empty;
+  const buttons = gamepad.buttons;
+  const b = index => pressed(buttons[index]);
+  const move = radialDeadzone(gamepad.axes[0],gamepad.axes[1],config.deadzone);
+  const aim = radialDeadzone(gamepad.axes[2],gamepad.axes[3],config.deadzone);
+  if(config.invertY) aim.y = -aim.y;
+  const left = move.x < -0.15 || b(14), right = move.x > 0.15 || b(15);
+  const keys = [];
+  // Opposing directions cancel rather than changing direction every frame.
+  if(left !== right) keys.push(left ? 'KeyA' : 'KeyD');
+  if(move.y > 0.45 || b(1) || b(13)) keys.push('KeyS');
+  if(b(0) || b(12)) keys.push('KeyW');
+  if(b(2)) keys.push('KeyR');
+  if(b(4)) keys.push('KeyQ');
+  if(b(5)) keys.push('KeyE');
+  if(b(8)) keys.push('Tab');
+  const fire = pressed(buttons[7],0.2), menuClick = b(3), pause = b(9);
+  return {supported:true,keys,aim,fire,menuClick,pause,activity:keys.length > 0 || fire || menuClick || pause || aim.x !== 0 || aim.y !== 0};
+}
+
+
+
+// Retains the v4 standard-layout mapping. Routes to the native game's ordinary
+// browser input adapter; no SWF or Ruffle is used by this controller.
+class NativeGamepad {
+ constructor({canvas,isReady,isPaused,onPause,onStatus,onInput,getSettings,isActive,getUIState,environment=globalThis}) {
+  Object.assign(this,{canvas,isReady,isPaused,onPause,onStatus,onInput,getSettings,isActive,getUIState,environment});
+  this.options={...DEFAULT_GAMEPAD_OPTIONS};this.keys=new Set();this.fire=false;
+  this.position={x:.65,y:.5};this.last=null;this.pauseHeld=false;this.menuHeld=false;
+  this.neutral=true;this.blurred=false;this.running=false;this.context=null;this.confirmHeld=false;this.backHeld=false;this.direction=0;this.repeatAt=0;
+  this.blur=()=>{this.blurred=true;this.reset()};this.focus=()=>{this.blurred=false};
+  this.hidden=()=>{if(environment.document.hidden)this.reset()};this.disconnect=()=>this.reset();
+ }
+ key(type,code){if(this.onInput){this.onInput('key',{code:({KeyA:65,KeyD:68,KeyW:87,KeyS:83,KeyR:82,KeyQ:81,KeyE:69,Tab:9})[code],down:type==='keydown'});return}this.environment.dispatchEvent(new this.environment.KeyboardEvent(type,{code,bubbles:true,cancelable:true}))}
+ pointer(type){
+  if(this.onInput){this.onInput(type==='pointermove'?'pointer':'shoot',type==='pointermove'?{x:this.position.x,y:this.position.y,normalized:true}:{down:type==='pointerdown'});return}
+  const r=this.canvas.getBoundingClientRect();
+  this.canvas.dispatchEvent(new this.environment.PointerEvent(type,{clientX:r.left+this.position.x*r.width,clientY:r.top+this.position.y*r.height,button:type==='pointermove'?-1:0,buttons:this.fire?1:0,isPrimary:true,pointerType:'mouse',bubbles:true,cancelable:true}));
+ }
+ setKeys(next){const wanted=new Set(next);for(const code of this.keys)if(!wanted.has(code))this.key('keyup',code);for(const code of wanted)if(!this.keys.has(code))this.key('keydown',code);this.keys=wanted}
+ setFire(value){if(value!==this.fire){this.fire=value;this.pointer(value?'pointerdown':'pointerup')}}
+ reset(){this.setKeys([]);this.setFire(false);this.neutral=true;this.pauseHeld=true;this.menuHeld=true;this.confirmHeld=this.backHeld=true;this.direction=0;this.repeatAt=0;this.last=null;if(this.menuUsed){this.onInput?.('menu',{code:0});this.menuUsed=false}}
+ start(){
+  if(this.running)return;this.running=true;
+  this.environment.addEventListener('blur',this.blur);this.environment.addEventListener('focus',this.focus);
+  this.environment.addEventListener('gamepaddisconnected',this.disconnect);this.environment.document.addEventListener('visibilitychange',this.hidden);
+  this.tick=time=>{if(!this.running)return;this.poll(time);this.frame=this.environment.requestAnimationFrame(this.tick)};
+  this.frame=this.environment.requestAnimationFrame(this.tick);
+ }
+ stop(){this.running=false;this.environment.cancelAnimationFrame(this.frame);this.reset();this.environment.removeEventListener('blur',this.blur);this.environment.removeEventListener('focus',this.focus);this.environment.removeEventListener('gamepaddisconnected',this.disconnect);this.environment.document.removeEventListener('visibilitychange',this.hidden)}
+ sendMenu(code){this.menuUsed=true;this.onInput?.('menu',{code})}
+ menuInput(pad){
+  const b=i=>!!pad.buttons[i]&&(pad.buttons[i].pressed||pad.buttons[i].value>.5);
+  const move=mapStandardGamepad(pad,this.options);
+  const axis=i=>Number.isFinite(pad.axes[i])?pad.axes[i]:0;
+  const threshold=Math.max(.45,this.options.deadzone+.1);
+  let x=(b(15)?1:0)-(b(14)?1:0),y=(b(13)?1:0)-(b(12)?1:0);
+  if(!x&&!b(14)&&!b(15)&&Math.abs(axis(0))>threshold)x=Math.sign(axis(0));
+  if(!y&&!b(12)&&!b(13)&&Math.abs(axis(1))>threshold)y=Math.sign(axis(1));
+  const direction=x&&y?(Math.abs(axis(0))>Math.abs(axis(1))?(x<0?37:39):(y<0?38:40)):x?(x<0?37:39):y?(y<0?38:40):0;
+  return {direction,confirm:b(0)||b(3),back:b(1),pause:b(9),activity:move.activity||direction!==0||b(0)||b(1)};
+ }
+ poll(time){
+  const dt=this.last===null?0:Math.max(0,Math.min(.064,(time-this.last)/1000));this.last=time;
+  if(!this.environment.isSecureContext||!this.environment.navigator?.getGamepads){this.reset();this.onStatus('Геймпад: требуется localhost или HTTPS');return}
+  let pads;try{pads=Array.from(this.environment.navigator.getGamepads()).filter(Boolean)}catch{this.reset();this.onStatus('Геймпад: доступ браузера недоступен');return}
+  const pad=pads.find(p=>mapStandardGamepad(p,this.options).supported);
+  if(!pad){this.reset();this.onStatus('Геймпад: подключите контроллер и нажмите кнопку');return}
+  const settings=this.getSettings?.();if(settings){this.options.deadzone=Math.max(0,Math.min(.6,settings.gamepadDeadzone??.18));this.options.sensitivity=Math.max(.25,Math.min(3,settings.gamepadSensitivity??1));this.options.invertY=!!settings.gamepadInvertY}
+  const input=mapStandardGamepad(pad,this.options),menuInput=this.menuInput(pad);
+  const ui=this.getUIState?.(),context=ui?(ui.key+':'+!!ui.active):null;
+  if(this.context!==context){this.reset();this.context=context}
+  const owns=this.isActive?this.isActive():true;
+  if(this.wasOwner&&!owns){this.reset()}this.wasOwner=owns;
+  if(this.blurred||this.environment.document.hidden){this.reset();this.onStatus('Геймпад: вернитесь в окно игры');return}
+  if(this.neutral){this.pauseHeld=input.pause;this.menuHeld=input.menuClick;this.confirmHeld=menuInput.confirm;this.backHeld=menuInput.back;if(input.activity||menuInput.activity){this.onStatus('Геймпад: отпустите кнопки и стики');return}this.neutral=false}
+  const pause=input.pause&&!this.pauseHeld;this.pauseHeld=input.pause;
+  if(ui?.active){
+   this.setKeys([]);this.setFire(false);
+   const confirm=menuInput.confirm&&!this.confirmHeld,back=menuInput.back&&!this.backHeld;
+   this.confirmHeld=menuInput.confirm;this.backHeld=menuInput.back;
+   if(pause&&this.isReady()){if(ui.screen==='game')this.onPause();else this.sendMenu(13);return}
+   if(back){this.sendMenu(27);return}
+   if(confirm){this.sendMenu(13);return}
+   if(menuInput.direction!==this.direction){this.direction=menuInput.direction;this.repeatAt=time+360;if(this.direction)this.sendMenu(this.direction)}
+   else if(this.direction&&time>=this.repeatAt){this.repeatAt=time+160;this.sendMenu(this.direction)}
+   this.onStatus('Геймпад: D-pad / левый стик — выбор · A — подтвердить · B — назад · Start — пауза');return;
+  }
+  if(pause&&this.isReady()){this.setKeys([]);this.setFire(false);this.onPause();return}
+  if(!this.isReady()||this.isPaused()){this.setKeys([]);this.setFire(false);this.onStatus('Геймпад: Start — продолжить');return}
+  const menu=input.menuClick&&!this.menuHeld;this.menuHeld=input.menuClick;
+  if(!owns&&!input.activity){this.setKeys([]);this.setFire(false);return}
+  if(input.activity){if(!owns){this.keys.clear();this.fire=false}this.onInput?.('activity',{});this.wasOwner=this.isActive?this.isActive():true;if(!this.wasActivity)this.canvas.focus({preventScroll:true})}this.wasActivity=input.activity;
+  const r=this.canvas.getBoundingClientRect(),speed=Math.min(r.width,r.height)*this.options.sensitivity;
+  this.position.x=Math.max(.002,Math.min(.998,this.position.x+input.aim.x*speed*dt/r.width));
+  this.position.y=Math.max(.002,Math.min(.998,this.position.y+input.aim.y*speed*dt/r.height));
+  if(input.aim.x||input.aim.y||input.fire||menu)this.pointer('pointermove');
+  this.setKeys(input.keys);this.setFire(input.fire);
+  if(menu&&!input.fire){this.setFire(true);this.setFire(false)}
+  this.onStatus('Геймпад: левый стик — движение · правый — прицел · A — прыжок · RT — огонь · X — перезарядка · Start — пауза');
+ }
+}
+
+const controller=new NativeGamepad({canvas:document.getElementById('unity-canvas'),isReady:()=>!!window.razePlayableState?.ready,isPaused:()=>!!window.razePlayableState?.paused,onInput:(action,values)=>window.ballcrownInput?.send('gamepad',action,values),getSettings:()=>window.razePlayableState?.inputSettings,getUIState:()=>{const s=window.razePlayableState;return s?{active:!!s.menuNavigationAvailable,screen:s.uiScreen,key:s.uiScreen+'/'+s.gameInterfacePage}:null},isActive:()=>window.razePlayableState?.activeInputScheme==='gamepad',onPause:()=>{window.ballcrownInput?.send('gamepad','activity');window.pilot?.SendMessage('ballcrownRuntime','TogglePause')},onStatus:text=>document.getElementById('gamepad-status').textContent=text});
+window.razeGamepad=controller;controller.start();window.addEventListener('pagehide',()=>controller.stop());
+</script></html>

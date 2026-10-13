@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { validateTransportManifest } from "./lib/ballcrown-transport.mjs";
 
 const ROOT = process.cwd();
 const OUT = path.join(ROOT, "dist");
@@ -9,6 +10,8 @@ const GAME = path.join(ROOT, "apps/game/dist");
 const LOBBY = path.join(ROOT, "apps/lobby/dist");
 const QUIET_VALLEY_RUNTIME = path.join(ROOT, "apps/quiet-valley/dist");
 const QUIET_VALLEY_META = path.join(LOBBY, "worlds/quiet-valley");
+const BALLCROWN_RUNTIME = path.join(SITE, "games/ballcrown/play");
+const BALLCROWN_BUNDLED_MANIFEST = path.join(ROOT, "functions/games/ballcrown/play/Build/transport-manifest.json");
 
 function rm(p) {
   fs.rmSync(p, { recursive: true, force: true });
@@ -37,6 +40,25 @@ ensureExists(QUIET_VALLEY_RUNTIME, "Quiet Valley runtime");
 ensureExists(QUIET_VALLEY_META, "Quiet Valley metadata");
 ensureExists(path.join(QUIET_VALLEY_RUNTIME, "manifest.json"), "Quiet Valley release manifest");
 ensureExists(path.join(SITE, "games/index.html"), "BLACKCROWN games hub");
+ensureExists(path.join(BALLCROWN_RUNTIME, "index.html"), "Ballcrown immutable Unity shell");
+ensureExists(path.join(BALLCROWN_RUNTIME, "Build/transport.json"), "Ballcrown transport manifest");
+ensureExists(BALLCROWN_BUNDLED_MANIFEST, "Ballcrown Functions manifest");
+const ballcrownManifestBytes = fs.readFileSync(path.join(BALLCROWN_RUNTIME, "Build/transport.json"));
+if (!ballcrownManifestBytes.equals(fs.readFileSync(BALLCROWN_BUNDLED_MANIFEST))) {
+  throw new Error("Ballcrown static and Functions manifests differ; re-import the verified release.");
+}
+const ballcrownManifest = JSON.parse(ballcrownManifestBytes.toString("utf-8"));
+validateTransportManifest(ballcrownManifest);
+for (const file of ballcrownManifest.virtualFiles) {
+  if (fs.existsSync(path.join(BALLCROWN_RUNTIME, file.path))) {
+    throw new Error(`Oversized Ballcrown source must be served by Functions: ${file.path}`);
+  }
+  for (const chunk of file.chunks) {
+    const chunkPath = path.join(BALLCROWN_RUNTIME, chunk.path);
+    ensureExists(chunkPath, "Ballcrown static chunk");
+    if (fs.statSync(chunkPath).size !== chunk.bytes) throw new Error(`Ballcrown chunk size mismatch: ${chunk.path}`);
+  }
+}
 
 rm(OUT);
 mkdir(OUT);
@@ -66,6 +88,9 @@ if (fs.existsSync(sitePwa)) copyDir(sitePwa, path.join(OUT, "pwa"));
 // Redirects for SPA routing (site + nested apps + standalone games).
 // Exact slash and no-slash entries keep mobile Safari/Cloudflare directory handling deterministic.
 const redirects = [
+  "/games/ballcrown /games/ballcrown/ 301",
+  "/games/ballcrown/play /games/ballcrown/play/ 301",
+  "/games/ballcrown/* /games/ballcrown/:splat 200",
   "/games/quiet-valley/assets/* /games/quiet-valley/assets/:splat 200",
   "/games/quiet-valley/manifest.json /games/quiet-valley/manifest.json 200",
   "/games/quiet-valley/preview.webp /games/quiet-valley/preview.webp 200",
@@ -147,6 +172,32 @@ const headers = [
   "/games/crown-front/Build/CloudWebGL.wasm.unityweb",
   "  Cache-Control: no-cache",
   "  Content-Type: application/wasm",
+  "",
+  "/games/ballcrown/*",
+  "  Cross-Origin-Resource-Policy: same-origin",
+  "",
+  "/games/ballcrown/index.html",
+  "  Cache-Control: no-cache",
+  "",
+  "/games/ballcrown/play/index.html",
+  "  Cache-Control: no-cache",
+  "",
+  "/games/ballcrown/play/Build/BuildWeb.loader.js",
+  "  Cache-Control: no-cache",
+  "  Content-Type: application/javascript; charset=utf-8",
+  "",
+  "/games/ballcrown/play/Build/BuildWeb.framework.js",
+  "  Cache-Control: no-cache",
+  "  Content-Type: application/javascript; charset=utf-8",
+  "",
+  "/games/ballcrown/play/Build/transport.json",
+  "  Cache-Control: no-cache",
+  "  Content-Type: application/json; charset=utf-8",
+  "",
+  "/games/ballcrown/play/Build/chunks/*",
+  "  Cache-Control: public, max-age=31536000, immutable, no-transform",
+  "  Content-Type: application/octet-stream",
+  "  Cross-Origin-Resource-Policy: same-origin",
   ""
 ].join("\n");
 fs.writeFileSync(path.join(OUT, "_headers"), headers, "utf-8");
@@ -159,3 +210,4 @@ console.log("  /lobby/  -> EvoFish lobby");
 console.log("  /games/  -> BLACKCROWN game catalog");
 console.log("  /games/quiet-valley/ -> Quiet Valley standalone WebGL game");
 console.log("  /games/crown-front/ -> CROWN//FRONT WebGL alpha");
+console.log("  /games/ballcrown/ -> Ballcrown launcher + immutable Unity runtime");

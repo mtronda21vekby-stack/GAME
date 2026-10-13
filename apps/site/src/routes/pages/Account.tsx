@@ -702,7 +702,7 @@ export function Account() {
       <section className="bcSection" style={{ paddingTop: 10 }}>
         <div style={{ maxWidth: 980, margin: "0 auto", padding: "0 14px" }}>
           <div style={{ display: "grid", gap: 12 }}>
-            <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1.05fr 0.95fr" as any }}>
+            <div className="bcAccountGrid">
               <Card
                 title="Профиль"
                 right={
@@ -740,7 +740,7 @@ export function Account() {
                       {initials.slice(0, 2)}
                     </button>
 
-                    <div style={{ display: "grid", gap: 6, minWidth: 220, flex: "1 1 260px" }}>
+                    <div style={{ display: "grid", gap: 6, minWidth: 0, flex: "1 1 260px" }}>
                       <LabelRow label="Никнейм" hint="до 18 символов">
                         <input
                           value={nick}

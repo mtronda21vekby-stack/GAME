@@ -6,6 +6,10 @@ import { NotFound } from "./NotFound";
 import { normalizePath } from "./routeMetadata";
 import { getRouteDefinition, isExternalAppPath } from "./siteRoutes";
 
+function getLocationKey(location: URL | Location) {
+  return normalizePath(location.pathname) + location.search;
+}
+
 function sameOrigin(url: URL) {
   return url.origin === window.location.origin;
 }
@@ -39,10 +43,11 @@ function updateRouteHead(title: string, description: string, noIndex: boolean) {
 }
 
 export function Router() {
-  const [path, setPath] = React.useState(() => normalizePath(window.location.pathname));
+  const [locationKey, setLocationKey] = React.useState(() => getLocationKey(window.location));
+  const path = normalizePath(locationKey);
 
   React.useEffect(() => {
-    const onPop = () => setPath(normalizePath(window.location.pathname));
+    const onPop = () => setLocationKey(getLocationKey(window.location));
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
@@ -61,17 +66,17 @@ export function Router() {
 
       const url = new URL(href, window.location.href);
       if (!sameOrigin(url) || isExternalAppPath(normalizePath(url.pathname))) return;
-      if (normalizePath(url.pathname) === path && url.hash) return;
+      if (getLocationKey(url) === locationKey && url.hash) return;
 
       event.preventDefault();
       window.history.pushState(null, "", url.pathname + url.search + url.hash);
-      setPath(normalizePath(url.pathname));
+      setLocationKey(getLocationKey(url));
       window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     };
 
     document.addEventListener("click", onClick);
     return () => document.removeEventListener("click", onClick);
-  }, [path]);
+  }, [locationKey]);
 
   const route = getRouteDefinition(path);
   const metadata = route?.metadata ?? {
@@ -94,7 +99,7 @@ export function Router() {
     <>
       {metadata.chrome.music ? <SiteMusic /> : null}
 
-      <div key={path} className="bcRouteView" data-route={route?.path ?? "not-found"}>
+      <div key={locationKey} className="bcRouteView" data-route={route?.path ?? "not-found"}>
         <React.Suspense fallback={<RouteFallback />}>
           {RouteComponent ? <RouteComponent /> : <NotFound requestedPath={path} />}
         </React.Suspense>

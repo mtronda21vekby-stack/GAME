@@ -88,7 +88,7 @@ export function CinematicExperience({
         <div className="bcCinematic__grain" aria-hidden="true" />
         <div className="bcCinematic__scan" aria-hidden="true" />
         <ExperienceChrome activeScene={activeScene} statusSource={statusSource} />
-        <div className="bcCinematic__scrollHint" aria-hidden="true"><span>SCROLL TO ENTER</span><i /></div>
+        <div className="bcCinematic__scrollHint" aria-hidden="true"><span>ЛИСТАЙ, ЧТОБЫ ОТКРЫТЬ МИРЫ</span><i /></div>
       </div>
     </section>
   );

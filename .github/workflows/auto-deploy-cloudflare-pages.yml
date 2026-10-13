@@ -61,6 +61,11 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Validate commerce trust boundary
         run: node scripts/check-commerce-trust.mjs
+      - name: Validate site and immutable Ballcrown transport
+        run: |
+          pnpm --filter @blackcrown/site typecheck
+          pnpm --filter @blackcrown/site test
+          node --test scripts/tests/ballcrown-transport.test.mjs
       - name: Validate restored Quiet Valley architecture and domain
         run: pnpm --filter @blackcrown/quiet-valley test
       - name: Build production output
@@ -114,6 +119,19 @@ jobs:
           --commit-dirty=true
       - name: Verify deployed Quiet Valley release and every ES module
         run: node apps/quiet-valley/scripts/verify-deployed.mjs "$BLACKCROWN_PRODUCTION_URL"
+      - name: Verify deployed Ballcrown v19 and all native runtime hashes
+        shell: bash
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            if node scripts/verify-ballcrown-hosting.mjs "$BLACKCROWN_PRODUCTION_URL"; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 6 ]; then
+              echo "::error::Ballcrown production runtime verification failed."
+              exit 1
+            fi
+            sleep 10
+          done
       - name: Production ecosystem smoke gate
         shell: bash
         run: |

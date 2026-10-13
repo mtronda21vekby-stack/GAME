@@ -2,7 +2,7 @@ import React from "react";
 import GlassSurface from "./GlassSurface";
 import "../styles/live-feed-v3.css";
 
-type FeedCard = { title: string; desc?: string; tag?: string; href?: string };
+type FeedCard = { title: string; desc?: string; tag?: string; href?: string; linkLabel?: string };
 type FeedBlock = { id: string; title?: string; subtitle?: string; cards?: FeedCard[] };
 
 type FeedSource = "remote" | "fallback";
@@ -10,26 +10,29 @@ type FeedSource = "remote" | "fallback";
 const FALLBACK_BLOCKS: FeedBlock[] = [
   {
     id: "platform-fallback",
-    title: "BlackCrown Network",
-    subtitle: "Статические сигналы показываются, когда редакционный API временно пуст или недоступен.",
+    title: "Миры и коллекция",
+    subtitle: "Выбери, куда отправиться дальше.",
     cards: [
       {
         tag: "STORE",
-        title: "Новый commerce-flow",
-        desc: "Корзина, серверная проверка цены, статус заказа и тестовая выдача предметов.",
+        title: "Коллекция BlackCrown",
+        desc: "Скины, бейджи и наборы. Найди предметы для своей коллекции.",
         href: "/store",
+        linkLabel: "Перейти в Store",
       },
       {
         tag: "EVOFISH",
-        title: "Океанский мир доступен",
-        desc: "Запуск игрового прототипа и прогресс внутри общей экосистемы BlackCrown.",
+        title: "Погрузись в EvoFish",
+        desc: "Океанский мир BlackCrown в отдельном игровом приложении.",
         href: "/game/",
+        linkLabel: "Открыть EvoFish",
       },
       {
         tag: "CROWN//FRONT",
-        title: "Alpha-канал открыт",
-        desc: "Тактический WebGL-мир остаётся доступен через отдельное игровое приложение.",
+        title: "Crown//Front",
+        desc: "Тактический мир BlackCrown в отдельном игровом приложении.",
         href: "/games/crown-front/",
+        linkLabel: "Открыть Crown//Front",
       },
     ],
   },
@@ -52,6 +55,7 @@ function normalize(payload: unknown): FeedBlock[] {
             desc: typeof item.desc === "string" ? item.desc : undefined,
             tag: typeof item.tag === "string" ? item.tag : undefined,
             href: typeof item.href === "string" ? item.href : undefined,
+            linkLabel: typeof item.linkLabel === "string" ? item.linkLabel : undefined,
           }];
         })
       : [];
@@ -88,8 +92,8 @@ export function LiveFeedV3() {
   return (
     <section className="bcLiveFeedV3" data-source={source} aria-labelledby="bc-live-v3-title">
       <div className="bcLiveFeedV3__head">
-        <span>BLACKCROWN / {source === "remote" ? "LIVE FEED" : "PLATFORM FEED"}</span>
-        <h2 id="bc-live-v3-title">Последние сигналы платформы.</h2>
+        <span>BLACKCROWN / {source === "remote" ? "ОБНОВЛЕНИЯ" : "МИРЫ И СЕРВИСЫ"}</span>
+        <h2 id="bc-live-v3-title">Внутри BlackCrown.</h2>
       </div>
       <div className="bcLiveFeedV3__grid">
         {blocks.map((block) => (
@@ -102,7 +106,7 @@ export function LiveFeedV3() {
                   <small>{card.tag ?? "BLACKCROWN"}</small>
                   <strong>{card.title}</strong>
                   {card.desc ? <p>{card.desc}</p> : null}
-                  {card.href ? <a href={card.href}>Открыть ↗</a> : null}
+                  {card.href ? <a href={card.href} aria-label={card.linkLabel ?? `Открыть: ${card.title}`}>{card.linkLabel ?? "Открыть"}<span aria-hidden="true">↗</span></a> : null}
                 </article>
               ))}
             </div>

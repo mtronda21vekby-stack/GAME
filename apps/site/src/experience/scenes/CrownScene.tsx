@@ -33,7 +33,6 @@ export function CrownScene({ active, reducedMotion, networkStatus, onImageHealth
             onError={(event) => onImageHealth(event, "hero")}
           />
         </picture>
-        <div className="bcCinematic__crownCore" />
         <div className="bcCinematic__foreground bcCinematic__foreground--crown" />
       </div>
       <SceneCopy

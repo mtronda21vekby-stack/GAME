@@ -175,6 +175,7 @@ export function Store() {
             value={query}
             onChange={(event) => setQuery(event.currentTarget.value)}
             placeholder="Поиск по названию или тегу"
+            aria-label="Поиск предметов"
           />
 
           <select

@@ -11,47 +11,24 @@ export function AICoachV3({ onOpenCoach, onOpenSupport }: AICoachV3Props) {
   return (
     <section className="bcCoachV3" aria-labelledby="bc-coach-v3-title">
       <GlassSurface className="bcCoachV3__shell" material="reactor" tone="violet">
-        <div
-          className="bcCoachV3__visual"
-          data-bc-parallax
-          data-bc-parallax-depth="7"
-          data-bc-parallax-pointer="2"
-          data-bc-parallax-rotate="0.14"
-          data-bc-parallax-scale="0.003"
-        >
-          <img src="/assets/site/neon/coach.svg" alt="Нейронная корона BlackCrown AI-Coach" loading="lazy" />
-          <div className="bcCoachV3__halo" aria-hidden="true" />
-          <div className="bcCoachV3__nodes" aria-hidden="true">
-            <span /><span /><span /><span /><span />
-          </div>
-          <div className="bcCoachV3__telemetry" aria-hidden="true">
-            <span>CONTEXT LINK</span>
-            <strong>ACTIVE</strong>
-          </div>
+        <div className="bcCoachV3__visual" aria-hidden="true">
+          <img src="/assets/site/neon/coach.svg" alt="" loading="lazy" width="1200" height="720" />
         </div>
 
-        <div
-          className="bcCoachV3__copy"
-          data-bc-parallax
-          data-bc-parallax-depth="2"
-          data-bc-parallax-pointer="0.5"
-          data-bc-parallax-rotate="0.04"
-        >
-          <div className="bcCoachV3__eyebrow">BLACKCROWN INTELLIGENCE / AI-COACH</div>
-          <h2 id="bc-coach-v3-title">Игровой контекст остаётся с тобой.</h2>
-          <p>
-            AI-Coach помогает разбирать цели, сохраняет контекст между сессиями и возвращает пользователя в нужную точку экосистемы через Telegram.
-          </p>
+        <div className="bcCoachV3__copy">
+          <div className="bcCoachV3__eyebrow">BLACKCROWN / AI-COACH</div>
+          <h2 id="bc-coach-v3-title">Продумай следующий ход.</h2>
+          <p>Продолжай разговор о стратегии, целях и прогрессе в Telegram. AI-Coach и поддержка BlackCrown — в одном переходе.</p>
 
-          <div className="bcCoachV3__features" aria-label="Возможности AI-Coach">
-            <span>Strategy context</span>
-            <span>Progress guidance</span>
-            <span>Telegram handoff</span>
+          <div className="bcCoachV3__features" aria-label="AI-Coach в Telegram">
+            <span>Стратегия</span>
+            <span>Игровые цели</span>
+            <span>Telegram</span>
           </div>
 
           <div className="bcCoachV3__actions">
-            <Button variant="primary" onClick={onOpenCoach}>Открыть AI-Coach</Button>
-            <Button variant="ghost" onClick={onOpenSupport}>Поддержка</Button>
+            <Button className="bcServiceV3__button bcServiceV3__button--primary" variant="primary" onClick={onOpenCoach}>Открыть AI-Coach <span aria-hidden="true">↗</span></Button>
+            <Button className="bcServiceV3__button bcServiceV3__button--secondary" variant="ghost" onClick={onOpenSupport}>Поддержка</Button>
           </div>
         </div>
       </GlassSurface>

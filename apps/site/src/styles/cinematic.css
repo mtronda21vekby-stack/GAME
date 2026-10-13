@@ -46,7 +46,7 @@
   z-index: 8;
   top: 50%;
   left: clamp(24px, 7vw, 112px);
-  width: min(680px, 48vw);
+  width: min(620px, 46vw);
   transform: translateY(-50%);
   opacity: var(--cx-copy-opacity);
   pointer-events: none;
@@ -85,13 +85,17 @@
 }
 
 .bcCinematic__copy h1 {
-  max-width: 9ch;
-  font-size: 8rem;
-  line-height: 0.82;
+  max-width: 100%;
+  font-size: clamp(3rem, 5.6vw, 5.5rem);
+  line-height: 0.9;
+  letter-spacing: -0.055em;
 }
 
 .bcCinematic__copy h2 {
-  font-size: 4.9rem;
+  max-width: 100%;
+  font-size: clamp(2rem, 4.1vw, 4.1rem);
+  line-height: 0.96;
+  letter-spacing: -0.035em;
 }
 
 .bcCinematic__copy p {
@@ -179,7 +183,7 @@
 .bcCinematic__crownHalo {
   position: absolute;
   top: 46%;
-  left: 59%;
+  left: 70%;
   width: min(48rem, 70vw);
   aspect-ratio: 1;
   border: 1px solid rgba(103, 225, 244, 0.11);
@@ -191,25 +195,13 @@
 .bcCinematic__crownArt {
   position: absolute;
   top: 48%;
-  left: 62%;
+  left: 70%;
   width: min(50rem, 62vw);
   height: min(82svh, 49rem);
   object-fit: contain;
   transform: translate3d(-50%, calc(-50% - var(--cx-scene-depth)), 0) rotateY(7deg);
   transform-origin: 50% 54%;
   filter: contrast(1.15) saturate(1.12) drop-shadow(0 48px 74px rgba(0, 0, 0, 0.82));
-}
-
-.bcCinematic__crownCore {
-  position: absolute;
-  top: 52%;
-  left: 62%;
-  width: 52px;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  transform: translate(-50%, -50%) scale(var(--cx-scene-scale));
-  background: #dbfdff;
-  box-shadow: 0 0 32px #72eaff, 0 0 110px rgba(74, 217, 241, 0.7), 0 0 200px rgba(100, 87, 205, 0.32);
 }
 
 .bcCinematic__foreground--crown {
@@ -516,6 +508,33 @@
   gap: 6px;
 }
 
+.bcCinematic__nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+.bcCinematic__nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: rgba(232, 247, 252, 0.76);
+  font-size: 12px;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.bcCinematic__nav a:hover,
+.bcCinematic__nav a:focus-visible {
+  color: #f5fbff;
+  border-color: rgba(99, 233, 255, 0.24);
+  background: rgba(99, 233, 255, 0.06);
+}
+
 .bcCinematic__progress i {
   width: 24px;
   height: 2px;
@@ -577,8 +596,8 @@
 }
 
 @media (max-width: 1100px) {
-  .bcCinematic__copy h1 { font-size: 6.4rem; }
-  .bcCinematic__copy h2 { font-size: 3.9rem; }
+  .bcCinematic__copy h1 { font-size: clamp(3rem, 5.6vw, 5.5rem); }
+  .bcCinematic__copy h2 { font-size: clamp(2rem, 4.1vw, 4.1rem); }
 }
 
 @media (max-width: 820px), (pointer: coarse) {
@@ -608,14 +627,14 @@
   }
 
   .bcCinematic__copy h1 {
-    max-width: 10ch;
-    font-size: 3.55rem;
+    max-width: 100%;
+    font-size: clamp(2.3rem, 12vw, 3.25rem);
     line-height: 0.86;
   }
 
   .bcCinematic__copy h2 {
-    max-width: 14ch;
-    font-size: 2.45rem;
+    max-width: 100%;
+    font-size: clamp(1.7rem, 8.1vw, 2.45rem);
     line-height: 0.94;
   }
 
@@ -636,7 +655,8 @@
   }
 
   .bcCinematic__brand span,
-  .bcCinematic__source { display: none; }
+  .bcCinematic__source,
+  .bcCinematic__nav { display: none; }
   .bcCinematic__progress { margin-left: auto; }
   .bcCinematic__progress i { width: 15px; }
   .bcCinematic__scrollHint { display: none; }
@@ -649,7 +669,6 @@
   }
 
   .bcCinematic__crownHalo { top: 31%; left: 52%; width: 106vw; }
-  .bcCinematic__crownCore { top: 34%; left: 53%; }
 
   .bcCinematic__gateRing,
   .bcCinematic__gateCore { top: 39%; left: 50%; }
@@ -666,12 +685,14 @@
 }
 
 @media (max-width: 390px) {
-  .bcCinematic__copy h1 { font-size: 3.25rem; }
-  .bcCinematic__copy h2 { font-size: 2.15rem; }
+  .bcCinematic__copy h1 { font-size: clamp(2.3rem, 12vw, 3.25rem); }
+  .bcCinematic__copy h2 { font-size: clamp(1.7rem, 8.1vw, 2.45rem); }
   .bcCinematic__copy p { font-size: 0.86rem; }
 }
 
 @media (max-height: 560px) and (orientation: landscape) {
+  .bcCinematic__stage { min-height: 0; }
+
   .bcCinematic__copy,
   .bcCinematic__copy[data-align="right"] {
     top: 48%;
@@ -686,10 +707,9 @@
   .bcCinematic__copy h2 { font-size: 1.9rem; }
   .bcCinematic__copy p { max-width: 38ch; margin-top: 8px; font-size: 0.78rem; }
   .bcCinematic__actions { margin-top: 10px; }
-  .bcCinematic button { min-height: 42px; padding: 9px 13px; }
+  .bcCinematic button { min-height: 44px; padding: 9px 13px; }
   .bcCinematic__crownArt { top: 51%; left: 72%; width: 68vw; height: 92svh; }
   .bcCinematic__crownHalo { top: 51%; left: 72%; width: 54vw; }
-  .bcCinematic__crownCore { top: 52%; left: 72%; }
   .bcCinematic__gateRing,
   .bcCinematic__gateCore { top: 50%; left: 72%; }
   .bcCinematic__evoArt,

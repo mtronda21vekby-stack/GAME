@@ -1,3 +1,51 @@
 /* Route-scoped compatibility owner for the existing content/account pages. */
 @import "./site.css";
 @import "./visual-overhaul.css";
+
+/* Keep both profile cards inside their tracks, including narrow phone screens. */
+:where(.bcSiteRoot) .bcAccountGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 12px;
+}
+
+:where(.bcSiteRoot) .bcAccountGrid > * {
+  min-width: 0;
+}
+
+/* Content headers have different action sets; allow each set to wrap. */
+:where(.bcSiteRoot) .bcTop,
+:where(.bcSiteRoot) .bcRight {
+  flex-wrap: wrap;
+}
+
+:where(.bcSiteRoot) .bcRight {
+  min-width: 0;
+  max-width: 100%;
+  justify-content: flex-end;
+}
+
+@media (min-width: 761px) and (max-width: 1080px) {
+  :where(.bcSiteRoot) .bcTop .bcNav {
+    order: 3;
+    flex: 1 0 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 760px) {
+  :where(.bcSiteRoot) .bcAccountGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 420px) {
+  :where(.bcSiteRoot) .bcTop .bcRight {
+    flex: 1 0 100%;
+  }
+
+  :where(.bcSiteRoot) .bcHero {
+    padding-top: 132px !important;
+  }
+}

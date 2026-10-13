@@ -37,7 +37,13 @@ const components: Record<SitePath, React.ComponentType> = {
   "/admin": Admin,
 };
 
-const coreRoutes = SITE_ROUTE_METADATA.map((route) => ({ ...route, component: components[route.path] }));
+const coreRoutes = SITE_ROUTE_METADATA.map((route) => ({
+  ...route,
+  metadata: route.path === "/" && experienceConfig.mode === "home"
+    ? { ...route.metadata, chrome: { dock: false, footer: false, music: false } }
+    : route.metadata,
+  component: components[route.path],
+}));
 
 export const SITE_ROUTES = isNexusRouteEnabled()
   ? [

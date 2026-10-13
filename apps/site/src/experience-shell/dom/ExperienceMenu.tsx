@@ -1,25 +1,29 @@
 import React from "react";
-import { EXPERIENCE_CHAPTERS } from "../experienceShellConfig";
+import { EXPERIENCE_CHAPTERS, type ExperienceChapterId } from "../experienceShellConfig";
 
 type ExperienceMenuProps = {
   open: boolean;
   onClose: () => void;
   triggerRef: React.RefObject<HTMLButtonElement>;
+  activeChapter: ExperienceChapterId;
 };
 
-export function ExperienceMenu({ open, onClose, triggerRef }: ExperienceMenuProps) {
+export function ExperienceMenu({ open, onClose, triggerRef, activeChapter }: ExperienceMenuProps) {
   const panelRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     if (!open) return;
     const panel = panelRef.current;
+    const documentOverflow = document.documentElement.style.overflow;
+    const bodyOverflow = document.body.style.overflow;
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
     const focusable = panel?.querySelectorAll<HTMLElement>('a[href], button:not([disabled])');
     focusable?.[0]?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
         onClose();
-        triggerRef.current?.focus();
         return;
       }
       if (event.key !== "Tab" || !focusable?.length) return;
@@ -34,7 +38,12 @@ export function ExperienceMenu({ open, onClose, triggerRef }: ExperienceMenuProp
       }
     };
     document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.documentElement.style.overflow = documentOverflow;
+      document.body.style.overflow = bodyOverflow;
+      if (triggerRef.current?.isConnected) triggerRef.current.focus({ preventScroll: true });
+    };
   }, [onClose, open, triggerRef]);
 
   if (!open) return null;
@@ -45,7 +54,7 @@ export function ExperienceMenu({ open, onClose, triggerRef }: ExperienceMenuProp
         <header><span>BLACKCROWN / WORLDS</span><button type="button" onClick={onClose} aria-label="Close menu">CLOSE</button></header>
         <nav aria-label="Spatial chapters">
           {EXPERIENCE_CHAPTERS.slice(1).map((chapter) => (
-            <a key={chapter.id} data-bc-spatial-chapter="true" href={`#${chapter.hash}`} onClick={onClose}>
+            <a key={chapter.id} data-bc-spatial-chapter="true" href={`#${chapter.hash}`} aria-current={activeChapter === chapter.id ? "step" : undefined} onClick={onClose}>
               <span>{chapter.index}</span>{chapter.label}
             </a>
           ))}

@@ -28,7 +28,7 @@ export function ExperienceBoot() {
       <div className="bcExperienceBoot__mark" aria-hidden="true"><i /><i /><i /></div>
       <span>{BOOT_LABELS[bootStage]}</span>
       <div className="bcExperienceBoot__progress" aria-hidden="true"><i data-stage={bootStage} /></div>
-      {ready ? <button type="button" onClick={enter}>ENTER</button> : null}
+      {ready ? <button type="button" onClick={enter} autoFocus>ENTER</button> : null}
       {!webglAvailable ? <small>SPATIAL FALLBACK ACTIVE</small> : null}
     </div>
   );
