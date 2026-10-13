@@ -209,14 +209,14 @@ test("Invalid manifest paths, lengths, hashes and offsets are rejected at initia
   }
 });
 
-test("Verified v20 audio hotfix r2: both complete HTTP streams match the immutable receipt SHA", async () => {
+test("Verified v22 Rift-03: both complete HTTP streams match the immutable receipt SHA", async () => {
   const root = path.resolve(import.meta.dirname, "../..");
   const runtimeRoot = path.join(root, "apps/site/public/games/ballcrown/play");
   const manifestBytes = readFileSync(path.join(runtimeRoot, "Build/transport.json"));
   assert.deepEqual(manifestBytes, readFileSync(path.join(root, "functions/games/ballcrown/play/Build/transport-manifest.json")));
   const manifest = JSON.parse(manifestBytes);
-  assert.equal(manifest.sourceArchiveSHA256, "f38e4899bc83739b0267609bd775ce316506b42b66cf978c34449a3024a44539");
-  assert.equal(manifest.revision, "v20-audio-only-hotfix-r2");
+  assert.equal(manifest.sourceArchiveSHA256, "77353ae583c825a15a0f36d54372ed84cd6a69782e37c8e1c9ff989804e2c544");
+  assert.equal(manifest.revision, "v22-rift-03");
   const handler = createBallcrownTransport(manifest);
   const assets = { async fetch(req) {
     const pathname = new URL(req.url).pathname;

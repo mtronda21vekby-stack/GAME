@@ -1,0 +1,7 @@
+BLACKCROWN v21 original art and music fallback
+
+Three new weapon designs (ROOK pistol, WASP Uzi, LANCER rifle), nine modular Sentinel parts and the compact reticle were authored as new SVG path geometry for this project. Original-game vector geometry or bitmap pixels were not used to construct these designs; source logical rectangles and placement matrices remain compatibility metadata.
+
+Classic characters, original effects and other original-game assets retain their existing notices and provenance. This packet makes no ownership claim over those assets.
+
+MP3 fallbacks encode the same already-authored ballcrown compositions from their existing WAV masters using the installed Unity-bundled LAME encoder. The encoder library is not copied or distributed. Original sound-effect credits remain unchanged.

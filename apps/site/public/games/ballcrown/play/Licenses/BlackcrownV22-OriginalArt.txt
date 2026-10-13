@@ -1,0 +1,7 @@
+BLACKCROWN v22 original art additions
+
+The classic modular character appearances, classic five/35/65 head extension animation, remaining held weapons, weapon drops and HUD icons, pickups, and eight source-layout effect atlases were authored as new SVG geometry for ballcrown. The native temporary weapon RIFT (Разлом), its core, held art, impact and icon are new project designs. Authoring sources and manifests are retained under Artwork/BlackcrownClassicV22, Artwork/BlackcrownArsenalV22 and Artwork/BlackcrownRiftV22.
+
+Compatibility rectangles, source numeric bindings, animation anchors, frame indices, effect atlas layout and weapon behavior metadata remain from the existing project. They are not new artwork claims. The earlier BlackcrownV21-OriginalArt notice still applies to its first packet. Existing map, audio, typography, source-code and other third-party notices remain in force.
+
+This candidate contains native twenty-second RIFT gameplay in addition to the original comparison mode. Its transient weapon is excluded from saves; the complete prior arsenal returns on expiry, death or match exit. Normal weapon definitions, source maps and collisions are retained.

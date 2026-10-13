@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Import the approved immutable BALLCROWN v20 audio hotfix r2 using stdlib.
+"""Import the approved immutable BALLCROWN v22 Rift 03 runtime using stdlib.
 
 The source ZIP and receipt are pinned before any runtime extraction. Only the
 receipt's runtimeFiles are copied. Unity's two large raw files are replaced by
@@ -8,8 +8,8 @@ The index and all other runtime files remain byte-for-byte identical.
 
 Example (run from any directory):
   python3 apps/site/scripts/import-ballcrown-release.py \
-    --archive /path/to/ballcrown-web-0.22.0-v20-audio-hotfix-r2.zip \
-    --receipt /path/to/ballcrown-web-0.22.0-v20-audio-hotfix-r2-export.json \
+    --archive /path/to/ballcrown-web-0.22.0-v22-rift-03-reviewed-candidate.zip \
+    --receipt /path/to/ballcrown-v22-rift-03-reviewed-candidate-export.json \
     --report /path/to/ballcrown-import-verification.json
 
 An existing output must already exactly match this import. Unexpected or edited
@@ -23,6 +23,7 @@ import hashlib
 import json
 import os
 from pathlib import Path, PurePosixPath
+import re
 import shutil
 import stat
 import sys
@@ -31,13 +32,17 @@ from typing import Any
 import zipfile
 
 
-ARCHIVE_SHA256 = "f38e4899bc83739b0267609bd775ce316506b42b66cf978c34449a3024a44539"
-ARCHIVE_BYTES = 58_695_968
-RECEIPT_SHA256 = "0c8496462605daafc621e0f19a69bbe4aec6866e5c64871c45b54e11b2b1b457"
+ARCHIVE_SHA256 = "77353ae583c825a15a0f36d54372ed84cd6a69782e37c8e1c9ff989804e2c544"
+ARCHIVE_BYTES = 56_551_516
+RECEIPT_SHA256 = "1c1bbef132bd02cf807be2e6ac0f853614a43f24dd4f14f89d6b173d2f1904ba"
 INDEX_SHA256 = "415e9e76eede2aba30d65df7bdaa96e0d7a463d1804539dc17648aed52f09f75"
-WASM_SHA256 = "ff25458a139f83b299f84e9860a7e320868de62601133f7b9545c7cf969cfa2e"
+WASM_SHA256 = "50b988b42428645ef2806184dd2f5b325ed4bea620b98d2a841e11fd9ea53b69"
+DATA_SHA256 = "590b2fffb9e4425ed2ca953da6e24934ae83db276687506dfb7523dea097347f"
+FRAMEWORK_SHA256 = "80fc1b2c80b38f9f41ef4586e2848aa9e734c33c66fa3c29ccf1aa3ebf766f1a"
+NATIVE_VERSION = "0.22.0"
+RELEASE_REVISION = "v22-rift-03"
 CHUNK_BYTES = 16 * 1024 * 1024
-RUNTIME_FILE_COUNT = 94
+RUNTIME_FILE_COUNT = 97
 PUBLIC_BASE = "/games/ballcrown/play/"
 TRANSPORT_PATH = "Build/transport.json"
 VIRTUAL_TYPES = {
@@ -162,14 +167,24 @@ def receipt_runtime(receipt: dict[str, Any]) -> list[dict[str, Any]]:
             "Licenses/Inter-OFL.txt", *VIRTUAL_TYPES}.issubset(seen):
         fail("Missing mandatory runtime, NOTICE, or license entry")
     by_path = {item["path"]: item for item in runtime}
-    if by_path["index.html"]["sha256"] != INDEX_SHA256:
-        fail("Index is not the immutable v20 audio hotfix r2 index")
-    if by_path["Build/BuildWeb.wasm"]["sha256"] != WASM_SHA256:
-        fail("WASM is not the immutable v20 native build")
-    if receipt.get("immutableSource", {}).get("sha256") != ARCHIVE_SHA256:
+    if receipt.get("manifestVersion") != 1 or receipt.get("revision") != RELEASE_REVISION:
+        fail("Receipt is not the approved v22 Rift 03 manifest")
+    pinned_native = {
+        "indexSHA256": ("index.html", INDEX_SHA256),
+        "wasmSHA256": ("Build/BuildWeb.wasm", WASM_SHA256),
+        "dataSHA256": ("Build/BuildWeb.data", DATA_SHA256),
+        "frameworkSHA256": ("Build/BuildWeb.framework.js", FRAMEWORK_SHA256),
+    }
+    for field, (path, expected_sha) in pinned_native.items():
+        if path not in by_path or by_path[path]["sha256"] != expected_sha or receipt.get("nativeBuild", {}).get(field) != expected_sha:
+            fail(f"Receipt native hash differs from the approved build: {path}")
+    web_archive = receipt.get("archives", {}).get("web", {})
+    if web_archive.get("sha256") != ARCHIVE_SHA256:
         fail("Receipt archive hash is not the approved immutable archive")
-    if receipt.get("immutableSource", {}).get("bytes") != ARCHIVE_BYTES:
+    if web_archive.get("bytes") != ARCHIVE_BYTES:
         fail("Receipt archive size is not the approved immutable archive")
+    if web_archive.get("entries") != RUNTIME_FILE_COUNT:
+        fail("Receipt archive entry count differs from the approved runtime")
     return runtime
 
 
@@ -226,10 +241,13 @@ def package_runtime(archive: zipfile.ZipFile, receipt: dict[str, Any],
             target.parent.mkdir(parents=True, exist_ok=True)
             with archive.open(path) as source, target.open("wb") as destination:
                 shutil.copyfileobj(source, destination, 1024 * 1024)
+    versions = re.findall(r"\bproductVersion\s*:\s*(['\"])([^'\"]+)\1", (staging / "index.html").read_text())
+    if len(versions) != 1 or versions[0][1] != NATIVE_VERSION:
+        fail("Sealed index productVersion differs from the preserved native version")
     transport = {
         "schemaVersion": 1,
-        "version": receipt["nativeBuild"]["version"],
-        "revision": receipt["nativeBuild"]["revision"],
+        "version": versions[0][1],
+        "revision": receipt["revision"],
         "sourceArchiveSHA256": ARCHIVE_SHA256,
         "sourceReceiptSHA256": RECEIPT_SHA256,
         "chunkBytes": CHUNK_BYTES,
@@ -323,6 +341,8 @@ def main() -> int:
     runtime = receipt_runtime(receipt)
     with zipfile.ZipFile(archive_path) as archive:
         excluded_count = validate_archive(archive, runtime)
+        if excluded_count or len(archive.infolist()) != RUNTIME_FILE_COUNT:
+            fail("Approved v22 archive must contain exactly its 97 runtime entries")
         # Package to an owned temporary directory; no output is exposed until
         # the whole source and reconstructed runtime have passed verification.
         output.parent.mkdir(parents=True, exist_ok=True)
@@ -344,8 +364,8 @@ def main() -> int:
         "schemaVersion": 1,
         "status": "PASS",
         "action": action,
-        "version": receipt["nativeBuild"]["version"],
-        "revision": receipt["nativeBuild"]["revision"],
+        "version": transport["version"],
+        "revision": transport["revision"],
         "sourceArchive": {"path": str(archive_path), "bytes": ARCHIVE_BYTES, "sha256": ARCHIVE_SHA256},
         "sourceReceipt": {"path": str(receipt_path), "sha256": RECEIPT_SHA256},
         "output": str(output),

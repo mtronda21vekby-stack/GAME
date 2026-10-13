@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "available": true,
   "entry": "./play/",
-  "version": "0.22.0 / v20-audio-only-hotfix-r2",
-  "revision": "v20-audio-only-hotfix-r2",
-  "archiveSHA256": "f38e4899bc83739b0267609bd775ce316506b42b66cf978c34449a3024a44539",
-  "wasmSHA256": "ff25458a139f83b299f84e9860a7e320868de62601133f7b9545c7cf969cfa2e"
+  "version": "0.22.0 / v22-rift-03",
+  "revision": "v22-rift-03",
+  "archiveSHA256": "77353ae583c825a15a0f36d54372ed84cd6a69782e37c8e1c9ff989804e2c544",
+  "wasmSHA256": "50b988b42428645ef2806184dd2f5b325ed4bea620b98d2a841e11fd9ea53b69"
 }
