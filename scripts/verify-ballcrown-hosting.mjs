@@ -13,12 +13,17 @@ validateTransportManifest(manifest);
 assert.equal(manifest.sourceArchiveSHA256, "bca48fdbeba199708b7801c4deb7bf781402846b2b09892821e162f3416c16d5");
 const results = [];
 const virtual = new Map(manifest.virtualFiles.map(file => [file.path, file]));
-const headers = { "Accept-Encoding": "identity", "Cache-Control": "no-cache" };
+// Declare the same operations client as the existing Quiet Valley and ecosystem
+// gates. Keep CDN challenges fatal and verify the requested production origin.
+const headers = {
+  "Accept": "*/*", "Accept-Encoding": "identity", "Cache-Control": "no-cache",
+  "Pragma": "no-cache", "User-Agent": "BLACK-CROWN-OPS/production-smoke-v44",
+};
 
 const launcherPath = "/games/ballcrown/";
 const launcherSource = readFileSync(path.join(root, "apps/site/public/games/ballcrown/index.html"));
 const launcher = await fetch(new URL(launcherPath, origin), { headers, signal: AbortSignal.timeout(20_000) });
-assert.equal(launcher.status, 200, "Ballcrown launcher is served outside the site SPA");
+assert.equal(launcher.status, 200, `Ballcrown launcher HTTP; mitigation=${launcher.headers.get("cf-mitigated") || "none"}`);
 assert.ok(launcher.headers.get("content-type")?.startsWith("text/html"), "Launcher HTML MIME");
 assert.deepEqual(Buffer.from(await launcher.arrayBuffer()), launcherSource, "Hosted launcher matches the release source");
 const releaseSource = readFileSync(path.join(root, "apps/site/public/games/ballcrown/release.json"));
