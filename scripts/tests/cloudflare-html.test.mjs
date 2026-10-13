@@ -33,6 +33,12 @@ test("The Unity export with an implicit closing body preserves every original by
   assert.equal(evidence.sourceBytes, implicit.length);
   assert.equal(evidence.transformation, "cloudflare-jsd-exact-template");
 });
+test("A document with both body tags omitted can receive only an exact terminal CDN bootstrap", () => {
+  const implicit = Buffer.from(source.toString().replace("<body>", "").replace("</body>", "") + "\n");
+  const evidence = verifyCloudflareHTML(Buffer.concat([implicit, Buffer.from(script)]), implicit, "/game/");
+  assert.equal(evidence.injectionBefore, "document-end");
+  assert.throws(() => verifyCloudflareHTML(Buffer.concat([implicit, Buffer.from(script + "<script>alert(1)</script>")]), implicit, "/game/"));
+});
 for (const [name, html] of [
   ["duplicate JSD injection", inject(script + script)],
   ["JSD in unexpected document position", Buffer.from(source.toString().replace("</head>", `${script}</head>`))],

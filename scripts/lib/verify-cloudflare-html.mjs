@@ -29,14 +29,20 @@ export function verifyCloudflareHTML(actualBytes, sourceBytes, pathname) {
       const shape = script.replace(params[0], "window.__CF$cv$params={r:'__RAY__',t:'__TIME__'}");
       // The immutable Unity export omits the optional closing body tag, so
       // Cloudflare places its bootstrap just before that document's </html>.
-      const closingTag = source.toString("utf8").includes("</body>") ? "</body>" : "</html>";
+      const sourceHTML = source.toString("utf8");
+      const closingTag = sourceHTML.includes("</body>") ? "</body>" : "</html>";
       const expectedPosition = html.lastIndexOf(closingTag) - script.length;
+      // For an export without body tags, the CDN can append the same bootstrap
+      // after the final HTML tag. Accept only the exact entire-source + script
+      // shape, never an insertion inside application markup or code.
+      const appendedToImplicitBody = !/<body\b/i.test(sourceHTML) && !sourceHTML.includes("</body>") &&
+        html === sourceHTML + script;
       if (canonicalTime && /^\d{10,13}(?:\.\d{1,6})?$/.test(decodedTime) &&
-          scripts[0].index === expectedPosition && shape === CLOUDFLARE_JSD_TEMPLATE) {
+          (scripts[0].index === expectedPosition || appendedToImplicitBody) && shape === CLOUDFLARE_JSD_TEMPLATE) {
         normalized = Buffer.from(html.slice(0, scripts[0].index) + html.slice(scripts[0].index + script.length));
         evidence.transformation = "cloudflare-jsd-exact-template";
         evidence.injectedBytes = Buffer.byteLength(script);
-        evidence.injectionBefore = closingTag;
+        evidence.injectionBefore = appendedToImplicitBody ? "document-end" : closingTag;
       }
     }
   }
@@ -48,6 +54,7 @@ export function verifyCloudflareHTML(actualBytes, sourceBytes, pathname) {
     while (suffix < source.length - start && suffix < actual.length - start &&
       source[source.length - suffix - 1] === actual[actual.length - suffix - 1]) suffix++;
     assert.fail(`Unexpected HTML transformation: ${JSON.stringify({ ...evidence,
+      insertionOffset: start, sourceSuffixBytes: suffix, candidateOffset: scripts[0]?.index,
       addedHTML: actual.subarray(start, Math.min(actual.length - suffix, start + 1400)).toString("utf8"),
     })}`);
   }
