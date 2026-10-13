@@ -159,11 +159,37 @@ test("Truncated source is detected by the fixed length stream", async () => {
   await assert.rejects(response.arrayBuffer(), /truncated/);
 });
 
-test("Canceling the client body cancels the current asset and never fetches the next chunk", async () => {
-  const assets = fakeAssets();
+test("Canceling an in-flight asset cancels its source and never fetches the next chunk", { timeout: 5_000 }, async () => {
+  // A complete tiny chunk can finish piping before the caller cancels on some
+  // Node versions. Keep the first source incomplete until cancellation instead
+  // of making an assertion about a particular runtime's microtask scheduling.
+  let releasePull;
+  let confirmCanceled;
+  let cancellationReason;
+  const pendingPull = new Promise(resolve => { releasePull = resolve; });
+  const sourceCanceled = new Promise(resolve => { confirmCanceled = resolve; });
+  const assets = fakeAssets(fixture(), (response, count) => count === 1 ? new Response(new ReadableStream({
+    start(controller) {
+      controller.enqueue(chunks[0].subarray(0, 1));
+    },
+    pull() {
+      return pendingPull;
+    },
+    cancel(reason) {
+      cancellationReason = reason;
+      releasePull();
+      confirmCanceled();
+    },
+  }), { headers: response.headers }) : response);
   const response = await createBallcrownTransport(fixture())(request(), assets);
-  await response.body.cancel("client disconnected");
-  await new Promise(resolve => setImmediate(resolve));
+  const reader = response.body.getReader();
+  const first = await reader.read();
+  assert.equal(first.done, false);
+  assert.deepEqual(Buffer.from(first.value), chunks[0].subarray(0, 1));
+  await reader.cancel("client disconnected");
+  await sourceCanceled;
+  reader.releaseLock();
+  assert.equal(cancellationReason, "client disconnected");
   assert.equal(assets.calls.length, 1);
 });
 
