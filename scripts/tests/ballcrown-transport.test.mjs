@@ -209,14 +209,14 @@ test("Invalid manifest paths, lengths, hashes and offsets are rejected at initia
   }
 });
 
-test("Verified v22 Rift-03: both complete HTTP streams match the immutable receipt SHA", async () => {
+test("Verified v22 character rollback04: both complete HTTP streams match the immutable receipt SHA", async () => {
   const root = path.resolve(import.meta.dirname, "../..");
   const runtimeRoot = path.join(root, "apps/site/public/games/ballcrown/play");
   const manifestBytes = readFileSync(path.join(runtimeRoot, "Build/transport.json"));
   assert.deepEqual(manifestBytes, readFileSync(path.join(root, "functions/games/ballcrown/play/Build/transport-manifest.json")));
   const manifest = JSON.parse(manifestBytes);
-  assert.equal(manifest.sourceArchiveSHA256, "77353ae583c825a15a0f36d54372ed84cd6a69782e37c8e1c9ff989804e2c544");
-  assert.equal(manifest.revision, "v22-rift-03");
+  assert.equal(manifest.sourceArchiveSHA256, "38234968997f557e79f9dddfd09370a1d9993eadbc8760de35f7791204061888");
+  assert.equal(manifest.revision, "v22-rift-04-character-rollback");
   const handler = createBallcrownTransport(manifest);
   const assets = { async fetch(req) {
     const pathname = new URL(req.url).pathname;

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Import the approved immutable BALLCROWN v22 Rift 03 runtime using stdlib.
+"""Import the approved immutable BALLCROWN v22 character rollback 04 runtime.
 
 The source ZIP and receipt are pinned before any runtime extraction. Only the
 receipt's runtimeFiles are copied. Unity's two large raw files are replaced by
@@ -8,8 +8,8 @@ The index and all other runtime files remain byte-for-byte identical.
 
 Example (run from any directory):
   python3 apps/site/scripts/import-ballcrown-release.py \
-    --archive /path/to/ballcrown-web-0.22.0-v22-rift-03-reviewed-candidate.zip \
-    --receipt /path/to/ballcrown-v22-rift-03-reviewed-candidate-export.json \
+    --archive /path/to/ballcrown-web-0.22.0-v22-rift-04-character-rollback-candidate.zip \
+    --receipt /path/to/ballcrown-v22-rift-04-character-rollback-export.json \
     --report /path/to/ballcrown-import-verification.json
 
 An existing output must already exactly match this import. Unexpected or edited
@@ -32,15 +32,16 @@ from typing import Any
 import zipfile
 
 
-ARCHIVE_SHA256 = "77353ae583c825a15a0f36d54372ed84cd6a69782e37c8e1c9ff989804e2c544"
-ARCHIVE_BYTES = 56_551_516
-RECEIPT_SHA256 = "1c1bbef132bd02cf807be2e6ac0f853614a43f24dd4f14f89d6b173d2f1904ba"
+ARCHIVE_SHA256 = "38234968997f557e79f9dddfd09370a1d9993eadbc8760de35f7791204061888"
+ARCHIVE_BYTES = 58_052_451
+RECEIPT_SHA256 = "4050db5cb845c4c5c36fbffbb0b0501f07ac8da3152c44bc74831d9940eed9d8"
 INDEX_SHA256 = "415e9e76eede2aba30d65df7bdaa96e0d7a463d1804539dc17648aed52f09f75"
-WASM_SHA256 = "50b988b42428645ef2806184dd2f5b325ed4bea620b98d2a841e11fd9ea53b69"
-DATA_SHA256 = "590b2fffb9e4425ed2ca953da6e24934ae83db276687506dfb7523dea097347f"
+WASM_SHA256 = "2bc14c5681c857768d9a7d5bc9b08eef17a0436c62ee94a777a83958989a417a"
+DATA_SHA256 = "9a60f7ed7b40b3d09d70867ac297d396e22c6f794ea7eb56e370783128e0a6f4"
 FRAMEWORK_SHA256 = "80fc1b2c80b38f9f41ef4586e2848aa9e734c33c66fa3c29ccf1aa3ebf766f1a"
+LOADER_SHA256 = "cf2822dd6c6195d32ccd5c3fba398dcd11a270795c9357e712d4cd7a2d1b186c"
 NATIVE_VERSION = "0.22.0"
-RELEASE_REVISION = "v22-rift-03"
+RELEASE_REVISION = "v22-rift-04-character-rollback"
 CHUNK_BYTES = 16 * 1024 * 1024
 RUNTIME_FILE_COUNT = 97
 PUBLIC_BASE = "/games/ballcrown/play/"
@@ -167,18 +168,25 @@ def receipt_runtime(receipt: dict[str, Any]) -> list[dict[str, Any]]:
             "Licenses/Inter-OFL.txt", *VIRTUAL_TYPES}.issubset(seen):
         fail("Missing mandatory runtime, NOTICE, or license entry")
     by_path = {item["path"]: item for item in runtime}
-    if receipt.get("manifestVersion") != 1 or receipt.get("revision") != RELEASE_REVISION:
-        fail("Receipt is not the approved v22 Rift 03 manifest")
+    if not (
+        receipt.get("manifestVersion") == 1
+        and receipt.get("version") == NATIVE_VERSION
+        and receipt.get("revision") == RELEASE_REVISION
+        and receipt.get("buildRevision") == RELEASE_REVISION
+        and receipt.get("nativeBuild", {}).get("revision") == RELEASE_REVISION
+    ):
+        fail("Receipt version/revisions differ from the approved character rollback 04")
     pinned_native = {
         "indexSHA256": ("index.html", INDEX_SHA256),
         "wasmSHA256": ("Build/BuildWeb.wasm", WASM_SHA256),
         "dataSHA256": ("Build/BuildWeb.data", DATA_SHA256),
         "frameworkSHA256": ("Build/BuildWeb.framework.js", FRAMEWORK_SHA256),
+        "loaderSHA256": ("Build/BuildWeb.loader.js", LOADER_SHA256),
     }
     for field, (path, expected_sha) in pinned_native.items():
         if path not in by_path or by_path[path]["sha256"] != expected_sha or receipt.get("nativeBuild", {}).get(field) != expected_sha:
             fail(f"Receipt native hash differs from the approved build: {path}")
-    web_archive = receipt.get("archives", {}).get("web", {})
+    web_archive = receipt.get("immutableSource", {})
     if web_archive.get("sha256") != ARCHIVE_SHA256:
         fail("Receipt archive hash is not the approved immutable archive")
     if web_archive.get("bytes") != ARCHIVE_BYTES:
@@ -342,7 +350,7 @@ def main() -> int:
     with zipfile.ZipFile(archive_path) as archive:
         excluded_count = validate_archive(archive, runtime)
         if excluded_count or len(archive.infolist()) != RUNTIME_FILE_COUNT:
-            fail("Approved v22 archive must contain exactly its 97 runtime entries")
+            fail("Approved character rollback archive must contain exactly its 97 runtime entries")
         # Package to an owned temporary directory; no output is exposed until
         # the whole source and reconstructed runtime have passed verification.
         output.parent.mkdir(parents=True, exist_ok=True)

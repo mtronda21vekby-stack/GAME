@@ -11,7 +11,7 @@ const root = path.resolve(import.meta.dirname, "..");
 const manifestBytes = readFileSync(path.join(root, "functions/games/ballcrown/play/Build/transport-manifest.json"));
 const manifest = JSON.parse(manifestBytes);
 validateTransportManifest(manifest);
-assert.equal(manifest.sourceArchiveSHA256, "77353ae583c825a15a0f36d54372ed84cd6a69782e37c8e1c9ff989804e2c544");
+assert.equal(manifest.sourceArchiveSHA256, "38234968997f557e79f9dddfd09370a1d9993eadbc8760de35f7791204061888");
 const results = [];
 const htmlDelivery = [];
 const virtual = new Map(manifest.virtualFiles.map(file => [file.path, file]));
