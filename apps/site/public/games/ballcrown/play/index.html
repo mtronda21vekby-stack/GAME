@@ -76,11 +76,23 @@ function ballcrownAudioStatus(state){
  const button=document.getElementById('audio-enable');if(!button)return;
  const wants=state.musicEnabled&&state.musicVolume>0;
  button.hidden=!wants||state.musicPlaying;
- button.textContent=state.contextState!=='running'?'Включить звук':state.loadingMusic?'Загрузка музыки…':'Повторить музыку';
- button.disabled=state.contextState==='running'&&state.loadingMusic;
+ button.textContent=state.contextState!=='running'?'Включить звук':state.loadingMusic?'Повторить запуск музыки':'Повторить музыку';
+ button.disabled=false;
+ button.setAttribute("aria-label",button.textContent);
 }
 window.addEventListener('ballcrown-audio-status',e=>ballcrownAudioStatus(e.detail));
-document.getElementById('audio-enable').addEventListener('click',()=>window.ballcrownResumeAudio?.('audio-button'));
+window.addEventListener('keydown',event=>{
+ const button=document.getElementById('audio-enable'),canvas=document.getElementById('unity-canvas');
+ if(!event.isTrusted||!button||button.hidden)return;
+ if(event.target===button&&(event.code==='Enter'||event.code==='Space')){
+  event.preventDefault();event.stopImmediatePropagation();window.ballcrownResumeAudio?.('audio-button');return;
+ }
+ if(event.code==='Tab'&&(event.target===canvas||event.target===button)){
+  event.preventDefault();event.stopImmediatePropagation();(event.target===button?canvas:button).focus({preventScroll:true});
+ }
+},true);
+
+document.getElementById('audio-enable').addEventListener('click',event=>{if(event.isTrusted)window.ballcrownResumeAudio?.('audio-button');});
 </script>
 <script src="Build/BuildWeb.loader.js"></script>
 <script>
@@ -102,6 +114,7 @@ function initializeViewportIfReady(){
 function focusGame(){canvas.focus({preventScroll:true})}
 const codes={KeyA:65,KeyD:68,KeyW:87,KeyS:83,KeyR:82,KeyQ:81,KeyE:69,Tab:9,F8:119,Digit1:49,Digit2:50,Digit3:51,Digit4:52,Digit5:53,Digit6:54,Digit7:55,Digit8:56,Digit9:57,Digit0:48,ArrowLeft:37,ArrowRight:39,ArrowUp:38,ArrowDown:40,Space:32,KeyP:80,Escape:27,ShiftLeft:16,ShiftRight:16,ControlLeft:17,ControlRight:17,Enter:13,End:35};
 for(const type of ['keydown','keyup'])window.addEventListener(type,event=>{
+ if(event.target?.closest?.("#audio-enable"))return;
  const code=codes[event.code]||codes[({a:'KeyA',d:'KeyD',w:'KeyW',s:'KeyS',r:'KeyR',q:'KeyQ',e:'KeyE',p:'KeyP',' ':'Space',Escape:'Escape',Tab:'Tab',Enter:'Enter',ArrowLeft:'ArrowLeft',ArrowRight:'ArrowRight',ArrowUp:'ArrowUp',ArrowDown:'ArrowDown'})[event.key]]||event.keyCode;if(!Object.values(codes).includes(code)||!window.razePlayableState?.ready||event.target?.matches?.('input,textarea,[contenteditable=true]'))return;
  event.preventDefault();if(type==='keydown'&&event.repeat)return;
  events.push({type,code,trusted:event.isTrusted,frame:window.razePlayableState.frame});if(events.length>1000)events.shift();
