@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Import the approved immutable BALLCROWN v19 runtime using only stdlib.
+"""Import the approved immutable BALLCROWN v20 runtime using only stdlib.
 
 The source ZIP and receipt are pinned before any runtime extraction. Only the
 receipt's runtimeFiles are copied. Unity's two large raw files are replaced by
@@ -8,8 +8,8 @@ The index and all other runtime files remain byte-for-byte identical.
 
 Example (run from any directory):
   python3 apps/site/scripts/import-ballcrown-release.py \
-    --archive /path/to/ballcrown-spck-0.22.0-v19.zip \
-    --receipt /path/to/ballcrown-web-0.22.0-v19-export.json \
+    --archive /path/to/ballcrown-web-0.22.0-v20-candidate.zip \
+    --receipt /path/to/ballcrown-web-0.22.0-v20-candidate-export.json \
     --report /path/to/ballcrown-import-verification.json
 
 An existing output must already exactly match this import. Unexpected or edited
@@ -31,11 +31,11 @@ from typing import Any
 import zipfile
 
 
-ARCHIVE_SHA256 = "bca48fdbeba199708b7801c4deb7bf781402846b2b09892821e162f3416c16d5"
-ARCHIVE_BYTES = 55_709_334
-RECEIPT_SHA256 = "70144849a4c4656f2b7ae2b2595cdbb7eae9ce59eb5b5ac6c96bd240c248a6b1"
-INDEX_SHA256 = "92db477a18c9654dbde74e1fa03d872cd2eaa18d2f26695fbe2ea1658e939a85"
-WASM_SHA256 = "a3e41704a1dacd49b18ab9d30d03fe669016e161c058236f081fdba16e6ceb7d"
+ARCHIVE_SHA256 = "7a3e95f9ce701f6bb52fa68c3ab2871d9f755bcb4db474cf3e46c20780f9f6fc"
+ARCHIVE_BYTES = 55_708_675
+RECEIPT_SHA256 = "2f09160ffc82e0b141d3da20f70892b4b034c760245624a6d474cf7755037497"
+INDEX_SHA256 = "691f9aa4bd23c1b98b00c728d916f6add77703144dc93393eed896d35a57553b"
+WASM_SHA256 = "ff25458a139f83b299f84e9860a7e320868de62601133f7b9545c7cf969cfa2e"
 CHUNK_BYTES = 16 * 1024 * 1024
 RUNTIME_FILE_COUNT = 91
 PUBLIC_BASE = "/games/ballcrown/play/"
@@ -163,9 +163,9 @@ def receipt_runtime(receipt: dict[str, Any]) -> list[dict[str, Any]]:
         fail("Missing mandatory runtime, NOTICE, or license entry")
     by_path = {item["path"]: item for item in runtime}
     if by_path["index.html"]["sha256"] != INDEX_SHA256:
-        fail("Index is not the immutable v19 index")
+        fail("Index is not the immutable v20 index")
     if by_path["Build/BuildWeb.wasm"]["sha256"] != WASM_SHA256:
-        fail("WASM is not the immutable v19 native build")
+        fail("WASM is not the immutable v20 native build")
     if receipt.get("immutableSource", {}).get("sha256") != ARCHIVE_SHA256:
         fail("Receipt archive hash is not the approved immutable archive")
     if receipt.get("immutableSource", {}).get("bytes") != ARCHIVE_BYTES:

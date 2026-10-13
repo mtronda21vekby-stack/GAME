@@ -66,9 +66,22 @@ function installScreenMode({button,help,helpText,close,release,layout,environmen
 window.ballcrownScreenMode=installScreenMode({button:document.getElementById('fullscreen-toggle'),help:document.getElementById('screen-mode-help'),helpText:document.getElementById('screen-mode-help-text'),close:document.getElementById('screen-mode-help-close'),release:()=>window.ballcrownInput?.release(),layout:()=>window.dispatchEvent(new Event('resize'))});
 </script>
 <div id="stage"><canvas id="unity-canvas" width="1200" height="680" tabindex="0" aria-label="Игра ballcrown"></canvas><div id="reticle"></div><div id="loading">Загрузка арены<span id="load-progress">Unity Web…</span></div><div id="pause"><strong>ПАУЗА</strong><p>Esc / P — продолжить</p></div></div>
-<footer><span>A / D или ← / → — движение · W / ↑ / пробел — прыжок, повторно — двойной · S / ↓ — присесть · мышь — прицел · ЛКМ — огонь · R — перезарядка · Esc / P — пауза</span><br><span id="limit">Локальная версия · Сохранение в этом браузере · Комплекты персонажей из файла.</span><div id="gamepad-status">Геймпад: подключите контроллер и нажмите кнопку</div><small id="credits" style="font-size:10px;letter-spacing:0">Raze © 2010 · Juice-Tin · AddisonR</small><div id="qa-status">Локальная версия. Проверки механики выполняются при сборке.</div><span id="phase-status"></span></footer>
+<footer><span>A / D или ← / → — движение · W / ↑ / пробел — прыжок, повторно — двойной · S / ↓ — присесть · мышь — прицел · ЛКМ — огонь · R — перезарядка · Esc / P — пауза</span><br><span id="limit">Локальная версия · Сохранение в этом браузере · Комплекты персонажей из файла.</span><div id="gamepad-status">Геймпад: подключите контроллер и нажмите кнопку</div><small id="credits" style="font-size:10px;letter-spacing:0">ballcrown · Авторы и лицензии — в настройках</small><div id="qa-status">Локальная версия. Проверки механики выполняются при сборке.</div><span id="phase-status"></span></footer>
 <script src="src/LegacyBox2D.js"></script>
 <script src="src/LegacyRagdolls.js"></script>
+<button id="audio-enable" hidden type="button" aria-label="Включить звук">Включить звук</button>
+<style>#audio-enable{position:fixed;right:64px;top:max(12px,env(safe-area-inset-top));z-index:20;min-height:48px;max-width:230px;background:#101820;color:white;border:2px solid white;font-size:14px}#audio-enable[hidden]{display:none}</style>
+<script>
+function ballcrownAudioStatus(state){
+ const button=document.getElementById('audio-enable');if(!button)return;
+ const wants=state.musicEnabled&&state.musicVolume>0;
+ button.hidden=!wants||state.musicPlaying;
+ button.textContent=state.contextState!=='running'?'Включить звук':state.loadingMusic?'Загрузка музыки…':'Повторить музыку';
+ button.disabled=state.contextState==='running'&&state.loadingMusic;
+}
+window.addEventListener('ballcrown-audio-status',e=>ballcrownAudioStatus(e.detail));
+document.getElementById('audio-enable').addEventListener('click',()=>window.ballcrownResumeAudio?.('audio-button'));
+</script>
 <script src="Build/BuildWeb.loader.js"></script>
 <script>
 let pilot=null,reported=false,viewportInitialized=false,lastCanvasLayout='';
@@ -343,13 +356,17 @@ class NativeGamepad {
   const r=this.canvas.getBoundingClientRect(),speed=Math.min(r.width,r.height)*this.options.sensitivity;
   this.position.x=Math.max(.002,Math.min(.998,this.position.x+input.aim.x*speed*dt/r.width));
   this.position.y=Math.max(.002,Math.min(.998,this.position.y+input.aim.y*speed*dt/r.height));
-  if(input.aim.x||input.aim.y||input.fire||menu)this.pointer('pointermove');
+  if(this.onInput){
+   // The existing cursor speed/sensitivity chooses a heading; neutral retains it as the player/camera moves.
+   // The native renderer and ordinary firing source use the same current pivot.
+   if(input.aim.x||input.aim.y)this.pointer('pointermove');
+  }else if(input.aim.x||input.aim.y||input.fire||menu)this.pointer('pointermove');
   this.setKeys(input.keys);this.setFire(input.fire);
   if(menu&&!input.fire){this.setFire(true);this.setFire(false)}
   this.onStatus('Геймпад: левый стик — движение · правый — прицел · A — прыжок · RT — огонь · X — перезарядка · Start — пауза');
  }
 }
 
-const controller=new NativeGamepad({canvas:document.getElementById('unity-canvas'),isReady:()=>!!window.razePlayableState?.ready,isPaused:()=>!!window.razePlayableState?.paused,onInput:(action,values)=>window.ballcrownInput?.send('gamepad',action,values),getSettings:()=>window.razePlayableState?.inputSettings,getUIState:()=>{const s=window.razePlayableState;return s?{active:!!s.menuNavigationAvailable,screen:s.uiScreen,key:s.uiScreen+'/'+s.gameInterfacePage}:null},isActive:()=>window.razePlayableState?.activeInputScheme==='gamepad',onPause:()=>{window.ballcrownInput?.send('gamepad','activity');window.pilot?.SendMessage('ballcrownRuntime','TogglePause')},onStatus:text=>document.getElementById('gamepad-status').textContent=text});
+const controller=new NativeGamepad({canvas:document.getElementById('unity-canvas'),isReady:()=>!!window.razePlayableState?.ready,isPaused:()=>!!window.razePlayableState?.paused,onInput:(action,values)=>{if(action==='activity'&&!controller.wasActivity||action==='menu'&&values?.code)window.ballcrownResumeAudio?.('gamepad');window.ballcrownInput?.send('gamepad',action,values)},getSettings:()=>window.razePlayableState?.inputSettings,getUIState:()=>{const s=window.razePlayableState;return s?{active:!!s.menuNavigationAvailable,screen:s.uiScreen,key:s.uiScreen+'/'+s.gameInterfacePage}:null},isActive:()=>window.razePlayableState?.activeInputScheme==='gamepad',onPause:()=>{window.ballcrownResumeAudio?.('gamepad');window.ballcrownInput?.send('gamepad','activity');window.pilot?.SendMessage('ballcrownRuntime','TogglePause')},onStatus:text=>document.getElementById('gamepad-status').textContent=text});
 window.razeGamepad=controller;controller.start();window.addEventListener('pagehide',()=>controller.stop());
 </script></html>

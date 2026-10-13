@@ -74,7 +74,11 @@ export class NativeGamepad {
   const r=this.canvas.getBoundingClientRect(),speed=Math.min(r.width,r.height)*this.options.sensitivity;
   this.position.x=Math.max(.002,Math.min(.998,this.position.x+input.aim.x*speed*dt/r.width));
   this.position.y=Math.max(.002,Math.min(.998,this.position.y+input.aim.y*speed*dt/r.height));
-  if(input.aim.x||input.aim.y||input.fire||menu)this.pointer('pointermove');
+  if(this.onInput){
+   // The existing cursor speed/sensitivity chooses a heading; neutral retains it as the player/camera moves.
+   // The native renderer and ordinary firing source use the same current pivot.
+   if(input.aim.x||input.aim.y)this.pointer('pointermove');
+  }else if(input.aim.x||input.aim.y||input.fire||menu)this.pointer('pointermove');
   this.setKeys(input.keys);this.setFire(input.fire);
   if(menu&&!input.fire){this.setFire(true);this.setFire(false)}
   this.onStatus('Геймпад: левый стик — движение · правый — прицел · A — прыжок · RT — огонь · X — перезарядка · Start — пауза');

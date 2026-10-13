@@ -8,8 +8,9 @@ No separate original-game reuse licence was present in the supplied package.
 This project and its delivery are private; no public deployment was performed.
 
 The new native interface does not add the original advertising, branding intro
-or external navigation destinations. Original game/creator attribution remains
-visible in the native menus and pause interface and in this notice.
+or external navigation destinations. Original game/creator attribution is presented
+in the separate native Authors and Licences screen and in this notice.
+Product branding in ordinary menus is ballcrown.
 
 Interface typography uses Inter Regular and SemiBold under the SIL Open Font
 License; the complete licence is in Licenses/Inter-OFL.txt. Original embedded
@@ -36,7 +37,8 @@ or adding empty borders. Runtime parts and local mod atlases are smaller.
 
 Circuit Breaker, Zero Gravity and Final Vector are new synth compositions.
 Their original source program and stereo WAV masters are in
-Artwork/OriginalMusic; runtime AAC files are in Web/StreamingAssets/NewMusic.
+Artwork/OriginalMusic; runtime AAC files are in Assets/StreamingAssets/NewMusic
+(Unity source) and StreamingAssets/NewMusic (browser delivery).
 They use no outside samples and do not adapt the original Raze melodies.
 Original Raze sound-effect assets and their event names remain attributed
 to the original game and are preserved alongside the new music.

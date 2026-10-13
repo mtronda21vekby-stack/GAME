@@ -209,13 +209,14 @@ test("Invalid manifest paths, lengths, hashes and offsets are rejected at initia
   }
 });
 
-test("Verified v19 deployment: both complete HTTP streams match the immutable receipt SHA", async () => {
+test("Verified v20 deployment: both complete HTTP streams match the immutable receipt SHA", async () => {
   const root = path.resolve(import.meta.dirname, "../..");
   const runtimeRoot = path.join(root, "apps/site/public/games/ballcrown/play");
   const manifestBytes = readFileSync(path.join(runtimeRoot, "Build/transport.json"));
   assert.deepEqual(manifestBytes, readFileSync(path.join(root, "functions/games/ballcrown/play/Build/transport-manifest.json")));
   const manifest = JSON.parse(manifestBytes);
-  assert.equal(manifest.sourceArchiveSHA256, "bca48fdbeba199708b7801c4deb7bf781402846b2b09892821e162f3416c16d5");
+  assert.equal(manifest.sourceArchiveSHA256, "7a3e95f9ce701f6bb52fa68c3ab2871d9f755bcb4db474cf3e46c20780f9f6fc");
+  assert.equal(manifest.revision, "v20-persistent-aim-audio-branding");
   const handler = createBallcrownTransport(manifest);
   const assets = { async fetch(req) {
     const pathname = new URL(req.url).pathname;
