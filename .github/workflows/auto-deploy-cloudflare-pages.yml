@@ -66,7 +66,7 @@ jobs:
           pnpm --filter @blackcrown/site typecheck
           # Unit fixtures select their own Crown backend; the build keeps candidate-b.
           VITE_BC_CROWN_ASSET_OVERRIDE= pnpm --filter @blackcrown/site test
-          node --test scripts/tests/ballcrown-transport.test.mjs
+          node --test scripts/tests/*.test.mjs
       - name: Validate restored Quiet Valley architecture and domain
         run: pnpm --filter @blackcrown/quiet-valley test
       - name: Build production output

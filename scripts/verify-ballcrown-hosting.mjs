@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { validateTransportManifest } from "./lib/ballcrown-transport.mjs";
+import { verifyCloudflareHTML } from "./lib/verify-cloudflare-html.mjs";
 
 const origin = new URL(process.argv[2] || "http://127.0.0.1:5267");
 assert.ok(["http:", "https:"].includes(origin.protocol), "Use a local or hosted HTTP(S) origin");
@@ -12,6 +13,7 @@ const manifest = JSON.parse(manifestBytes);
 validateTransportManifest(manifest);
 assert.equal(manifest.sourceArchiveSHA256, "bca48fdbeba199708b7801c4deb7bf781402846b2b09892821e162f3416c16d5");
 const results = [];
+const htmlDelivery = [];
 const virtual = new Map(manifest.virtualFiles.map(file => [file.path, file]));
 // Declare the same operations client as the existing Quiet Valley and ecosystem
 // gates. Keep CDN challenges fatal and verify the requested production origin.
@@ -25,7 +27,7 @@ const launcherSource = readFileSync(path.join(root, "apps/site/public/games/ball
 const launcher = await fetch(new URL(launcherPath, origin), { headers, signal: AbortSignal.timeout(20_000) });
 assert.equal(launcher.status, 200, `Ballcrown launcher HTTP; mitigation=${launcher.headers.get("cf-mitigated") || "none"}`);
 assert.ok(launcher.headers.get("content-type")?.startsWith("text/html"), "Launcher HTML MIME");
-assert.deepEqual(Buffer.from(await launcher.arrayBuffer()), launcherSource, "Hosted launcher matches the release source");
+htmlDelivery.push(verifyCloudflareHTML(await launcher.arrayBuffer(), launcherSource, launcherPath));
 const releaseSource = readFileSync(path.join(root, "apps/site/public/games/ballcrown/release.json"));
 const expectedRelease = JSON.parse(releaseSource);
 assert.equal(expectedRelease.schemaVersion, 1);
@@ -50,9 +52,17 @@ for (const file of manifest.runtimeFiles) {
   assert.equal(response.status, 200, `${file.path}: HTTP status`);
   const hash = createHash("sha256");
   let bytes = 0;
-  for await (const part of response.body) { hash.update(part); bytes += part.byteLength; }
-  assert.equal(bytes, file.bytes, `${file.path}: complete source byte length`);
-  assert.equal(hash.digest("hex"), file.sha256, `${file.path}: immutable source SHA256`);
+  if (file.path === "index.html") {
+    const source = readFileSync(path.join(root, "apps/site/public/games/ballcrown/play/index.html"));
+    assert.equal(source.length, file.bytes);
+    assert.equal(createHash("sha256").update(source).digest("hex"), file.sha256);
+    htmlDelivery.push(verifyCloudflareHTML(await response.arrayBuffer(), source, manifest.publicBase + file.path));
+    bytes = source.length;
+  } else {
+    for await (const part of response.body) { hash.update(part); bytes += part.byteLength; }
+    assert.equal(bytes, file.bytes, `${file.path}: complete source byte length`);
+    assert.equal(hash.digest("hex"), file.sha256, `${file.path}: immutable source SHA256`);
+  }
   if (virtual.has(file.path)) {
     const source = virtual.get(file.path);
     assert.equal(response.headers.get("content-type"), source.contentType, `${file.path}: MIME`);
@@ -81,6 +91,7 @@ console.log(JSON.stringify({
   filesPassed: results.length, totalBytes: results.reduce((sum, file) => sum + file.bytes, 0),
   launcherSHA256: createHash("sha256").update(launcherSource).digest("hex"),
   nativeHTMLSHA256: manifest.runtimeFiles.find(file => file.path === "index.html").sha256,
+  htmlDelivery,
   releaseMetadataSHA256: createHash("sha256").update(releaseSource).digest("hex"),
   virtualFiles: results.filter(file => virtual.has(file.path)),
 }, null, 2));
