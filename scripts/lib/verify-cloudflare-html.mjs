@@ -27,12 +27,16 @@ export function verifyCloudflareHTML(actualBytes, sourceBytes, pathname) {
       const decodedTime = Buffer.from(params[2], "base64").toString("utf8");
       const canonicalTime = Buffer.from(decodedTime).toString("base64") === params[2];
       const shape = script.replace(params[0], "window.__CF$cv$params={r:'__RAY__',t:'__TIME__'}");
-      const expectedPosition = html.lastIndexOf("</body>") - script.length;
+      // The immutable Unity export omits the optional closing body tag, so
+      // Cloudflare places its bootstrap just before that document's </html>.
+      const closingTag = source.toString("utf8").includes("</body>") ? "</body>" : "</html>";
+      const expectedPosition = html.lastIndexOf(closingTag) - script.length;
       if (canonicalTime && /^\d{10,13}(?:\.\d{1,6})?$/.test(decodedTime) &&
           scripts[0].index === expectedPosition && shape === CLOUDFLARE_JSD_TEMPLATE) {
         normalized = Buffer.from(html.slice(0, scripts[0].index) + html.slice(scripts[0].index + script.length));
         evidence.transformation = "cloudflare-jsd-exact-template";
         evidence.injectedBytes = Buffer.byteLength(script);
+        evidence.injectionBefore = closingTag;
       }
     }
   }

@@ -25,6 +25,14 @@ test("Observed production bootstrap has exactly the captured 938 bytes", () => {
   assert.equal(Buffer.byteLength(observed), 938);
   assert.equal(verifyCloudflareHTML(inject(observed), source, "/game/").injectedBytes, 938);
 });
+test("The Unity export with an implicit closing body preserves every original byte", () => {
+  const implicit = Buffer.from(source.toString().replace("</body>", ""));
+  const delivered = Buffer.from(implicit.toString().replace("</html>", `${script}</html>`));
+  const evidence = verifyCloudflareHTML(delivered, implicit, "/game/index.html");
+  assert.equal(evidence.injectionBefore, "</html>");
+  assert.equal(evidence.sourceBytes, implicit.length);
+  assert.equal(evidence.transformation, "cloudflare-jsd-exact-template");
+});
 for (const [name, html] of [
   ["duplicate JSD injection", inject(script + script)],
   ["JSD in unexpected document position", Buffer.from(source.toString().replace("</head>", `${script}</head>`))],
