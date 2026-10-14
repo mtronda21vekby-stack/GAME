@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "available": true,
   "entry": "./play/",
-  "version": "0.22.0 / v22-rift-04-character-rollback",
-  "revision": "v22-rift-04-character-rollback",
-  "archiveSHA256": "38234968997f557e79f9dddfd09370a1d9993eadbc8760de35f7791204061888",
-  "wasmSHA256": "2bc14c5681c857768d9a7d5bc9b08eef17a0436c62ee94a777a83958989a417a"
+  "version": "0.22.0 / v22-rift-05-weapon-rollback",
+  "revision": "v22-rift-05-weapon-rollback",
+  "archiveSHA256": "0392f4e709bddb1f3910ff52225e96fe1e4b9cabe1225f097c57188c6a9f5dd1",
+  "wasmSHA256": "a1b736177197a1d16ea056abd757fd77eebf1a45e3e45ac85884687744e796ba"
 }
