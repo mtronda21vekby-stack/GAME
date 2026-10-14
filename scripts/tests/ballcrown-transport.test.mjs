@@ -209,14 +209,14 @@ test("Invalid manifest paths, lengths, hashes and offsets are rejected at initia
   }
 });
 
-test("Verified v22 aimbot07 including Rift06: both complete HTTP streams match the immutable receipt SHA", async () => {
+test("Verified v22 complete user package13: both complete HTTP streams match the immutable receipt SHA", async () => {
   const root = path.resolve(import.meta.dirname, "../..");
   const runtimeRoot = path.join(root, "apps/site/public/games/ballcrown/play");
   const manifestBytes = readFileSync(path.join(runtimeRoot, "Build/transport.json"));
   assert.deepEqual(manifestBytes, readFileSync(path.join(root, "functions/games/ballcrown/play/Build/transport-manifest.json")));
   const manifest = JSON.parse(manifestBytes);
-  assert.equal(manifest.sourceArchiveSHA256, "3c8366ef73199bd8d7d042c018c4836333f3121ab53d4a7421bfe1e16ab440f9");
-  assert.equal(manifest.revision, "v22-aimbot-07-includes-rift06");
+  assert.equal(manifest.sourceArchiveSHA256, "b1d7c273a9afaa57a800860e5eb4209fa3e7151e0cbc2e99fbf4575638f2c840");
+  assert.equal(manifest.revision, "v22-user-music-13-includes-killfeed12-user11-10-09-08-07");
   const handler = createBallcrownTransport(manifest);
   const assets = { async fetch(req) {
     const pathname = new URL(req.url).pathname;

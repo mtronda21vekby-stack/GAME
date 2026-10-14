@@ -3,7 +3,7 @@
  * focus on the player. Neither path rejects untrusted events in the pinned build.
  * Keep Ruffle gamepadButtonMapping:{}: this adapter owns the complete mapping.
  */
-export const DEFAULT_GAMEPAD_OPTIONS = Object.freeze({enabled:true, deadzone:0.18, sensitivity:1, invertY:false});
+export const DEFAULT_GAMEPAD_OPTIONS = Object.freeze({enabled:true, deadzone:0.18, sensitivity:1, invertY:false,aimCurve:1});
 export const KEY_BINDINGS = Object.freeze({
   KeyA:{key:'a',keyCode:65}, KeyD:{key:'d',keyCode:68},
   KeyS:{key:'s',keyCode:83}, KeyW:{key:'w',keyCode:87},
@@ -17,8 +17,9 @@ export function validateGamepadOptions(input = {}) {
   const next = {...DEFAULT_GAMEPAD_OPTIONS,...input};
   for(const name of ['enabled','invertY']) if(typeof next[name] !== 'boolean') throw new TypeError(`Неверная настройка геймпада: ${name}`);
   if(!Number.isFinite(next.deadzone) || next.deadzone < 0 || next.deadzone > 0.6) throw new RangeError('Мёртвая зона должна быть от 0 до 0.6.');
-  if(!Number.isFinite(next.sensitivity) || next.sensitivity < 0.25 || next.sensitivity > 3) throw new RangeError('Чувствительность должна быть от 0.25 до 3.');
-  return {enabled:next.enabled,deadzone:next.deadzone,sensitivity:next.sensitivity,invertY:next.invertY};
+  if(!Number.isFinite(next.sensitivity) || next.sensitivity < 0.25 || next.sensitivity > 8) throw new RangeError('Чувствительность должна быть от 0.25 до 8.');
+  if(!Number.isFinite(next.aimCurve)||next.aimCurve<.5||next.aimCurve>2.5)throw new RangeError("Кривая прицела должна быть от 0.5 до 2.5.");
+  return {enabled:next.enabled,deadzone:next.deadzone,sensitivity:next.sensitivity,invertY:next.invertY,aimCurve:next.aimCurve};
 }
 
 export function radialDeadzone(x,y,deadzone = DEFAULT_GAMEPAD_OPTIONS.deadzone) {
@@ -43,6 +44,7 @@ export function mapStandardGamepad(gamepad,options = DEFAULT_GAMEPAD_OPTIONS) {
   const b = index => pressed(buttons[index]);
   const move = radialDeadzone(gamepad.axes[0],gamepad.axes[1],config.deadzone);
   const aim = radialDeadzone(gamepad.axes[2],gamepad.axes[3],config.deadzone);
+  if(config.aimCurve!==1){const magnitude=Math.hypot(aim.x,aim.y);if(magnitude>0){const gain=Math.pow(magnitude,config.aimCurve-1);aim.x*=gain;aim.y*=gain;}}
   if(config.invertY) aim.y = -aim.y;
   const left = move.x < -0.15 || b(14), right = move.x > 0.15 || b(15);
   const keys = [];

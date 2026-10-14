@@ -1,55 +1,61 @@
 {
   "schemaVersion": 1,
   "version": "0.22.0",
-  "revision": "v22-aimbot-07-includes-rift06",
-  "sourceArchiveSHA256": "3c8366ef73199bd8d7d042c018c4836333f3121ab53d4a7421bfe1e16ab440f9",
-  "sourceReceiptSHA256": "b6ec1d0a98ae94a9605bca95305767f220cce3c9685e15495f47d16df1605a5f",
+  "revision": "v22-user-music-13-includes-killfeed12-user11-10-09-08-07",
+  "sourceArchiveSHA256": "b1d7c273a9afaa57a800860e5eb4209fa3e7151e0cbc2e99fbf4575638f2c840",
+  "sourceReceiptSHA256": "19097df43e6d4a181db61221abeb8314b1fcf081fb7837aa2ed003b918672a68",
   "chunkBytes": 16777216,
   "publicBase": "/games/ballcrown/play/",
   "virtualFiles": [
     {
       "path": "Build/BuildWeb.data",
-      "bytes": 47387541,
-      "sha256": "2fb37467f5969c744bffa70533b21a906a335dda6a2d8cba6c41a47ddc3eb994",
+      "bytes": 54459582,
+      "sha256": "7bd0db077c702133514a6e939961b41dd9f7872b7e08dff97bcd7ea6b86ae944",
       "contentType": "application/octet-stream",
       "chunks": [
         {
-          "path": "Build/chunks/BuildWeb.data.2fb37467f5969c744bffa70533b21a906a335dda6a2d8cba6c41a47ddc3eb994.000.bin",
+          "path": "Build/chunks/BuildWeb.data.7bd0db077c702133514a6e939961b41dd9f7872b7e08dff97bcd7ea6b86ae944.000.bin",
           "offset": 0,
           "bytes": 16777216,
-          "sha256": "e6bd6d7c97d8dfb6a4da367872ba9970331f857237ec49c6ab1b41581550c0fc"
+          "sha256": "34d172523f62ac22edd8365aaf7158bf16d5b757b2a472d3b50a23046222db11"
         },
         {
-          "path": "Build/chunks/BuildWeb.data.2fb37467f5969c744bffa70533b21a906a335dda6a2d8cba6c41a47ddc3eb994.001.bin",
+          "path": "Build/chunks/BuildWeb.data.7bd0db077c702133514a6e939961b41dd9f7872b7e08dff97bcd7ea6b86ae944.001.bin",
           "offset": 16777216,
           "bytes": 16777216,
-          "sha256": "9df986f7954b36a23293130d58c0b1fa3380bb3b1ff8c734b1e5874d46ff947a"
+          "sha256": "90eee5ef90f6309ea3cfeefad1475d8cbc345c81dc024c2fbf56688761b54c34"
         },
         {
-          "path": "Build/chunks/BuildWeb.data.2fb37467f5969c744bffa70533b21a906a335dda6a2d8cba6c41a47ddc3eb994.002.bin",
+          "path": "Build/chunks/BuildWeb.data.7bd0db077c702133514a6e939961b41dd9f7872b7e08dff97bcd7ea6b86ae944.002.bin",
           "offset": 33554432,
-          "bytes": 13833109,
-          "sha256": "fb95f6e09bde7c2398984276ef2bfecc1a8fb9b93b7d05653eefb6749943c0e5"
+          "bytes": 16777216,
+          "sha256": "b180c576f343cf765e1f58e09b328ea6b09d12cf314273788f0696e02f631f50"
+        },
+        {
+          "path": "Build/chunks/BuildWeb.data.7bd0db077c702133514a6e939961b41dd9f7872b7e08dff97bcd7ea6b86ae944.003.bin",
+          "offset": 50331648,
+          "bytes": 4127934,
+          "sha256": "d9e647e5a13c759bec1c93780271f3a9183426bc0f4ff5d5a45294d1afc4db9e"
         }
       ]
     },
     {
       "path": "Build/BuildWeb.wasm",
-      "bytes": 26588470,
-      "sha256": "cb27d9f109ca2d2065113e6c1389d9acfbcf916c0062a5dca09e50870d335dad",
+      "bytes": 26661736,
+      "sha256": "071745af4eab157a2f09197e9400780845ab41dfa5308e67f20c24edfc58009e",
       "contentType": "application/wasm",
       "chunks": [
         {
-          "path": "Build/chunks/BuildWeb.wasm.cb27d9f109ca2d2065113e6c1389d9acfbcf916c0062a5dca09e50870d335dad.000.bin",
+          "path": "Build/chunks/BuildWeb.wasm.071745af4eab157a2f09197e9400780845ab41dfa5308e67f20c24edfc58009e.000.bin",
           "offset": 0,
           "bytes": 16777216,
-          "sha256": "61700a226996a5ce8c03c6d38d44b86faa1d561157d0a5378e6f2571ef770575"
+          "sha256": "90336276ae27056cd69dcce2dd219cc288306411fc4f6cfc5ce50ca794d1ebde"
         },
         {
-          "path": "Build/chunks/BuildWeb.wasm.cb27d9f109ca2d2065113e6c1389d9acfbcf916c0062a5dca09e50870d335dad.001.bin",
+          "path": "Build/chunks/BuildWeb.wasm.071745af4eab157a2f09197e9400780845ab41dfa5308e67f20c24edfc58009e.001.bin",
           "offset": 16777216,
-          "bytes": 9811254,
-          "sha256": "dd2a26d3e1a155bed01ba08bca522d72ad77650dd52f222b8567cedf12b8ea3e"
+          "bytes": 9884520,
+          "sha256": "122d7a4ccfaf9fd1578eced8faf545ae8c89d4f535346fc4fb276b69ac86775d"
         }
       ]
     }
@@ -57,23 +63,23 @@
   "runtimeFiles": [
     {
       "path": "Build/BuildWeb.data",
-      "bytes": 47387541,
-      "sha256": "2fb37467f5969c744bffa70533b21a906a335dda6a2d8cba6c41a47ddc3eb994"
+      "bytes": 54459582,
+      "sha256": "7bd0db077c702133514a6e939961b41dd9f7872b7e08dff97bcd7ea6b86ae944"
     },
     {
       "path": "Build/BuildWeb.framework.js",
-      "bytes": 370888,
-      "sha256": "80fc1b2c80b38f9f41ef4586e2848aa9e734c33c66fa3c29ccf1aa3ebf766f1a"
+      "bytes": 372007,
+      "sha256": "2166248cd5ba3101a37ddbf2e7a798e4f0d77e68763ee3aba7fd1de7d2cce41b"
     },
     {
       "path": "Build/BuildWeb.loader.js",
       "bytes": 27221,
-      "sha256": "dfb872b3a919076072209dc3dfe337624f259aafaa0fda08dad45ff82c864d6c"
+      "sha256": "26a458f9b60608cdbb9f32262e5070aec5f2d11acc5128395deb65f1aefb4702"
     },
     {
       "path": "Build/BuildWeb.wasm",
-      "bytes": 26588470,
-      "sha256": "cb27d9f109ca2d2065113e6c1389d9acfbcf916c0062a5dca09e50870d335dad"
+      "bytes": 26661736,
+      "sha256": "071745af4eab157a2f09197e9400780845ab41dfa5308e67f20c24edfc58009e"
     },
     {
       "path": "Licenses/BlackcrownV21-OriginalArt.txt",
@@ -94,6 +100,11 @@
       "path": "Licenses/Inter-OFL.txt",
       "bytes": 4380,
       "sha256": "262481e844521b326f5ecd053e59b98c8b2da78c8ee1bdbb6e8174305e54935a"
+    },
+    {
+      "path": "Licenses/User-Music-13.txt",
+      "bytes": 362,
+      "sha256": "0a69e06e0473c91444955d70a605cf66b5a19eb3976c841b853b62453dea3c64"
     },
     {
       "path": "Mods/README_RU.txt",
@@ -164,6 +175,11 @@
       "path": "StreamingAssets/NewMusic/circuit-breaker.mp3",
       "bytes": 1130579,
       "sha256": "33357322451e7b9f32eac310e54a42a76b517458bc23b73b4ba0d6c62bcf6109"
+    },
+    {
+      "path": "StreamingAssets/NewMusic/f-minor-victory.mp3",
+      "bytes": 2909009,
+      "sha256": "daba37b7888ac9172272eb4ba3ed43f5b8810d9c223a9ccd9ee1d2efacbacaa6"
     },
     {
       "path": "StreamingAssets/NewMusic/final-vector.m4a",
@@ -507,8 +523,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 35880,
-      "sha256": "415e9e76eede2aba30d65df7bdaa96e0d7a463d1804539dc17648aed52f09f75"
+      "bytes": 36317,
+      "sha256": "fc3dd4a640024e409c056a3db62a6dc3ddd9a6abd650b5d4338ee67a85618bfe"
     },
     {
       "path": "manifest.webmanifest",
@@ -527,13 +543,13 @@
     },
     {
       "path": "src/gamepad-mapping.mjs",
-      "bytes": 3622,
-      "sha256": "4be078e2a2cebe008580fad22269517cf08daafedb1571dcf47328c8faf78ee3"
+      "bytes": 3982,
+      "sha256": "907bb4da7db831f446e0cd41111fa3baaf42f0a3dacb1f39b5d0b4dcca218f23"
     },
     {
       "path": "src/native-gamepad.mjs",
-      "bytes": 8202,
-      "sha256": "130d0dce97387bb45f5ac49f4bff0199dff7d54b8acd90c2d2fbbeb908efec8b"
+      "bytes": 8279,
+      "sha256": "22f4bca1890e3f9817335bb0055a0fd54af9b4877dad36b315ad1598bf98870b"
     },
     {
       "path": "src/native-screen-mode.mjs",

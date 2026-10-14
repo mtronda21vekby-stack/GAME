@@ -46,7 +46,7 @@ export class NativeGamepad {
   let pads;try{pads=Array.from(this.environment.navigator.getGamepads()).filter(Boolean)}catch{this.reset();this.onStatus('Геймпад: доступ браузера недоступен');return}
   const pad=pads.find(p=>mapStandardGamepad(p,this.options).supported);
   if(!pad){this.reset();this.onStatus('Геймпад: подключите контроллер и нажмите кнопку');return}
-  const settings=this.getSettings?.();if(settings){this.options.deadzone=Math.max(0,Math.min(.6,settings.gamepadDeadzone??.18));this.options.sensitivity=Math.max(.25,Math.min(3,settings.gamepadSensitivity??1));this.options.invertY=!!settings.gamepadInvertY}
+  const settings=this.getSettings?.();if(settings){this.options.deadzone=Math.max(0,Math.min(.6,settings.gamepadDeadzone??.18));this.options.sensitivity=Math.max(.25,Math.min(8,settings.gamepadSensitivity??1));this.options.aimCurve=Math.max(.5,Math.min(2.5,settings.gamepadAimCurve??1));this.options.invertY=!!settings.gamepadInvertY}
   const input=mapStandardGamepad(pad,this.options),menuInput=this.menuInput(pad);
   const ui=this.getUIState?.(),context=ui?(ui.key+':'+!!ui.active):null;
   if(this.context!==context){this.reset();this.context=context}

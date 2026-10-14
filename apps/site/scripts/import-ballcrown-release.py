@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Import the approved immutable BALLCROWN v22 aimbot 07 with Rift feedback 06.
+"""Import the approved immutable BALLCROWN v22 user music 13 complete package.
 
 The source ZIP and receipt are pinned before any runtime extraction. Only the
 receipt's runtimeFiles are copied. Unity's two large raw files are replaced by
@@ -8,8 +8,8 @@ The index and all other runtime files remain byte-for-byte identical.
 
 Example (run from any directory):
   python3 apps/site/scripts/import-ballcrown-release.py \
-    --archive /path/to/ballcrown-web-0.22.0-v22-aimbot-07-includes-rift06-candidate.zip \
-    --receipt /path/to/ballcrown-v22-aimbot-07-includes-rift06-export.json \
+    --archive /path/to/ballcrown-web-0.22.0-v22-user-music-13-includes-killfeed12-user11-candidate.zip \
+    --receipt /path/to/ballcrown-v22-user-music-13-export.json \
     --report /path/to/ballcrown-import-verification.json
 
 An existing output must already exactly match this import. Unexpected or edited
@@ -32,18 +32,18 @@ from typing import Any
 import zipfile
 
 
-ARCHIVE_SHA256 = "3c8366ef73199bd8d7d042c018c4836333f3121ab53d4a7421bfe1e16ab440f9"
-ARCHIVE_BYTES = 59_898_454
-RECEIPT_SHA256 = "b6ec1d0a98ae94a9605bca95305767f220cce3c9685e15495f47d16df1605a5f"
-INDEX_SHA256 = "415e9e76eede2aba30d65df7bdaa96e0d7a463d1804539dc17648aed52f09f75"
-WASM_SHA256 = "cb27d9f109ca2d2065113e6c1389d9acfbcf916c0062a5dca09e50870d335dad"
-DATA_SHA256 = "2fb37467f5969c744bffa70533b21a906a335dda6a2d8cba6c41a47ddc3eb994"
-FRAMEWORK_SHA256 = "80fc1b2c80b38f9f41ef4586e2848aa9e734c33c66fa3c29ccf1aa3ebf766f1a"
-LOADER_SHA256 = "dfb872b3a919076072209dc3dfe337624f259aafaa0fda08dad45ff82c864d6c"
+ARCHIVE_SHA256 = "b1d7c273a9afaa57a800860e5eb4209fa3e7151e0cbc2e99fbf4575638f2c840"
+ARCHIVE_BYTES = 69_019_378
+RECEIPT_SHA256 = "19097df43e6d4a181db61221abeb8314b1fcf081fb7837aa2ed003b918672a68"
+INDEX_SHA256 = "fc3dd4a640024e409c056a3db62a6dc3ddd9a6abd650b5d4338ee67a85618bfe"
+WASM_SHA256 = "071745af4eab157a2f09197e9400780845ab41dfa5308e67f20c24edfc58009e"
+DATA_SHA256 = "7bd0db077c702133514a6e939961b41dd9f7872b7e08dff97bcd7ea6b86ae944"
+FRAMEWORK_SHA256 = "2166248cd5ba3101a37ddbf2e7a798e4f0d77e68763ee3aba7fd1de7d2cce41b"
+LOADER_SHA256 = "26a458f9b60608cdbb9f32262e5070aec5f2d11acc5128395deb65f1aefb4702"
 NATIVE_VERSION = "0.22.0"
-RELEASE_REVISION = "v22-aimbot-07-includes-rift06"
+RELEASE_REVISION = "v22-user-music-13-includes-killfeed12-user11-10-09-08-07"
 CHUNK_BYTES = 16 * 1024 * 1024
-RUNTIME_FILE_COUNT = 97
+RUNTIME_FILE_COUNT = 99
 PUBLIC_BASE = "/games/ballcrown/play/"
 TRANSPORT_PATH = "Build/transport.json"
 VIRTUAL_TYPES = {
@@ -172,10 +172,11 @@ def receipt_runtime(receipt: dict[str, Any]) -> list[dict[str, Any]]:
         receipt.get("manifestVersion") == 1
         and receipt.get("version") == NATIVE_VERSION
         and receipt.get("revision") == RELEASE_REVISION
-        and receipt.get("buildRevision") == RELEASE_REVISION
+        and "buildRevision" not in receipt
+        and receipt.get("nativeBuild", {}).get("version") == NATIVE_VERSION
         and receipt.get("nativeBuild", {}).get("revision") == RELEASE_REVISION
     ):
-        fail("Receipt version/revisions differ from the approved aimbot 07 with Rift feedback 06")
+        fail("Receipt version/revisions differ from the approved user music 13 package")
     pinned_native = {
         "indexSHA256": ("index.html", INDEX_SHA256),
         "wasmSHA256": ("Build/BuildWeb.wasm", WASM_SHA256),
@@ -184,8 +185,12 @@ def receipt_runtime(receipt: dict[str, Any]) -> list[dict[str, Any]]:
         "loaderSHA256": ("Build/BuildWeb.loader.js", LOADER_SHA256),
     }
     for field, (path, expected_sha) in pinned_native.items():
-        if path not in by_path or by_path[path]["sha256"] != expected_sha or receipt.get("nativeBuild", {}).get(field) != expected_sha:
+        if path not in by_path or by_path[path]["sha256"] != expected_sha:
             fail(f"Receipt native hash differs from the approved build: {path}")
+    # The sealed 13 receipt records only wasmSHA256 in nativeBuild. All five
+    # native files remain pinned above and independently hashed from the ZIP.
+    if receipt.get("nativeBuild", {}).get("wasmSHA256") != WASM_SHA256:
+        fail("Receipt native WASM hash differs from the approved build")
     web_archive = receipt.get("immutableSource", {})
     if web_archive.get("sha256") != ARCHIVE_SHA256:
         fail("Receipt archive hash is not the approved immutable archive")
@@ -350,7 +355,7 @@ def main() -> int:
     with zipfile.ZipFile(archive_path) as archive:
         excluded_count = validate_archive(archive, runtime)
         if excluded_count or len(archive.infolist()) != RUNTIME_FILE_COUNT:
-            fail("Approved aimbot 07 archive must contain exactly its 97 runtime entries")
+            fail("Approved user music 13 archive must contain exactly its 99 runtime entries")
         # Package to an owned temporary directory; no output is exposed until
         # the whole source and reconstructed runtime have passed verification.
         output.parent.mkdir(parents=True, exist_ok=True)

@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "available": true,
   "entry": "./play/",
-  "version": "0.22.0 / v22-aimbot-07-includes-rift06",
-  "revision": "v22-aimbot-07-includes-rift06",
-  "archiveSHA256": "3c8366ef73199bd8d7d042c018c4836333f3121ab53d4a7421bfe1e16ab440f9",
-  "wasmSHA256": "cb27d9f109ca2d2065113e6c1389d9acfbcf916c0062a5dca09e50870d335dad"
+  "version": "0.22.0 / v22-user-music-13-includes-killfeed12-user11-10-09-08-07",
+  "revision": "v22-user-music-13-includes-killfeed12-user11-10-09-08-07",
+  "archiveSHA256": "b1d7c273a9afaa57a800860e5eb4209fa3e7151e0cbc2e99fbf4575638f2c840",
+  "wasmSHA256": "071745af4eab157a2f09197e9400780845ab41dfa5308e67f20c24edfc58009e"
 }

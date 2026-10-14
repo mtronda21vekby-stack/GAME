@@ -1,0 +1,5 @@
+F Minor Victory
+User-supplied combat music from F Minor Victory.zip.
+Runtime MP3 is byte-exact to the supplied file; only the decoded playback buffer gets a0.75-second technical loop crossfade.
+Source link supplied by the user: https://suno.com/song/bf14437d-25a5-48e6-a290-6035c0c08939
+The original ZIP and MP3 remain preserved in Artwork/MusicUser13Originals.
