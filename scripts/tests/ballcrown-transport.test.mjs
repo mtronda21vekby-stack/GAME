@@ -209,14 +209,14 @@ test("Invalid manifest paths, lengths, hashes and offsets are rejected at initia
   }
 });
 
-test("Verified v22 weapon rollback05: both complete HTTP streams match the immutable receipt SHA", async () => {
+test("Verified v22 aimbot07 including Rift06: both complete HTTP streams match the immutable receipt SHA", async () => {
   const root = path.resolve(import.meta.dirname, "../..");
   const runtimeRoot = path.join(root, "apps/site/public/games/ballcrown/play");
   const manifestBytes = readFileSync(path.join(runtimeRoot, "Build/transport.json"));
   assert.deepEqual(manifestBytes, readFileSync(path.join(root, "functions/games/ballcrown/play/Build/transport-manifest.json")));
   const manifest = JSON.parse(manifestBytes);
-  assert.equal(manifest.sourceArchiveSHA256, "0392f4e709bddb1f3910ff52225e96fe1e4b9cabe1225f097c57188c6a9f5dd1");
-  assert.equal(manifest.revision, "v22-rift-05-weapon-rollback");
+  assert.equal(manifest.sourceArchiveSHA256, "3c8366ef73199bd8d7d042c018c4836333f3121ab53d4a7421bfe1e16ab440f9");
+  assert.equal(manifest.revision, "v22-aimbot-07-includes-rift06");
   const handler = createBallcrownTransport(manifest);
   const assets = { async fetch(req) {
     const pathname = new URL(req.url).pathname;

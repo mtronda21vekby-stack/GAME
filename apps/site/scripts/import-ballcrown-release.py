@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Import the approved immutable BALLCROWN v22 weapon rollback 05 runtime.
+"""Import the approved immutable BALLCROWN v22 aimbot 07 with Rift feedback 06.
 
 The source ZIP and receipt are pinned before any runtime extraction. Only the
 receipt's runtimeFiles are copied. Unity's two large raw files are replaced by
@@ -8,8 +8,8 @@ The index and all other runtime files remain byte-for-byte identical.
 
 Example (run from any directory):
   python3 apps/site/scripts/import-ballcrown-release.py \
-    --archive /path/to/ballcrown-web-0.22.0-v22-rift-05-weapon-rollback-candidate.zip \
-    --receipt /path/to/ballcrown-v22-rift-05-weapon-rollback-export.json \
+    --archive /path/to/ballcrown-web-0.22.0-v22-aimbot-07-includes-rift06-candidate.zip \
+    --receipt /path/to/ballcrown-v22-aimbot-07-includes-rift06-export.json \
     --report /path/to/ballcrown-import-verification.json
 
 An existing output must already exactly match this import. Unexpected or edited
@@ -32,16 +32,16 @@ from typing import Any
 import zipfile
 
 
-ARCHIVE_SHA256 = "0392f4e709bddb1f3910ff52225e96fe1e4b9cabe1225f097c57188c6a9f5dd1"
-ARCHIVE_BYTES = 59_891_020
-RECEIPT_SHA256 = "4f0657bf8633cb6ff77189b4085613720b7e1870af01c4fa95bbfefb14159030"
+ARCHIVE_SHA256 = "3c8366ef73199bd8d7d042c018c4836333f3121ab53d4a7421bfe1e16ab440f9"
+ARCHIVE_BYTES = 59_898_454
+RECEIPT_SHA256 = "b6ec1d0a98ae94a9605bca95305767f220cce3c9685e15495f47d16df1605a5f"
 INDEX_SHA256 = "415e9e76eede2aba30d65df7bdaa96e0d7a463d1804539dc17648aed52f09f75"
-WASM_SHA256 = "a1b736177197a1d16ea056abd757fd77eebf1a45e3e45ac85884687744e796ba"
-DATA_SHA256 = "8a2faf7ff2188043d0527a803f6452d4ecd26a1481a1fe7be34f64eb7fae4847"
+WASM_SHA256 = "cb27d9f109ca2d2065113e6c1389d9acfbcf916c0062a5dca09e50870d335dad"
+DATA_SHA256 = "2fb37467f5969c744bffa70533b21a906a335dda6a2d8cba6c41a47ddc3eb994"
 FRAMEWORK_SHA256 = "80fc1b2c80b38f9f41ef4586e2848aa9e734c33c66fa3c29ccf1aa3ebf766f1a"
-LOADER_SHA256 = "2ed63364797bc1ad1968e87ec487136070e71d5af8f0939538f1e54d829c637a"
+LOADER_SHA256 = "dfb872b3a919076072209dc3dfe337624f259aafaa0fda08dad45ff82c864d6c"
 NATIVE_VERSION = "0.22.0"
-RELEASE_REVISION = "v22-rift-05-weapon-rollback"
+RELEASE_REVISION = "v22-aimbot-07-includes-rift06"
 CHUNK_BYTES = 16 * 1024 * 1024
 RUNTIME_FILE_COUNT = 97
 PUBLIC_BASE = "/games/ballcrown/play/"
@@ -175,7 +175,7 @@ def receipt_runtime(receipt: dict[str, Any]) -> list[dict[str, Any]]:
         and receipt.get("buildRevision") == RELEASE_REVISION
         and receipt.get("nativeBuild", {}).get("revision") == RELEASE_REVISION
     ):
-        fail("Receipt version/revisions differ from the approved weapon rollback 05")
+        fail("Receipt version/revisions differ from the approved aimbot 07 with Rift feedback 06")
     pinned_native = {
         "indexSHA256": ("index.html", INDEX_SHA256),
         "wasmSHA256": ("Build/BuildWeb.wasm", WASM_SHA256),
@@ -350,7 +350,7 @@ def main() -> int:
     with zipfile.ZipFile(archive_path) as archive:
         excluded_count = validate_archive(archive, runtime)
         if excluded_count or len(archive.infolist()) != RUNTIME_FILE_COUNT:
-            fail("Approved weapon rollback archive must contain exactly its 97 runtime entries")
+            fail("Approved aimbot 07 archive must contain exactly its 97 runtime entries")
         # Package to an owned temporary directory; no output is exposed until
         # the whole source and reconstructed runtime have passed verification.
         output.parent.mkdir(parents=True, exist_ok=True)
