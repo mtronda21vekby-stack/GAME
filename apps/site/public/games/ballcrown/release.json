@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "available": true,
   "entry": "./play/",
-  "version": "0.22.0 / v22-profile-name-21-includes-aim20-next19-rift18-touch15-audio17-pistol14",
-  "revision": "v22-profile-name-21-includes-aim20-next19-rift18-touch15-audio17-pistol14",
-  "archiveSHA256": "c21870d07947c5091225623dc9d1e09de5e0450ddcecc19d7344252b81379359",
-  "wasmSHA256": "1fd174dccf060b22e6e1622dce855c78cc31a69433d3ba9503232ab98bd84495"
+  "version": "0.22.0 / v22-presentation29-r1-includes-blood-death-ownedcollisionv2-presentation28-profile27-location26-movement25-ordinary24-guiR8-touchR7-combat23-mobile22r6-name21-aim20-next19-touch15-audio17-pistol14",
+  "revision": "v22-presentation29-r1-includes-blood-death-ownedcollisionv2-presentation28-profile27-location26-movement25-ordinary24-guiR8-touchR7-combat23-mobile22r6-name21-aim20-next19-touch15-audio17-pistol14",
+  "archiveSHA256": "26cd1bc2df51b3d47393f7cb58210bd9196717945fc4af209aa3ed9e414b2758",
+  "wasmSHA256": "240242b6fa8ac94164c49d69ca5170ad616763af9feede61bd22551431e5768d"
 }

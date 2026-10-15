@@ -120,7 +120,7 @@ jobs:
           --commit-dirty=true
       - name: Verify deployed Quiet Valley release and every ES module
         run: node apps/quiet-valley/scripts/verify-deployed.mjs "$BLACKCROWN_PRODUCTION_URL"
-      - name: Verify deployed Ballcrown profile-name package21 and all native runtime hashes
+      - name: Verify deployed Ballcrown qualified presentation29 package and all native runtime hashes
         shell: bash
         run: |
           for attempt in 1 2 3 4 5 6; do

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Import the approved immutable BALLCROWN v22 profile name 21 complete package.
+"""Import the approved immutable BALLCROWN v22 qualified presentation 29 complete package.
 
 The source ZIP and receipt are pinned before any runtime extraction. Only the
 receipt's runtimeFiles are copied. Unity's two large raw files are replaced by
@@ -8,8 +8,8 @@ The index and all other runtime files remain byte-for-byte identical.
 
 Example (run from any directory):
   python3 apps/site/scripts/import-ballcrown-release.py \
-    --archive /path/to/ballcrown-web-0.22.0-v22-profile-name-21-includes-aim20-next19-rift18-touch15-audio17-pistol14-candidate.zip \
-    --receipt /path/to/ballcrown-v22-profile-name-21-export.json \
+    --archive /path/to/ballcrown-web-0.22.0-v22-presentation29-r1-includes-blood-death-ownedcollisionv2-presentation28-profile27-location26-movement25-ordinary24-guiR8-touchR7-combat23-mobile22r6-name21-aim20-next19-touch15-audio17-pistol14-candidate.zip \
+    --receipt /path/to/ballcrown-v22-presentation29-r3-qualified-export.json \
     --report /path/to/ballcrown-import-verification.json
 
 An existing output must already exactly match this import. Unexpected or edited
@@ -32,16 +32,16 @@ from typing import Any
 import zipfile
 
 
-ARCHIVE_SHA256 = "c21870d07947c5091225623dc9d1e09de5e0450ddcecc19d7344252b81379359"
-ARCHIVE_BYTES = 69_068_682
-RECEIPT_SHA256 = "8444d9570aae067974a7eca58a5d44f77ffba20f3c0ddf0d0b39c147e4631338"
+ARCHIVE_SHA256 = "26cd1bc2df51b3d47393f7cb58210bd9196717945fc4af209aa3ed9e414b2758"
+ARCHIVE_BYTES = 72_073_106
+RECEIPT_SHA256 = "7a79fcaaf2e472ec9da61162c4c28e6f0a50e54ca50f044feae459eff391538d"
 INDEX_SHA256 = "aebe9d3fc8808e30a331295da7d705a50ebd471fb2bc36dcc60caf482bf8f6d9"
-WASM_SHA256 = "1fd174dccf060b22e6e1622dce855c78cc31a69433d3ba9503232ab98bd84495"
-DATA_SHA256 = "1796a9b9c8bb7a50553d73a471e4ce3151732acbdabdd429cd81fcd3bb344665"
-FRAMEWORK_SHA256 = "4a4e4a492bf7193780ca563f6eee0bfe65e5963a80aa9956fc3b38f9ff41efa6"
-LOADER_SHA256 = "e56f5362b30aed2c8d0385e4108ec89ba0eb30562cf49780139660701e045c17"
+WASM_SHA256 = "240242b6fa8ac94164c49d69ca5170ad616763af9feede61bd22551431e5768d"
+DATA_SHA256 = "fd4e63e0aa895e6ece4d5145c84395878d8d713f8adb87e4b8fa5a9c1424ad25"
+FRAMEWORK_SHA256 = "182641748e44c9a2ab93e786ce8433fe6a3ad1c3121f368653cf8937e3ac9d93"
+LOADER_SHA256 = "5a55d6ea5fa164a807edd1eec99835d5e7c72ddcc43ddefa3957e48a2b1cc636"
 NATIVE_VERSION = "0.22.0"
-RELEASE_REVISION = "v22-profile-name-21-includes-aim20-next19-rift18-touch15-audio17-pistol14"
+RELEASE_REVISION = "v22-presentation29-r1-includes-blood-death-ownedcollisionv2-presentation28-profile27-location26-movement25-ordinary24-guiR8-touchR7-combat23-mobile22r6-name21-aim20-next19-touch15-audio17-pistol14"
 CHUNK_BYTES = 16 * 1024 * 1024
 RUNTIME_FILE_COUNT = 99
 PUBLIC_BASE = "/games/ballcrown/play/"
@@ -176,7 +176,7 @@ def receipt_runtime(receipt: dict[str, Any]) -> list[dict[str, Any]]:
         and receipt.get("nativeBuild", {}).get("version") == NATIVE_VERSION
         and receipt.get("nativeBuild", {}).get("revision") == RELEASE_REVISION
     ):
-        fail("Receipt version/revisions differ from the approved profile name 21 package")
+        fail("Receipt version/revisions differ from the approved qualified presentation 29 package")
     pinned_native = {
         "indexSHA256": ("index.html", INDEX_SHA256),
         "wasmSHA256": ("Build/BuildWeb.wasm", WASM_SHA256),
@@ -187,7 +187,7 @@ def receipt_runtime(receipt: dict[str, Any]) -> list[dict[str, Any]]:
     for field, (path, expected_sha) in pinned_native.items():
         if path not in by_path or by_path[path]["sha256"] != expected_sha:
             fail(f"Receipt native hash differs from the approved build: {path}")
-    # The sealed 21 receipt records only wasmSHA256 in nativeBuild. All five
+    # The sealed qualified 29 receipt records WASM/index metadata. All five
     # native files remain pinned above and independently hashed from the ZIP.
     if receipt.get("nativeBuild", {}).get("wasmSHA256") != WASM_SHA256:
         fail("Receipt native WASM hash differs from the approved build")
@@ -355,7 +355,7 @@ def main() -> int:
     with zipfile.ZipFile(archive_path) as archive:
         excluded_count = validate_archive(archive, runtime)
         if excluded_count or len(archive.infolist()) != RUNTIME_FILE_COUNT:
-            fail("Approved profile name 21 archive must contain exactly its 99 runtime entries")
+            fail("Approved qualified presentation 29 archive must contain exactly its 99 runtime entries")
         # Package to an owned temporary directory; no output is exposed until
         # the whole source and reconstructed runtime have passed verification.
         output.parent.mkdir(parents=True, exist_ok=True)

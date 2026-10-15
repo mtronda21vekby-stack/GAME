@@ -53,6 +53,34 @@
    const pd=new B.b2PolygonDef();pd.SetAsBox(data.width*data.scale/60,data.height*data.scale/60);pd.density=1;pd.friction=.4;pd.restitution=.3;pd.filter.groupIndex=-1;
    const b=scene.world.CreateBody(bd);b.CreateShape(pd);b.SetMassFromShapes();for(const f of data.forces)force(b,f);const first=register(scene,b);diagnostic.gunsCreated++;record({op:'gun',id,data,first});return first;
   },
+  // Optional owned-world presentation impulse. Validate every corpse body
+  // before any mutation; do not create bodies, change force draws or step time.
+  presentationKick26(id,first,vx,vy,bounce){
+   if(!Number.isSafeInteger(id)||id<=0||!Number.isSafeInteger(first)||first<=0||
+      typeof vx!=='number'||typeof vy!=='number'||typeof bounce!=='number'||
+      !Number.isFinite(vx)||!Number.isFinite(vy)||!Number.isFinite(bounce)||
+      vx*vx+vy*vy>9||bounce<0||bounce>.35)return false;
+   const scene=scenes.get(id);if(!scene)return false;
+   const validated=[];
+   for(let i=0;i<14;i++){
+    const body=scene.bodies.get(first+i);
+    if(!body||typeof body.ApplyImpulse!=='function'||typeof body.GetShapeList!=='function')return false;
+    const mass=body.GetMass(),center=body.GetWorldCenter(),shapes=[];
+    if(!Number.isFinite(mass)||mass<=0||!center||!Number.isFinite(center.x)||!Number.isFinite(center.y)||
+       !Number.isFinite(mass*vx)||!Number.isFinite(mass*vy))return false;
+    for(let shape=body.GetShapeList();shape;shape=shape.GetNext()){
+     if(typeof shape.GetNext!=='function'||(typeof shape.SetRestitution!=='function'&&!('m_restitution' in shape)))return false;
+     shapes.push(shape);
+    }
+    if(!shapes.length)return false;
+    validated.push({body,mass,center,shapes});
+   }
+   for(const item of validated){
+    item.body.ApplyImpulse(new B.b2Vec2(item.mass*vx,item.mass*vy),item.center);
+    for(const shape of item.shapes){if(typeof shape.SetRestitution==='function')shape.SetRestitution(bounce);else shape.m_restitution=bounce;}
+   }
+   return true;
+  },
   step(id,write){const scene=scenes.get(id);try{scene.world.Step(1/30,10);for(const [index,b] of scene.bodies)write(index,b.GetPosition().x,b.GetPosition().y,b.GetAngle(),b.IsSleeping()?1:0,b.GetMass());diagnostic.steps++;diagnostic.activeBodies=scene.bodies.size;record({op:'step',id,count:1});return scene.bodies.size}catch(error){diagnostic.lastError=String(error);throw error}},
   inspect(id){
    if(!trace)throw new Error('Private source comparison requires explicit test entry');
