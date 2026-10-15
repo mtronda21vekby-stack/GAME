@@ -1,0 +1,121 @@
+name: Harborlight independent game preview
+on:
+  push:
+    branches: [feat/harborlight-independent-game]
+    paths:
+      - apps/harborlight/**
+      - .github/workflows/harborlight-preview.yml
+  workflow_dispatch:
+concurrency:
+  group: harborlight-preview
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  game:
+    if: github.ref == 'refs/heads/feat/harborlight-independent-game'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    env:
+      LIBGL_ALWAYS_SOFTWARE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/harborlight-independent-game
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Materialize verified application sources once
+        shell: bash
+        run: |
+          if [ -f .harborlight-transfer-0 ]; then
+            node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import {createHash} from 'node:crypto';
+          import {brotliDecompressSync} from 'node:zlib';
+          const text=[0,1,2].map(i=>fs.readFileSync('.harborlight-transfer-'+i,'utf8').trim()).join('');
+          const packed=Buffer.from(text,'base64');
+          const digest=createHash('sha256').update(packed).digest('hex');
+          if(digest!=='18076f3220c838a0375a02e22aa5c8b89fe9e752a6baacb490d9c9f19b21907a')throw Error('Source archive digest mismatch');
+          const source=JSON.parse(brotliDecompressSync(packed));
+          if(Object.keys(source).length!==25)throw Error('Unexpected source count');
+          for(const [relative,content] of Object.entries(source)){
+            if(typeof content!=='string'||relative.startsWith('/')||relative.includes('\\')||relative.split('/').includes('..'))throw Error('Invalid source path');
+            const dest=path.join('apps/harborlight',relative);
+            if(fs.existsSync(dest))throw Error('Refusing to overwrite existing app');
+          }
+          for(const [relative,content] of Object.entries(source)){
+            const dest=path.join('apps/harborlight',relative);fs.mkdirSync(path.dirname(dest),{recursive:true});fs.writeFileSync(dest,content);
+          }
+          for(const i of [0,1,2])fs.rmSync('.harborlight-transfer-'+i);
+          NODE
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add apps/harborlight .harborlight-transfer-0 .harborlight-transfer-1 .harborlight-transfer-2
+            test -z "$(git diff --cached --name-only -- .github/workflows)"
+            git commit -m 'Add Harborlight modular 3D maritime dispatch game source'
+            git push origin HEAD:feat/harborlight-independent-game
+          fi
+      - name: Install pinned game dependencies
+        working-directory: apps/harborlight
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Build offline-capable distributions
+        working-directory: apps/harborlight
+        run: npm run build
+      - name: Architecture and complete expedition tests
+        working-directory: apps/harborlight
+        run: |
+          mkdir -p evidence
+          set -o pipefail
+          npm test | tee evidence/domain-tests.txt
+      - name: Install actual browser engines
+        working-directory: apps/harborlight
+        run: npx playwright install --with-deps chromium webkit
+      - name: Served-page render, input, save and replay checks
+        working-directory: apps/harborlight
+        run: |
+          set -o pipefail
+          npm run test:browser | tee evidence/browser-log.txt
+      - name: Package source and distribution
+        if: always()
+        working-directory: apps/harborlight
+        run: |
+          mkdir -p releases
+          zip -qr releases/Harborlight-source.zip src scripts tests docs vendor index.html package.json package-lock.json tsconfig.json README.md .gitignore
+          cd dist && zip -qr ../releases/Harborlight-for-hosting.zip .
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: harborlight-game-and-evidence
+          path: |
+            apps/harborlight/evidence
+            apps/harborlight/releases
+            apps/harborlight/Harborlight.html
+          retention-days: 7
+  preview:
+    needs: game
+    if: github.ref == 'refs/heads/feat/harborlight-independent-game'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: harborlight-preview
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: harborlight-game-and-evidence
+          path: artifact
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Deploy isolated preview, never production
+        shell: bash
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID"
+          mkdir -p preview-dist
+          unzip -q artifact/releases/Harborlight-for-hosting.zip -d preview-dist
+          npx --yes wrangler@3.90.0 pages deploy preview-dist --project-name=siteblcrown --branch=harborlight-preview --commit-hash="$GITHUB_SHA" --commit-dirty=true
