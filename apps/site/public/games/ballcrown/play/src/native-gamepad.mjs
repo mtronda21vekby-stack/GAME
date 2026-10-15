@@ -1,25 +1,23 @@
 import {mapStandardGamepad,DEFAULT_GAMEPAD_OPTIONS} from './gamepad-mapping.mjs';
-
-// Retains the v4 standard-layout mapping. Routes to the native game's ordinary
-// browser input adapter; no SWF or Ruffle is used by this controller.
 export class NativeGamepad {
  constructor({canvas,isReady,isPaused,onPause,onStatus,onInput,getSettings,isActive,getUIState,environment=globalThis}) {
   Object.assign(this,{canvas,isReady,isPaused,onPause,onStatus,onInput,getSettings,isActive,getUIState,environment});
   this.options={...DEFAULT_GAMEPAD_OPTIONS};this.keys=new Set();this.fire=false;
-  this.position={x:.65,y:.5};this.last=null;this.pauseHeld=false;this.menuHeld=false;
+  this.position={x:.65,y:.5};this.last=null;this.aimDeviceAvailable20=false;this.pauseHeld=false;this.menuHeld=false;
   this.neutral=true;this.blurred=false;this.running=false;this.context=null;this.confirmHeld=false;this.backHeld=false;this.direction=0;this.repeatAt=0;
-  this.blur=()=>{this.blurred=true;this.reset()};this.focus=()=>{this.blurred=false};
-  this.hidden=()=>{if(environment.document.hidden)this.reset()};this.disconnect=()=>this.reset();
+  this.blur=()=>{this.blurred=true;this.loseAimDevice20()};this.focus=()=>{this.blurred=false};
+  this.hidden=()=>{if(environment.document.hidden)this.loseAimDevice20()};this.disconnect=()=>this.loseAimDevice20();
  }
  key(type,code){if(this.onInput){this.onInput('key',{code:({KeyA:65,KeyD:68,KeyW:87,KeyS:83,KeyR:82,KeyQ:81,KeyE:69,Tab:9})[code],down:type==='keydown'});return}this.environment.dispatchEvent(new this.environment.KeyboardEvent(type,{code,bubbles:true,cancelable:true}))}
- pointer(type){
-  if(this.onInput){this.onInput(type==='pointermove'?'pointer':'shoot',type==='pointermove'?{x:this.position.x,y:this.position.y,normalized:true}:{down:type==='pointerdown'});return}
+ pointer(type,metadata=null){
+  if(this.onInput){this.onInput(type==='pointermove'?'pointer':'shoot',type==='pointermove'?{x:this.position.x,y:this.position.y,normalized:true,...metadata}:{down:type==='pointerdown'});return}
   const r=this.canvas.getBoundingClientRect();
   this.canvas.dispatchEvent(new this.environment.PointerEvent(type,{clientX:r.left+this.position.x*r.width,clientY:r.top+this.position.y*r.height,button:type==='pointermove'?-1:0,buttons:this.fire?1:0,isPrimary:true,pointerType:'mouse',bubbles:true,cancelable:true}));
  }
  setKeys(next){const wanted=new Set(next);for(const code of this.keys)if(!wanted.has(code))this.key('keyup',code);for(const code of wanted)if(!this.keys.has(code))this.key('keydown',code);this.keys=wanted}
  setFire(value){if(value!==this.fire){this.fire=value;this.pointer(value?'pointerdown':'pointerup')}}
  reset(){this.setKeys([]);this.setFire(false);this.neutral=true;this.pauseHeld=true;this.menuHeld=true;this.confirmHeld=this.backHeld=true;this.direction=0;this.repeatAt=0;this.last=null;if(this.menuUsed){this.onInput?.('menu',{code:0});this.menuUsed=false}}
+ loseAimDevice20(){this.reset();if(this.aimDeviceAvailable20){this.aimDeviceAvailable20=false;this.onInput?.('release',{})}}
  start(){
   if(this.running)return;this.running=true;
   this.environment.addEventListener('blur',this.blur);this.environment.addEventListener('focus',this.focus);
@@ -27,7 +25,7 @@ export class NativeGamepad {
   this.tick=time=>{if(!this.running)return;this.poll(time);this.frame=this.environment.requestAnimationFrame(this.tick)};
   this.frame=this.environment.requestAnimationFrame(this.tick);
  }
- stop(){this.running=false;this.environment.cancelAnimationFrame(this.frame);this.reset();this.environment.removeEventListener('blur',this.blur);this.environment.removeEventListener('focus',this.focus);this.environment.removeEventListener('gamepaddisconnected',this.disconnect);this.environment.document.removeEventListener('visibilitychange',this.hidden)}
+ stop(){this.running=false;this.environment.cancelAnimationFrame(this.frame);this.loseAimDevice20();this.environment.removeEventListener('blur',this.blur);this.environment.removeEventListener('focus',this.focus);this.environment.removeEventListener('gamepaddisconnected',this.disconnect);this.environment.document.removeEventListener('visibilitychange',this.hidden)}
  sendMenu(code){this.menuUsed=true;this.onInput?.('menu',{code})}
  menuInput(pad){
   const b=i=>!!pad.buttons[i]&&(pad.buttons[i].pressed||pad.buttons[i].value>.5);
@@ -42,17 +40,18 @@ export class NativeGamepad {
  }
  poll(time){
   const dt=this.last===null?0:Math.max(0,Math.min(.064,(time-this.last)/1000));this.last=time;
-  if(!this.environment.isSecureContext||!this.environment.navigator?.getGamepads){this.reset();this.onStatus('Геймпад: требуется localhost или HTTPS');return}
-  let pads;try{pads=Array.from(this.environment.navigator.getGamepads()).filter(Boolean)}catch{this.reset();this.onStatus('Геймпад: доступ браузера недоступен');return}
+  if(!this.environment.isSecureContext||!this.environment.navigator?.getGamepads){this.loseAimDevice20();this.onStatus('Геймпад: требуется localhost или HTTPS');return}
+  let pads;try{pads=Array.from(this.environment.navigator.getGamepads()).filter(Boolean)}catch{this.loseAimDevice20();this.onStatus('Геймпад: доступ браузера недоступен');return}
   const pad=pads.find(p=>mapStandardGamepad(p,this.options).supported);
-  if(!pad){this.reset();this.onStatus('Геймпад: подключите контроллер и нажмите кнопку');return}
+  if(!pad){this.loseAimDevice20();this.onStatus('Геймпад: подключите контроллер и нажмите кнопку');return}
   const settings=this.getSettings?.();if(settings){this.options.deadzone=Math.max(0,Math.min(.6,settings.gamepadDeadzone??.18));this.options.sensitivity=Math.max(.25,Math.min(8,settings.gamepadSensitivity??1));this.options.aimCurve=Math.max(.5,Math.min(2.5,settings.gamepadAimCurve??1));this.options.invertY=!!settings.gamepadInvertY}
   const input=mapStandardGamepad(pad,this.options),menuInput=this.menuInput(pad);
   const ui=this.getUIState?.(),context=ui?(ui.key+':'+!!ui.active):null;
   if(this.context!==context){this.reset();this.context=context}
   const owns=this.isActive?this.isActive():true;
   if(this.wasOwner&&!owns){this.reset()}this.wasOwner=owns;
-  if(this.blurred||this.environment.document.hidden){this.reset();this.onStatus('Геймпад: вернитесь в окно игры');return}
+  if(this.blurred||this.environment.document.hidden){this.loseAimDevice20();this.onStatus('Геймпад: вернитесь в окно игры');return}
+  this.aimDeviceAvailable20=true;
   if(this.neutral){this.pauseHeld=input.pause;this.menuHeld=input.menuClick;this.confirmHeld=menuInput.confirm;this.backHeld=menuInput.back;if(input.activity||menuInput.activity){this.onStatus('Геймпад: отпустите кнопки и стики');return}this.neutral=false}
   const pause=input.pause&&!this.pauseHeld;this.pauseHeld=input.pause;
   if(ui?.active){
@@ -71,13 +70,13 @@ export class NativeGamepad {
   const menu=input.menuClick&&!this.menuHeld;this.menuHeld=input.menuClick;
   if(!owns&&!input.activity){this.setKeys([]);this.setFire(false);return}
   if(input.activity){if(!owns){this.keys.clear();this.fire=false}this.onInput?.('activity',{});this.wasOwner=this.isActive?this.isActive():true;if(!this.wasActivity)this.canvas.focus({preventScroll:true})}this.wasActivity=input.activity;
-  const r=this.canvas.getBoundingClientRect(),speed=Math.min(r.width,r.height)*this.options.sensitivity;
+  const r=this.canvas.getBoundingClientRect(),speed=Math.min(r.width,r.height)*this.options.sensitivity,aimOldX=this.position.x,aimOldY=this.position.y;
   this.position.x=Math.max(.002,Math.min(.998,this.position.x+input.aim.x*speed*dt/r.width));
   this.position.y=Math.max(.002,Math.min(.998,this.position.y+input.aim.y*speed*dt/r.height));
   if(this.onInput){
    // The existing cursor speed/sensitivity chooses a heading; neutral retains it as the player/camera moves.
    // The native renderer and ordinary firing source use the same current pivot.
-   if(input.aim.x||input.aim.y)this.pointer('pointermove');
+   if(input.aim.x||input.aim.y)this.pointer('pointermove',{aimMotion:true,aimOldX,aimOldY,aimRightX:input.aim.x,aimRightY:input.aim.y,aimTimeSeconds:time/1000,aimPollSeconds:dt});
   }else if(input.aim.x||input.aim.y||input.fire||menu)this.pointer('pointermove');
   this.setKeys(input.keys);this.setFire(input.fire);
   if(menu&&!input.fire){this.setFire(true);this.setFire(false)}

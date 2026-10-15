@@ -209,14 +209,14 @@ test("Invalid manifest paths, lengths, hashes and offsets are rejected at initia
   }
 });
 
-test("Verified v22 campaign package19: both complete HTTP streams match the immutable receipt SHA", async () => {
+test("Verified v22 profile-name package21: both complete HTTP streams match the immutable receipt SHA", async () => {
   const root = path.resolve(import.meta.dirname, "../..");
   const runtimeRoot = path.join(root, "apps/site/public/games/ballcrown/play");
   const manifestBytes = readFileSync(path.join(runtimeRoot, "Build/transport.json"));
   assert.deepEqual(manifestBytes, readFileSync(path.join(root, "functions/games/ballcrown/play/Build/transport-manifest.json")));
   const manifest = JSON.parse(manifestBytes);
-  assert.equal(manifest.sourceArchiveSHA256, "decf17abd108c9e31fee9a9a8f7638552e6a026851923e037ce85a62e1bea216");
-  assert.equal(manifest.revision, "v22-campaign-next-19-includes-rift18-playback16-touch15-audio17-pistol14");
+  assert.equal(manifest.sourceArchiveSHA256, "c21870d07947c5091225623dc9d1e09de5e0450ddcecc19d7344252b81379359");
+  assert.equal(manifest.revision, "v22-profile-name-21-includes-aim20-next19-rift18-touch15-audio17-pistol14");
   const handler = createBallcrownTransport(manifest);
   const assets = { async fetch(req) {
     const pathname = new URL(req.url).pathname;

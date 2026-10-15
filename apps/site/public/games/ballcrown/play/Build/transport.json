@@ -1,61 +1,61 @@
 {
   "schemaVersion": 1,
   "version": "0.22.0",
-  "revision": "v22-campaign-next-19-includes-rift18-playback16-touch15-audio17-pistol14",
-  "sourceArchiveSHA256": "decf17abd108c9e31fee9a9a8f7638552e6a026851923e037ce85a62e1bea216",
-  "sourceReceiptSHA256": "1b6e84b6ec6873b11eed5845c4e808f548456aedcd2a2dc0621c82d7c3958f01",
+  "revision": "v22-profile-name-21-includes-aim20-next19-rift18-touch15-audio17-pistol14",
+  "sourceArchiveSHA256": "c21870d07947c5091225623dc9d1e09de5e0450ddcecc19d7344252b81379359",
+  "sourceReceiptSHA256": "8444d9570aae067974a7eca58a5d44f77ffba20f3c0ddf0d0b39c147e4631338",
   "chunkBytes": 16777216,
   "publicBase": "/games/ballcrown/play/",
   "virtualFiles": [
     {
       "path": "Build/BuildWeb.data",
-      "bytes": 54476022,
-      "sha256": "a867ab7bab024319a256a7dae115d3d8f758ecae7a5fc26786f1314f57a887c2",
+      "bytes": 54498002,
+      "sha256": "1796a9b9c8bb7a50553d73a471e4ce3151732acbdabdd429cd81fcd3bb344665",
       "contentType": "application/octet-stream",
       "chunks": [
         {
-          "path": "Build/chunks/BuildWeb.data.a867ab7bab024319a256a7dae115d3d8f758ecae7a5fc26786f1314f57a887c2.000.bin",
+          "path": "Build/chunks/BuildWeb.data.1796a9b9c8bb7a50553d73a471e4ce3151732acbdabdd429cd81fcd3bb344665.000.bin",
           "offset": 0,
           "bytes": 16777216,
-          "sha256": "85a25d2746dba09019b37b9bdea1dba9b7affbd70b4cccb8c36cbb7df79eab74"
+          "sha256": "f3e377aba43ccc0b457cff152d65fdf50fd6b2d7fadc805141cd7dfc9ae3c155"
         },
         {
-          "path": "Build/chunks/BuildWeb.data.a867ab7bab024319a256a7dae115d3d8f758ecae7a5fc26786f1314f57a887c2.001.bin",
+          "path": "Build/chunks/BuildWeb.data.1796a9b9c8bb7a50553d73a471e4ce3151732acbdabdd429cd81fcd3bb344665.001.bin",
           "offset": 16777216,
           "bytes": 16777216,
           "sha256": "b25a3f494542121ad1420f7db4f041aa7bcfc2b4086bd18b37c0902c12dbd552"
         },
         {
-          "path": "Build/chunks/BuildWeb.data.a867ab7bab024319a256a7dae115d3d8f758ecae7a5fc26786f1314f57a887c2.002.bin",
+          "path": "Build/chunks/BuildWeb.data.1796a9b9c8bb7a50553d73a471e4ce3151732acbdabdd429cd81fcd3bb344665.002.bin",
           "offset": 33554432,
           "bytes": 16777216,
-          "sha256": "4cb0e16abcf6df411c1e704764bb08cbf760e9b5db70a0aab5635717a8981c69"
+          "sha256": "cb0ed3882025264837bbdf168551a8b0d9ff51867986c47c24acd14838aff37a"
         },
         {
-          "path": "Build/chunks/BuildWeb.data.a867ab7bab024319a256a7dae115d3d8f758ecae7a5fc26786f1314f57a887c2.003.bin",
+          "path": "Build/chunks/BuildWeb.data.1796a9b9c8bb7a50553d73a471e4ce3151732acbdabdd429cd81fcd3bb344665.003.bin",
           "offset": 50331648,
-          "bytes": 4144374,
-          "sha256": "9db3f5e40cceed737d0918e5db968a2523ed67981ab241fd625c398cb559b930"
+          "bytes": 4166354,
+          "sha256": "626a6e5f6dce7aadb61d274ee3c5cdfb077464a2bf63a4763c4bed9c60faeee4"
         }
       ]
     },
     {
       "path": "Build/BuildWeb.wasm",
-      "bytes": 26736953,
-      "sha256": "12d6a98f28d13deff6fa6bb72b84f5d702c4ff58d57097cc26dcacc5dbee939c",
+      "bytes": 26794090,
+      "sha256": "1fd174dccf060b22e6e1622dce855c78cc31a69433d3ba9503232ab98bd84495",
       "contentType": "application/wasm",
       "chunks": [
         {
-          "path": "Build/chunks/BuildWeb.wasm.12d6a98f28d13deff6fa6bb72b84f5d702c4ff58d57097cc26dcacc5dbee939c.000.bin",
+          "path": "Build/chunks/BuildWeb.wasm.1fd174dccf060b22e6e1622dce855c78cc31a69433d3ba9503232ab98bd84495.000.bin",
           "offset": 0,
           "bytes": 16777216,
-          "sha256": "9b14dd35149159d8bdf171ae082a2f904043ad8ad54ef695d128f2e5b6d2270a"
+          "sha256": "0b60c89a5ac9aba3ba85e9858eff5d62d7970f6e9f1240a267aa8172b11fda29"
         },
         {
-          "path": "Build/chunks/BuildWeb.wasm.12d6a98f28d13deff6fa6bb72b84f5d702c4ff58d57097cc26dcacc5dbee939c.001.bin",
+          "path": "Build/chunks/BuildWeb.wasm.1fd174dccf060b22e6e1622dce855c78cc31a69433d3ba9503232ab98bd84495.001.bin",
           "offset": 16777216,
-          "bytes": 9959737,
-          "sha256": "49fa501e71e41f7e67f301725621f9b301fd96064575a5b750552aac82807b3b"
+          "bytes": 10016874,
+          "sha256": "b0d3f90392cfaa3ab1c29ed23bb88433d938687d4a36753fe5b770a2ca8d448c"
         }
       ]
     }
@@ -63,8 +63,8 @@
   "runtimeFiles": [
     {
       "path": "Build/BuildWeb.data",
-      "bytes": 54476022,
-      "sha256": "a867ab7bab024319a256a7dae115d3d8f758ecae7a5fc26786f1314f57a887c2"
+      "bytes": 54498002,
+      "sha256": "1796a9b9c8bb7a50553d73a471e4ce3151732acbdabdd429cd81fcd3bb344665"
     },
     {
       "path": "Build/BuildWeb.framework.js",
@@ -74,12 +74,12 @@
     {
       "path": "Build/BuildWeb.loader.js",
       "bytes": 27221,
-      "sha256": "d4e173fa2f33c454c166597599d23f86fcc49fb68292f8b1b4f62e35911e8f40"
+      "sha256": "e56f5362b30aed2c8d0385e4108ec89ba0eb30562cf49780139660701e045c17"
     },
     {
       "path": "Build/BuildWeb.wasm",
-      "bytes": 26736953,
-      "sha256": "12d6a98f28d13deff6fa6bb72b84f5d702c4ff58d57097cc26dcacc5dbee939c"
+      "bytes": 26794090,
+      "sha256": "1fd174dccf060b22e6e1622dce855c78cc31a69433d3ba9503232ab98bd84495"
     },
     {
       "path": "Licenses/BlackcrownV21-OriginalArt.txt",
@@ -523,8 +523,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 36317,
-      "sha256": "fc3dd4a640024e409c056a3db62a6dc3ddd9a6abd650b5d4338ee67a85618bfe"
+      "bytes": 37388,
+      "sha256": "aebe9d3fc8808e30a331295da7d705a50ebd471fb2bc36dcc60caf482bf8f6d9"
     },
     {
       "path": "manifest.webmanifest",
@@ -548,8 +548,8 @@
     },
     {
       "path": "src/native-gamepad.mjs",
-      "bytes": 8279,
-      "sha256": "22f4bca1890e3f9817335bb0055a0fd54af9b4877dad36b315ad1598bf98870b"
+      "bytes": 8592,
+      "sha256": "437ea59cfa0d359219ec1f81f9db456681db0800db53403c54d4d448e0022d57"
     },
     {
       "path": "src/native-screen-mode.mjs",

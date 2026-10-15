@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "available": true,
   "entry": "./play/",
-  "version": "0.22.0 / v22-campaign-next-19-includes-rift18-playback16-touch15-audio17-pistol14",
-  "revision": "v22-campaign-next-19-includes-rift18-playback16-touch15-audio17-pistol14",
-  "archiveSHA256": "decf17abd108c9e31fee9a9a8f7638552e6a026851923e037ce85a62e1bea216",
-  "wasmSHA256": "12d6a98f28d13deff6fa6bb72b84f5d702c4ff58d57097cc26dcacc5dbee939c"
+  "version": "0.22.0 / v22-profile-name-21-includes-aim20-next19-rift18-touch15-audio17-pistol14",
+  "revision": "v22-profile-name-21-includes-aim20-next19-rift18-touch15-audio17-pistol14",
+  "archiveSHA256": "c21870d07947c5091225623dc9d1e09de5e0450ddcecc19d7344252b81379359",
+  "wasmSHA256": "1fd174dccf060b22e6e1622dce855c78cc31a69433d3ba9503232ab98bd84495"
 }
