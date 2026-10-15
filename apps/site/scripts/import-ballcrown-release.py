@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Import the approved immutable BALLCROWN v22 pistol fix 14 complete package.
+"""Import the approved immutable BALLCROWN v22 campaign next 19 complete package.
 
 The source ZIP and receipt are pinned before any runtime extraction. Only the
 receipt's runtimeFiles are copied. Unity's two large raw files are replaced by
@@ -8,8 +8,8 @@ The index and all other runtime files remain byte-for-byte identical.
 
 Example (run from any directory):
   python3 apps/site/scripts/import-ballcrown-release.py \
-    --archive /path/to/ballcrown-web-0.22.0-v22-pistol-fix-14-includes-user-music13-candidate.zip \
-    --receipt /path/to/ballcrown-v22-pistol-fix-14-export.json \
+    --archive /path/to/ballcrown-web-0.22.0-v22-campaign-next-19-includes-rift18-touch15-audio17-pistol14-candidate.zip \
+    --receipt /path/to/ballcrown-v22-campaign-next-19-export.json \
     --report /path/to/ballcrown-import-verification.json
 
 An existing output must already exactly match this import. Unexpected or edited
@@ -32,16 +32,16 @@ from typing import Any
 import zipfile
 
 
-ARCHIVE_SHA256 = "af4f8e0d8a7e0c76b500363698d84f3a9c11621afb12b6ffea00800e56fc50dc"
-ARCHIVE_BYTES = 69_019_994
-RECEIPT_SHA256 = "2abd7fd4d98889695625d01a2cd407a5c1dc0673d24b51925ed4980d2f7ff98f"
+ARCHIVE_SHA256 = "decf17abd108c9e31fee9a9a8f7638552e6a026851923e037ce85a62e1bea216"
+ARCHIVE_BYTES = 69_040_051
+RECEIPT_SHA256 = "1b6e84b6ec6873b11eed5845c4e808f548456aedcd2a2dc0621c82d7c3958f01"
 INDEX_SHA256 = "fc3dd4a640024e409c056a3db62a6dc3ddd9a6abd650b5d4338ee67a85618bfe"
-WASM_SHA256 = "393ed326efa70f52f361f8958ee9c5ea22939b2fb23518a350f3e7cdf1bd640e"
-DATA_SHA256 = "d02969ec1e25e86f806b537969f8ff66a1ec60c17a5d4d6a43528f97edb61cc2"
-FRAMEWORK_SHA256 = "2166248cd5ba3101a37ddbf2e7a798e4f0d77e68763ee3aba7fd1de7d2cce41b"
-LOADER_SHA256 = "7502a332bb475158c5f434de98594fb25f89792d96f7bc1fceff70a46e0d48c3"
+WASM_SHA256 = "12d6a98f28d13deff6fa6bb72b84f5d702c4ff58d57097cc26dcacc5dbee939c"
+DATA_SHA256 = "a867ab7bab024319a256a7dae115d3d8f758ecae7a5fc26786f1314f57a887c2"
+FRAMEWORK_SHA256 = "4a4e4a492bf7193780ca563f6eee0bfe65e5963a80aa9956fc3b38f9ff41efa6"
+LOADER_SHA256 = "d4e173fa2f33c454c166597599d23f86fcc49fb68292f8b1b4f62e35911e8f40"
 NATIVE_VERSION = "0.22.0"
-RELEASE_REVISION = "v22-pistol-fix-14-includes-user-music13-killfeed12-user11"
+RELEASE_REVISION = "v22-campaign-next-19-includes-rift18-playback16-touch15-audio17-pistol14"
 CHUNK_BYTES = 16 * 1024 * 1024
 RUNTIME_FILE_COUNT = 99
 PUBLIC_BASE = "/games/ballcrown/play/"
@@ -176,7 +176,7 @@ def receipt_runtime(receipt: dict[str, Any]) -> list[dict[str, Any]]:
         and receipt.get("nativeBuild", {}).get("version") == NATIVE_VERSION
         and receipt.get("nativeBuild", {}).get("revision") == RELEASE_REVISION
     ):
-        fail("Receipt version/revisions differ from the approved pistol fix 14 package")
+        fail("Receipt version/revisions differ from the approved campaign next 19 package")
     pinned_native = {
         "indexSHA256": ("index.html", INDEX_SHA256),
         "wasmSHA256": ("Build/BuildWeb.wasm", WASM_SHA256),
@@ -187,7 +187,7 @@ def receipt_runtime(receipt: dict[str, Any]) -> list[dict[str, Any]]:
     for field, (path, expected_sha) in pinned_native.items():
         if path not in by_path or by_path[path]["sha256"] != expected_sha:
             fail(f"Receipt native hash differs from the approved build: {path}")
-    # The sealed 14 receipt records only wasmSHA256 in nativeBuild. All five
+    # The sealed 19 receipt records only wasmSHA256 in nativeBuild. All five
     # native files remain pinned above and independently hashed from the ZIP.
     if receipt.get("nativeBuild", {}).get("wasmSHA256") != WASM_SHA256:
         fail("Receipt native WASM hash differs from the approved build")
@@ -355,7 +355,7 @@ def main() -> int:
     with zipfile.ZipFile(archive_path) as archive:
         excluded_count = validate_archive(archive, runtime)
         if excluded_count or len(archive.infolist()) != RUNTIME_FILE_COUNT:
-            fail("Approved pistol fix 14 archive must contain exactly its 99 runtime entries")
+            fail("Approved campaign next 19 archive must contain exactly its 99 runtime entries")
         # Package to an owned temporary directory; no output is exposed until
         # the whole source and reconstructed runtime have passed verification.
         output.parent.mkdir(parents=True, exist_ok=True)
