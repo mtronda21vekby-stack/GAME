@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "available": true,
   "entry": "./play/",
-  "version": "0.22.0 / v22-user-music-13-includes-killfeed12-user11-10-09-08-07",
-  "revision": "v22-user-music-13-includes-killfeed12-user11-10-09-08-07",
-  "archiveSHA256": "b1d7c273a9afaa57a800860e5eb4209fa3e7151e0cbc2e99fbf4575638f2c840",
-  "wasmSHA256": "071745af4eab157a2f09197e9400780845ab41dfa5308e67f20c24edfc58009e"
+  "version": "0.22.0 / v22-pistol-fix-14-includes-user-music13-killfeed12-user11",
+  "revision": "v22-pistol-fix-14-includes-user-music13-killfeed12-user11",
+  "archiveSHA256": "af4f8e0d8a7e0c76b500363698d84f3a9c11621afb12b6ffea00800e56fc50dc",
+  "wasmSHA256": "393ed326efa70f52f361f8958ee9c5ea22939b2fb23518a350f3e7cdf1bd640e"
 }
