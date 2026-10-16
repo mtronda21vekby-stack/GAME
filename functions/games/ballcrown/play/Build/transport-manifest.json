@@ -1,61 +1,91 @@
 {
   "schemaVersion": 1,
   "version": "0.22.0",
-  "revision": "v22-presentation29-r1-includes-blood-death-ownedcollisionv2-presentation28-profile27-location26-movement25-ordinary24-guiR8-touchR7-combat23-mobile22r6-name21-aim20-next19-touch15-audio17-pistol14",
-  "sourceArchiveSHA256": "26cd1bc2df51b3d47393f7cb58210bd9196717945fc4af209aa3ed9e414b2758",
-  "sourceReceiptSHA256": "7a79fcaaf2e472ec9da61162c4c28e6f0a50e54ca50f044feae459eff391538d",
-  "chunkBytes": 16777216,
+  "revision": "043-v22-m02-game21",
+  "sourceArchiveSHA256": "b85242535c59d723a5469278bb35603cb5392cb550e58f419559d59984ca27b4",
+  "sourceReceiptSHA256": "4ca582d338f3830416312f2a2c5ad426878f2b427094187a364cec45f84886a9",
+  "chunkBytes": 8388608,
   "publicBase": "/games/ballcrown/play/",
   "virtualFiles": [
     {
       "path": "Build/BuildWeb.data",
-      "bytes": 57789340,
-      "sha256": "fd4e63e0aa895e6ece4d5145c84395878d8d713f8adb87e4b8fa5a9c1424ad25",
+      "bytes": 58041179,
+      "sha256": "282cd32e3ac2ba5357b86b8f3c4805ea3521e8c4c3e693ef41bf92700b57a18e",
       "contentType": "application/octet-stream",
       "chunks": [
         {
-          "path": "Build/chunks/BuildWeb.data.fd4e63e0aa895e6ece4d5145c84395878d8d713f8adb87e4b8fa5a9c1424ad25.000.bin",
+          "path": "Build/chunks/BuildWeb.data.282cd32e3ac2ba5357b86b8f3c4805ea3521e8c4c3e693ef41bf92700b57a18e.000.bin",
           "offset": 0,
-          "bytes": 16777216,
-          "sha256": "55c7834283e5f1e2901dcdd0250be9d246354040cfa4fc857a5b2ea3f221a9ce"
+          "bytes": 8388608,
+          "sha256": "a9193a90c44d3f3ce1340b9b3397f55eb06c81cec5efbcba5ceefee04ee3f07e"
         },
         {
-          "path": "Build/chunks/BuildWeb.data.fd4e63e0aa895e6ece4d5145c84395878d8d713f8adb87e4b8fa5a9c1424ad25.001.bin",
+          "path": "Build/chunks/BuildWeb.data.282cd32e3ac2ba5357b86b8f3c4805ea3521e8c4c3e693ef41bf92700b57a18e.001.bin",
+          "offset": 8388608,
+          "bytes": 8388608,
+          "sha256": "79009e1733fb78f0af41cd5220c499105fe5cf012cbd0bbbfe83262fe0d60e5f"
+        },
+        {
+          "path": "Build/chunks/BuildWeb.data.282cd32e3ac2ba5357b86b8f3c4805ea3521e8c4c3e693ef41bf92700b57a18e.002.bin",
           "offset": 16777216,
-          "bytes": 16777216,
-          "sha256": "f57975ef5697bcf97a40745bc2efe35cb5ce0312562da8269a7c6ede28cf72ad"
+          "bytes": 8388608,
+          "sha256": "6edec35fab3e5b5efe55692df2d0bed038839983c1f742c0f4c7d7cea76ebeb5"
         },
         {
-          "path": "Build/chunks/BuildWeb.data.fd4e63e0aa895e6ece4d5145c84395878d8d713f8adb87e4b8fa5a9c1424ad25.002.bin",
+          "path": "Build/chunks/BuildWeb.data.282cd32e3ac2ba5357b86b8f3c4805ea3521e8c4c3e693ef41bf92700b57a18e.003.bin",
+          "offset": 25165824,
+          "bytes": 8388608,
+          "sha256": "ff211a5763ae5ec63f96792ec035ff29d762ce5dedc8fa6eef139922fbc8d4b4"
+        },
+        {
+          "path": "Build/chunks/BuildWeb.data.282cd32e3ac2ba5357b86b8f3c4805ea3521e8c4c3e693ef41bf92700b57a18e.004.bin",
           "offset": 33554432,
-          "bytes": 16777216,
-          "sha256": "3a739fd799eb509c87e6abeaf6d775ea26465fb7c259b554338412e424ece1f0"
+          "bytes": 8388608,
+          "sha256": "f28bdd53cb5afa69dff8fe25d4da4e326538733c5c4d8e7647f3cfc1427d08da"
         },
         {
-          "path": "Build/chunks/BuildWeb.data.fd4e63e0aa895e6ece4d5145c84395878d8d713f8adb87e4b8fa5a9c1424ad25.003.bin",
+          "path": "Build/chunks/BuildWeb.data.282cd32e3ac2ba5357b86b8f3c4805ea3521e8c4c3e693ef41bf92700b57a18e.005.bin",
+          "offset": 41943040,
+          "bytes": 8388608,
+          "sha256": "0e4aae81ffb4bcdf1693e06f33a22ab3c5e64d0a2ec47b1ff042c88d111d8e06"
+        },
+        {
+          "path": "Build/chunks/BuildWeb.data.282cd32e3ac2ba5357b86b8f3c4805ea3521e8c4c3e693ef41bf92700b57a18e.006.bin",
           "offset": 50331648,
-          "bytes": 7457692,
-          "sha256": "0541c251277a467010f330f43c772f5adecca69790811aa5a0a21033ef1a7605"
+          "bytes": 7709531,
+          "sha256": "28c93d3c679bd4e9c8920d228bc2e6b1063c614c02ccb7367905a37af3d04a56"
         }
       ]
     },
     {
       "path": "Build/BuildWeb.wasm",
-      "bytes": 27351246,
-      "sha256": "240242b6fa8ac94164c49d69ca5170ad616763af9feede61bd22551431e5768d",
+      "bytes": 28079821,
+      "sha256": "b13c34802950db3e36b861d23f842f017abc1fde134344c5c60c5682f4f46dd6",
       "contentType": "application/wasm",
       "chunks": [
         {
-          "path": "Build/chunks/BuildWeb.wasm.240242b6fa8ac94164c49d69ca5170ad616763af9feede61bd22551431e5768d.000.bin",
+          "path": "Build/chunks/BuildWeb.wasm.b13c34802950db3e36b861d23f842f017abc1fde134344c5c60c5682f4f46dd6.000.bin",
           "offset": 0,
-          "bytes": 16777216,
-          "sha256": "66770f93e476830802bb4e1bffb451476daa44c6913568e053b671bae7e8ae6b"
+          "bytes": 8388608,
+          "sha256": "6c24d20e4721bf66f1ec39625cac40d38691f332de3b9056a8cce99290662846"
         },
         {
-          "path": "Build/chunks/BuildWeb.wasm.240242b6fa8ac94164c49d69ca5170ad616763af9feede61bd22551431e5768d.001.bin",
+          "path": "Build/chunks/BuildWeb.wasm.b13c34802950db3e36b861d23f842f017abc1fde134344c5c60c5682f4f46dd6.001.bin",
+          "offset": 8388608,
+          "bytes": 8388608,
+          "sha256": "3cca8970219447146923a66c2911d562b7a350c3ff790951d689c9c31d9065e7"
+        },
+        {
+          "path": "Build/chunks/BuildWeb.wasm.b13c34802950db3e36b861d23f842f017abc1fde134344c5c60c5682f4f46dd6.002.bin",
           "offset": 16777216,
-          "bytes": 10574030,
-          "sha256": "479c60545ce34ea95530c0922c340f61fb3a3ec799712db5ffdc5d31a70eb538"
+          "bytes": 8388608,
+          "sha256": "b6e97f53d799c9861bb5306a7fd1ee317dc0f729e97bf9058bc83552d4f94d1d"
+        },
+        {
+          "path": "Build/chunks/BuildWeb.wasm.b13c34802950db3e36b861d23f842f017abc1fde134344c5c60c5682f4f46dd6.003.bin",
+          "offset": 25165824,
+          "bytes": 2913997,
+          "sha256": "17baab765f376bd3069e1d2c6020d0ad8a79447ac52ac4fc1e49e64f92b09f02"
         }
       ]
     }
@@ -63,23 +93,23 @@
   "runtimeFiles": [
     {
       "path": "Build/BuildWeb.data",
-      "bytes": 57789340,
-      "sha256": "fd4e63e0aa895e6ece4d5145c84395878d8d713f8adb87e4b8fa5a9c1424ad25"
+      "bytes": 58041179,
+      "sha256": "282cd32e3ac2ba5357b86b8f3c4805ea3521e8c4c3e693ef41bf92700b57a18e"
     },
     {
       "path": "Build/BuildWeb.framework.js",
-      "bytes": 405179,
-      "sha256": "182641748e44c9a2ab93e786ce8433fe6a3ad1c3121f368653cf8937e3ac9d93"
+      "bytes": 405322,
+      "sha256": "5385a1dd92b9ef88aa8fab55f1eb228a875b88d74c89f3f7fe8926423965d686"
     },
     {
       "path": "Build/BuildWeb.loader.js",
       "bytes": 27221,
-      "sha256": "5a55d6ea5fa164a807edd1eec99835d5e7c72ddcc43ddefa3957e48a2b1cc636"
+      "sha256": "9df4f341f351b2b982b82b7734d6dd10fca05830911718800030dfacc9da8d54"
     },
     {
       "path": "Build/BuildWeb.wasm",
-      "bytes": 27351246,
-      "sha256": "240242b6fa8ac94164c49d69ca5170ad616763af9feede61bd22551431e5768d"
+      "bytes": 28079821,
+      "sha256": "b13c34802950db3e36b861d23f842f017abc1fde134344c5c60c5682f4f46dd6"
     },
     {
       "path": "Licenses/BlackcrownV21-OriginalArt.txt",
@@ -538,8 +568,8 @@
     },
     {
       "path": "src/LegacyRagdolls.js",
-      "bytes": 7349,
-      "sha256": "3ac11d4395555e4bedc0d74c582ca113f7f3d6612ba611af227a46dc3a3989b8"
+      "bytes": 13125,
+      "sha256": "0d7dcc96464f197d7c803e3f1a03d72cde64c03934df2399e020fde6b8b81451"
     },
     {
       "path": "src/gamepad-mapping.mjs",

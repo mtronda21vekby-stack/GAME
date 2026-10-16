@@ -209,14 +209,14 @@ test("Invalid manifest paths, lengths, hashes and offsets are rejected at initia
   }
 });
 
-test("Verified v22 qualified presentation29 package: both complete HTTP streams match the immutable receipt SHA", async () => {
+test("Verified M00–M02 game21 package: both complete HTTP streams match the immutable receipt SHA", async () => {
   const root = path.resolve(import.meta.dirname, "../..");
   const runtimeRoot = path.join(root, "apps/site/public/games/ballcrown/play");
   const manifestBytes = readFileSync(path.join(runtimeRoot, "Build/transport.json"));
   assert.deepEqual(manifestBytes, readFileSync(path.join(root, "functions/games/ballcrown/play/Build/transport-manifest.json")));
   const manifest = JSON.parse(manifestBytes);
-  assert.equal(manifest.sourceArchiveSHA256, "26cd1bc2df51b3d47393f7cb58210bd9196717945fc4af209aa3ed9e414b2758");
-  assert.equal(manifest.revision, "v22-presentation29-r1-includes-blood-death-ownedcollisionv2-presentation28-profile27-location26-movement25-ordinary24-guiR8-touchR7-combat23-mobile22r6-name21-aim20-next19-touch15-audio17-pistol14");
+  assert.equal(manifest.sourceArchiveSHA256, "b85242535c59d723a5469278bb35603cb5392cb550e58f419559d59984ca27b4");
+  assert.equal(manifest.revision, "043-v22-m02-game21");
   const handler = createBallcrownTransport(manifest);
   const assets = { async fetch(req) {
     const pathname = new URL(req.url).pathname;

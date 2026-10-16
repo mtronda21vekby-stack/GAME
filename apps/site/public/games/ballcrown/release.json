@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "available": true,
   "entry": "./play/",
-  "version": "0.22.0 / v22-presentation29-r1-includes-blood-death-ownedcollisionv2-presentation28-profile27-location26-movement25-ordinary24-guiR8-touchR7-combat23-mobile22r6-name21-aim20-next19-touch15-audio17-pistol14",
-  "revision": "v22-presentation29-r1-includes-blood-death-ownedcollisionv2-presentation28-profile27-location26-movement25-ordinary24-guiR8-touchR7-combat23-mobile22r6-name21-aim20-next19-touch15-audio17-pistol14",
-  "archiveSHA256": "26cd1bc2df51b3d47393f7cb58210bd9196717945fc4af209aa3ed9e414b2758",
-  "wasmSHA256": "240242b6fa8ac94164c49d69ca5170ad616763af9feede61bd22551431e5768d"
+  "version": "0.22.0 / 043-v22-m02-game21",
+  "revision": "043-v22-m02-game21",
+  "archiveSHA256": "b85242535c59d723a5469278bb35603cb5392cb550e58f419559d59984ca27b4",
+  "wasmSHA256": "b13c34802950db3e36b861d23f842f017abc1fde134344c5c60c5682f4f46dd6"
 }

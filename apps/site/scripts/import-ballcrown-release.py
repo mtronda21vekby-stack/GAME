@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Import the approved immutable BALLCROWN v22 qualified presentation 29 complete package.
+"""Import the approved immutable BALLCROWN v22 game21 M00-M02 playable slice.
 
 The source ZIP and receipt are pinned before any runtime extraction. Only the
 receipt's runtimeFiles are copied. Unity's two large raw files are replaced by
@@ -8,8 +8,8 @@ The index and all other runtime files remain byte-for-byte identical.
 
 Example (run from any directory):
   python3 apps/site/scripts/import-ballcrown-release.py \
-    --archive /path/to/ballcrown-web-0.22.0-v22-presentation29-r1-includes-blood-death-ownedcollisionv2-presentation28-profile27-location26-movement25-ordinary24-guiR8-touchR7-combat23-mobile22r6-name21-aim20-next19-touch15-audio17-pistol14-candidate.zip \
-    --receipt /path/to/ballcrown-v22-presentation29-r3-qualified-export.json \
+    --archive /path/to/ballcrown-0.22.0-game21-m02-verified.zip \
+    --receipt /path/to/m02-game21-publication-receipt.json \
     --report /path/to/ballcrown-import-verification.json
 
 An existing output must already exactly match this import. Unexpected or edited
@@ -32,18 +32,35 @@ from typing import Any
 import zipfile
 
 
-ARCHIVE_SHA256 = "26cd1bc2df51b3d47393f7cb58210bd9196717945fc4af209aa3ed9e414b2758"
-ARCHIVE_BYTES = 72_073_106
-RECEIPT_SHA256 = "7a79fcaaf2e472ec9da61162c4c28e6f0a50e54ca50f044feae459eff391538d"
+ARCHIVE_SHA256 = "b85242535c59d723a5469278bb35603cb5392cb550e58f419559d59984ca27b4"
+ARCHIVE_BYTES = 72_390_347
+RECEIPT_SHA256 = "4ca582d338f3830416312f2a2c5ad426878f2b427094187a364cec45f84886a9"
 INDEX_SHA256 = "aebe9d3fc8808e30a331295da7d705a50ebd471fb2bc36dcc60caf482bf8f6d9"
-WASM_SHA256 = "240242b6fa8ac94164c49d69ca5170ad616763af9feede61bd22551431e5768d"
-DATA_SHA256 = "fd4e63e0aa895e6ece4d5145c84395878d8d713f8adb87e4b8fa5a9c1424ad25"
-FRAMEWORK_SHA256 = "182641748e44c9a2ab93e786ce8433fe6a3ad1c3121f368653cf8937e3ac9d93"
-LOADER_SHA256 = "5a55d6ea5fa164a807edd1eec99835d5e7c72ddcc43ddefa3957e48a2b1cc636"
+WASM_SHA256 = "b13c34802950db3e36b861d23f842f017abc1fde134344c5c60c5682f4f46dd6"
+DATA_SHA256 = "282cd32e3ac2ba5357b86b8f3c4805ea3521e8c4c3e693ef41bf92700b57a18e"
+FRAMEWORK_SHA256 = "5385a1dd92b9ef88aa8fab55f1eb228a875b88d74c89f3f7fe8926423965d686"
+LOADER_SHA256 = "9df4f341f351b2b982b82b7734d6dd10fca05830911718800030dfacc9da8d54"
 NATIVE_VERSION = "0.22.0"
-RELEASE_REVISION = "v22-presentation29-r1-includes-blood-death-ownedcollisionv2-presentation28-profile27-location26-movement25-ordinary24-guiR8-touchR7-combat23-mobile22r6-name21-aim20-next19-touch15-audio17-pistol14"
-CHUNK_BYTES = 16 * 1024 * 1024
+RELEASE_REVISION = "043-v22-m02-game21"
+CHUNK_BYTES = 8 * 1024 * 1024
 RUNTIME_FILE_COUNT = 99
+# The sealed ZIP also contains these three producer documents. They are hashed
+# before extraction and never published as runtime assets. The pinned receipt
+# is publication-only, derived from GAME21-FILES.json and the verified handoff.
+ARCHIVE_METADATA = {
+    "GAME21-FILES.json": {
+        "bytes": 14_929,
+        "sha256": "a8a42fc9a8a3287dbb5ab0d52001c40249288c7b74508d5732b6e73128571731",
+    },
+    "GAME21-README_RU.txt": {
+        "bytes": 1_843,
+        "sha256": "1be577dd190cb2e135f9168b1877dc5373e0665ac973bbdc08953ac32b25e473",
+    },
+    "GAME21-VERIFICATION.json": {
+        "bytes": 3_055,
+        "sha256": "0f27f8c6604d836b8d463b3fe40d5e30c159a1ae4caff54c866630f411970b9b",
+    },
+}
 PUBLIC_BASE = "/games/ballcrown/play/"
 TRANSPORT_PATH = "Build/transport.json"
 VIRTUAL_TYPES = {
@@ -176,7 +193,7 @@ def receipt_runtime(receipt: dict[str, Any]) -> list[dict[str, Any]]:
         and receipt.get("nativeBuild", {}).get("version") == NATIVE_VERSION
         and receipt.get("nativeBuild", {}).get("revision") == RELEASE_REVISION
     ):
-        fail("Receipt version/revisions differ from the approved qualified presentation 29 package")
+        fail("Receipt version/revisions differ from the approved M00-M02 game21 package")
     pinned_native = {
         "indexSHA256": ("index.html", INDEX_SHA256),
         "wasmSHA256": ("Build/BuildWeb.wasm", WASM_SHA256),
@@ -187,17 +204,18 @@ def receipt_runtime(receipt: dict[str, Any]) -> list[dict[str, Any]]:
     for field, (path, expected_sha) in pinned_native.items():
         if path not in by_path or by_path[path]["sha256"] != expected_sha:
             fail(f"Receipt native hash differs from the approved build: {path}")
-    # The sealed qualified 29 receipt records WASM/index metadata. All five
-    # native files remain pinned above and independently hashed from the ZIP.
-    if receipt.get("nativeBuild", {}).get("wasmSHA256") != WASM_SHA256:
-        fail("Receipt native WASM hash differs from the approved build")
+        if receipt.get("nativeBuild", {}).get(field) != expected_sha:
+            fail(f"Receipt native metadata hash differs from the approved build: {field}")
     web_archive = receipt.get("immutableSource", {})
     if web_archive.get("sha256") != ARCHIVE_SHA256:
         fail("Receipt archive hash is not the approved immutable archive")
     if web_archive.get("bytes") != ARCHIVE_BYTES:
         fail("Receipt archive size is not the approved immutable archive")
-    if web_archive.get("entries") != RUNTIME_FILE_COUNT:
-        fail("Receipt archive entry count differs from the approved runtime")
+    if web_archive.get("entries") != RUNTIME_FILE_COUNT + len(ARCHIVE_METADATA):
+        fail("Receipt archive entry count differs from the approved runtime and metadata")
+    if (web_archive.get("runtimeEntries") != RUNTIME_FILE_COUNT
+            or web_archive.get("metadataEntries") != len(ARCHIVE_METADATA)):
+        fail("Receipt runtime/metadata entry counts differ from the approved archive")
     return runtime
 
 
@@ -207,6 +225,26 @@ def validate_archive(archive: zipfile.ZipFile, runtime: list[dict[str, Any]]) ->
     if len(set(names)) != len(names):
         fail("ZIP contains duplicate member names")
     members = {entry.filename: entry for entry in entries}
+    runtime_names = {item["path"] for item in runtime}
+    if set(names) != runtime_names | set(ARCHIVE_METADATA):
+        fail("ZIP entries differ from the approved 99 runtime files and three metadata files")
+    for entry in entries:
+        safe_relative(entry.filename)
+        file_type = stat.S_IFMT(entry.external_attr >> 16)
+        if entry.is_dir() or file_type not in (0, stat.S_IFREG):
+            fail(f"ZIP entry is not a regular file: {entry.filename}")
+    for path, expected in ARCHIVE_METADATA.items():
+        member = members[path]
+        if member.file_size != expected["bytes"]:
+            fail(f"ZIP metadata size mismatch: {path}")
+        data = archive.read(member)
+        if hashlib.sha256(data).hexdigest() != expected["sha256"]:
+            fail(f"ZIP metadata SHA256 mismatch: {path}")
+    embedded_runtime = json.loads(archive.read("GAME21-FILES.json"))
+    expected_runtime = {item["path"]: {"bytes": item["bytes"], "sha256": item["sha256"]}
+                        for item in runtime}
+    if embedded_runtime != expected_runtime:
+        fail("Embedded runtime manifest differs from the approved publication receipt")
     # First validate every listed runtime member. No runtime is extracted until
     # all pinned runtime size and SHA256 checks have passed.
     for item in runtime:
@@ -223,7 +261,6 @@ def validate_archive(archive: zipfile.ZipFile, runtime: list[dict[str, Any]]) ->
                 digest.update(block)
         if (size, digest.hexdigest()) != (item["bytes"], item["sha256"]):
             fail(f"ZIP runtime SHA256 mismatch: {item['path']}")
-    runtime_names = {item["path"] for item in runtime}
     return sum(not member.is_dir() and member.filename not in runtime_names for member in entries)
 
 
@@ -354,8 +391,9 @@ def main() -> int:
     runtime = receipt_runtime(receipt)
     with zipfile.ZipFile(archive_path) as archive:
         excluded_count = validate_archive(archive, runtime)
-        if excluded_count or len(archive.infolist()) != RUNTIME_FILE_COUNT:
-            fail("Approved qualified presentation 29 archive must contain exactly its 99 runtime entries")
+        if (excluded_count != len(ARCHIVE_METADATA)
+                or len(archive.infolist()) != RUNTIME_FILE_COUNT + len(ARCHIVE_METADATA)):
+            fail("Approved M00-M02 archive must contain exactly 99 runtime and three metadata entries")
         # Package to an owned temporary directory; no output is exposed until
         # the whole source and reconstructed runtime have passed verification.
         output.parent.mkdir(parents=True, exist_ok=True)
