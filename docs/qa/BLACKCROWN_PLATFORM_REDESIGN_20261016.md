@@ -16,7 +16,7 @@
 
 ## Источники изображений
 
-`public/media/platform/` содержит только материалы сайта, игровые оригиналы не заменялись:
+`public/art/platform/` содержит только материалы сайта, игровые оригиналы не заменялись:
 
 - `ballcrown-menu.webp`: реальный захват `task-3/ballcrown-native-browser-qa/desktop-native-menu.png`.
 - `evofish-next.webp`: существующий `apps/lobby/public/assets/lobby/lobby-bg-station-16x9.png`.
@@ -44,3 +44,7 @@
 `/api/content`: в исходной активной главной Nexus потребителя нет; единственный потребитель — старый LiveFeedV3 в HomeV3 с fallback. Новый интерфейс этот API не вызывает. Handler без защиты обращается к `env.DB`, корневой Wrangler объявляет LEADERBOARD_DB, также есть незащищённый JSON.parse. Это возможные серверные причины 500, production-причина не установлена. Секреты, bindings и backend не менялись.
 
 Checkout публикации `/Users/maksim/Documents/Codex/2026-10-12/task-3/release` сохранён чистым. Изменений Unity, `apps/site/public/games/ballcrown`, игровых сборок, сохранений или CURRENT в diff нет.
+
+## Исправление после публикации
+
+Проверка HTTP production обнаружила конфликт `/media/platform/*` с существующей Pages Function `functions/media/[[path]].ts` (R2 MEDIA). Только четыре статических изображения сайта перенесены в `/art/platform/`, ссылки каталога обновлены. Backend, bindings, секреты и игровые файлы не менялись. Исходный редизайн df3b98f перенесён через GitHub API как 9a6096e с идентичным деревом; pipeline 38950329427 завершился success.
