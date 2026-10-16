@@ -8,6 +8,7 @@ import "./styles/shell.css";
 import "./styles/chrome.css";
 import "./styles/overlays.css";
 import "./styles/dock-v2.css";
+import "./styles/platform.css";
 import { App } from "./App";
 import { registerSW } from "./pwa/registerSW";
 import { ErrorBoundary } from "./ErrorBoundary";

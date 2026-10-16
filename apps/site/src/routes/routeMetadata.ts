@@ -1,5 +1,6 @@
 export const SITE_PATHS = [
   "/",
+  "/games",
   "/about",
   "/support",
   "/privacy",
@@ -36,15 +37,23 @@ export type RouteMetadataDefinition = {
   };
 };
 
-const standardChrome: RouteChrome = { dock: true, footer: true, music: true };
+const standardChrome: RouteChrome = { dock: false, footer: true, music: false };
 const focusedChrome: RouteChrome = { dock: false, footer: false, music: false };
 
 export const SITE_ROUTE_METADATA: readonly RouteMetadataDefinition[] = [
   {
     path: "/",
     metadata: {
-      title: "BlackCrown — Interactive Worlds",
-      description: "BlackCrown объединяет игровые миры, Store и профиль игрока в единой интерактивной сети.",
+      title: "BLACKCROWN — Твоя игра. Твоя корона.",
+      description: "Независимые игры BLACKCROWN. Ballcrown, EvoFish Next и Quiet Valley — выбери свой мир и начинай играть.",
+      chrome: standardChrome,
+    },
+  },
+  {
+    path: "/games",
+    metadata: {
+      title: "Игры — BLACKCROWN",
+      description: "Каталог игр BLACKCROWN: Ballcrown, EvoFish Next, Quiet Valley и альфа CROWN FRONT.",
       chrome: standardChrome,
     },
   },
@@ -155,12 +164,12 @@ export function isSitePath(path: string): path is SitePath {
 }
 
 export function isExternalAppPath(path: string) {
+  path = normalizePath(path);
   return (
     path === "/game" ||
     path.startsWith("/game/") ||
     path === "/lobby" ||
     path.startsWith("/lobby/") ||
-    path === "/games" ||
     path.startsWith("/games/")
   );
 }

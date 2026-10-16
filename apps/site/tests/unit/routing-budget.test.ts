@@ -7,14 +7,16 @@ describe("route registry", () => {
   it("normalizes known routes and leaves unknown routes unmatched", () => {
     expect(normalizePath("/checkout/?order=1#done")).toBe("/checkout");
     expect(SITE_PATHS).toContain("/checkout/success");
-    expect(getSiteRouteMetadata("/store")?.metadata.chrome.dock).toBe(true);
+    expect(getSiteRouteMetadata("/store")?.metadata.chrome.dock).toBe(false);
     expect(getSiteRouteMetadata("/checkout")?.metadata.chrome.music).toBe(false);
     expect(getSiteRouteMetadata("/missing")).toBeUndefined();
   });
 
   it("preserves protected app navigation", () => {
     expect(GAMES_HUB_PATH).toBe("/games/");
-    expect(isExternalAppPath(GAMES_HUB_PATH)).toBe(true);
+    expect(isExternalAppPath(GAMES_HUB_PATH)).toBe(false);
+    expect(getSiteRouteMetadata("/games")?.metadata.title).toBe("Игры — BLACKCROWN");
+    expect(isExternalAppPath("/games/ballcrown/")).toBe(true);
     expect(isExternalAppPath("/game/")).toBe(true);
     expect(isExternalAppPath("/lobby/room")).toBe(true);
     expect(isExternalAppPath("/games/crown-front/")).toBe(true);
@@ -39,7 +41,7 @@ describe("bundle budget parser", () => {
     });
     expect(result.errors.join(" ")).toContain("?inline");
     expect(result.errors.join(" ")).toContain("data URI");
-    expect(result.errors.join(" ")).toContain("CinematicExperience-*.js");
+    expect(result.errors.join(" ")).toContain("NexusLabPage-*.js");
     expect(result.errors.join(" ")).toContain("Admin-*.js");
   });
 });

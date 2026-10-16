@@ -21,6 +21,7 @@ export default defineConfig({
       format: { comments: false },
     },
     rollupOptions: {
+      input: { main: fileURLToPath(new URL("./index.html", import.meta.url)), games: fileURLToPath(new URL("./games/index.html", import.meta.url)) },
       output: {
         manualChunks(id) {
           if (id.includes("/three/examples/jsm/")) {

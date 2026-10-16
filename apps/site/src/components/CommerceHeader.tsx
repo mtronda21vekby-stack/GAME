@@ -1,8 +1,8 @@
 import React from "react";
 import { Button } from "@blackcrown/ui";
-import { Icons } from "@blackcrown/assets";
 import { nav } from "../lib/nav";
 import type { SitePath } from "../routes/routeMetadata";
+import { PlatformHeader } from "./platform/PlatformHeader";
 
 export type CommerceHeaderProps = {
   cartCount?: number;
@@ -14,17 +14,12 @@ export type CommerceHeaderProps = {
 export function CommerceHeader({
   cartCount = 0,
   backHref = "/store",
-  backLabel = "Store",
+  backLabel = "Магазин",
   hideCart = false,
 }: CommerceHeaderProps) {
   return (
-    <header className="bcCommerceHeader">
-      <button type="button" className="bcCommerceBrand" onClick={() => nav("/")} aria-label="BlackCrown Home">
-        <img src={Icons.crown} alt="" width="25" height="25" />
-        <span>BLACKCROWN</span>
-      </button>
-
-      <div className="bcCommerceHeader__actions">
+    <PlatformHeader active="store">
+      <div className="platCommerceActions">
         <Button variant="secondary" onClick={() => nav(backHref)}>
           {backLabel}
         </Button>
@@ -34,7 +29,7 @@ export function CommerceHeader({
           </Button>
         ) : null}
       </div>
-    </header>
+    </PlatformHeader>
   );
 }
 

@@ -1,6 +1,5 @@
 import React from "react";
-import { experienceConfig, isNexusRouteEnabled } from "../experience/experienceConfig";
-import { HomeV3 } from "./HomeV3";
+import { PlatformHome, GamesCatalog } from "./PlatformHome";
 import { SITE_ROUTE_METADATA, type SitePath } from "./routeMetadata";
 
 const About = React.lazy(() => import("./pages/About").then((module) => ({ default: module.About })));
@@ -23,7 +22,8 @@ const NexusLab = React.lazy(() =>
 );
 
 const components: Record<SitePath, React.ComponentType> = {
-  "/": experienceConfig.mode === "home" ? NexusLab : HomeV3,
+  "/": PlatformHome,
+  "/games": GamesCatalog,
   "/about": About,
   "/support": Support,
   "/privacy": Privacy,
@@ -39,27 +39,22 @@ const components: Record<SitePath, React.ComponentType> = {
 
 const coreRoutes = SITE_ROUTE_METADATA.map((route) => ({
   ...route,
-  metadata: route.path === "/" && experienceConfig.mode === "home"
-    ? { ...route.metadata, chrome: { dock: false, footer: false, music: false } }
-    : route.metadata,
   component: components[route.path],
 }));
 
-export const SITE_ROUTES = isNexusRouteEnabled()
-  ? [
-      ...coreRoutes,
-      {
-        path: "/nexus-lab" as const,
-        component: NexusLab,
-        metadata: {
-          title: "Digital Crown Nexus Lab — BlackCrown",
-          description: "Локальный WebGL-прототип BlackCrown Digital Crown Nexus.",
-          chrome: { dock: false, footer: false, music: false },
-          noIndex: true,
-        },
-      },
-    ]
-  : coreRoutes;
+export const SITE_ROUTES = [
+  ...coreRoutes,
+  {
+    path: "/nexus-lab" as const,
+    component: NexusLab,
+    metadata: {
+      title: "Сцена короны — BLACKCROWN",
+      description: "Необязательная иммерсивная сцена BLACKCROWN.",
+      chrome: { dock: false, footer: false, music: false },
+      noIndex: true,
+    },
+  },
+];
 const routeByPath = new Map<string, (typeof SITE_ROUTES)[number]>(SITE_ROUTES.map((route) => [route.path, route]));
 
 export function getRouteDefinition(path: string) {

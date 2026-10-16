@@ -1,0 +1,332 @@
+import { useEffect, useId, useRef, useState } from "react";
+import {
+  ACESFilmicToneMapping,
+  Box3,
+  DirectionalLight,
+  Group,
+  HemisphereLight,
+  Mesh,
+  MeshStandardMaterial,
+  PerspectiveCamera,
+  Scene,
+  SRGBColorSpace,
+  Texture,
+  Vector3,
+  WebGLRenderer,
+} from "three";
+import type { Material, Object3D, Skeleton, SkinnedMesh, WebGLRenderTarget } from "three";
+import { PMREMGenerator } from "three/src/extras/PMREMGenerator.js";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+
+const CROWN_URL = "/experience/crown/candidate-b/crown-candidate-b-lod2.glb";
+
+/** The model is owned by this component, including materials and embedded textures. */
+function disposeModel(root: Object3D) {
+  const geometries = new Set<Mesh["geometry"]>();
+  const materials = new Set<Material>();
+  const textures = new Set<Texture>();
+  const skeletons = new Set<Skeleton>();
+  root.traverse((object) => {
+    const mesh = object as Mesh;
+    if (!mesh.isMesh) return;
+    geometries.add(mesh.geometry);
+    const skinned = mesh as SkinnedMesh;
+    if (skinned.isSkinnedMesh) skeletons.add(skinned.skeleton);
+    for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+      materials.add(material);
+      for (const value of Object.values(material)) {
+        if (value instanceof Texture) textures.add(value);
+      }
+    }
+  });
+  for (const geometry of geometries) geometry.dispose();
+  for (const material of materials) material.dispose();
+  for (const skeleton of skeletons) skeleton.dispose();
+  for (const texture of textures) {
+    texture.dispose();
+    // GLTFLoader uses ImageBitmap on browsers that support it.
+    const image = texture.source?.data as { close?: () => void } | undefined;
+    image?.close?.();
+  }
+}
+
+function finishMetal(root: Object3D) {
+  const visited = new Set<Material>();
+  root.traverse((object) => {
+    const mesh = object as Mesh;
+    if (!mesh.isMesh) return;
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
+    for (const source of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+      if (!(source instanceof MeshStandardMaterial) || visited.has(source)) continue;
+      visited.add(source);
+      source.envMapIntensity = 1.1;
+      if (source.name.includes("SHELL_TITANIUM")) {
+        // Keep the original brushed surface and its embedded normal/roughness maps.
+        source.color.set(0xd5dee2);
+        source.metalness = 0.78;
+        source.roughness = 0.34;
+      } else if (source.name.includes("INNER_GUNMETAL")) {
+        source.color.set(0x253038);
+        source.metalness = 0.72;
+        source.roughness = 0.4;
+      } else if (source.name.includes("ENERGY") || source.name.includes("PORTAL")) {
+        source.color.set(0x13353e);
+        source.emissive.set(0x4fbed0);
+        source.emissiveIntensity = source.name.includes("CORE") ? 0.34 : 0.12;
+        source.metalness = 0.38;
+        source.roughness = 0.36;
+      }
+      source.needsUpdate = true;
+    }
+  });
+}
+
+export function CrownVisual({ className = "" }: { className?: string }) {
+  const hostRef = useRef<HTMLDivElement>(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "fallback">("loading");
+  const gradientId = `crown-metal-${useId().replace(/:/g, "")}`;
+
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const mobileQuery = window.matchMedia("(max-width: 767px)");
+    const abort = new AbortController();
+    let renderer: WebGLRenderer | undefined;
+    let environment: WebGLRenderTarget | undefined;
+    let model: Group | undefined;
+    let resizeObserver: ResizeObserver | undefined;
+    let visibilityObserver: IntersectionObserver | undefined;
+    let frame = 0;
+    let lastFrame = 0;
+    let elapsed = 0;
+    let inView = true;
+    let released = false;
+    let cancelled = false;
+    const scene = new Scene();
+    const camera = new PerspectiveCamera(34, 1, 0.1, 50);
+    const rig = new Group();
+    scene.add(rig);
+
+    function stop() {
+      if (frame) cancelAnimationFrame(frame);
+      frame = 0;
+      lastFrame = 0;
+    }
+
+    function release() {
+      if (released) return;
+      released = true;
+      stop();
+      abort.abort();
+      resizeObserver?.disconnect();
+      visibilityObserver?.disconnect();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      motionQuery.removeEventListener("change", onMotionChange);
+      mobileQuery.removeEventListener("change", resize);
+      if (renderer) {
+        renderer.domElement.removeEventListener("webglcontextlost", onContextLost);
+        renderer.domElement.remove();
+      }
+      if (model) disposeModel(model);
+      environment?.dispose();
+      scene.environment = null;
+      scene.clear();
+      renderer?.dispose();
+      renderer?.forceContextLoss();
+    }
+
+    function fail() {
+      if (cancelled || released) return;
+      setStatus("fallback");
+      release();
+    }
+
+    function onContextLost(event: Event) {
+      event.preventDefault();
+      fail();
+    }
+
+    function draw() {
+      if (!renderer || !model || released) return;
+      try {
+        renderer.render(scene, camera);
+      } catch {
+        fail();
+      }
+    }
+
+    function tick(now: number) {
+      frame = 0;
+      if (released || !inView || document.hidden || motionQuery.matches) return;
+      const delta = lastFrame ? Math.min(now - lastFrame, 100) : 0;
+      // The sculpture only needs a quiet 30fps drift; limit work on high-refresh screens.
+      if (!lastFrame || delta >= 1000 / 30) {
+        elapsed += delta / 1000;
+        lastFrame = now;
+        rig.rotation.set(0.055 + Math.sin(elapsed * 0.23) * 0.012, -0.27 + Math.sin(elapsed * 0.19) * 0.075, -0.045);
+        rig.position.y = Math.sin(elapsed * 0.55) * 0.025;
+        draw();
+      }
+      if (!released) frame = requestAnimationFrame(tick);
+    }
+
+    function resume() {
+      if (released || !model || !inView || document.hidden) return;
+      if (motionQuery.matches) {
+        stop();
+        rig.position.y = 0;
+        rig.rotation.set(0.055, -0.27, -0.045);
+        draw();
+      } else if (!frame) {
+        frame = requestAnimationFrame(tick);
+      }
+    }
+
+    function onVisibilityChange() {
+      if (document.hidden) stop();
+      else resume();
+    }
+
+    function onMotionChange() {
+      stop();
+      resume();
+    }
+
+    function resize() {
+      if (!renderer || released) return;
+      const width = host!.clientWidth;
+      const height = host!.clientHeight;
+      if (!width || !height) return;
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobileQuery.matches ? 1.3 : 1.75));
+      renderer.setSize(width, height, false);
+      camera.aspect = width / height;
+      if (model) {
+        const size = new Box3().setFromObject(rig).getSize(new Vector3());
+        const halfFov = Math.tan((camera.fov * Math.PI) / 360);
+        camera.position.set(0, 0.12, Math.max(size.y / (2 * halfFov), size.x / (2 * halfFov * camera.aspect)) * 1.2 + size.z * 0.5);
+        camera.lookAt(0, 0, 0);
+      }
+      camera.updateProjectionMatrix();
+      // A resize also refreshes a static reduced-motion frame.
+      if (inView && !document.hidden) draw();
+    }
+
+    async function initialize() {
+      try {
+        renderer = new WebGLRenderer({ alpha: true, antialias: true, powerPreference: "low-power" });
+        renderer.setClearColor(0x000000, 0);
+        renderer.outputColorSpace = SRGBColorSpace;
+        renderer.toneMapping = ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.05;
+        renderer.domElement.style.cssText = "position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none";
+        renderer.domElement.setAttribute("aria-hidden", "true");
+        renderer.domElement.addEventListener("webglcontextlost", onContextLost);
+        host!.appendChild(renderer.domElement);
+
+        const room = new RoomEnvironment();
+        const pmrem = new PMREMGenerator(renderer);
+        try {
+          environment = pmrem.fromScene(room, 0.04, 0.1, 100);
+          scene.environment = environment.texture;
+        } finally {
+          room.dispose();
+          pmrem.dispose();
+        }
+        scene.add(new HemisphereLight(0xf4f7fa, 0x111a22, 1.3));
+        const key = new DirectionalLight(0xf6f6f2, 3.4);
+        key.position.set(-3, 4, 5);
+        const fill = new DirectionalLight(0xd4e0e8, 1.1);
+        fill.position.set(4, 1, 2);
+        const rim = new DirectionalLight(0x68b7c6, 2.2);
+        rim.position.set(3, 2, -4);
+        scene.add(key, fill, rim);
+
+        resizeObserver = new ResizeObserver(resize);
+        resizeObserver.observe(host!);
+        if ("IntersectionObserver" in window) {
+          visibilityObserver = new IntersectionObserver(([entry]) => {
+            inView = entry.isIntersecting;
+            if (inView) resume();
+            else stop();
+          }, { rootMargin: "80px" });
+          visibilityObserver.observe(host!);
+        }
+        document.addEventListener("visibilitychange", onVisibilityChange);
+        motionQuery.addEventListener("change", onMotionChange);
+        mobileQuery.addEventListener("change", resize);
+        resize();
+
+        const response = await fetch(CROWN_URL, { signal: abort.signal, credentials: "same-origin" });
+        if (!response.ok) throw new Error("Crown asset unavailable");
+        const bytes = await response.arrayBuffer();
+        if (cancelled || released) return;
+        const gltf = await new GLTFLoader().parseAsync(bytes, "/experience/crown/candidate-b/");
+        if (cancelled || released) {
+          disposeModel(gltf.scene);
+          return;
+        }
+        model = gltf.scene;
+        finishMetal(model);
+        const bounds = new Box3().setFromObject(model);
+        const size = bounds.getSize(new Vector3());
+        if (!Number.isFinite(size.x) || size.x <= 0) throw new Error("Empty crown asset");
+        const center = bounds.getCenter(new Vector3());
+        model.position.sub(center);
+        rig.add(model);
+        rig.rotation.set(0.055, -0.27, -0.045);
+        resize();
+        if (!released) {
+          setStatus("ready");
+          resume();
+        }
+      } catch {
+        if (!cancelled) fail();
+      }
+    }
+
+    void initialize();
+    return () => {
+      cancelled = true;
+      release();
+    };
+  }, []);
+
+  return (
+    <div
+      className={`platCrownCanvas ${className}`.trim()}
+      data-crown-state={status}
+      aria-hidden="true"
+      style={{ position: "relative", width: "100%", height: "100%", minHeight: 240, pointerEvents: "none" }}
+    >
+      <svg
+        viewBox="0 0 720 520"
+        focusable="false"
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: status === "ready" ? 0 : 1 }}
+      >
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0.8" y2="1">
+            <stop offset="0" stopColor="#e2e8e9" />
+            <stop offset="0.25" stopColor="#78868c" />
+            <stop offset="0.52" stopColor="#c3cdd1" />
+            <stop offset="0.76" stopColor="#38474f" />
+            <stop offset="1" stopColor="#172229" />
+          </linearGradient>
+        </defs>
+        <g transform="translate(28 8) rotate(-5 332 260)">
+          <path d="M133 329 101 194 225 258 329 139 431 258 557 194 526 329 497 365 163 365Z" fill="#18242b" stroke="#64767e" strokeWidth="1.5" />
+          <path d="M133 329 101 194 225 258 329 139 431 258 557 194 526 329Z" fill={`url(#${gradientId})`} />
+          <path d="m101 194 124 64-18 22-87-55ZM329 139l17 122-17 39-17-39ZM557 194l-19 31-88 55-19-22Z" fill="#e8eff0" opacity="0.24" />
+          <path d="m133 329 30 36h334l29-36Z" fill="#35454e" />
+          <path d="M144 332h371" stroke="#a8c3c9" strokeWidth="2" opacity="0.66" />
+          <path d="M165 356h330" stroke="#67a9b6" opacity="0.55" />
+        </g>
+      </svg>
+      <div ref={hostRef} style={{ position: "absolute", inset: 0, opacity: status === "ready" ? 1 : 0 }} />
+    </div>
+  );
+}
+
+export default CrownVisual;

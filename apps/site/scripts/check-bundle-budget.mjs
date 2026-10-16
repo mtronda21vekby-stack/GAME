@@ -72,7 +72,8 @@ export async function inspectBundle({ distDir, sourceDir }) {
     embedsCssInline: sourceContents.some((source) => /\.css\?inline["']/.test(source)),
     embedsRasterDataUri: jsSources.some((source) => /data:image\/(?:avif|webp|jpe?g|png);base64,[a-z0-9+/=]{1024,}/i.test(source)),
     embedsGlbData: jsSources.some((source) => /data:(?:model\/gltf-binary|application\/octet-stream);base64,/i.test(source) || /Z2xURgAAAA/i.test(source)),
-    initialContainsGltfLoader: initialJsSources.some((source) => /GLTFLoader|nexus-gltf-loader/i.test(source)),
+    // Vite lists lazy chunk filenames in its preload map; those strings are not eager imports.
+    initialContainsGltfLoader: initialJsSources.some((source) => /GLTFLoader|from["'][^"']*nexus-gltf-loader/i.test(source)),
     initialContainsCrownAsset: initialJsSources.some((source) => /crown\.manifest\.json|\.glb(?:["'`?])/i.test(source)),
   };
 }
@@ -101,10 +102,10 @@ export function validateBundle(report) {
   if (report.embedsCssInline) errors.push("A source module imports a full stylesheet through ?inline.");
   if (report.embedsRasterDataUri) errors.push("A raster key-art candidate is embedded as a data URI in JavaScript.");
   if (report.embedsGlbData) errors.push("A GLB or glTF binary candidate is embedded as a data URI in JavaScript.");
-  if (report.initialContainsGltfLoader) errors.push("The mode=off initial entry references GLTFLoader.");
-  if (report.initialContainsCrownAsset) errors.push("The mode=off initial entry references a Crown manifest or GLB asset.");
+  if (report.initialContainsGltfLoader) errors.push("The landing entry contains GLTFLoader code or an eager loader import.");
+  if (report.initialContainsCrownAsset) errors.push("The landing entry embeds a Crown manifest or GLB asset.");
 
-  for (const routeName of ["CinematicExperience", "Account", "Admin", "Checkout"]) {
+  for (const routeName of ["NexusLabPage", "CrownVisual", "Account", "Admin", "Checkout"]) {
     if (!report.allJsFiles.some((file) => file.startsWith(`${routeName}-`))) {
       errors.push(`Expected lazy route chunk ${routeName}-*.js was not emitted.`);
     }
@@ -126,7 +127,7 @@ async function main() {
   console.log("BlackCrown site bundle budget");
   console.log(`- initial JS: ${formatBytes(result.initialJs)} (${report.js.map((asset) => asset.asset).join(", ")})`);
   console.log(`- initial CSS: ${formatBytes(result.initialCss)} (${report.css.map((asset) => asset.asset).join(", ")})`);
-  console.log(`- lazy route chunks: ${report.allJsFiles.filter((file) => /^(?:CinematicExperience|Account|Admin|Checkout)-/.test(file)).join(", ")}`);
+  console.log(`- lazy route chunks: ${report.allJsFiles.filter((file) => /^(?:NexusLabPage|CrownVisual|Account|Admin|Checkout)-/.test(file)).join(", ")}`);
   console.log(`- Nexus async chunks: ${report.allJsMetrics.filter((asset) => /^(?:ExperienceRuntime|nexus-three|nexus-gltf-loader)-/.test(asset.file)).map((asset) => `${asset.file} ${formatBytes(asset.bytes)}`).join(", ") || "not emitted in this mode"}`);
 
   if (result.errors.length) {
