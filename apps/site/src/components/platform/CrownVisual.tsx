@@ -18,6 +18,7 @@ import type { Material, Object3D, Skeleton, SkinnedMesh, WebGLRenderTarget } fro
 import { PMREMGenerator } from "three/src/extras/PMREMGenerator.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { PLATFORM_DEPTH_EVENT, prefersStaticPlatform, type PlatformDepthFrame } from "./usePlatformParallax";
 
 const CROWN_URL = "/experience/crown/candidate-b/crown-candidate-b-lod2.glb";
 
@@ -93,15 +94,18 @@ export function CrownVisual({ className = "" }: { className?: string }) {
     if (!host) return;
     const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     const mobileQuery = window.matchMedia("(max-width: 767px)");
+    const depthScene = host.closest<HTMLElement>("[data-parallax-scene=hero]");
     const abort = new AbortController();
     let renderer: WebGLRenderer | undefined;
     let environment: WebGLRenderTarget | undefined;
     let model: Group | undefined;
     let resizeObserver: ResizeObserver | undefined;
     let visibilityObserver: IntersectionObserver | undefined;
+    let preferenceObserver: MutationObserver | undefined;
     let frame = 0;
     let lastFrame = 0;
-    let elapsed = 0;
+    let depth: PlatformDepthFrame = { x: 0, y: 0, scroll: 0, compact: mobileQuery.matches, reduced: prefersStaticPlatform(motionQuery) };
+    let framingSize: Vector3 | undefined;
     let inView = true;
     let released = false;
     let cancelled = false;
@@ -123,9 +127,11 @@ export function CrownVisual({ className = "" }: { className?: string }) {
       abort.abort();
       resizeObserver?.disconnect();
       visibilityObserver?.disconnect();
+      preferenceObserver?.disconnect();
       document.removeEventListener("visibilitychange", onVisibilityChange);
       motionQuery.removeEventListener("change", onMotionChange);
       mobileQuery.removeEventListener("change", resize);
+      depthScene?.removeEventListener(PLATFORM_DEPTH_EVENT, onDepthFrame);
       if (renderer) {
         renderer.domElement.removeEventListener("webglcontextlost", onContextLost);
         renderer.domElement.remove();
@@ -160,29 +166,34 @@ export function CrownVisual({ className = "" }: { className?: string }) {
 
     function tick(now: number) {
       frame = 0;
-      if (released || !inView || document.hidden || motionQuery.matches) return;
-      const delta = lastFrame ? Math.min(now - lastFrame, 100) : 0;
-      // The sculpture only needs a quiet 30fps drift; limit work on high-refresh screens.
-      if (!lastFrame || delta >= 1000 / 30) {
-        elapsed += delta / 1000;
-        lastFrame = now;
-        rig.rotation.set(0.055 + Math.sin(elapsed * 0.23) * 0.012, -0.27 + Math.sin(elapsed * 0.19) * 0.075, -0.045);
-        rig.position.y = Math.sin(elapsed * 0.55) * 0.025;
-        draw();
+      if (released || !inView || document.hidden) return;
+      // Coalesce input frames at 30fps. There is no render loop once input settles.
+      if (lastFrame && now - lastFrame < 1000 / 30 - 1) {
+        frame = requestAnimationFrame(tick);
+        return;
       }
-      if (!released) frame = requestAnimationFrame(tick);
+      lastFrame = now;
+      draw();
+    }
+
+    function applyPose() {
+      const staticPose = depth.reduced || prefersStaticPlatform(motionQuery);
+      const x = staticPose ? 0 : depth.x;
+      const y = staticPose ? 0 : depth.y;
+      const scroll = staticPose ? 0 : depth.scroll * (depth.compact ? 0.42 : 1);
+      rig.rotation.set(0.055 - y * 0.09 + scroll * 0.12, -0.27 + x * 0.19, -0.045 - x * 0.025);
+      rig.position.y = scroll * 0.025;
+    }
+
+    function onDepthFrame(event: Event) {
+      depth = (event as CustomEvent<PlatformDepthFrame>).detail;
+      applyPose();
+      resume();
     }
 
     function resume() {
       if (released || !model || !inView || document.hidden) return;
-      if (motionQuery.matches) {
-        stop();
-        rig.position.y = 0;
-        rig.rotation.set(0.055, -0.27, -0.045);
-        draw();
-      } else if (!frame) {
-        frame = requestAnimationFrame(tick);
-      }
+      if (!frame) frame = requestAnimationFrame(tick);
     }
 
     function onVisibilityChange() {
@@ -192,6 +203,7 @@ export function CrownVisual({ className = "" }: { className?: string }) {
 
     function onMotionChange() {
       stop();
+      applyPose();
       resume();
     }
 
@@ -203,8 +215,8 @@ export function CrownVisual({ className = "" }: { className?: string }) {
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobileQuery.matches ? 1.3 : 1.75));
       renderer.setSize(width, height, false);
       camera.aspect = width / height;
-      if (model) {
-        const size = new Box3().setFromObject(rig).getSize(new Vector3());
+      if (framingSize) {
+        const size = framingSize;
         const halfFov = Math.tan((camera.fov * Math.PI) / 360);
         camera.position.set(0, 0.12, Math.max(size.y / (2 * halfFov), size.x / (2 * halfFov * camera.aspect)) * 1.2 + size.z * 0.5);
         camera.lookAt(0, 0, 0);
@@ -257,6 +269,9 @@ export function CrownVisual({ className = "" }: { className?: string }) {
         document.addEventListener("visibilitychange", onVisibilityChange);
         motionQuery.addEventListener("change", onMotionChange);
         mobileQuery.addEventListener("change", resize);
+        depthScene?.addEventListener(PLATFORM_DEPTH_EVENT, onDepthFrame);
+        preferenceObserver = new MutationObserver(onMotionChange);
+        preferenceObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-reduced-motion"] });
         resize();
 
         const response = await fetch(CROWN_URL, { signal: abort.signal, credentials: "same-origin" });
@@ -277,6 +292,8 @@ export function CrownVisual({ className = "" }: { className?: string }) {
         model.position.sub(center);
         rig.add(model);
         rig.rotation.set(0.055, -0.27, -0.045);
+        framingSize = new Box3().setFromObject(rig).getSize(new Vector3());
+        applyPose();
         resize();
         if (!released) {
           setStatus("ready");
