@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Import the approved immutable BALLCROWN v22 game21 M00-M02 playable slice.
+"""Import the approved immutable BALLCROWN v22 game25 M00-M07 main campaign.
 
 The source ZIP and receipt are pinned before any runtime extraction. Only the
 receipt's runtimeFiles are copied. Unity's two large raw files are replaced by
@@ -8,8 +8,8 @@ The index and all other runtime files remain byte-for-byte identical.
 
 Example (run from any directory):
   python3 apps/site/scripts/import-ballcrown-release.py \
-    --archive /path/to/ballcrown-0.22.0-game21-m02-verified.zip \
-    --receipt /path/to/m02-game21-publication-receipt.json \
+    --archive /path/to/ballcrown-0.22.0-game25-m07-verified.zip \
+    --receipt /path/to/m07-game25-publication-receipt.json \
     --report /path/to/ballcrown-import-verification.json
 
 An existing output must already exactly match this import. Unexpected or edited
@@ -32,33 +32,33 @@ from typing import Any
 import zipfile
 
 
-ARCHIVE_SHA256 = "b85242535c59d723a5469278bb35603cb5392cb550e58f419559d59984ca27b4"
-ARCHIVE_BYTES = 72_390_347
-RECEIPT_SHA256 = "4ca582d338f3830416312f2a2c5ad426878f2b427094187a364cec45f84886a9"
+ARCHIVE_SHA256 = "da76220983194f2bc96022840ecf6cb7ec4826c148d8b98186cfbbfdd6f12544"
+ARCHIVE_BYTES = 72_597_159
+RECEIPT_SHA256 = "89bdb021612ba6199e7dc277d786fd5efaa290ee18d2ea5a4951a546066bbf77"
 INDEX_SHA256 = "aebe9d3fc8808e30a331295da7d705a50ebd471fb2bc36dcc60caf482bf8f6d9"
-WASM_SHA256 = "b13c34802950db3e36b861d23f842f017abc1fde134344c5c60c5682f4f46dd6"
-DATA_SHA256 = "282cd32e3ac2ba5357b86b8f3c4805ea3521e8c4c3e693ef41bf92700b57a18e"
+WASM_SHA256 = "6b3fe878bfb1247dee2f6ac4465c17adb2de921f13f05921c45b07211c7ff11b"
+DATA_SHA256 = "77ff5a90880c076df5976b392f07d916f1ca66ef26c98c33694955273f994eb4"
 FRAMEWORK_SHA256 = "5385a1dd92b9ef88aa8fab55f1eb228a875b88d74c89f3f7fe8926423965d686"
-LOADER_SHA256 = "9df4f341f351b2b982b82b7734d6dd10fca05830911718800030dfacc9da8d54"
+LOADER_SHA256 = "40f321610139030b588daf3adf3f7350ad29ee2e7bb0091059db3f1b3ad1d22f"
 NATIVE_VERSION = "0.22.0"
-RELEASE_REVISION = "043-v22-m02-game21"
+RELEASE_REVISION = "049-v22-m06-m07-game25-mobile"
 CHUNK_BYTES = 8 * 1024 * 1024
 RUNTIME_FILE_COUNT = 99
 # The sealed ZIP also contains these three producer documents. They are hashed
 # before extraction and never published as runtime assets. The pinned receipt
-# is publication-only, derived from GAME21-FILES.json and the verified handoff.
+# is publication-only, derived from GAME25-FILES.json and the verified handoff.
 ARCHIVE_METADATA = {
-    "GAME21-FILES.json": {
+    "GAME25-FILES.json": {
         "bytes": 14_929,
-        "sha256": "a8a42fc9a8a3287dbb5ab0d52001c40249288c7b74508d5732b6e73128571731",
+        "sha256": "f6b21bf87fa3031d351297e0a73b50b6f082f799524ce12b07fa67c6c1f4f61b",
     },
-    "GAME21-README_RU.txt": {
-        "bytes": 1_843,
-        "sha256": "1be577dd190cb2e135f9168b1877dc5373e0665ac973bbdc08953ac32b25e473",
+    "GAME25-README_RU.txt": {
+        "bytes": 1_668,
+        "sha256": "d9cb7196783cf71d441fed3a2e9e7d097999db126159a2b0b226f3b27c6228a4",
     },
-    "GAME21-VERIFICATION.json": {
-        "bytes": 3_055,
-        "sha256": "0f27f8c6604d836b8d463b3fe40d5e30c159a1ae4caff54c866630f411970b9b",
+    "GAME25-VERIFICATION.json": {
+        "bytes": 8_023,
+        "sha256": "2a26203e94681f8277162cd5a445b350c4992f22b2c12c9ae98024da45f510ea",
     },
 }
 PUBLIC_BASE = "/games/ballcrown/play/"
@@ -193,7 +193,7 @@ def receipt_runtime(receipt: dict[str, Any]) -> list[dict[str, Any]]:
         and receipt.get("nativeBuild", {}).get("version") == NATIVE_VERSION
         and receipt.get("nativeBuild", {}).get("revision") == RELEASE_REVISION
     ):
-        fail("Receipt version/revisions differ from the approved M00-M02 game21 package")
+        fail("Receipt version/revisions differ from the approved M00-M07 game25 package")
     pinned_native = {
         "indexSHA256": ("index.html", INDEX_SHA256),
         "wasmSHA256": ("Build/BuildWeb.wasm", WASM_SHA256),
@@ -240,7 +240,7 @@ def validate_archive(archive: zipfile.ZipFile, runtime: list[dict[str, Any]]) ->
         data = archive.read(member)
         if hashlib.sha256(data).hexdigest() != expected["sha256"]:
             fail(f"ZIP metadata SHA256 mismatch: {path}")
-    embedded_runtime = json.loads(archive.read("GAME21-FILES.json"))
+    embedded_runtime = json.loads(archive.read("GAME25-FILES.json"))
     expected_runtime = {item["path"]: {"bytes": item["bytes"], "sha256": item["sha256"]}
                         for item in runtime}
     if embedded_runtime != expected_runtime:
@@ -393,7 +393,7 @@ def main() -> int:
         excluded_count = validate_archive(archive, runtime)
         if (excluded_count != len(ARCHIVE_METADATA)
                 or len(archive.infolist()) != RUNTIME_FILE_COUNT + len(ARCHIVE_METADATA)):
-            fail("Approved M00-M02 archive must contain exactly 99 runtime and three metadata entries")
+            fail("Approved M00-M07 archive must contain exactly 99 runtime and three metadata entries")
         # Package to an owned temporary directory; no output is exposed until
         # the whole source and reconstructed runtime have passed verification.
         output.parent.mkdir(parents=True, exist_ok=True)

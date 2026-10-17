@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "available": true,
   "entry": "./play/",
-  "version": "0.22.0 / 043-v22-m02-game21",
-  "revision": "043-v22-m02-game21",
-  "archiveSHA256": "b85242535c59d723a5469278bb35603cb5392cb550e58f419559d59984ca27b4",
-  "wasmSHA256": "b13c34802950db3e36b861d23f842f017abc1fde134344c5c60c5682f4f46dd6"
+  "version": "0.22.0 / 049-v22-m06-m07-game25-mobile",
+  "revision": "049-v22-m06-m07-game25-mobile",
+  "archiveSHA256": "da76220983194f2bc96022840ecf6cb7ec4826c148d8b98186cfbbfdd6f12544",
+  "wasmSHA256": "6b3fe878bfb1247dee2f6ac4465c17adb2de921f13f05921c45b07211c7ff11b"
 }
