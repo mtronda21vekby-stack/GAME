@@ -6,11 +6,14 @@ type Props = { game: PlatformGame; index: number; selected: boolean; onSelect: (
 /** Text, links and buttons stay native DOM, including when this surface is in perspective. */
 export function GamePanel({ game, index, selected, onSelect, onOpen, spatial = false }: Props) {
   const title = useId();
-  return <article className="spatialGamePanel" data-game-id={game.id} data-game-panel={spatial ? index : undefined} data-selected={selected} aria-labelledby={title} onClick={event => { if (!selected && !(event.target as Element).closest("a,button")) onSelect(); }}>
+  return <article className="spatialGamePanel" data-game-id={game.id} data-game-panel={spatial ? index : undefined} data-selected={selected} aria-labelledby={title}>
     <img className="spatialPanelTexture" src={game.image} alt="" width="1280" height="720" loading="lazy"/>
-    <div className="spatialPanelHeader"><span>BLACKCROWN / {String(index + 1).padStart(2, "0")}</span><span className="spatialPanelState" aria-label={selected ? "Выбрано" : undefined}><i aria-hidden="true"/></span></div>
+    <div className="spatialPanelHeader"><span>BLACKCROWN / {String(index + 1).padStart(2, "0")}</span><span className="spatialPanelState"><i aria-hidden="true"/>{selected ? "Выбрано" : null}</span></div>
     <div className="spatialPanelTitle"><p>{game.genre}</p><h3 id={title}>{game.title}</h3><span className="spatialPanelStatus">{game.status}</span></div>
-    <div className="spatialPanelActions">{selected ? <><button type="button" onClick={onOpen}>Открыть <span aria-hidden="true">↗</span></button><a href={game.href}>{game.id === "crown-front" ? "Альфа" : "Играть"}<span aria-hidden="true">↗</span></a></> : <button className="spatialPanelSelect" type="button" aria-label={"Выбрать " + game.title} onClick={onSelect}>Выбрать мир<span aria-hidden="true">→</span></button>}</div>
+    <div className="spatialPanelActions">
+      <button className={"spatialPanelPrimary" + (selected ? "" : " spatialPanelSelect")} type="button" aria-label={(selected ? "Об игре " : "Выбрать ") + game.title} aria-haspopup={selected ? "dialog" : undefined} aria-controls={selected ? "spatial-game-detail" : undefined} onClick={selected ? onOpen : onSelect}><span className="spatialPanelActionLabel">{selected ? "Об игре" : "Выбрать мир"}</span><span aria-hidden="true">{selected ? "↗" : "→"}</span></button>
+      {selected ? <a className="spatialPanelLaunch" href={game.href} aria-label={(game.id === "crown-front" ? "Открыть альфу " : "Запустить ") + game.title}>{game.id === "crown-front" ? "Альфа" : "Играть"}<span aria-hidden="true">↗</span></a> : null}
+    </div>
   </article>;
 }
 

@@ -48,11 +48,24 @@ describe("Live spatial interface panels", () => {
     expect(html).toContain(game.status);
     expect(html).toContain(`href="${game.href}"`);
     expect(html).toContain("<button");
+    expect(html.match(/<button\b/g)).toHaveLength(1);
+    expect(html).toContain('aria-haspopup="dialog"');
+    expect(html).toContain('aria-controls="spatial-game-detail"');
+    expect(html).toContain('class="spatialPanelLaunch"');
     expect(html).not.toContain("<canvas");
     const detail = renderToStaticMarkup(React.createElement(GameDetail, { game, open: false, canCycle: true, paused: false, onClose: () => {}, onPrevious: () => {}, onNext: () => {}, onTogglePause: () => {} }));
     expect(detail).toContain(game.description);
     expect(detail).toContain(game.detail);
     expect(detail).toContain(`href="${game.href}"`);
+    expect(detail).toContain('id="spatial-game-detail"');
+  });
+
+  it("gives an unselected panel one native selection button and no accidental game launch", () => {
+    const html = renderToStaticMarkup(React.createElement(GamePanel, { game: platformGames[1], index: 1, selected: false, onSelect: () => {}, onOpen: () => {} }));
+    expect(html).toContain('aria-label="Выбрать EvoFish Next"');
+    expect(html.match(/<button\b/g)).toHaveLength(1);
+    expect(html).not.toContain("href=");
+    expect(html).not.toContain("aria-haspopup");
   });
 
   it("moves panels with their document slot while leaving following navigation clear", () => {

@@ -216,21 +216,21 @@ export class SpatialSceneRuntime {
     const staticScene = this.reduced || this.paused, blend = staticScene ? 1 : 1 - Math.exp(-Math.min(delta, 100) / 180);
     if (!staticScene) this.elapsed += Math.min(delta, 100) / 1000;
     // Reduced motion changes composition in discrete cuts; no camera journey or idle loop.
-    const targetProgress = staticScene ? (this.desiredProgress < 0.25 ? 0 : this.desiredProgress < 0.8 ? 0.5 : 1) : this.desiredProgress;
+    const targetProgress = this.reduced ? (this.desiredProgress < 0.25 ? 0 : this.desiredProgress < 0.8 ? 0.5 : 1) : this.desiredProgress;
     this.progress += (targetProgress - this.progress) * blend;
     this.orbit += (this.desiredOrbit - this.orbit) * blend;
     this.detail += ((this.detailFocus ? 1 : 0) - this.detail) * (staticScene ? 1 : 1 - Math.exp(-Math.min(delta,100) / 140));
-    this.pointer.x += ((staticScene || this.detailOpen ? 0 : this.desiredPointer.x) - this.pointer.x) * blend;
-    this.pointer.y += ((staticScene || this.detailOpen ? 0 : this.desiredPointer.y) - this.pointer.y) * blend;
+    this.pointer.x += ((this.reduced || this.detailOpen ? 0 : this.paused ? this.pointer.x : this.desiredPointer.x) - this.pointer.x) * blend;
+    this.pointer.y += ((this.reduced || this.detailOpen ? 0 : this.paused ? this.pointer.y : this.desiredPointer.y) - this.pointer.y) * blend;
     this.accent.lerp(this.desiredAccent, blend); this.accentLight.color.copy(this.accent);
-    const snapshot = { ...INITIAL_SCROLL_SNAPSHOT, progress: this.progress, viewportWidth: this.viewportWidth, viewportHeight: this.viewportHeight, reducedMotion: staticScene };
+    const snapshot = { ...INITIAL_SCROLL_SNAPSHOT, progress: this.progress, viewportWidth: this.viewportWidth, viewportHeight: this.viewportHeight, reducedMotion: this.reduced };
     (this.compact ? this.mobileCamera : this.desktopCamera).update(snapshot, this.pointer, this.elapsed);
     // Detail focus begins reversing while the native shared surface closes.
     this.camera.position.x += this.detail * (this.compact ? .55 : 1.05);
     this.camera.position.y += this.detail * .22;
     this.camera.position.z -= this.detail * (this.compact ? 2.1 : 1.6);
     const transit = this.progress < .45 ? Math.sin(this.progress / .45 * Math.PI) : 0;
-    if(!staticScene) this.camera.rotateZ(transit * (this.compact ? .018 : .032));
+    if(!this.reduced) this.camera.rotateZ(transit * (this.compact ? .018 : .032));
     this.camera.updateMatrixWorld();
     this.updateObjects(blend);
     this.scene.updateMatrixWorld(); this.camera.updateMatrixWorld();

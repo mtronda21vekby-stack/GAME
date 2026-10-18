@@ -1189,7 +1189,9 @@ html[data-bc-route="/"] .bcAppShell,html[data-bc-route="/games"] .bcAppShell {
   }
   .platSearch input {
     width:100%;
-    flex:1
+    flex:1;
+    min-width:0;
+    font-size:16px
   }
   .platSearch>span {
     min-width:42px
