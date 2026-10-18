@@ -176,7 +176,11 @@ html[data-reduced-motion="1"] .spatialPage *,html[data-reduced-motion="1"] .spat
 .spatialPanelCounter { display:block; color:#829eaa; font:10px/1.6 var(--spatial-type); min-width:140px; text-align:center; }
 .spatialPanelCounter small { display:block; color:#bfd9de; font-size:11px; }
 .spatialGalleryVisual { min-height:400px; }
-.spatialGalleryControls { background:none; }
+.spatialGalleryControls { position:relative; padding:12px 20px 8px; background:#07151bed; border:1px solid #86b0bd35; border-radius:12px; }
+.spatialGalleryControls .spatialWorldChoices button { color:#9db9c5; }
+.spatialGalleryControls .spatialWorldChoices button[aria-pressed=true] { color:#e2efef; }
+.spatialHeroFoot { padding-right:145px; }
+.spatialGalleryFoot { padding-right:145px; }
 .spatialDetail { background:#030a0ea6; padding:75px 24px 55px; }
 .spatialDetailInner { min-height:0; width:min(1000px,100%); padding:24px 32px 20px; border:1px solid #a2c9d170; border-radius:14px; background:linear-gradient(140deg,#203139fa,#081820fa 75%); box-shadow:inset 0 1px #cce5e830,0 35px 100px #010709; }
 .spatialDetailTop { margin-bottom:30px; border-bottom:1px solid #8db4be38; padding-bottom:12px; }
@@ -208,10 +212,13 @@ html[data-reduced-motion="1"] .spatialPage *,html[data-reduced-motion="1"] .spat
 }
 @media(max-width:760px) {
  .spatialGamePanel { padding:18px; }
+ .spatialHeroFoot { padding-right:95px; align-items:start; flex-direction:column; gap:0; }
+ .spatialGalleryFoot { padding-right:0; padding-bottom:55px; }
+ .spatialGalleryControls { padding:12px 14px 8px; }
  .spatialPage>.platHeader { padding-top:calc(16px + env(safe-area-inset-top,0px)); padding-left:max(20px,env(safe-area-inset-left,0px)); padding-right:max(20px,env(safe-area-inset-right,0px)); }
  .spatialHero { padding-top:calc(175px + env(safe-area-inset-top,0px)); }
  .spatialGallerySection { padding-top:calc(145px + env(safe-area-inset-top,0px)); }
- .spatialMotionToggle { bottom:max(12px,env(safe-area-inset-bottom,0px)); }
+ .spatialMotionToggle { top:calc(8px + env(safe-area-inset-top,0px)); bottom:auto; }
  .spatialGallerySection { min-height:max(1000px,100svh); }
  .spatialGalleryVisual { min-height:440px; }
  .spatialDetail { padding:max(90px,calc(24px + env(safe-area-inset-top,0px))) max(18px,env(safe-area-inset-right,0px)) max(30px,calc(18px + env(safe-area-inset-bottom,0px))) max(18px,env(safe-area-inset-left,0px)); }

@@ -8,6 +8,7 @@ type Props = { open: boolean; game: PlatformGame; canCycle: boolean; paused: boo
 export function GameDetail({ open, game, canCycle, paused, onTogglePause, onClose, onPrevious, onNext }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
   const closing = useRef(false);
   const animationRef = useRef<Animation | null>(null);
   const currentGameId = useRef(game.id);
@@ -30,6 +31,7 @@ export function GameDetail({ open, game, canCycle, paused, onTogglePause, onClos
     document.body.style.overflow = "hidden";
     closing.current = false;
     dialog.showModal();
+    closeRef.current?.focus({ preventScroll: true });
     const content = contentRef.current;
     if (content?.animate && !prefersStaticPlatform(window.matchMedia("(prefers-reduced-motion: reduce)"))) animationRef.current = content.animate([{ transform: "translateY(24px) scale(.94)", opacity: 0 }, { transform: "translateY(0) scale(1)", opacity: 1 }], { duration: 240, easing: "cubic-bezier(.2,.7,.25,1)" });
     return () => {
@@ -47,7 +49,7 @@ export function GameDetail({ open, game, canCycle, paused, onTogglePause, onClos
 
   return <dialog ref={dialogRef} className="spatialDetail" aria-labelledby="spatial-detail-title" aria-describedby="spatial-detail-description" onCancel={event => { event.preventDefault(); closePanel(); }} onClick={event => { if (event.target === event.currentTarget) closePanel(); }}>
     <div className="spatialDetailInner" ref={contentRef}>
-      <div className="spatialDetailTop"><a href="/games/">BLACKCROWN / ИГРОВОЙ МИР</a><button type="button" autoFocus onClick={closePanel} aria-label="Закрыть панель и вернуться к выбранной игре">ЗАКРЫТЬ <span aria-hidden="true">×</span></button></div>
+      <div className="spatialDetailTop"><a href="/games/">BLACKCROWN / ИГРОВОЙ МИР</a><button ref={closeRef} type="button" onClick={closePanel} aria-label="Закрыть панель и вернуться к выбранной игре">ЗАКРЫТЬ <span aria-hidden="true">×</span></button></div>
       <div className="spatialDetailTitle"><p className="spatialEyebrow">{game.genre} / {game.status}</p><h2 id="spatial-detail-title">{game.title}</h2></div>
       <div className="spatialDetailBody">
         <figure className="spatialDetailMedia"><img key={game.id} src={game.image} alt={game.imageAlt} width="1280" height="720"/><figcaption>Обложка / {game.title}</figcaption></figure>
