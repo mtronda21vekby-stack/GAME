@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { detailOriginTransform, type PanelOrigin } from "../../src/components/spatial/detailTransition";
+import { detailOriginPose, type PanelOrigin } from "../../src/components/spatial/detailTransition";
 import { readSpatialReturn, rememberSpatialReturn } from "../../src/components/spatial/spatialNavigation";
 
 describe("Spatial navigation return", () => {
@@ -33,21 +33,20 @@ describe("Reversible detail surface", () => {
   const origin: PanelOrigin = { gameId: "evofish", left: 65, top: 180, width: 260, height: 240, viewportWidth: 390, viewportHeight: 844 };
   const box = { left: 0, top: 150, width: 390, height: 219.375 };
 
-  it("maps the media back to the opening panel's actual bounds", () => {
-    const transform = detailOriginTransform(origin, "evofish", 390, 844, box);
-    const values = transform.match(/translate\(([-.\d]+)px,([-.\d]+)px\) scale\(([-.\d]+),([-.\d]+)\)/)!.slice(1).map(Number);
-    const [x, y, sx, sy] = values;
+  it("matches the opening panel's center and width without stretching the game image", () => {
+    const [x, y, sx, sy] = detailOriginPose(origin, "evofish", 390, 844, box);
     expect(box.width*sx).toBeCloseTo(origin.width);
-    expect(box.height*sy).toBeCloseTo(origin.height);
+    expect(sx).toBe(sy);
+    expect((box.width*sx)/(box.height*sy)).toBeCloseTo(16/9);
     expect(box.left+box.width/2+x-box.width*sx/2).toBeCloseTo(origin.left);
-    expect(box.top+box.height/2+y-box.height*sy/2).toBeCloseTo(origin.top);
+    expect(box.top+box.height/2+y).toBeCloseTo(origin.top+origin.height/2);
   });
 
   it("uses a short fade when the game or viewport changed, without returning to an unrelated panel", () => {
-    const fade = "translateY(20px) scale(.98)";
-    expect(detailOriginTransform(origin, "quiet-valley", 390, 844, box)).toBe(fade);
-    expect(detailOriginTransform(origin, "evofish", 844, 390, box)).toBe(fade);
-    expect(detailOriginTransform(origin, "evofish", 390, 640, box)).toBe(fade);
-    expect(detailOriginTransform(null, "evofish", 390, 844, box)).toBe(fade);
+    const fade = [0,20,.98,.98,.25];
+    expect(detailOriginPose(origin, "quiet-valley", 390, 844, box)).toEqual(fade);
+    expect(detailOriginPose(origin, "evofish", 844, 390, box)).toEqual(fade);
+    expect(detailOriginPose(origin, "evofish", 390, 640, box)).toEqual(fade);
+    expect(detailOriginPose(null, "evofish", 390, 844, box)).toEqual(fade);
   });
 });

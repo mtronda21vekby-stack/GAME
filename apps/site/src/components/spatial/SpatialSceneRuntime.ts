@@ -14,6 +14,7 @@ import { adaptSpatialBrand } from "./SpatialBrandAdapter";
 import { panelCSSMatrix, panelFrontWidth, panelScrollOffset, panelStyle } from "./panelProjection";
 import { createOrbitCard, createParticles, createRibbons, createSpine, createWave } from "./SpatialObjects";
 import { SpatialEnvironment } from "./SpatialEnvironment";
+import { DampedScalar, SurfaceMotion, SPATIAL_TIMING } from "./spatialMotion";
 import { ALL_WORLD_INDICES, DESKTOP_SPATIAL_CAMERA, MOBILE_SPATIAL_CAMERA, ORBIT_CARD_WIDTH, WORLD_ACCENTS, nearestOrbitTurn, orbitCardPose, spatialProgress } from "./spatialState";
 
 // Small viewports keep the low geometry tier, with modest edge smoothing for the brand silhouette.
@@ -25,8 +26,8 @@ type SceneOptions = { host: HTMLElement; stage: HTMLElement; panelRoot: HTMLElem
 export class SpatialSceneRuntime {
   private readonly scene = new THREE.Scene();
   private readonly camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
-  private readonly desktopCamera = new CameraRig(this.camera, DESKTOP_SPATIAL_CAMERA);
-  private readonly mobileCamera = new CameraRig(this.camera, MOBILE_SPATIAL_CAMERA);
+  private readonly desktopCamera = new CameraRig(this.camera, DESKTOP_SPATIAL_CAMERA, true);
+  private readonly mobileCamera = new CameraRig(this.camera, MOBILE_SPATIAL_CAMERA, true);
   private readonly brand = new THREE.Group();
   private readonly gallery = new THREE.Group();
   private readonly ribbons = createRibbons();
@@ -57,6 +58,10 @@ export class SpatialSceneRuntime {
   private desiredProgress = 0;
   private orbit = 0;
   private desiredOrbit = 0;
+  private readonly orbitMotion = new DampedScalar(0, SPATIAL_TIMING.orbit);
+  private readonly detailMotion = new SurfaceMotion([0]);
+  private pausedAt = 0;
+  private readonly focusMotion = platformGames.map(() => new DampedScalar(0, SPATIAL_TIMING.focus));
   private detail = 0;
   private detailOpen = false;
   private detailFocus = false;
@@ -136,13 +141,30 @@ export class SpatialSceneRuntime {
     if (!this.visibleGames.length) this.visibleGames = [...ALL_WORLD_INDICES];
     this.worldIndex = this.visibleGames.includes(index) ? index : this.visibleGames[0];
     this.desiredOrbit = nearestOrbitTurn(this.orbit, this.visibleGames.indexOf(this.worldIndex), this.visibleGames.length);
+    if (this.paused) this.settleSelection();
     this.desiredAccent.set(WORLD_ACCENTS[this.worldIndex]);
     this.measurePanels();
     this.requestFrame();
   }
   setDetailOpen(open: boolean) { this.detailOpen = open; this.requestFrame(); }
-  setDetailFocus(focused: boolean) { this.detailFocus = focused; this.requestFrame(); }
-  setPaused(paused: boolean) { this.paused = paused; this.stop(); this.requestFrame(); }
+  setDetailFocus(focused: boolean) {
+    if (this.detailFocus === focused) return;
+    this.detailFocus = focused;
+    if (this.paused || this.reduced) { this.detailMotion.rebase([focused ? 1 : 0]); this.detail = focused ? 1 : 0; }
+    else this.detailMotion.moveTo([focused ? 1 : 0],focused ? SPATIAL_TIMING.open : SPATIAL_TIMING.close,performance.now());
+    this.requestFrame();
+  }
+  private settleSelection() {
+    this.orbit = this.orbitMotion.snap(this.desiredOrbit);
+    this.focusMotion.forEach((motion,index) => motion.snap(index === this.worldIndex ? 1 : 0));
+  }
+  setPaused(paused: boolean) {
+    if (paused && !this.paused) { this.pausedAt = performance.now(); this.detailMotion.sample(this.pausedAt); this.detail = this.detailMotion.value[0]; }
+    if (!paused && this.paused) this.detailMotion.delay(performance.now()-this.pausedAt);
+    this.paused = paused;
+    if (paused && this.elapsed === 0) { this.settleSelection(); this.progress = this.desiredProgress; }
+    this.stop(); this.requestFrame();
+  }
 
   private installObservers() {
     this.resizeObserver = new ResizeObserver(this.resize);
@@ -171,7 +193,7 @@ export class SpatialSceneRuntime {
   };
   private measurePanels() {
     const sizing = new THREE.PerspectiveCamera(38, this.camera.aspect, 0.1, 100);
-    new CameraRig(sizing, this.compact ? MOBILE_SPATIAL_CAMERA : DESKTOP_SPATIAL_CAMERA).update({ ...INITIAL_SCROLL_SNAPSHOT, progress: 0.5, viewportWidth: this.viewportWidth, viewportHeight: this.viewportHeight }, { x: 0, y: 0 }, 0);
+    new CameraRig(sizing, this.compact ? MOBILE_SPATIAL_CAMERA : DESKTOP_SPATIAL_CAMERA, true).update({ ...INITIAL_SCROLL_SNAPSHOT, progress: 0.5, viewportWidth: this.viewportWidth, viewportHeight: this.viewportHeight }, { x: 0, y: 0 }, 0);
     sizing.updateMatrixWorld();
     const width = Math.max(220, Math.min(540, panelFrontWidth(sizing, this.viewportWidth, ORBIT_CARD_WIDTH, new THREE.Vector3(0, 0.8, 3.6))));
     const hidden = this.panelElements.map(element => element.hidden);
@@ -184,16 +206,17 @@ export class SpatialSceneRuntime {
     this.panelElements.forEach((element, index) => {
       const slot = this.visibleGames.indexOf(index), card = this.cards[index];
       const pose = orbitCardPose(Math.max(0, slot), this.visibleGames.length, this.orbit);
-      const showing = slot >= 0 && this.gallery.visible && this.progress > 0.27 && this.progress < 0.83 && !this.detailOpen && this.viewportHeight >= (this.compact ? 700 : 580) && pose.z > -1.1;
+      const showing = slot >= 0 && this.gallery.visible && this.progress > 0.24 && this.progress < 0.83 && !this.detailOpen && this.viewportHeight >= (this.compact ? 700 : 580) && pose.z > -1.1;
       element.hidden = !showing;
       if (!showing) return;
       const size = this.panelSizes[index];
       const world = card.group.matrixWorld.clone().multiply(new THREE.Matrix4().makeTranslation(0, 0, 0.066));
       element.style.transform = panelStyle(panelCSSMatrix(this.camera, world, this.viewportWidth, this.viewportHeight, size.width, size.height, ORBIT_CARD_WIDTH));
-      element.style.opacity = index === this.worldIndex ? "1" : "0.58";
+      const entry = THREE.MathUtils.smoothstep(this.progress,.24,.4)*(1-THREE.MathUtils.smoothstep(this.progress,.74,.83));
+      element.style.opacity = String((.58+.42*card.focus)*entry);
     });
   }
-  private onScroll = () => { this.desiredProgress = spatialProgress(window.scrollY, this.stageTop, this.stageHeight, this.viewportHeight); this.requestFrame(); };
+  private onScroll = () => { this.desiredProgress = spatialProgress(window.scrollY, this.stageTop, this.stageHeight, this.viewportHeight); if (this.paused) this.progress = this.desiredProgress; this.requestFrame(); };
   private onPointer = (event: PointerEvent) => {
     if (this.compact || this.reduced || this.paused || this.detailOpen || !this.pointerQuery.matches || event.pointerType !== "mouse") return;
     this.desiredPointer.x = event.clientX / Math.max(1, window.innerWidth) - 0.5; this.desiredPointer.y = event.clientY / Math.max(1, window.innerHeight) - 0.5; this.requestFrame();
@@ -216,10 +239,12 @@ export class SpatialSceneRuntime {
     const staticScene = this.reduced || this.paused, blend = staticScene ? 1 : 1 - Math.exp(-Math.min(delta, 100) / 180);
     if (!staticScene) this.elapsed += Math.min(delta, 100) / 1000;
     // Reduced motion changes composition in discrete cuts; no camera journey or idle loop.
-    const targetProgress = this.reduced ? (this.desiredProgress < 0.25 ? 0 : this.desiredProgress < 0.8 ? 0.5 : 1) : this.desiredProgress;
+    const targetProgress = this.reduced ? (this.desiredProgress < 0.25 ? 0 : this.desiredProgress < 0.8 ? 0.5 : 1) : this.paused ? this.progress : this.desiredProgress;
     this.progress += (targetProgress - this.progress) * blend;
-    this.orbit += (this.desiredOrbit - this.orbit) * blend;
-    this.detail += ((this.detailFocus ? 1 : 0) - this.detail) * (staticScene ? 1 : 1 - Math.exp(-Math.min(delta,100) / 140));
+    this.orbit = this.reduced ? this.orbitMotion.snap(this.desiredOrbit) : this.paused ? this.orbitMotion.value : this.orbitMotion.update(this.desiredOrbit,delta);
+    if (this.reduced) this.detailMotion.rebase([this.detailFocus ? 1 : 0]);
+    else if (!this.paused) this.detailMotion.sample(now);
+    this.detail = this.detailMotion.value[0];
     this.pointer.x += ((this.reduced || this.detailOpen ? 0 : this.paused ? this.pointer.x : this.desiredPointer.x) - this.pointer.x) * blend;
     this.pointer.y += ((this.reduced || this.detailOpen ? 0 : this.paused ? this.pointer.y : this.desiredPointer.y) - this.pointer.y) * blend;
     this.accent.lerp(this.desiredAccent, blend); this.accentLight.color.copy(this.accent);
@@ -229,17 +254,17 @@ export class SpatialSceneRuntime {
     this.camera.position.x += this.detail * (this.compact ? .55 : 1.05);
     this.camera.position.y += this.detail * .22;
     this.camera.position.z -= this.detail * (this.compact ? 2.1 : 1.6);
-    const transit = this.progress < .45 ? Math.sin(this.progress / .45 * Math.PI) : 0;
+    const transit = this.progress < .45 ? Math.sin(this.progress / .45 * Math.PI)**2 : 0;
     if(!this.reduced) this.camera.rotateZ(transit * (this.compact ? .018 : .032));
     this.camera.updateMatrixWorld();
-    this.updateObjects(blend);
+    this.updateObjects(delta);
     this.scene.updateMatrixWorld(); this.camera.updateMatrixWorld();
     this.projectPanels();
     try { this.rendererHost.renderer.render(this.scene, this.camera); } catch { this.fail(); return; }
     if (!staticScene) this.requestFrame(); else this.lastFrame = 0;
   };
 
-  private updateObjects(blend: number) {
+  private updateObjects(delta: number) {
     const t = this.elapsed, p = this.progress;
     const galleryMix = THREE.MathUtils.smoothstep(p, 0.12, 0.4), fieldMix = THREE.MathUtils.smoothstep(p, 0.74, 1);
     this.brand.visible = this.portraitBrand ? fieldMix < .99 : galleryMix < .995;
@@ -273,7 +298,7 @@ export class SpatialSceneRuntime {
       if (slot < 0) return;
       const pose = orbitCardPose(slot, this.visibleGames.length, this.orbit);
       card.group.visible = pose.z > -1.1 && this.viewportHeight >= (this.compact ? 700 : 580);
-      card.focus += ((index === this.worldIndex ? 1 : 0) - card.focus) * blend;
+      card.focus = this.reduced ? this.focusMotion[index].snap(index === this.worldIndex ? 1 : 0) : this.paused ? this.focusMotion[index].value : this.focusMotion[index].update(index === this.worldIndex ? 1 : 0,delta);
       card.group.position.set(pose.x, pose.y + Math.sin(t * 0.24 + index) * 0.035, pose.z + card.focus * (this.compact ? 0.25 : 0.6));
       card.backing.scale.y = ORBIT_CARD_WIDTH * this.panelSizes[index].height / this.panelSizes[index].width;
       card.backing.material.emissive.copy(this.accent).multiplyScalar(card.focus * 0.05);

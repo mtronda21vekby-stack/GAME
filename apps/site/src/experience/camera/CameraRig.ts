@@ -4,6 +4,18 @@ import type { ScrollSnapshot } from "../types";
 import { clamp, smoothstep } from "../core/math";
 import { CAMERA_KEYFRAMES, type CameraKeyframe } from "./CameraKeyframes";
 
+function curveValue(frames: readonly CameraKeyframe[], index: number, amount: number, read: (frame: CameraKeyframe) => number) {
+  const a = read(frames[index]), b = read(frames[index+1]);
+  const tangent = (at: number) => {
+    if (!at || at === frames.length-1) return 0;
+    const before = read(frames[at-1]), current = read(frames[at]), after = read(frames[at+1]);
+    if (before === current || after === current) return 0;
+    return .75*(after-before)/(frames[at+1].progress-frames[at-1].progress);
+  };
+  const t = amount, span = frames[index+1].progress-frames[index].progress;
+  return (2*t*t*t-3*t*t+1)*a+(t*t*t-2*t*t+t)*span*tangent(index)+(-2*t*t*t+3*t*t)*b+(t*t*t-t*t)*span*tangent(index+1);
+}
+
 export class CameraRig {
   private readonly directedPosition = new THREE.Vector3();
   private readonly directedTarget = new THREE.Vector3();
@@ -13,17 +25,19 @@ export class CameraRig {
   private readonly toTarget = new THREE.Vector3();
   private readonly finalTarget = new THREE.Vector3();
 
-  constructor(private readonly camera: THREE.PerspectiveCamera, private readonly keyframes: readonly CameraKeyframe[] = CAMERA_KEYFRAMES) {}
+  constructor(private readonly camera: THREE.PerspectiveCamera, private readonly keyframes: readonly CameraKeyframe[] = CAMERA_KEYFRAMES, private readonly continuous = false) {}
 
   update(snapshot: ScrollSnapshot, pointer: PointerState, elapsedSeconds: number) {
     const progress = snapshot.progress;
     let left = this.keyframes[0];
     let right = this.keyframes[this.keyframes.length - 1];
+    let segment = this.keyframes.length-2;
     for (let index = 0; index < this.keyframes.length - 1; index += 1) {
       const candidate = this.keyframes[index + 1];
       if (progress <= candidate.progress) {
         left = this.keyframes[index];
         right = candidate;
+        segment = index;
         break;
       }
     }
@@ -36,6 +50,11 @@ export class CameraRig {
     this.fromTarget.fromArray(left.target);
     this.toTarget.fromArray(right.target);
     this.directedTarget.lerpVectors(this.fromTarget, this.toTarget, amount);
+    if (this.continuous) {
+      const t = clamp((progress-left.progress)/span);
+      this.directedPosition.set(...[0,1,2].map(axis => curveValue(this.keyframes, segment, t, frame => frame.position[axis])) as [number,number,number]);
+      this.directedTarget.set(...[0,1,2].map(axis => curveValue(this.keyframes, segment, t, frame => frame.target[axis])) as [number,number,number]);
+    }
 
     if (snapshot.reducedMotion && this.keyframes === CAMERA_KEYFRAMES) {
       this.directedPosition.x *= 0.3;
@@ -57,7 +76,7 @@ export class CameraRig {
     this.finalTarget.copy(this.directedTarget);
     this.finalTarget.x += pointerX * 0.18;
     this.finalTarget.y -= pointerY * 0.12;
-    this.camera.fov = left.fov + (right.fov - left.fov) * amount;
+    this.camera.fov = this.continuous ? curveValue(this.keyframes, segment, clamp((progress-left.progress)/span), frame => frame.fov) : left.fov + (right.fov-left.fov)*amount;
     this.camera.updateProjectionMatrix();
     this.camera.lookAt(this.finalTarget);
   }

@@ -192,6 +192,7 @@ html[data-reduced-motion="1"] .spatialPage *,html[data-reduced-motion="1"] .spat
 [data-detail-open=true]>.platHeader,[data-detail-open=true] .spatialJourneyContent,[data-detail-open=true]>.spatialMotionToggle { visibility:hidden; }
 .spatialDetail { padding:0; background:linear-gradient(90deg,#040c12e6,#041015a8 70%,#041015bf); }
 .spatialDetail::backdrop { background:#02070b30; }
+.spatialDetail[data-phase=closing] { display:block; z-index:40; pointer-events:none; }
 .spatialDetailTop { position:sticky; top:0; z-index:2; width:100%; min-height:84px; padding:16px clamp(24px,4.2vw,68px); margin:0; border:0; background:linear-gradient(#040c12e0,#040c1200); }
 .spatialDetailTop>span { color:#aac4cc; font:8px var(--spatial-type); letter-spacing:.08em; }
 .spatialDetailTop button { gap:12px; padding:0 10px; min-width:90px; }
