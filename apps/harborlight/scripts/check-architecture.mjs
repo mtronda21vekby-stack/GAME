@@ -1,0 +1,4 @@
+import fs from 'node:fs';import path from 'node:path';import {fileURLToPath} from 'node:url';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../src');let count=0;
+function walk(dir){for(const ent of fs.readdirSync(dir,{withFileTypes:true})){const p=path.join(dir,ent.name);if(ent.isDirectory()){walk(p);continue;}if(!/\.(ts|js)$/.test(p))continue;const text=fs.readFileSync(p,'utf8');count++;if(p.includes('/domain/')){if(/\b(window|document|localStorage|requestAnimationFrame|WebGLRenderer|Date\.now|Math\.random)\b/.test(text))throw Error('Impure domain: '+p);if(/from\s+['"][^'"]*(rendering|ui|infrastructure|application)/.test(text))throw Error('Inverted dependency: '+p);}if(p.includes('/rendering/')&&/localStorage|\.score\s*\+=|\.strikes\s*\+\+/.test(text))throw Error('Renderer owns gameplay state: '+p);}}
+walk(root);console.log('Architecture checks passed for '+count+' modules.');
