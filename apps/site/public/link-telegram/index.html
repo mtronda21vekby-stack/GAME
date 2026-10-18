@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#05060a" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>BLACK CROWN // Telegram Link</title>
+    <link rel="stylesheet" href="/link-telegram/style.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <div class="ambient ambient-a" aria-hidden="true"></div>
+      <div class="ambient ambient-b" aria-hidden="true"></div>
+
+      <section class="panel" aria-labelledby="link-title">
+        <header class="brand">
+          <div class="sigil" aria-hidden="true">BC</div>
+          <div>
+            <p class="eyebrow">BLACK CROWN NETWORK</p>
+            <h1 id="link-title">Связать Telegram</h1>
+          </div>
+          <span class="security-badge">SERVER VERIFIED</span>
+        </header>
+
+        <p class="intro">
+          Свяжи аккаунт сайта с BLACK CROWN OPS. Привязка использует одноразовый код,
+          действует 10 минут и не передаёт Telegram пароль или токен сайту.
+        </p>
+
+        <div id="status-card" class="status-card" aria-live="polite">
+          <span class="status-dot"></span>
+          <div>
+            <strong id="status-title">Проверяем аккаунт…</strong>
+            <p id="status-copy">Запрашиваем серверный статус.</p>
+          </div>
+        </div>
+
+        <div id="code-zone" class="code-zone" hidden>
+          <p class="code-label">ОДНОРАЗОВЫЙ КОД</p>
+          <button id="copy-code" class="code" type="button" aria-label="Скопировать код">
+            <span id="code-value">BC-••••-••••-••••</span>
+            <small>НАЖМИ, ЧТОБЫ СКОПИРОВАТЬ</small>
+          </button>
+          <p id="expires-copy" class="expires"></p>
+          <div class="steps">
+            <p><span>01</span> Открой BLACK CROWN OPS.</p>
+            <p><span>02</span> Нажми кнопку ниже или отправь боту <code>/link КОД</code>.</p>
+            <p><span>03</span> Вернись сюда — статус обновится автоматически.</p>
+          </div>
+          <a id="open-telegram" class="primary" href="#" rel="noopener noreferrer">
+            ОТКРЫТЬ TELEGRAM
+          </a>
+        </div>
+
+        <div class="actions">
+          <button id="issue-code" class="primary" type="button">СОЗДАТЬ КОД ПРИВЯЗКИ</button>
+          <button id="refresh-status" class="secondary" type="button">ОБНОВИТЬ СТАТУС</button>
+          <button id="unlink" class="danger" type="button" hidden>ОТВЯЗАТЬ TELEGRAM</button>
+        </div>
+
+        <p id="error-copy" class="error" role="alert" hidden></p>
+
+        <footer>
+          <span>HMAC SESSION</span>
+          <span>ONE-TIME CODE</span>
+          <span>SUPABASE GAME</span>
+        </footer>
+      </section>
+    </main>
+
+    <script type="module" src="/link-telegram/app.js"></script>
+  </body>
+</html>
