@@ -1,5 +1,5 @@
 import React from "react";
-import { PlatformHome, GamesCatalog } from "./PlatformHome";
+import { GamesCatalog } from "./PlatformHome";
 import { SITE_ROUTE_METADATA, type SitePath } from "./routeMetadata";
 
 const About = React.lazy(() => import("./pages/About").then((module) => ({ default: module.About })));
@@ -20,9 +20,10 @@ const Admin = React.lazy(() => import("./pages/Admin").then((module) => ({ defau
 const NexusLab = React.lazy(() =>
   import("../components/nexus/NexusLabPage").then((module) => ({ default: module.NexusLabPage })),
 );
+const SpatialHome = React.lazy(() => import("./SpatialHome"));
 
 const components: Record<SitePath, React.ComponentType> = {
-  "/": PlatformHome,
+  "/": SpatialHome,
   "/games": GamesCatalog,
   "/about": About,
   "/support": Support,
@@ -44,6 +45,16 @@ const coreRoutes = SITE_ROUTE_METADATA.map((route) => ({
 
 export const SITE_ROUTES = [
   ...coreRoutes,
+  {
+    path: "/spatial-preview" as const,
+    component: SpatialHome,
+    metadata: {
+      title: "BLACKCROWN — Пространство игровых миров",
+      description: "Корона BLACKCROWN и реальные игры платформы в пространственной сцене.",
+      chrome: { dock: false, footer: true, music: false },
+      noIndex: true,
+    },
+  },
   {
     path: "/nexus-lab" as const,
     component: NexusLab,

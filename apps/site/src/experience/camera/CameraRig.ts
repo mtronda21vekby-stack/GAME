@@ -2,7 +2,7 @@ import * as THREE from "three";
 import type { PointerState } from "../input/PointerParallax";
 import type { ScrollSnapshot } from "../types";
 import { clamp, smoothstep } from "../core/math";
-import { CAMERA_KEYFRAMES } from "./CameraKeyframes";
+import { CAMERA_KEYFRAMES, type CameraKeyframe } from "./CameraKeyframes";
 
 export class CameraRig {
   private readonly directedPosition = new THREE.Vector3();
@@ -13,16 +13,16 @@ export class CameraRig {
   private readonly toTarget = new THREE.Vector3();
   private readonly finalTarget = new THREE.Vector3();
 
-  constructor(private readonly camera: THREE.PerspectiveCamera) {}
+  constructor(private readonly camera: THREE.PerspectiveCamera, private readonly keyframes: readonly CameraKeyframe[] = CAMERA_KEYFRAMES) {}
 
   update(snapshot: ScrollSnapshot, pointer: PointerState, elapsedSeconds: number) {
     const progress = snapshot.progress;
-    let left = CAMERA_KEYFRAMES[0];
-    let right = CAMERA_KEYFRAMES[CAMERA_KEYFRAMES.length - 1];
-    for (let index = 0; index < CAMERA_KEYFRAMES.length - 1; index += 1) {
-      const candidate = CAMERA_KEYFRAMES[index + 1];
+    let left = this.keyframes[0];
+    let right = this.keyframes[this.keyframes.length - 1];
+    for (let index = 0; index < this.keyframes.length - 1; index += 1) {
+      const candidate = this.keyframes[index + 1];
       if (progress <= candidate.progress) {
-        left = CAMERA_KEYFRAMES[index];
+        left = this.keyframes[index];
         right = candidate;
         break;
       }
@@ -37,7 +37,7 @@ export class CameraRig {
     this.toTarget.fromArray(right.target);
     this.directedTarget.lerpVectors(this.fromTarget, this.toTarget, amount);
 
-    if (snapshot.reducedMotion) {
+    if (snapshot.reducedMotion && this.keyframes === CAMERA_KEYFRAMES) {
       this.directedPosition.x *= 0.3;
       this.directedPosition.y = 0.08 + this.directedPosition.y * 0.18;
       this.directedPosition.z = 9.6 - progress * 0.6;

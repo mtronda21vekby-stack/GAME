@@ -5,6 +5,7 @@ type RendererHostOptions = {
   container: HTMLElement;
   preset: QualityPreset;
   onContextState: (state: "ready" | "lost") => void;
+  powerPreference?: WebGLPowerPreference;
 };
 
 export class RendererHost {
@@ -15,14 +16,14 @@ export class RendererHost {
   private width = 0;
   private height = 0;
 
-  constructor({ container, preset, onContextState }: RendererHostOptions) {
+  constructor({ container, preset, onContextState, powerPreference = "high-performance" }: RendererHostOptions) {
     this.container = container;
     this.onContextState = onContextState;
     this.dprCap = preset.dprCap;
     this.renderer = new THREE.WebGLRenderer({
       alpha: false,
       antialias: preset.antialias,
-      powerPreference: "high-performance",
+      powerPreference,
       stencil: false,
       depth: true,
     });

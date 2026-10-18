@@ -6,6 +6,7 @@ export { BufferGeometry } from "three/src/core/BufferGeometry.js";
 export { InterleavedBuffer } from "three/src/core/InterleavedBuffer.js";
 export { InterleavedBufferAttribute } from "three/src/core/InterleavedBufferAttribute.js";
 export { Object3D } from "three/src/core/Object3D.js";
+export { Raycaster } from "three/src/core/Raycaster.js";
 export { WebGLRenderer } from "three/src/renderers/WebGLRenderer.js";
 export { Scene } from "three/src/scenes/Scene.js";
 export { FogExp2 } from "three/src/scenes/FogExp2.js";

@@ -1,0 +1,164 @@
+html:has(.spatialPage) { scroll-behavior:smooth; }
+.spatialPage { --spatial-type:ui-monospace,"SFMono-Regular",Consolas,monospace; background:#061014; color:#e7efed; }
+.spatialPage>.platHeader { position:fixed; inset:0 0 auto; z-index:30; width:100%; max-width:none; padding:24px clamp(24px,4.2vw,68px); border:0; background:transparent; pointer-events:none; }
+.spatialPage>.platHeader>* { pointer-events:auto; }
+.spatialPage .platBrand { color:#e5eeee; }
+.spatialPage .platBrand small { opacity:.6; }
+.spatialPage .platNav { padding:0 22px; gap:26px; border:1px solid #9ebec14d; border-radius:40px; background:#081015ba; backdrop-filter:blur(14px); box-shadow:0 10px 30px #030a1040; }
+.spatialPage .platNav>a { min-height:50px; font:10px var(--spatial-type); text-transform:uppercase; letter-spacing:.04em; }
+.spatialJourney { position:relative; isolation:isolate; }
+.spatialCanvasSticky { position:sticky; top:0; height:100svh; overflow:hidden; background:#061014; }
+.spatialSceneHost,.spatialSceneCanvas,.spatialPoster,.spatialVignette { position:absolute; inset:0; width:100%; height:100%; }
+.spatialPoster,.spatialVignette { pointer-events:none; }
+.spatialSceneHost { opacity:0; transition:opacity .6s ease; }
+.spatialSceneCanvas { display:block; touch-action:pan-y; }
+[data-scene-state=ready] .spatialSceneHost { opacity:1; }
+.spatialPoster { display:block; }
+.spatialVignette { background:linear-gradient(90deg,#030b1159,transparent 65%),linear-gradient(0deg,#040b1080,transparent 22%,transparent 80%,#030b1160); }
+.spatialJourneyContent { position:relative; margin-top:-100svh; z-index:2; pointer-events:none; }
+.spatialPage a,.spatialPage button { pointer-events:auto; }
+.spatialHero { min-height:100svh; position:relative; display:flex; align-items:center; padding:156px clamp(24px,5.2vw,84px) 130px; }
+.spatialHeroCopy { max-width:960px; width:76%; }
+.spatialEyebrow { margin:0 0 25px; color:#9cb3bc; font:9px/1.6 var(--spatial-type); letter-spacing:.1em; text-transform:uppercase; }
+.spatialHero h1 { font:350 clamp(42px,6.4vw,96px)/1.06 var(--spatial-type); letter-spacing:-.075em; margin:0 0 32px; }
+.spatialHero h1>span { color:#d3e4e7; }
+.spatialLead { font:12px/1.8 var(--spatial-type); color:#9db6bd; margin:0 0 28px; }
+.spatialActions { display:flex; align-items:center; flex-wrap:wrap; gap:12px 26px; }
+.spatialPage .platButton { border-radius:2px; background:#e2eeed; border-color:#e2eeed; font:11px/1.4 var(--spatial-type); font-weight:500; min-height:52px; }
+.spatialPage .platButton:hover { background:#c1e1e3; }
+.spatialPage .platTextLink { font:10px var(--spatial-type); color:#c8dcde; min-height:48px; }
+.spatialHeroFoot { position:absolute; bottom:35px; left:clamp(24px,5.2vw,84px); right:clamp(24px,5.2vw,84px); display:flex; align-items:center; justify-content:space-between; gap:20px; padding-top:14px; border-top:1px solid #a9d2d226; }
+.spatialLoadStatus { color:#688d99; font:8px/1.6 var(--spatial-type); letter-spacing:.08em; }
+.spatialScrollCue { display:inline-flex; align-items:center; gap:28px; min-height:48px; text-decoration:none; font:9px var(--spatial-type); color:#c1dbdf; }
+.spatialScrollCue>span { font-size:24px; }
+.spatialGallerySection { min-height:100svh; display:flex; flex-direction:column; padding:135px clamp(24px,5.2vw,84px) 32px; position:relative; scroll-margin-top:0; }
+.spatialGalleryHeading .spatialEyebrow { margin-bottom:14px; }
+.spatialGalleryHeading h2 { margin:0; font:350 clamp(28px,3.4vw,52px)/1.15 var(--spatial-type); letter-spacing:-.065em; }
+.spatialGalleryVisual { flex:1; min-height:300px; display:grid; place-items:center; padding:20px 0; }
+.spatialCardTarget { width:min(47vw,760px); aspect-ratio:16/9; position:relative; border:0; padding:0; background:transparent; color:#eaf3f1; }
+.spatialFallbackCover { width:100%; height:100%; object-fit:contain; background:#09151a; border:1px solid #8cabb95c; border-radius:4px; box-shadow:0 20px 80px #030b1070; transition:opacity .5s; }
+[data-scene-state=ready] .spatialFallbackCover { opacity:0; }
+.spatialCardHint { position:absolute; inset:auto 14px 14px auto; display:flex; align-items:center; gap:25px; min-height:44px; padding:0 14px; background:#061217bf; border:1px solid #97c2c138; font:8px var(--spatial-type); letter-spacing:.06em; opacity:0; transition:opacity .2s; }
+.spatialCardHint b { font-size:19px; font-weight:400; }
+.spatialCardTarget:hover .spatialCardHint,.spatialCardTarget:focus-visible .spatialCardHint { opacity:1; }
+.spatialGalleryControls { width:min(680px,100%); margin-inline:auto; padding:8px 20px 0; background:radial-gradient(ellipse,#061014d9,transparent 78%); }
+.spatialCurrentGame { text-align:center; }
+.spatialCurrentGame>p { margin:0 0 8px; color:#8baab4; font:8px/1.6 var(--spatial-type); text-transform:uppercase; }
+.spatialCurrentGame h3 { font:400 24px/1.2 var(--spatial-type); letter-spacing:-.05em; margin:0 0 18px; }
+.spatialGalleryActions { display:flex; align-items:center; justify-content:center; gap:12px; }
+.spatialGalleryActions button,.spatialGalleryActions a { min-height:50px; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; border:1px solid #a9ced044; background:#071217b3; color:#d8e8e8; font:10px var(--spatial-type); }
+.spatialGalleryActions .spatialArrow { width:50px; border-radius:50%; font-size:22px; }
+.spatialGalleryActions .spatialOpenGame { min-width:150px; justify-content:space-between; padding:0 20px; border-radius:28px; }
+.spatialGalleryActions .spatialDirectPlay { border:0; background:transparent; padding-inline:12px; }
+.spatialWorldChoices { display:flex; justify-content:center; flex-wrap:wrap; gap:0 22px; margin-top:12px; }
+.spatialWorldChoices button { min-height:48px; border:0; border-bottom:1px solid transparent; background:transparent; color:#76969f; font:9px var(--spatial-type); padding:8px 0; }
+.spatialWorldChoices button[aria-pressed=true] { color:#e2efef; border-color:#a6d9dd; }
+.spatialGalleryFoot { display:flex; align-items:center; justify-content:space-between; gap:20px; margin-top:25px; }
+.spatialFilters { display:flex; flex-wrap:wrap; gap:0 24px; }
+.spatialFilters button { min-height:48px; padding:8px 0; border:0; background:transparent; color:#7696a1; font:9px var(--spatial-type); }
+.spatialFilters button[aria-pressed=true] { color:#e4efef; }
+.spatialFilters button[aria-pressed=true]:before { content:"→ "; }
+.spatialAbout { min-height:100svh; display:flex; align-items:center; padding:150px clamp(24px,5.2vw,84px) 130px; }
+.spatialAboutCopy { max-width:820px; }
+.spatialAbout h2 { font:350 clamp(36px,5vw,74px)/1.15 var(--spatial-type); letter-spacing:-.065em; margin:0 0 34px; }
+.spatialAbout h2>span { color:#a7c0c7; }
+.spatialAboutCopy>p:not(.spatialEyebrow) { font:12px/1.9 var(--spatial-type); color:#9ab4be; margin:0 0 30px; }
+.spatialMotionToggle { position:fixed; z-index:32; right:22px; bottom:max(16px,env(safe-area-inset-bottom)); display:flex; align-items:center; gap:9px; min-height:48px; border:1px solid #87adb33d; border-radius:30px; padding:0 18px; background:#071015cf; color:#a9c3ca; font:9px var(--spatial-type); }
+.spatialMotionToggle>span:first-child { font-size:17px; }
+.spatialPage :focus-visible { outline:2px solid #b3e2e9; outline-offset:5px; }
+.spatialDetail { position:fixed; inset:0; width:100%; height:100%; max-width:none; max-height:none; border:0; padding:0; margin:0; background:#030a0ed9; color:#dceaea; overscroll-behavior:contain; font-family:var(--spatial-type); }
+.spatialDetail::backdrop { background:#02090b5c; }
+.spatialDetailInner { width:min(1200px,100%); margin:0 auto; padding:28px 32px 60px; min-height:100%; }
+.spatialDetailTop { display:flex; align-items:center; justify-content:space-between; gap:20px; margin-bottom:35px; }
+.spatialDetailTop>a { text-decoration:none; font-size:9px; min-height:48px; display:inline-flex; align-items:center; color:#9cb4bc; }
+.spatialDetail button { display:inline-flex; align-items:center; gap:30px; min-height:48px; color:#d7e7e8; font:10px var(--spatial-type); border:0; background:transparent; padding:8px 0; }
+.spatialDetailTop button>span { font-size:27px; }
+.spatialDetailMedia { position:relative; margin:0; }
+.spatialDetailMedia>img { width:100%; aspect-ratio:16/9; height:auto; object-fit:contain; background:#09151a; border-radius:4px; }
+.spatialDetailMedia>figcaption { position:absolute; bottom:16px; left:18px; padding:7px 12px; font-size:8px; color:#cce0e5; background:#061116bf; }
+.spatialDetailCopy { display:flex; align-items:center; justify-content:space-between; gap:44px; padding:32px 0; border-bottom:1px solid #8eb9bd2c; }
+.spatialDetailCopy>div { max-width:650px; }
+.spatialDetailCopy .spatialEyebrow { margin-bottom:15px; }
+.spatialDetailCopy h2 { font:400 clamp(27px,3.3vw,46px)/1.15 var(--spatial-type); letter-spacing:-.055em; margin:0 0 20px; overflow-wrap:anywhere; }
+.spatialDetailCopy p:last-child { font:12px/1.9 var(--spatial-type); color:#a8bfc9; margin:0; }
+.spatialDetailCopy>.platButton { flex-shrink:0; }
+.spatialDetailBottom { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 22px; padding-top:18px; }
+.spatialDetailBottom button { color:#8caeb9; }
+.spatialDetailBottom .spatialDetailPause { width:100%; justify-content:center; }
+.spatialPage button:disabled { opacity:.35; cursor:default; }
+@media(max-width:1000px) and (min-width:761px) {
+ .spatialHeroCopy { width:90%; }
+ .spatialHero h1 { font-size:7vw; }
+ .spatialPage .platNav { gap:18px; padding-inline:18px; }
+ .spatialCardTarget { width:53vw; }
+}
+@media(max-width:760px) {
+ .spatialPosterBrand { transform:translateX(-300px); }
+ .spatialPage>.platHeader { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:13px; padding:16px 20px; background:linear-gradient(#061014e6,transparent); }
+ .spatialPage .platBrand { margin-right:auto; }
+ .spatialPage .platBrand svg { width:23px; height:22px; }
+ .spatialPage .platBrand>span { font-size:14px; }
+ .spatialPage .platBrand small { display:none; }
+ .spatialPage .platNav { display:flex; width:100%; margin:0; justify-content:space-between; padding-inline:18px; gap:8px; }
+ .spatialPage .platNav>a { font-size:9px; min-height:48px; padding:0; }
+ .spatialPage .platNav>a:last-child { margin-left:0; }
+ .spatialHero { min-height:max(780px,100svh); display:block; padding:175px 24px 100px; }
+ .spatialHeroCopy { width:100%; }
+ .spatialEyebrow { font-size:7px; margin-bottom:23px; }
+ .spatialHero h1 { font-size:clamp(29px,8.65vw,57px); letter-spacing:-.075em; margin-bottom:23px; line-height:1.17; }
+ .spatialLead { font-size:10px; margin-bottom:20px; }
+ .spatialActions { gap:8px 20px; }
+ .spatialActions .platButton { min-height:52px; font-size:10px; gap:25px; padding:12px 17px; }
+ .spatialActions .platTextLink { font-size:9px; gap:8px; }
+ .spatialHeroFoot { left:24px; right:24px; bottom:26px; gap:12px; }
+ .spatialLoadStatus { font-size:6px; }
+ .spatialScrollCue { font-size:8px; gap:16px; }
+ .spatialGallerySection { min-height:max(940px,100svh); padding:145px 24px 30px; }
+ .spatialGalleryHeading h2 { font-size:28px; }
+ .spatialGalleryVisual { min-height:260px; padding:25px 0; }
+ .spatialCardTarget { width:100%; }
+ .spatialCardHint { opacity:1; font-size:7px; inset:auto 8px 8px auto; min-height:36px; }
+ .spatialGalleryControls { padding:12px 0 0; }
+ .spatialCurrentGame h3 { font-size:24px; margin-bottom:18px; }
+ .spatialCurrentGame>p { font-size:7px; }
+ .spatialGalleryActions { gap:8px; }
+ .spatialGalleryActions .spatialOpenGame { min-width:104px; padding-inline:15px; font-size:9px; }
+ .spatialGalleryActions .spatialArrow { width:48px; flex-shrink:0; }
+ .spatialGalleryActions .spatialDirectPlay { padding-inline:5px; font-size:9px; }
+ .spatialWorldChoices { display:grid; grid-template-columns:1fr 1fr; gap:0 20px; margin-top:12px; }
+ .spatialWorldChoices button { text-align:left; font-size:9px; }
+ .spatialGalleryFoot { align-items:start; flex-direction:column; gap:10px; margin-top:20px; }
+ .spatialFilters { width:100%; display:grid; grid-template-columns:1fr 1fr; gap:0 20px; }
+ .spatialFilters button { text-align:left; font-size:8px; }
+ .spatialAbout { min-height:max(800px,100svh); padding:150px 24px 110px; align-items:end; background:linear-gradient(0deg,#061014d9,transparent 65%); }
+ .spatialAbout h2 { font-size:30px; margin-bottom:25px; }
+ .spatialAboutCopy>p:not(.spatialEyebrow) { font-size:10px; }
+ .spatialMotionToggle { right:14px; bottom:12px; padding-inline:14px; font-size:8px; }
+ .spatialDetailInner { padding:16px 20px 45px; }
+ .spatialDetailTop { margin-bottom:30px; }
+ .spatialDetailTop>a { font-size:7px; }
+ .spatialDetailTop button { font-size:9px; gap:20px; }
+ .spatialDetailMedia>figcaption { bottom:10px; left:10px; font-size:7px; }
+ .spatialDetailCopy { display:block; padding:28px 0; }
+ .spatialDetailCopy>.platButton { width:100%; margin-top:25px; }
+ .spatialDetailCopy p:last-child { font-size:11px; }
+ .spatialDetailBottom { gap:15px; }
+ .spatialDetailBottom button { font-size:8px; }
+}
+@media(max-width:380px) {
+ .spatialPage>.platHeader { padding-inline:18px; }
+ .spatialHero { padding-inline:18px; }
+ .spatialHeroFoot { left:18px; right:18px; }
+ .spatialGallerySection,.spatialAbout { padding-inline:18px; }
+ .spatialActions { gap:4px 12px; }
+ .spatialActions .platTextLink { font-size:8px; }
+ .spatialGalleryActions { gap:5px; }
+ .spatialGalleryActions .spatialOpenGame { min-width:96px; }
+ .spatialDetailInner { padding-inline:18px; }
+}
+@media(prefers-reduced-motion:reduce) {
+ html:has(.spatialPage) { scroll-behavior:auto; }
+ .spatialPage *, .spatialPage *:before, .spatialPage *:after { animation:none!important; transition:none!important; }
+}
+html[data-reduced-motion="1"]:has(.spatialPage) { scroll-behavior:auto; }
+html[data-reduced-motion="1"] .spatialPage *,html[data-reduced-motion="1"] .spatialPage *:before,html[data-reduced-motion="1"] .spatialPage *:after { animation:none!important; transition:none!important; }
