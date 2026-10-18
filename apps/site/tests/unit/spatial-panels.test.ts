@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { CameraRig } from "../../src/experience/camera/CameraRig";
 import { INITIAL_SCROLL_SNAPSHOT } from "../../src/experience/types";
 import { GamePanel } from "../../src/components/spatial/GamePanel";
+import { GameDetail } from "../../src/components/spatial/GameDetail";
 import { panelCSSMatrix, panelFrontWidth, panelScrollOffset, panelStyle } from "../../src/components/spatial/panelProjection";
 import { MOBILE_SPATIAL_CAMERA, ORBIT_CARD_WIDTH } from "../../src/components/spatial/spatialState";
 import { platformGames } from "../../src/lib/platformGames";
@@ -44,11 +45,14 @@ describe("Live spatial interface panels", () => {
   it.each(platformGames)("keeps real text and an actual launch link in the $title panel", game => {
     const html = renderToStaticMarkup(React.createElement(GamePanel, { game, index: 0, selected: true, onSelect: () => {}, onOpen: () => {} }));
     expect(html).toContain(game.title);
-    expect(html).toContain(game.description);
     expect(html).toContain(game.status);
     expect(html).toContain(`href="${game.href}"`);
     expect(html).toContain("<button");
     expect(html).not.toContain("<canvas");
+    const detail = renderToStaticMarkup(React.createElement(GameDetail, { game, open: false, canCycle: true, paused: false, onClose: () => {}, onPrevious: () => {}, onNext: () => {}, onTogglePause: () => {} }));
+    expect(detail).toContain(game.description);
+    expect(detail).toContain(game.detail);
+    expect(detail).toContain(`href="${game.href}"`);
   });
 
   it("moves panels with their document slot while leaving following navigation clear", () => {

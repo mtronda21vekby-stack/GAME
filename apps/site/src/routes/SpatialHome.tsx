@@ -1,7 +1,7 @@
 import React from "react";
 import { PlatformHeader } from "../components/platform/PlatformHeader";
 import { SpatialPoster } from "../components/spatial/SpatialPoster";
-import { GameDetail } from "../components/spatial/GameDetail";
+import { GameDetail, type PanelOrigin } from "../components/spatial/GameDetail";
 import { GamePanel, GamePanelLayer } from "../components/spatial/GamePanel";
 import type { SpatialSceneHandle } from "../components/spatial/SpatialScene";
 import { isSpatialGameLaunch, nextWorldIndex } from "../components/spatial/spatialState";
@@ -20,6 +20,7 @@ export default function SpatialHome() {
   const [category, setCategory] = React.useState<string>("Все игры");
   const [paused, setPaused] = React.useState(false);
   const [detailOpen, setDetailOpen] = React.useState(false);
+  const panelOrigin = React.useRef<PanelOrigin | null>(null);
   const [sceneStatus, setSceneStatus] = React.useState<"loading" | "ready" | "fallback">("loading");
   const [loaded, setLoaded] = React.useState({ complete: 0, total: 1 });
   const onProgress = React.useCallback((complete: number, total: number) => setLoaded({ complete, total }), []);
@@ -27,6 +28,13 @@ export default function SpatialHome() {
   const visibleGames = React.useMemo(() => platformGames.flatMap((item, index) => category === "Все игры" || item.genre === category ? [index] : []), [category]);
   const game = platformGames[worldIndex];
   const step = (direction: number) => setWorldIndex(value => nextWorldIndex(value, direction, visibleGames));
+
+  function openDetail() {
+    const panel = [...document.querySelectorAll<HTMLElement>(`.spatialGamePanel[data-game-id="${game.id}"]`)].find(element => element.getClientRects().length && getComputedStyle(element).visibility !== "hidden");
+    const box = panel?.getBoundingClientRect();
+    panelOrigin.current = box ? { left: box.left, top: box.top, width: box.width, height: box.height, viewportWidth: window.innerWidth } : null;
+    setDetailOpen(true);
+  }
 
   function changeCategory(next: string) {
     setCategory(next);
@@ -47,7 +55,7 @@ export default function SpatialHome() {
   }
 
   return (
-    <div className="spatialPage platPage" data-scene-state={sceneStatus} onClickCapture={releaseBeforeGame}>
+    <div className="spatialPage platPage" data-scene-state={sceneStatus} data-detail-open={detailOpen} onClickCapture={releaseBeforeGame}>
       <a className="platSkip" href="#spatial-main">К содержимому</a>
       <PlatformHeader />
       <main id="spatial-main">
@@ -56,7 +64,7 @@ export default function SpatialHome() {
             <SpatialPoster />
             <React.Suspense fallback={null}><SpatialScene ref={sceneRef} stageRef={stageRef} panelRootRef={panelRootRef} worldIndex={worldIndex} visibleGames={visibleGames} detailOpen={detailOpen} paused={paused} onStatus={setSceneStatus} onProgress={onProgress} /></React.Suspense>
             <div className="spatialVignette" aria-hidden="true" />
-            <GamePanelLayer rootRef={panelRootRef} selected={worldIndex} visible={visibleGames} onSelect={setWorldIndex} onOpen={() => setDetailOpen(true)}/>
+            <GamePanelLayer rootRef={panelRootRef} selected={worldIndex} visible={visibleGames} onSelect={setWorldIndex} onOpen={openDetail}/>
           </div>
           <div className="spatialJourneyContent">
             <section className="spatialHero" aria-labelledby="spatial-title">
@@ -72,13 +80,15 @@ export default function SpatialHome() {
               </div>
             </section>
             <section className="spatialGallerySection" id="spatial-worlds" aria-labelledby="spatial-world-title">
-              <div className="spatialGalleryHeading"><p className="spatialEyebrow">01 / ГАЛЕРЕЯ ИГРОВЫХ МИРОВ</p><h2 id="spatial-world-title">НАЙДИ СВОЙ МИР.</h2></div>
+              <div className="spatialGalleryHeading"><p className="spatialEyebrow">01 / ИГРОВЫЕ МИРЫ</p><h2 id="spatial-world-title">ВЫБЕРИ СВОЙ МИР.</h2></div>
               <div className="spatialGalleryVisual">
-                <div className="spatialPanelFallback"><GamePanel game={game} index={worldIndex} selected onSelect={() => {}} onOpen={() => setDetailOpen(true)}/></div>
+                <div className="spatialPanelFallback"><GamePanel game={game} index={worldIndex} selected onSelect={() => {}} onOpen={openDetail}/></div>
               </div>
               <div className="spatialGalleryControls">
-                <div className="spatialGalleryActions"><button type="button" disabled={visibleGames.length < 2} className="spatialArrow" onClick={() => step(-1)} aria-label="Предыдущая игра">←</button><span className="spatialPanelCounter" role="status">{String(visibleGames.indexOf(worldIndex) + 1).padStart(2,"0")} / {String(visibleGames.length).padStart(2,"0")}<small>{game.title}</small></span><button type="button" disabled={visibleGames.length < 2} className="spatialArrow" onClick={() => step(1)} aria-label="Следующая игра">→</button></div>
-                <div className="spatialWorldChoices" ref={choicesRef} role="group" aria-label="Выбор игры" onKeyDown={onChoiceKey}>{visibleGames.map(index => <button type="button" key={platformGames[index].id} data-world={index} aria-pressed={worldIndex === index} onClick={() => setWorldIndex(index)}>{platformGames[index].title}</button>)}</div>
+                <button type="button" disabled={visibleGames.length < 2} className="spatialArrow" onClick={() => step(-1)} aria-label="Предыдущая игра">←</button>
+                <div className="spatialWorldChoices" ref={choicesRef} role="group" aria-label="Выбор игры" onKeyDown={onChoiceKey}>{visibleGames.map(index => <button type="button" key={platformGames[index].id} data-world={index} aria-label={platformGames[index].title} title={platformGames[index].title} aria-pressed={worldIndex === index} onClick={() => setWorldIndex(index)}>{String(index + 1).padStart(2,"0")}</button>)}</div>
+                <button type="button" disabled={visibleGames.length < 2} className="spatialArrow" onClick={() => step(1)} aria-label="Следующая игра">→</button>
+                <span className="spatialPanelCounter" role="status">{String(visibleGames.indexOf(worldIndex) + 1).padStart(2,"0")} / {String(visibleGames.length).padStart(2,"0")} — {game.title}</span>
               </div>
               <div className="spatialGalleryFoot"><div className="spatialFilters" role="group" aria-label="Жанр игры">{categories.map(item => <button key={item} type="button" aria-pressed={category === item} onClick={() => changeCategory(item)}>{item}</button>)}</div><a className="platTextLink" href="/games/">Полный каталог ↗</a></div>
             </section>
@@ -89,7 +99,7 @@ export default function SpatialHome() {
         </section>
       </main>
       <button className="spatialMotionToggle" type="button" aria-pressed={paused} aria-label={paused ? "Продолжить движение сцены" : "Пауза движения сцены"} onClick={() => setPaused(value => !value)}><span aria-hidden="true">{paused ? "▷" : "Ⅱ"}</span><span>{paused ? "Продолжить" : "Пауза"}</span></button>
-      <GameDetail open={detailOpen} game={game} canCycle={visibleGames.length > 1} paused={paused} onTogglePause={() => setPaused(value => !value)} onClose={closeDetail} onPrevious={() => step(-1)} onNext={() => step(1)}/>
+      <GameDetail open={detailOpen} origin={panelOrigin.current} game={game} canCycle={visibleGames.length > 1} paused={paused} onTogglePause={() => setPaused(value => !value)} onClose={closeDetail} onPrevious={() => step(-1)} onNext={() => step(1)}/>
     </div>
   );
 }

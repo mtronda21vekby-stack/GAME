@@ -103,8 +103,8 @@ export function createParticles(compact: boolean) {
 
 export function createOrbitCard() {
   const group = new THREE.Group();
-  const material = new THREE.MeshPhysicalMaterial({ color: 0x3d5962, metalness: 0.84, roughness: 0.22, clearcoat: 0.8 });
-  const backing = new THREE.Mesh(new THREE.BoxGeometry(ORBIT_CARD_WIDTH + 0.06, 1, 0.12), material);
+  const material = new THREE.MeshPhysicalMaterial({ color: 0x466a73, metalness: 0.75, roughness: 0.3, clearcoat: 0.8, transparent: true, opacity: 0.16, depthWrite: false });
+  const backing = new THREE.Mesh(new THREE.BoxGeometry(ORBIT_CARD_WIDTH, 1, 0.045), material);
   group.add(backing);
   return { group, backing, focus: 0 };
 }
