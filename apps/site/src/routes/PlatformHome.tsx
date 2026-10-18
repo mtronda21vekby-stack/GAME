@@ -3,6 +3,7 @@ import { PlatformHeader } from "../components/platform/PlatformHeader";
 import { HeroDepth } from "../components/platform/HeroDepth";
 import { usePlatformParallax } from "../components/platform/usePlatformParallax";
 import { platformGames, type PlatformGame } from "../lib/platformGames";
+import "../styles/catalog.css";
 
 const CrownVisual = React.lazy(() => import("../components/platform/CrownVisual"));
 
@@ -80,11 +81,9 @@ export function GamesCatalog() {
   const [category, setCategory] = React.useState("Все игры");
   const [query, setQuery] = React.useState("");
   const games = platformGames.filter(game => (category === "Все игры" || category === game.genre) && `${game.title} ${game.description}`.toLocaleLowerCase("ru").includes(query.trim().toLocaleLowerCase("ru")));
-  const pageRef = React.useRef<HTMLDivElement>(null);
-  usePlatformParallax(pageRef, games.map(game => game.id).join(","));
   return (
-    <div className="platPage" ref={pageRef}><a className="platSkip" href="#main">К содержимому</a><PlatformHeader active="games" /><main id="main" className="platCatalogPage platContainer">
-      <p className="platEyebrow">КАТАЛОГ / BLACKCROWN</p><div className="platCatalogTitle"><h1>Найди свою игру.</h1><p>Арена, океан или своя долина.<br />Выбери настроение — и начинай.</p></div>
+    <div className="platPage spatialCatalogPage"><a className="platSkip" href="#main">К содержимому</a><PlatformHeader active="games" /><main id="main" className="platCatalogPage platContainer">
+      <p className="platEyebrow">01 / КОЛЛЕКЦИЯ BLACKCROWN</p><div className="platCatalogTitle"><h1>Твой следующий мир.</h1><p>Каждая игра — отдельная история.<br />Выбирай настроение и начинай.</p></div>
       <div className="platFilters"><div role="group" aria-label="Жанр игры">{["Все игры", "Экшн", "Исследование", "Симуляторы"].map(item => <button type="button" key={item} onClick={() => setCategory(item)} aria-pressed={category === item}>{item}</button>)}</div><label className="platSearch"><span>Поиск</span><input type="search" placeholder="Название игры" value={query} onChange={event=>setQuery(event.target.value)} /></label></div>
       <p className="platResultCount" role="status">Найдено: {games.length}</p>
       <div className="platGameGrid">{games.map(game => <GameCard key={game.id} game={game} index={platformGames.indexOf(game)+1} />)}</div>

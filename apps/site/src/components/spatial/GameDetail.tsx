@@ -150,11 +150,11 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
     <div className="spatialDetailInner">
       <figure className="spatialDetailMedia" ref={mediaRef}><img key={visualGame.id} src={visualGame.image} alt={visualGame.imageAlt} width="1280" height="720"/></figure>
       <div className="spatialDetailCopy" ref={copyRef}>
-        <h2 id="spatial-detail-title">{visualGame.title}</h2>
         <p className="spatialDetailMeta">{visualGame.genre} / {visualGame.status}</p>
+        <h2 id="spatial-detail-title">{visualGame.title}</h2>
         <p id="spatial-detail-description">{visualGame.description}</p>
         <p className="spatialDetailControls">{visualGame.detail}</p>
-        <div className="spatialDetailLinks"><a href={visualGame.href}>{visualGame.id === "crown-front" ? "Открыть альфу" : "Запустить игру"} ↗</a><button type="button" onClick={closePanel}>← К галерее</button></div>
+        <div className="spatialDetailLinks"><a href={visualGame.href}>{visualGame.id === "crown-front" ? "Открыть альфу" : "Играть в " + visualGame.title}<span aria-hidden="true">↗</span></a><button type="button" onClick={closePanel}>← К галерее</button></div>
         <div className="spatialDetailBottom"><button type="button" disabled={!canCycle} onClick={() => { if (phase.current === "open") onPrevious(); }}>← Предыдущая игра</button><button type="button" disabled={!canCycle} onClick={() => { if (phase.current === "open") onNext(); }}>Следующая игра →</button><button className="spatialDetailPause" type="button" aria-pressed={paused} onClick={onTogglePause}>{paused ? "▷ Продолжить сцену" : "Ⅱ Пауза сцены"}</button></div>
       </div>
     </div>

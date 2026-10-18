@@ -25,8 +25,7 @@ export default function SpatialHome() {
   const [detailFocus, setDetailFocus] = React.useState(false);
   const panelOrigin = React.useRef<PanelOrigin | null>(null);
   const [sceneStatus, setSceneStatus] = React.useState<"loading" | "ready" | "fallback">("loading");
-  const [loaded, setLoaded] = React.useState({ complete: 0, total: 1 });
-  const onProgress = React.useCallback((complete: number, total: number) => setLoaded({ complete, total }), []);
+  const onProgress = React.useCallback(() => {}, []);
   const closeDetail = React.useCallback(() => { setDetailFocus(false); setDetailOpen(false); }, []);
   const startClosingDetail = React.useCallback(() => setDetailFocus(false), []);
   const visibleGames = React.useMemo(() => platformGames.flatMap((item, index) => category === "Все игры" || item.genre === category ? [index] : []), [category]);
@@ -61,7 +60,7 @@ export default function SpatialHome() {
 
   function openDetail() {
     const panel = [...document.querySelectorAll<HTMLElement>(`.spatialGamePanel[data-game-id="${game.id}"]`)].find(element => element.getClientRects().length && getComputedStyle(element).visibility !== "hidden");
-    const box = panel?.getBoundingClientRect();
+    const box = (panel?.querySelector(".spatialPanelMedia") ?? panel)?.getBoundingClientRect();
     panelOrigin.current = box ? { gameId: game.id, left: box.left, top: box.top, width: box.width, height: box.height, viewportWidth: window.innerWidth, viewportHeight: window.innerHeight } : null;
     setDetailFocus(true); setDetailOpen(true);
   }
@@ -100,31 +99,32 @@ export default function SpatialHome() {
           <div className="spatialJourneyContent">
             <section className="spatialHero" aria-labelledby="spatial-title">
               <div className="spatialHeroCopy">
-                <p className="spatialEyebrow">BLACKCROWN / INDEPENDENT WORLDS</p>
-                <h1 id="spatial-title">РАЗНЫЕ МИРЫ.<br/><span>ОДНА КОРОНА.</span></h1>
-                <p className="spatialLead">Арена, океан, тихая долина.<br/>Выбирай свой мир — и начинай играть.</p>
-                <div className="spatialActions"><a className="platButton" href="#spatial-worlds">Выбрать игру <span aria-hidden="true">↓</span></a><a className="platTextLink" href={platformGames[0].href}>Сразу в Ballcrown <span aria-hidden="true">↗</span></a></div>
+                <p className="spatialEyebrow"><span className="spatialSignal" aria-hidden="true"/> НЕЗАВИСИМЫЕ ИГРЫ / BLACKCROWN</p>
+                <h1 id="spatial-title">ТВОЯ ИГРА.<br/><span>ТВОЙ МИР.</span></h1>
+                <p className="spatialLead">От арены Ballcrown до тихой долины.<br/>Найди свой ритм. Выбери свой мир.</p>
+                <div className="spatialActions"><a className="platButton" href="#spatial-worlds">Выбрать игру <span aria-hidden="true">↓</span></a><a className="platTextLink" href={platformGames[0].href}>Начать с Ballcrown <span aria-hidden="true">↗</span></a></div>
               </div>
+              <div className="spatialBrandSlot" aria-hidden="true"/>
               <div className="spatialHeroFoot">
-                <span className="spatialLoadStatus" role="status">{sceneStatus === "fallback" ? "СТАТИЧНАЯ СЦЕНА" : loaded.complete < loaded.total ? "ЗАГРУЗКА СЦЕНЫ / " + loaded.complete + " ИЗ " + loaded.total : "BLACKCROWN / СЦЕНА ГОТОВА"}</span>
-                <a className="spatialScrollCue" href="#spatial-worlds">К ИГРАМ <span aria-hidden="true">↓</span></a>
+                <span><b>{String(platformGames.length).padStart(2,"0")}</b> разных мира.<br/>Следующий — твой.</span>
+                <a className="spatialScrollCue" href="#spatial-worlds">Исследовать коллекцию <span aria-hidden="true">↓</span></a>
               </div>
             </section>
             <section className="spatialGallerySection" id="spatial-worlds" aria-labelledby="spatial-world-title">
-              <div className="spatialGalleryHeading"><p className="spatialEyebrow">01 / ИГРОВЫЕ МИРЫ</p><h2 id="spatial-world-title">ВЫБЕРИ СВОЙ МИР.</h2></div>
-              <div className="spatialGalleryVisual">
-                <div className="spatialPanelFallback"><GamePanel game={game} index={worldIndex} selected onSelect={() => {}} onOpen={openDetail}/></div>
-              </div>
+              <div className="spatialGalleryHead"><div className="spatialGalleryHeading"><p className="spatialEyebrow">01 / КОЛЛЕКЦИЯ</p><h2 id="spatial-world-title">Игровые миры.</h2></div><div className="spatialFilters" role="group" aria-label="Жанр игры">{categories.map(item => <button key={item} type="button" aria-label={item} aria-pressed={category === item} onClick={() => changeCategory(item)}>{item === "Все игры" ? "Все" : item}</button>)}</div></div>
               <div className="spatialGalleryControls">
                 <button type="button" disabled={visibleGames.length < 2} className="spatialArrow" onClick={() => step(-1)} aria-label="Предыдущая игра">←</button>
-                <div className="spatialWorldChoices" ref={choicesRef} role="group" aria-label="Выбор игры" onKeyDown={onChoiceKey}>{visibleGames.map(index => <button type="button" key={platformGames[index].id} data-world={index} aria-label={platformGames[index].title} title={platformGames[index].title} aria-pressed={worldIndex === index} onClick={() => setWorldIndex(index)}>{String(index + 1).padStart(2,"0")}</button>)}</div>
+                <div className="spatialWorldChoices" ref={choicesRef} role="group" aria-label="Выбор игры" onKeyDown={onChoiceKey}>{visibleGames.map(index => <button type="button" key={platformGames[index].id} data-world={index} aria-label={platformGames[index].title} title={platformGames[index].title} aria-pressed={worldIndex === index} onClick={() => setWorldIndex(index)}><span>{String(index + 1).padStart(2,"0")}</span><b>{platformGames[index].title}</b></button>)}</div>
                 <button type="button" disabled={visibleGames.length < 2} className="spatialArrow" onClick={() => step(1)} aria-label="Следующая игра">→</button>
                 <span className="spatialPanelCounter" role="status" aria-atomic="true">{String(visibleGames.indexOf(worldIndex) + 1).padStart(2,"0")} / {String(visibleGames.length).padStart(2,"0")} · {game.title}</span>
               </div>
-              <div className="spatialGalleryFoot"><div className="spatialFilters" role="group" aria-label="Жанр игры">{categories.map(item => <button key={item} type="button" aria-pressed={category === item} onClick={() => changeCategory(item)}>{item}</button>)}</div><a className="platTextLink" href="/games/">Полный каталог ↗</a></div>
+              <div className="spatialGalleryVisual">
+                <div className="spatialPanelFallback"><GamePanel game={game} index={worldIndex} selected onSelect={() => {}} onOpen={openDetail}/></div>
+              </div>
+              <div className="spatialGalleryFoot"><span>Разные правила. Свой характер.</span><a className="platTextLink" href="/games/">Весь каталог <span aria-hidden="true">↗</span></a></div>
             </section>
             <section className="spatialAbout" aria-labelledby="spatial-about-title">
-              <div className="spatialAboutCopy"><p className="spatialEyebrow">02 / BLACKCROWN</p><h2 id="spatial-about-title">У КАЖДОГО МИРА<br/><span>СВОЙ ХАРАКТЕР.</span></h2><p>BLACKCROWN объединяет независимые игры.<br/>Разные правила, настроение и темп —<br/>следующая история начинается с твоего выбора.</p><div className="spatialActions"><a className="platTextLink" href="/about">О проекте ↗</a><a className="platTextLink" href="#spatial-worlds">Вернуться к играм ↑</a></div></div>
+              <div className="spatialAboutCopy"><p className="spatialEyebrow">02 / О ПЛАТФОРМЕ</p><h2 id="spatial-about-title">Один BLACKCROWN.<br/><span>Разный опыт.</span></h2></div><div className="spatialAboutText"><p>Быстрый бой, неизвестный океан или день в своей долине. Здесь у каждой игры — собственный мир, настроение и темп.</p><div className="spatialActions"><a className="platTextLink" href="/about">О проекте <span aria-hidden="true">↗</span></a><a className="platTextLink" href="/support">Нужна помощь? <span aria-hidden="true">↗</span></a><a className="platTextLink" href="/nexus-lab">Сцена короны <span aria-hidden="true">↗</span></a></div></div>
             </section>
           </div>
         </section>

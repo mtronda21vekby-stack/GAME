@@ -1,0 +1,52 @@
+.spatialCatalogPage { background:#090d11; }
+.spatialCatalogPage>.platHeader { max-width:1440px; background:#090d11; padding-inline:clamp(24px,5vw,80px); border-color:#b6c9ce24; }
+.spatialCatalogPage .platCatalogPage { width:min(1440px,100%); padding:80px clamp(24px,5vw,80px) 100px; }
+.spatialCatalogPage .platEyebrow { font:10px/1.6 ui-monospace,"SFMono-Regular",Consolas,monospace; color:#8fa9b4; letter-spacing:.08em; }
+.spatialCatalogPage .platCatalogTitle { align-items:end; margin:20px 0 48px; gap:50px; }
+.spatialCatalogPage .platCatalogTitle>h1 { font-size:clamp(48px,6vw,88px); font-weight:520; line-height:1.02; letter-spacing:-.06em; max-width:800px; }
+.spatialCatalogPage .platCatalogTitle>p { color:#a5b8c2; font-size:15px; line-height:1.75; flex-shrink:0; }
+.spatialCatalogPage .platFilters { gap:30px; border-block:1px solid #b6c9ce24; background:transparent; padding-block:20px; }
+.spatialCatalogPage .platFilters button { color:#8ca4af; font-size:13px; min-height:48px; }
+.spatialCatalogPage .platFilters button[aria-pressed=true] { color:#e0eded; border-color:#8fcad4; background:#13212b; }
+.spatialCatalogPage .platSearch { max-width:330px; width:100%; }
+.spatialCatalogPage .platSearch input { color:#e3edf0; border-color:#526b775c; background:#101a22; border-radius:3px; min-height:50px; font-size:14px; }
+.spatialCatalogPage .platResultCount { margin:25px 0 34px; font:10px ui-monospace,"SFMono-Regular",Consolas,monospace; color:#748e9d; }
+.spatialCatalogPage .platGameGrid { gap:60px 36px; }
+.spatialCatalogPage .platGame { min-width:0; padding:0 0 30px; border-color:#b6c9ce24; }
+.spatialCatalogPage .platGameImage { aspect-ratio:16/10; border:1px solid #b8d1d52c; border-radius:6px; background:#080d13; }
+.spatialCatalogPage .platImageDepth { transform:none; }
+.spatialCatalogPage .platGameImage img { opacity:1; transform:none; filter:none; }
+.spatialCatalogPage .platGameImage:after { display:none; }
+.spatialCatalogPage .platGameStatus { background:#0b141bd9; color:#c2dce3; font-size:9px; border:1px solid #b4d9e31f; }
+.spatialCatalogPage .platGameMeta { color:#7995a3; font-size:10px; margin:22px 0 16px; }
+.spatialCatalogPage .platGameMeta>span:first-child { color:#9fbcc7; }
+.spatialCatalogPage .platGame h3 { font-size:36px; font-weight:520; line-height:1.1; letter-spacing:-.045em; margin:0 0 15px; }
+.spatialCatalogPage .platGame>p { font-size:15px; line-height:1.75; color:#a8bdc7; max-width:500px; }
+.spatialCatalogPage .platGame>.platTextLink { color:#daeaed; min-height:50px; font-size:13px; margin-top:10px; }
+.spatialCatalogPage .platGame:first-child { grid-column:1/-1; display:grid; grid-template-columns:1.25fr 1fr; grid-template-rows:auto auto 1fr auto; gap:0 45px; padding-bottom:45px; }
+.spatialCatalogPage .platGame:first-child>.platGameImage { grid-column:1; grid-row:1/5; width:100%; height:100%; min-height:370px; }
+.spatialCatalogPage .platGame:first-child>.platGameMeta { grid-column:2; grid-row:1; margin-top:15px; }
+.spatialCatalogPage .platGame:first-child>h3 { grid-column:2; grid-row:2; font-size:clamp(36px,4vw,60px); }
+.spatialCatalogPage .platGame:first-child>p { grid-column:2; grid-row:3; }
+.spatialCatalogPage .platGame:first-child>.platTextLink { grid-column:2; grid-row:4; justify-self:start; align-self:end; }
+.spatialCatalogPage .platCatalogNote { color:#708e9d; font-size:12px; line-height:1.7; margin-top:45px; }
+.spatialCatalogPage .platGame#crown-front .platGameImage img { object-fit:contain; background:#060b10; }
+@media(max-width:760px) {
+ .spatialCatalogPage>.platHeader { padding:18px 20px; gap:10px; }
+ .spatialCatalogPage .platCatalogPage { padding:55px 20px 70px; }
+ .spatialCatalogPage .platCatalogTitle { gap:24px; margin:18px 0 32px; }
+ .spatialCatalogPage .platCatalogTitle>h1 { font-size:46px; }
+ .spatialCatalogPage .platCatalogTitle>p { font-size:14px; }
+ .spatialCatalogPage .platFilters { gap:18px; padding-block:14px; }
+ .spatialCatalogPage .platFilters>div { gap:5px; }
+ .spatialCatalogPage .platFilters button { font-size:11px; padding-inline:10px; }
+ .spatialCatalogPage .platSearch { max-width:none; }
+ .spatialCatalogPage .platGameGrid { gap:40px; }
+ .spatialCatalogPage .platGame:first-child { display:block; padding-bottom:30px; }
+ .spatialCatalogPage .platGame:first-child>.platGameImage { min-height:0; aspect-ratio:16/10; }
+ .spatialCatalogPage .platGame:first-child>.platGameMeta { margin-top:20px; }
+ .spatialCatalogPage .platGame h3,.spatialCatalogPage .platGame:first-child>h3 { font-size:32px; }
+ .spatialCatalogPage .platGame>p { font-size:14px; }
+ .spatialCatalogPage .platGameMeta>span:last-child { display:none; }
+}
+@media(max-width:380px) { .spatialCatalogPage .platCatalogTitle>h1 { font-size:40px; } .spatialCatalogPage .platFilters button { font-size:10px; padding-inline:8px; } }
