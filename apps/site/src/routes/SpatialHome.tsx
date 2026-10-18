@@ -20,11 +20,13 @@ export default function SpatialHome() {
   const [category, setCategory] = React.useState<string>("Все игры");
   const [paused, setPaused] = React.useState(false);
   const [detailOpen, setDetailOpen] = React.useState(false);
+  const [detailFocus, setDetailFocus] = React.useState(false);
   const panelOrigin = React.useRef<PanelOrigin | null>(null);
   const [sceneStatus, setSceneStatus] = React.useState<"loading" | "ready" | "fallback">("loading");
   const [loaded, setLoaded] = React.useState({ complete: 0, total: 1 });
   const onProgress = React.useCallback((complete: number, total: number) => setLoaded({ complete, total }), []);
-  const closeDetail = React.useCallback(() => setDetailOpen(false), []);
+  const closeDetail = React.useCallback(() => { setDetailFocus(false); setDetailOpen(false); }, []);
+  const startClosingDetail = React.useCallback(() => setDetailFocus(false), []);
   const visibleGames = React.useMemo(() => platformGames.flatMap((item, index) => category === "Все игры" || item.genre === category ? [index] : []), [category]);
   const game = platformGames[worldIndex];
   const step = (direction: number) => setWorldIndex(value => nextWorldIndex(value, direction, visibleGames));
@@ -33,7 +35,7 @@ export default function SpatialHome() {
     const panel = [...document.querySelectorAll<HTMLElement>(`.spatialGamePanel[data-game-id="${game.id}"]`)].find(element => element.getClientRects().length && getComputedStyle(element).visibility !== "hidden");
     const box = panel?.getBoundingClientRect();
     panelOrigin.current = box ? { left: box.left, top: box.top, width: box.width, height: box.height, viewportWidth: window.innerWidth } : null;
-    setDetailOpen(true);
+    setDetailFocus(true); setDetailOpen(true);
   }
 
   function changeCategory(next: string) {
@@ -62,7 +64,7 @@ export default function SpatialHome() {
         <section className="spatialJourney" ref={stageRef} aria-label="Игровые миры BLACKCROWN">
           <div className="spatialCanvasSticky">
             <SpatialPoster />
-            <React.Suspense fallback={null}><SpatialScene ref={sceneRef} stageRef={stageRef} panelRootRef={panelRootRef} worldIndex={worldIndex} visibleGames={visibleGames} detailOpen={detailOpen} paused={paused} onStatus={setSceneStatus} onProgress={onProgress} /></React.Suspense>
+            <React.Suspense fallback={null}><SpatialScene ref={sceneRef} stageRef={stageRef} panelRootRef={panelRootRef} worldIndex={worldIndex} visibleGames={visibleGames} detailOpen={detailOpen} detailFocus={detailFocus} paused={paused} onStatus={setSceneStatus} onProgress={onProgress} /></React.Suspense>
             <div className="spatialVignette" aria-hidden="true" />
             <GamePanelLayer rootRef={panelRootRef} selected={worldIndex} visible={visibleGames} onSelect={setWorldIndex} onOpen={openDetail}/>
           </div>
@@ -99,7 +101,7 @@ export default function SpatialHome() {
         </section>
       </main>
       <button className="spatialMotionToggle" type="button" aria-pressed={paused} aria-label={paused ? "Продолжить движение сцены" : "Пауза движения сцены"} onClick={() => setPaused(value => !value)}><span aria-hidden="true">{paused ? "▷" : "Ⅱ"}</span><span>{paused ? "Продолжить" : "Пауза"}</span></button>
-      <GameDetail open={detailOpen} origin={panelOrigin.current} game={game} canCycle={visibleGames.length > 1} paused={paused} onTogglePause={() => setPaused(value => !value)} onClose={closeDetail} onPrevious={() => step(-1)} onNext={() => step(1)}/>
+      <GameDetail open={detailOpen} origin={panelOrigin.current} game={game} canCycle={visibleGames.length > 1} paused={paused} onTogglePause={() => setPaused(value => !value)} onClosing={startClosingDetail} onClose={closeDetail} onPrevious={() => step(-1)} onNext={() => step(1)}/>
     </div>
   );
 }

@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { Group, Mesh, MeshStandardMaterial, PerspectiveCamera, BoxGeometry, Texture, Vector3 } from "three";
+import { Group, InstancedMesh, Mesh, MeshStandardMaterial, PerspectiveCamera, Box3, BoxGeometry, Texture, Vector3 } from "three";
 import { CameraRig } from "../../src/experience/camera/CameraRig";
 import { INITIAL_SCROLL_SNAPSHOT } from "../../src/experience/types";
 import { disposeModel } from "../../src/components/platform/crownModel";
 import { createRibbons, createSpine, createWave } from "../../src/components/spatial/SpatialObjects";
+import { SpatialEnvironment } from "../../src/components/spatial/SpatialEnvironment";
+import { adaptSpatialBrand } from "../../src/components/spatial/SpatialBrandAdapter";
 import { DESKTOP_SPATIAL_CAMERA, MOBILE_SPATIAL_CAMERA, isSpatialGameLaunch, nearestOrbitTurn, nextWorldIndex, orbitCardPose, spatialProgress } from "../../src/components/spatial/spatialState";
 
 describe("Spatial preview", () => {
@@ -51,6 +53,26 @@ describe("Spatial preview", () => {
     expect(Math.abs(afterBack.rotation - beforeBack.rotation)).toBeLessThan(0.01);
   });
 
+  it.each([320, 390])("fits a tall replacement GLB below the mobile copy at %ipx without a rig", width => {
+    const source = new Group().add(new Mesh(new BoxGeometry(2, 12, 1), new MeshStandardMaterial()));
+    source.position.set(4, 7, -2);
+    const adapted = adaptSpatialBrand(source, 2.36);
+    expect(adapted.portrait).toBe(true);
+    adapted.group.position.set(1.3, .6, 0);
+    adapted.group.updateMatrixWorld(true);
+    const bounds = new Box3().setFromObject(adapted.group);
+    const camera = new PerspectiveCamera(36, width / 844, .1, 100);
+    new CameraRig(camera, MOBILE_SPATIAL_CAMERA).update({ ...INITIAL_SCROLL_SNAPSHOT, viewportWidth:width, viewportHeight:844, reducedMotion:true }, {x:0,y:0}, 0);
+    camera.updateMatrixWorld(true);
+    for (const x of [bounds.min.x,bounds.max.x]) for (const y of [bounds.min.y,bounds.max.y]) for (const z of [bounds.min.z,bounds.max.z]) {
+      const screen = new Vector3(x,y,z).project(camera);
+      expect(Math.abs(screen.x)).toBeLessThan(1);
+      expect(screen.y).toBeGreaterThan(-1);
+      expect(screen.y).toBeLessThan(-.05);
+    }
+    disposeModel(adapted.group);
+  });
+
   it("cycles only actual games in the active genre, including a single-game selection", () => {
     expect(nextWorldIndex(0, -1)).toBe(3);
     expect(nextWorldIndex(3, 1, [0, 3])).toBe(0);
@@ -59,10 +81,11 @@ describe("Spatial preview", () => {
 
   it("leaves mobile triangle headroom for the replaceable GLB and real game media", () => {
     const spine = createSpine(true), wave = createWave(true), ribbons = createRibbons();
-    let triangles = spine.geometry.index!.count / 3 * spine.count + wave.mesh.geometry.index!.count / 3 * wave.mesh.count;
-    ribbons.traverse(object => { const mesh = object as Mesh; if (mesh.isMesh) triangles += mesh.geometry.index!.count / 3; });
+    const root = new Group().add(spine, wave.mesh, ribbons, new SpatialEnvironment(true));
+    let triangles = 0;
+    root.traverse(object => { const mesh = object as Mesh; if (mesh.isMesh) triangles += (mesh.geometry.index?.count ?? mesh.geometry.attributes.position.count) / 3 * (mesh instanceof InstancedMesh ? mesh.count : 1); });
     expect(triangles).toBeLessThan(20000);
-    disposeModel(new Group().add(spine, wave.mesh, ribbons)); spine.dispose(); wave.mesh.dispose();
+    disposeModel(root); wave.mesh.dispose();
   });
 
   it("identifies game launches without treating catalogue/profile navigation as a game", () => {

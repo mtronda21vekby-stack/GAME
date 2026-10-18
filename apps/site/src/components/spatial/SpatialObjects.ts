@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { ORBIT_CARD_WIDTH } from "./spatialState";
+import { OrganicStructure } from "./OrganicStructure";
 
 /** Two original swept metal ribbons; no external textures or copied reference assets. */
 export function createRibbons() {
@@ -27,19 +28,7 @@ export function createRibbons() {
 }
 
 export function createSpine(compact: boolean) {
-  const material = new THREE.MeshPhysicalMaterial({ color: 0x718e9b, metalness: 0.82, roughness: 0.19, iridescence: 1, iridescenceIOR: 1.4, iridescenceThicknessRange: [180, 470], clearcoat: 1, clearcoatRoughness: 0.18 });
-  const count = compact ? 52 : 96;
-  const mesh = new THREE.InstancedMesh(new THREE.TorusGeometry(0.65, 0.17, 6, compact ? 14 : 20), material, count);
-  const dummy = new THREE.Object3D();
-  for (let index = 0; index < count; index++) {
-    const t = index / (count - 1), angle = t * Math.PI * 9;
-    dummy.position.set(Math.sin(angle) * 0.22, (t - 0.5) * 15, Math.cos(angle) * 0.16);
-    dummy.rotation.set(Math.PI / 2 + Math.sin(angle) * 0.25, Math.cos(angle) * 0.3, angle);
-    dummy.scale.set(1 + Math.sin(angle * 2) * 0.32, 0.75, 0.42);
-    dummy.updateMatrix(); mesh.setMatrixAt(index, dummy.matrix);
-  }
-  mesh.frustumCulled = false;
-  return mesh;
+  return new OrganicStructure(compact);
 }
 
 export function createWave(compact: boolean) {
@@ -53,49 +42,72 @@ export function createWave(compact: boolean) {
 const particleVertex = `
   uniform float uTime;
   uniform float uDpr;
-  uniform float uSpread;
+  uniform float uJourney;
+  uniform float uDetail;
   attribute float aSeed;
+  attribute float aKind;
   attribute vec3 aTint;
   varying vec3 vTint;
+  varying float vSeed;
+  varying float vOpacity;
   void main() {
     vec3 p = position;
-    p.x += sin(uTime * .13 + aSeed * 6.28) * .5;
-    p.y += sin(uTime * .17 + aSeed * 14.) * .6;
-    p.xy *= 1. + uSpread * .35;
+    if(aKind < .5) {
+      float angle=position.z+uTime*.075+position.y*.33;
+      float radius=position.x+sin(position.y*.8+uTime*.15)*.23;
+      p=vec3(cos(angle)*radius,position.y,sin(angle)*radius*.8-1.2);
+      p.x += sin(position.y*.65)*.3 + (1.-uJourney)*2.2;
+      p.y += sin(uTime*.17+aSeed*14.)*.3;
+      p.xz *= 1.+uDetail*.26;
+    } else {
+      p.x += sin(uTime*.09+aSeed*6.28)*.6;
+      p.y += cos(uTime*.1+aSeed*14.)*.4;
+    }
     vec4 mv = modelViewMatrix * vec4(p, 1.);
     gl_Position = projectionMatrix * mv;
-    gl_PointSize = clamp((28. + aSeed * 54.) * uDpr / max(1., -mv.z), 1., 12.);
+    gl_PointSize = clamp((aKind<.5?12.+aSeed*66.:7.+aSeed*22.) * uDpr / max(1., -mv.z), 1., 12.);
     vTint = aTint;
+    vSeed = aSeed;
+    vOpacity = mix(.3, 1., uJourney);
   }
 `;
 const particleFragment = `
   varying vec3 vTint;
+  varying float vSeed;
+  varying float vOpacity;
   void main() {
-    float r = length(gl_PointCoord - .5) * 2.;
-    if (r > 1.) discard;
-    float alpha = pow(1. - r, 1.7) * .65;
-    gl_FragColor = vec4(vTint, alpha);
+    vec2 q=gl_PointCoord-.5;
+    float a=vSeed*6.28;
+    q=mat2(cos(a),-sin(a),sin(a),cos(a))*q;
+    float edge=max(abs(q.x)*.85+abs(q.y)*.55,abs(q.y)*.95+abs(q.x)*.3);
+    if(edge>.46) discard;
+    float alpha=(1.-smoothstep(.31,.46,edge))*(.28+vSeed*.4)*vOpacity;
+    gl_FragColor=vec4(vTint*(.55+q.y*.6),alpha);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
   }
 `;
 
 export function createParticles(compact: boolean) {
-  const count = compact ? 100 : 280;
-  const positions: number[] = [], seeds: number[] = [], colors: number[] = [];
+  const count = compact ? 750 : 1800;
+  const positions: number[] = [], seeds: number[] = [], colors: number[] = [], kinds: number[] = [];
   // Stable sequence keeps the scene reproducible across resize and fallback checks.
   const random = (index: number) => { const value = Math.sin(index * 127.1 + 311.7) * 43758.5453; return value - Math.floor(value); };
   for (let index = 0; index < count; index++) {
-    positions.push((random(index * 4) - 0.5) * 22, (random(index * 4 + 1) - 0.5) * 22, (random(index * 4 + 2) - 0.5) * 14);
+    const ambient = index % 5 === 0;
+    if (ambient) positions.push((random(index * 4) - .5) * 26, (random(index * 4 + 1) - .5) * 24, (random(index * 4 + 2) - .5) * 20);
+    else positions.push(.8 + Math.pow(random(index * 4),1.6) * 3.4, (random(index * 4 + 1) - .5) * 19, random(index * 4 + 2) * Math.PI * 2);
+    kinds.push(ambient ? 1 : 0);
     seeds.push(random(index * 4 + 3));
-    const tint = new THREE.Color(index % 6 === 0 ? 0xc76c39 : index % 3 === 0 ? 0x7474a6 : 0x79bfc0);
+    const tint = new THREE.Color(index % 17 === 0 ? 0xb28b77 : index % 4 === 0 ? 0x8784b8 : index % 3 === 0 ? 0x81becb : 0xb6d2d9);
     colors.push(tint.r, tint.g, tint.b);
   }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
   geometry.setAttribute("aSeed", new THREE.Float32BufferAttribute(seeds, 1));
   geometry.setAttribute("aTint", new THREE.Float32BufferAttribute(colors, 3));
-  const material = new THREE.ShaderMaterial({ uniforms: { uTime: { value: 0 }, uDpr: { value: 1 }, uSpread: { value: 0 } }, vertexShader: particleVertex, fragmentShader: particleFragment, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+  geometry.setAttribute("aKind", new THREE.Float32BufferAttribute(kinds, 1));
+  const material = new THREE.ShaderMaterial({ uniforms: { uTime: { value: 0 }, uDpr: { value: 1 }, uJourney: { value: 0 }, uDetail: { value: 0 } }, vertexShader: particleVertex, fragmentShader: particleFragment, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
   const points = new THREE.Points(geometry, material);
   points.frustumCulled = false;
   return points;

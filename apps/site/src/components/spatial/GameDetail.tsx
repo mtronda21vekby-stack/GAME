@@ -3,10 +3,10 @@ import type { PlatformGame } from "../../lib/platformGames";
 import { prefersStaticPlatform } from "../platform/usePlatformParallax";
 
 export type PanelOrigin = { left: number; top: number; width: number; height: number; viewportWidth: number };
-type Props = { open: boolean; origin?: PanelOrigin | null; game: PlatformGame; canCycle: boolean; paused: boolean; onTogglePause: () => void; onClose: () => void; onPrevious: () => void; onNext: () => void };
+type Props = { open: boolean; origin?: PanelOrigin | null; game: PlatformGame; canCycle: boolean; paused: boolean; onTogglePause: () => void; onClosing?: () => void; onClose: () => void; onPrevious: () => void; onNext: () => void };
 
 /** The native dialog keeps focus contained while the same WebGL scene stays alive. */
-export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause, onClose, onPrevious, onNext }: Props) {
+export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause, onClosing, onClose, onPrevious, onNext }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const mediaRef = useRef<HTMLElement>(null);
   const copyRef = useRef<HTMLDivElement>(null);
@@ -26,6 +26,7 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
   }
   function closePanel() {
     if (closing.current) return;
+    onClosing?.();
     if (staticMotion() || !mediaRef.current?.animate || !dialogRef.current) { onClose(); return; }
     closing.current = true;
     cancelAnimations();

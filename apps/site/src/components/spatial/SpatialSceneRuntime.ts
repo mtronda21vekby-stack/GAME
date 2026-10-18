@@ -10,9 +10,14 @@ import { platformGames } from "../../lib/platformGames";
 import { disposeModel, finishMetal } from "../platform/crownModel";
 import { prefersStaticPlatform } from "../platform/usePlatformParallax";
 import { SPATIAL_BRAND_MODEL } from "./brandModel";
+import { adaptSpatialBrand } from "./SpatialBrandAdapter";
 import { panelCSSMatrix, panelFrontWidth, panelScrollOffset, panelStyle } from "./panelProjection";
 import { createOrbitCard, createParticles, createRibbons, createSpine, createWave } from "./SpatialObjects";
+import { SpatialEnvironment } from "./SpatialEnvironment";
 import { ALL_WORLD_INDICES, DESKTOP_SPATIAL_CAMERA, MOBILE_SPATIAL_CAMERA, ORBIT_CARD_WIDTH, WORLD_ACCENTS, nearestOrbitTurn, orbitCardPose, spatialProgress } from "./spatialState";
+
+// Small viewports keep the low geometry tier, with modest edge smoothing for the brand silhouette.
+const COMPACT_PRESET = { ...QUALITY_PRESETS.low, dprCap: 1.25, antialias: true };
 
 type SceneOptions = { host: HTMLElement; stage: HTMLElement; panelRoot: HTMLElement; onStatus: (status: "ready" | "fallback") => void; onProgress: (complete: number, total: number) => void };
 
@@ -39,6 +44,7 @@ export class SpatialSceneRuntime {
   private readonly spine: ReturnType<typeof createSpine>;
   private readonly wave: ReturnType<typeof createWave>;
   private readonly particles: ReturnType<typeof createParticles>;
+  private readonly chamber: SpatialEnvironment;
   private rendererHost?: RendererHost;
   private environment?: THREE.WebGLRenderTarget;
   private resizeObserver?: ResizeObserver;
@@ -53,6 +59,7 @@ export class SpatialSceneRuntime {
   private desiredOrbit = 0;
   private detail = 0;
   private detailOpen = false;
+  private detailFocus = false;
   private pointer = { x: 0, y: 0 };
   private desiredPointer = { x: 0, y: 0 };
   private stageTop = 0;
@@ -68,20 +75,22 @@ export class SpatialSceneRuntime {
   private worldIndex = 0;
   private visibleGames = [...ALL_WORLD_INDICES];
   private loadedAssets = 0;
+  private portraitBrand = false;
 
   constructor(private readonly options: SceneOptions) {
     this.panelElements = [...options.panelRoot.querySelectorAll<HTMLElement>("[data-game-panel]")];
     this.spine = createSpine(this.compact);
     this.wave = createWave(this.compact);
     this.particles = createParticles(this.compact);
+    this.chamber = new SpatialEnvironment(this.compact);
     this.cards.forEach(card => this.gallery.add(card.group));
-    this.scene.add(this.brand, this.ribbons, this.spine, this.gallery, this.wave.mesh, this.particles);
+    this.scene.add(this.chamber, this.brand, this.ribbons, this.spine, this.gallery, this.wave.mesh, this.particles);
     try {
-      this.rendererHost = new RendererHost({ container: options.host, preset: this.compact ? QUALITY_PRESETS.low : QUALITY_PRESETS.high, powerPreference: this.compact ? "low-power" : "high-performance", onContextState: state => { if (state === "lost") this.fail(); } });
+      this.rendererHost = new RendererHost({ container: options.host, preset: this.compact ? COMPACT_PRESET : QUALITY_PRESETS.high, powerPreference: this.compact ? "low-power" : "high-performance", onContextState: state => { if (state === "lost") this.fail(); } });
       this.rendererHost.renderer.domElement.className = "spatialSceneCanvas";
       this.rendererHost.setExposure(0.97);
       this.scene.background = new THREE.Color(0x061014);
-      this.scene.fog = new THREE.FogExp2(0x061014, 0.027);
+      this.scene.fog = new THREE.FogExp2(0x061014, 0.036);
       this.buildLighting();
       this.installObservers();
       this.resize();
@@ -94,10 +103,10 @@ export class SpatialSceneRuntime {
     const room = new RoomEnvironment(), pmrem = new PMREMGenerator(this.rendererHost!.renderer);
     try { this.environment = pmrem.fromScene(room, 0.04); this.scene.environment = this.environment.texture; }
     finally { room.dispose(); pmrem.dispose(); }
-    this.scene.add(new THREE.HemisphereLight(0xb1d7dd, 0x080512, 1.7));
-    const key = new THREE.DirectionalLight(0xe8eeec, 4.1); key.position.set(-4, 5, 7);
-    const rim = new THREE.DirectionalLight(0x84a6e6, 3.8); rim.position.set(5, 2, -3);
-    const copper = new THREE.PointLight(0xb35731, 26, 18, 2); copper.position.set(-4, -3, 3);
+    this.scene.add(new THREE.HemisphereLight(0xb1d7dd, 0x080512, 1.05));
+    const key = new THREE.DirectionalLight(0xe8eeec, 2.8); key.position.set(-4, 5, 7);
+    const rim = new THREE.DirectionalLight(0x8ca6df, 3.2); rim.position.set(5, 2, -3);
+    const copper = new THREE.PointLight(0xa2705f, 12, 18, 2); copper.position.set(-4, -3, 3);
     this.accentLight.position.set(1, 2, 3);
     this.scene.add(key, rim, copper, this.accentLight);
   }
@@ -113,11 +122,9 @@ export class SpatialSceneRuntime {
       if (this.disposed) { disposeModel(gltf.scene); return; }
       const model = gltf.scene;
       if (SPATIAL_BRAND_MODEL.finish === "blackcrown-metal") finishMetal(model);
-      const box = new THREE.Box3().setFromObject(model), size = box.getSize(new THREE.Vector3());
-      model.position.sub(box.getCenter(new THREE.Vector3()));
-      const normalized = new THREE.Group(); normalized.add(model);
-      normalized.scale.setScalar(SPATIAL_BRAND_MODEL.fitSpan / Math.max(size.x, size.y, size.z, 0.001));
-      this.brand.add(normalized);
+      const adapted = adaptSpatialBrand(model, SPATIAL_BRAND_MODEL.fitSpan);
+      this.portraitBrand = adapted.portrait;
+      this.brand.add(adapted.group);
       this.options.onStatus("ready"); this.requestFrame();
     } catch { this.fail(); }
     finally { this.assetComplete(); }
@@ -134,6 +141,7 @@ export class SpatialSceneRuntime {
     this.requestFrame();
   }
   setDetailOpen(open: boolean) { this.detailOpen = open; this.requestFrame(); }
+  setDetailFocus(focused: boolean) { this.detailFocus = focused; this.requestFrame(); }
   setPaused(paused: boolean) { this.paused = paused; this.stop(); this.requestFrame(); }
 
   private installObservers() {
@@ -193,7 +201,7 @@ export class SpatialSceneRuntime {
   private onPreferenceChange = () => {
     this.compact = this.compactQuery.matches; this.reduced = prefersStaticPlatform(this.motionQuery);
     this.desiredPointer.x = this.desiredPointer.y = 0;
-    this.rendererHost?.setPreset(this.compact ? QUALITY_PRESETS.low : QUALITY_PRESETS.high); this.resize();
+    this.rendererHost?.setPreset(this.compact ? COMPACT_PRESET : QUALITY_PRESETS.high); this.resize();
   };
   private onVisibility = () => { if (document.hidden) this.stop(); else this.requestFrame(); };
   private stop() { cancelAnimationFrame(this.frame); this.frame = 0; this.lastFrame = 0; }
@@ -211,12 +219,18 @@ export class SpatialSceneRuntime {
     const targetProgress = staticScene ? (this.desiredProgress < 0.25 ? 0 : this.desiredProgress < 0.8 ? 0.5 : 1) : this.desiredProgress;
     this.progress += (targetProgress - this.progress) * blend;
     this.orbit += (this.desiredOrbit - this.orbit) * blend;
-    this.detail += ((this.detailOpen ? 1 : 0) - this.detail) * blend;
+    this.detail += ((this.detailFocus ? 1 : 0) - this.detail) * (staticScene ? 1 : 1 - Math.exp(-Math.min(delta,100) / 140));
     this.pointer.x += ((staticScene || this.detailOpen ? 0 : this.desiredPointer.x) - this.pointer.x) * blend;
     this.pointer.y += ((staticScene || this.detailOpen ? 0 : this.desiredPointer.y) - this.pointer.y) * blend;
     this.accent.lerp(this.desiredAccent, blend); this.accentLight.color.copy(this.accent);
     const snapshot = { ...INITIAL_SCROLL_SNAPSHOT, progress: this.progress, viewportWidth: this.viewportWidth, viewportHeight: this.viewportHeight, reducedMotion: staticScene };
-    (this.compact ? this.mobileCamera : this.desktopCamera).update(snapshot, this.pointer, 0);
+    (this.compact ? this.mobileCamera : this.desktopCamera).update(snapshot, this.pointer, this.elapsed);
+    // Detail focus begins reversing while the native shared surface closes.
+    this.camera.position.x += this.detail * (this.compact ? .55 : 1.05);
+    this.camera.position.y += this.detail * .22;
+    this.camera.position.z -= this.detail * (this.compact ? 2.1 : 1.6);
+    const transit = this.progress < .45 ? Math.sin(this.progress / .45 * Math.PI) : 0;
+    if(!staticScene) this.camera.rotateZ(transit * (this.compact ? .018 : .032));
     this.camera.updateMatrixWorld();
     this.updateObjects(blend);
     this.scene.updateMatrixWorld(); this.camera.updateMatrixWorld();
@@ -228,17 +242,29 @@ export class SpatialSceneRuntime {
   private updateObjects(blend: number) {
     const t = this.elapsed, p = this.progress;
     const galleryMix = THREE.MathUtils.smoothstep(p, 0.12, 0.4), fieldMix = THREE.MathUtils.smoothstep(p, 0.74, 1);
-    this.brand.visible = galleryMix < 0.995;
-    this.brand.position.set((this.compact ? 1.3 : 2.2) + galleryMix * 4, 0.1 + Math.sin(t * 0.28) * 0.08, -galleryMix * 6);
-    this.brand.rotation.set(0.1 + Math.sin(t * 0.12) * 0.08, -0.3 + t * 0.13 + galleryMix * 1.8, -0.06);
-    this.brand.scale.setScalar((this.compact ? 1.55 : 1.8) * (1 - galleryMix * 0.5));
+    this.brand.visible = this.portraitBrand ? fieldMix < .99 : galleryMix < .995;
+    if (this.portraitBrand) {
+      // A tall rigid GLB travels into the gallery as one object. Articulating its
+      // vertebrae will need separate pivots or a bone chain in the supplied file.
+      const heroScale = this.compact ? 1 : 1.4;
+      this.brand.position.set((this.compact ? 1.3 : 2.65) * (1-galleryMix) + this.detail*.4, this.compact ? .6-galleryMix*.2 : .1+galleryMix*.3, -galleryMix*1.6);
+      this.brand.rotation.set(.06, -.22+Math.sin(t*.08)*.12+galleryMix*.22, -.025);
+      this.brand.scale.setScalar(THREE.MathUtils.lerp(heroScale, this.compact ? 2.7 : 3.6, galleryMix) * (1-fieldMix*.7) * (1+this.detail*.15));
+    } else {
+      this.brand.position.set((this.compact ? 1.3 : 2.65) + galleryMix * 4, 0.1 + Math.sin(t * .28) * .08, -galleryMix * 6);
+      this.brand.rotation.set(.24 + Math.sin(t * .12) * .05, -.46 + Math.sin(t * .11) * .32 + galleryMix * 1.8, -.07);
+      this.brand.scale.setScalar((this.compact ? 1.38 : 1.55) * (1 - galleryMix * .5));
+    }
     this.ribbons.position.copy(this.brand.position); this.ribbons.position.y -= 1.7;
     this.ribbons.rotation.set(0.08, t * 0.055, -0.18);
-    this.ribbons.scale.setScalar(1 - galleryMix * 0.8); this.ribbons.visible = this.brand.visible;
-    this.spine.visible = galleryMix > 0.02 && fieldMix < 0.99;
-    this.spine.rotation.y = t * 0.07;
-    this.spine.scale.setScalar(galleryMix * (1 - fieldMix * 0.7) * (1 + this.detail * 0.3));
-    this.spine.position.y = 0.5; this.spine.position.z = -1.2;
+    this.ribbons.scale.setScalar(1 - galleryMix * 0.8); this.ribbons.visible = this.brand.visible && !this.portraitBrand;
+    this.spine.visible = !this.portraitBrand && galleryMix > 0.02 && fieldMix < 0.99;
+    this.spine.rotation.y = t * .055 + p * .55;
+    this.spine.scale.setScalar(galleryMix * (1 - fieldMix * .7) * (1 + this.detail * .4));
+    this.spine.position.set(Math.sin(t*.06)*.1 + this.detail*.4, .4, -1.6);
+    this.spine.update(t,this.accent);
+    this.chamber.position.x = (1-galleryMix) * (this.compact ? 1.3 : 2.2);
+    this.chamber.update(t,this.accent,p,this.detail);
     this.gallery.visible = galleryMix > 0.04 && fieldMix < 0.99;
     this.gallery.position.z = -8 * (1 - galleryMix) - fieldMix * 10;
     this.gallery.position.y = panelScrollOffset(this.camera, new THREE.Vector3(0, 0.8, 3.6 + this.gallery.position.z + this.cards[this.worldIndex].focus * (this.compact ? 0.25 : 0.6)), this.galleryCenterPage - window.scrollY, this.viewportHeight);
@@ -266,7 +292,8 @@ export class SpatialSceneRuntime {
       this.wave.mesh.instanceMatrix.needsUpdate = true;
     }
     this.particles.material.uniforms.uTime.value = t;
-    this.particles.material.uniforms.uSpread.value = galleryMix + this.detail;
+    this.particles.material.uniforms.uJourney.value = galleryMix;
+    this.particles.material.uniforms.uDetail.value = this.detail;
   }
 
   private fail() { if (!this.disposed) { this.options.onStatus("fallback"); this.dispose(); } }
@@ -279,7 +306,7 @@ export class SpatialSceneRuntime {
     this.options.panelRoot.removeAttribute("data-projected");
     for (const element of this.panelElements) { element.style.removeProperty("transform"); element.style.removeProperty("width"); element.style.removeProperty("opacity"); element.hidden = false; }
     disposeModel(this.scene);
-    this.spine.dispose(); this.wave.mesh.dispose(); this.particles.geometry.dispose(); this.particles.material.dispose();
+    this.wave.mesh.dispose(); this.particles.geometry.dispose(); this.particles.material.dispose();
     this.scene.clear(); this.scene.environment = null; this.environment?.dispose(); this.rendererHost?.dispose();
   }
 }
