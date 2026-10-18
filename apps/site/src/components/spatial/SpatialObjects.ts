@@ -1,6 +1,5 @@
 import * as THREE from "three";
-import { CanvasTexture } from "three/src/textures/CanvasTexture.js";
-import { ORBIT_CARD_HEIGHT, ORBIT_CARD_WIDTH } from "./spatialState";
+import { ORBIT_CARD_WIDTH } from "./spatialState";
 
 /** Two original swept metal ribbons; no external textures or copied reference assets. */
 export function createRibbons() {
@@ -102,25 +101,10 @@ export function createParticles(compact: boolean) {
   return points;
 }
 
-export function createOrbitCard(title: string, index: number) {
+export function createOrbitCard() {
   const group = new THREE.Group();
-  const frameMaterial = new THREE.MeshPhysicalMaterial({ color: 0x5c7983, metalness: 0.84, roughness: 0.22, clearcoat: 0.8 });
-  group.add(new THREE.Mesh(new THREE.BoxGeometry(ORBIT_CARD_WIDTH + 0.08, ORBIT_CARD_HEIGHT + 0.08, 0.055), frameMaterial));
-  const artwork = new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false });
-  const image = new THREE.Mesh(new THREE.PlaneGeometry(ORBIT_CARD_WIDTH, ORBIT_CARD_HEIGHT), artwork);
-  image.position.z = 0.032; group.add(image);
-  const canvas = document.createElement("canvas");
-  canvas.width = 1024; canvas.height = 128;
-  const context = canvas.getContext("2d");
-  if (context) {
-    const shade = context.createLinearGradient(0, 0, 0, 128);
-    shade.addColorStop(0, "rgba(3,9,14,0)"); shade.addColorStop(1, "rgba(3,9,14,.96)");
-    context.fillStyle = shade; context.fillRect(0, 0, 1024, 128);
-    context.fillStyle = "#edf2f1"; context.font = "400 28px monospace";
-    context.fillText(`${String(index + 1).padStart(2, "0")} / ${title.toUpperCase()}`, 32, 91);
-    const texture = new CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
-    const label = new THREE.Mesh(new THREE.PlaneGeometry(ORBIT_CARD_WIDTH, ORBIT_CARD_WIDTH / 8), new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false, toneMapped: false }));
-    label.position.set(0, -(ORBIT_CARD_HEIGHT - ORBIT_CARD_WIDTH / 8) / 2, 0.038); group.add(label);
-  }
-  return { group, artwork, image };
+  const material = new THREE.MeshPhysicalMaterial({ color: 0x3d5962, metalness: 0.84, roughness: 0.22, clearcoat: 0.8 });
+  const backing = new THREE.Mesh(new THREE.BoxGeometry(ORBIT_CARD_WIDTH + 0.06, 1, 0.12), material);
+  group.add(backing);
+  return { group, backing, focus: 0 };
 }

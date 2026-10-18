@@ -18,13 +18,6 @@ export const MOBILE_SPATIAL_CAMERA: readonly CameraKeyframe[] = [
 export const WORLD_ACCENTS = [0x9edfe6, 0x75b9e9, 0xb7ce9d, 0xd5a57a] as const;
 export const ALL_WORLD_INDICES = platformGames.map((_, index) => index);
 export const ORBIT_CARD_WIDTH = 4.4;
-export const ORBIT_CARD_HEIGHT = ORBIT_CARD_WIDTH * 9 / 16;
-
-export function orbitCoverSize(aspect: number) {
-  const ratio = Number.isFinite(aspect) && aspect > 0 ? aspect : 16 / 9;
-  return { width: Math.min(ORBIT_CARD_WIDTH, ORBIT_CARD_HEIGHT * ratio), height: Math.min(ORBIT_CARD_HEIGHT, ORBIT_CARD_WIDTH / ratio) };
-}
-
 /** Closest equivalent turn keeps previous/next and wrap-around reversible. */
 export function nearestOrbitTurn(current: number, selected: number, count: number) {
   const turn = selected * Math.PI * 2 / Math.max(1, count);

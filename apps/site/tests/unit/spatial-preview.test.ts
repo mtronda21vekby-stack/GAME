@@ -4,7 +4,7 @@ import { CameraRig } from "../../src/experience/camera/CameraRig";
 import { INITIAL_SCROLL_SNAPSHOT } from "../../src/experience/types";
 import { disposeModel } from "../../src/components/platform/crownModel";
 import { createRibbons, createSpine, createWave } from "../../src/components/spatial/SpatialObjects";
-import { DESKTOP_SPATIAL_CAMERA, MOBILE_SPATIAL_CAMERA, ORBIT_CARD_HEIGHT, ORBIT_CARD_WIDTH, isSpatialGameLaunch, nearestOrbitTurn, nextWorldIndex, orbitCardPose, orbitCoverSize, spatialProgress } from "../../src/components/spatial/spatialState";
+import { DESKTOP_SPATIAL_CAMERA, MOBILE_SPATIAL_CAMERA, isSpatialGameLaunch, nearestOrbitTurn, nextWorldIndex, orbitCardPose, spatialProgress } from "../../src/components/spatial/spatialState";
 
 describe("Spatial preview", () => {
   it("maps native scroll into one bounded camera journey", () => {
@@ -39,18 +39,6 @@ describe("Spatial preview", () => {
     }
   });
 
-  it.each([320, 390])("fits the selected gallery cover at %ipx without cropping its launch surface", width => {
-    const camera = new PerspectiveCamera(36, width / 844, 0.1, 100);
-    new CameraRig(camera, MOBILE_SPATIAL_CAMERA).update({ ...INITIAL_SCROLL_SNAPSHOT, progress: 0.5, viewportWidth: width, viewportHeight: 844, reducedMotion: true }, { x: 0, y: 0 }, 0);
-    camera.updateMatrixWorld(true);
-    const pose = orbitCardPose(0, 4, 0);
-    for (const x of [-1, 1]) for (const y of [-1, 1]) {
-      const screen = new Vector3(pose.x + x * ORBIT_CARD_WIDTH / 2, pose.y + y * ORBIT_CARD_HEIGHT / 2, pose.z + 0.04).project(camera);
-      expect(Math.abs(screen.x)).toBeLessThan(1);
-      expect(Math.abs(screen.y)).toBeLessThan(1);
-    }
-  });
-
   it("takes the shortest orbit in both directions and keeps the wrapped card facing forward", () => {
     const previous = nearestOrbitTurn(0, 3, 4);
     expect(previous).toBeCloseTo(-Math.PI / 2);
@@ -67,16 +55,6 @@ describe("Spatial preview", () => {
     expect(nextWorldIndex(0, -1)).toBe(3);
     expect(nextWorldIndex(3, 1, [0, 3])).toBe(0);
     expect(nextWorldIndex(1, -1, [1])).toBe(1);
-  });
-
-  it("keeps portrait and landscape source covers undistorted inside the gallery frame", () => {
-    for (const aspect of [540 / 960, 1440 / 900, 1280 / 720]) {
-      const size = orbitCoverSize(aspect);
-      expect(size.width / size.height).toBeCloseTo(aspect);
-      expect(size.width).toBeLessThanOrEqual(ORBIT_CARD_WIDTH);
-      expect(size.height).toBeLessThanOrEqual(ORBIT_CARD_HEIGHT);
-    }
-    expect(Number.isFinite(orbitCoverSize(0).width)).toBe(true);
   });
 
   it("leaves mobile triangle headroom for the replaceable GLB and real game media", () => {

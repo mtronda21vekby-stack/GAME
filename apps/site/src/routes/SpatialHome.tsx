@@ -2,6 +2,7 @@ import React from "react";
 import { PlatformHeader } from "../components/platform/PlatformHeader";
 import { SpatialPoster } from "../components/spatial/SpatialPoster";
 import { GameDetail } from "../components/spatial/GameDetail";
+import { GamePanel, GamePanelLayer } from "../components/spatial/GamePanel";
 import type { SpatialSceneHandle } from "../components/spatial/SpatialScene";
 import { isSpatialGameLaunch, nextWorldIndex } from "../components/spatial/spatialState";
 import { platformGames } from "../lib/platformGames";
@@ -13,16 +14,14 @@ const categories = ["Все игры", "Экшн", "Исследование", "
 export default function SpatialHome() {
   const stageRef = React.useRef<HTMLElement>(null);
   const sceneRef = React.useRef<SpatialSceneHandle>(null);
+  const panelRootRef = React.useRef<HTMLDivElement>(null);
   const choicesRef = React.useRef<HTMLDivElement>(null);
   const [worldIndex, setWorldIndex] = React.useState(0);
   const [category, setCategory] = React.useState<string>("Все игры");
   const [paused, setPaused] = React.useState(false);
   const [detailOpen, setDetailOpen] = React.useState(false);
   const [sceneStatus, setSceneStatus] = React.useState<"loading" | "ready" | "fallback">("loading");
-  const [loaded, setLoaded] = React.useState({ complete: 0, total: platformGames.length + 1 });
-  const activeWorld = React.useRef(worldIndex);
-  activeWorld.current = worldIndex;
-  const onPick = React.useCallback((index: number) => { if (activeWorld.current === index) setDetailOpen(true); else setWorldIndex(index); }, []);
+  const [loaded, setLoaded] = React.useState({ complete: 0, total: 1 });
   const onProgress = React.useCallback((complete: number, total: number) => setLoaded({ complete, total }), []);
   const closeDetail = React.useCallback(() => setDetailOpen(false), []);
   const visibleGames = React.useMemo(() => platformGames.flatMap((item, index) => category === "Все игры" || item.genre === category ? [index] : []), [category]);
@@ -55,8 +54,9 @@ export default function SpatialHome() {
         <section className="spatialJourney" ref={stageRef} aria-label="Игровые миры BLACKCROWN">
           <div className="spatialCanvasSticky">
             <SpatialPoster />
-            <React.Suspense fallback={null}><SpatialScene ref={sceneRef} stageRef={stageRef} worldIndex={worldIndex} visibleGames={visibleGames} detailOpen={detailOpen} paused={paused} onStatus={setSceneStatus} onProgress={onProgress} onPick={onPick} /></React.Suspense>
+            <React.Suspense fallback={null}><SpatialScene ref={sceneRef} stageRef={stageRef} panelRootRef={panelRootRef} worldIndex={worldIndex} visibleGames={visibleGames} detailOpen={detailOpen} paused={paused} onStatus={setSceneStatus} onProgress={onProgress} /></React.Suspense>
             <div className="spatialVignette" aria-hidden="true" />
+            <GamePanelLayer rootRef={panelRootRef} selected={worldIndex} visible={visibleGames} onSelect={setWorldIndex} onOpen={() => setDetailOpen(true)}/>
           </div>
           <div className="spatialJourneyContent">
             <section className="spatialHero" aria-labelledby="spatial-title">
@@ -74,14 +74,10 @@ export default function SpatialHome() {
             <section className="spatialGallerySection" id="spatial-worlds" aria-labelledby="spatial-world-title">
               <div className="spatialGalleryHeading"><p className="spatialEyebrow">01 / ГАЛЕРЕЯ ИГРОВЫХ МИРОВ</p><h2 id="spatial-world-title">НАЙДИ СВОЙ МИР.</h2></div>
               <div className="spatialGalleryVisual">
-                <button type="button" className="spatialCardTarget" onClick={() => setDetailOpen(true)} aria-label={"Подробнее об игре " + game.title}>
-                  <img className="spatialFallbackCover" src={game.image} alt={game.imageAlt} width="1280" height="720"/>
-                  <span className="spatialCardHint">ОТКРЫТЬ МИР <b aria-hidden="true">↗</b></span>
-                </button>
+                <div className="spatialPanelFallback"><GamePanel game={game} index={worldIndex} selected onSelect={() => {}} onOpen={() => setDetailOpen(true)}/></div>
               </div>
               <div className="spatialGalleryControls">
-                <div className="spatialCurrentGame" aria-live="polite" aria-atomic="true"><p>{String(worldIndex + 1).padStart(2,"0")} / {game.genre} / {game.status}</p><h3>{game.title}</h3></div>
-                <div className="spatialGalleryActions"><button type="button" disabled={visibleGames.length < 2} className="spatialArrow" onClick={() => step(-1)} aria-label="Предыдущая игра">←</button><button type="button" className="spatialOpenGame" onClick={() => setDetailOpen(true)}>Об игре <span aria-hidden="true">↗</span></button><a className="spatialDirectPlay" href={game.href}>Играть ↗</a><button type="button" disabled={visibleGames.length < 2} className="spatialArrow" onClick={() => step(1)} aria-label="Следующая игра">→</button></div>
+                <div className="spatialGalleryActions"><button type="button" disabled={visibleGames.length < 2} className="spatialArrow" onClick={() => step(-1)} aria-label="Предыдущая игра">←</button><span className="spatialPanelCounter" role="status">{String(visibleGames.indexOf(worldIndex) + 1).padStart(2,"0")} / {String(visibleGames.length).padStart(2,"0")}<small>{game.title}</small></span><button type="button" disabled={visibleGames.length < 2} className="spatialArrow" onClick={() => step(1)} aria-label="Следующая игра">→</button></div>
                 <div className="spatialWorldChoices" ref={choicesRef} role="group" aria-label="Выбор игры" onKeyDown={onChoiceKey}>{visibleGames.map(index => <button type="button" key={platformGames[index].id} data-world={index} aria-pressed={worldIndex === index} onClick={() => setWorldIndex(index)}>{platformGames[index].title}</button>)}</div>
               </div>
               <div className="spatialGalleryFoot"><div className="spatialFilters" role="group" aria-label="Жанр игры">{categories.map(item => <button key={item} type="button" aria-pressed={category === item} onClick={() => changeCategory(item)}>{item}</button>)}</div><a className="platTextLink" href="/games/">Полный каталог ↗</a></div>
