@@ -1,20 +1,53 @@
 import { describe, expect, it } from "vitest";
 import { PerspectiveCamera } from "three";
-import { DampedScalar, SurfaceMotion } from "../../src/components/spatial/spatialMotion";
+import { DampedScalar, ScrollJourney, SurfaceMotion } from "../../src/components/spatial/spatialMotion";
 import { spatialAxisJourney,spatialAxisTurn } from "../../src/components/spatial/SpatialAxis";
 import { CameraRig } from "../../src/experience/camera/CameraRig";
 import { INITIAL_SCROLL_SNAPSHOT } from "../../src/experience/types";
 
 describe("Interruptible spatial motion", () => {
-  it("turns visibly while the skull is framed, reverses exactly, and limits mobile/reduced motion",()=>{
-    expect(spatialAxisTurn(.07,false)-spatialAxisTurn(0,false)).toBeGreaterThan(.6);
-    expect(spatialAxisTurn(.07,false)-spatialAxisTurn(.17,false)).toBeGreaterThan(1);
-    expect(Math.abs(spatialAxisTurn(.17,true))).toBeLessThan(Math.abs(spatialAxisTurn(.17,false)));
-    const positions=[0,.02,.07,.12,.17,.32,.56,.8,1];
-    const forward=positions.map(p=>spatialAxisTurn(p,false));
-    expect([...positions].reverse().map(p=>spatialAxisTurn(p,false))).toEqual([...forward].reverse());
-    expect(positions.map(p=>spatialAxisTurn(p,true,true))).toEqual(positions.map(()=>-.14));
+  it.each([false,true])("keeps the scroll-owned turn monotone and bounded (compact=%s)",compact=>{
+    let previous=-.12;
+    for(let i=0;i<=1000;i++){
+      const turn=spatialAxisTurn(i/1000,compact);
+      expect(turn).toBeGreaterThanOrEqual(previous-1e-12);
+      expect(turn).toBeGreaterThanOrEqual(-.12);
+      expect(turn).toBeLessThanOrEqual(compact?.201:.321);
+      previous=turn;
+    }
+    expect(spatialAxisTurn(.18,compact)-spatialAxisTurn(0,compact)).toBeGreaterThan(.25);
+    const positions=[0,.02,.07,.12,.17,.26,.56,.8,1];
+    const forward=positions.map(p=>spatialAxisTurn(p,compact));
+    expect([...positions].reverse().map(p=>spatialAxisTurn(p,compact))).toEqual([...forward].reverse());
+    expect(positions.map(p=>spatialAxisTurn(p,compact,true))).toEqual(positions.map(()=>-.12));
   });
+
+  it("integrates forward/reverse gestures equally at 30, 60 and 120Hz without overshoot",()=>{
+    const runs=[30,60,120].map(fps=>{
+      const motion=new ScrollJourney(),ends:number[]=[];
+      for(const target of [.8,.15,.9,0]){
+        for(let frame=0;frame<fps;frame++){
+          const before=motion.value,after=motion.update(target,1000/fps);
+          expect(after).toBeGreaterThanOrEqual(Math.min(before,target)-1e-12);
+          expect(after).toBeLessThanOrEqual(Math.max(before,target)+1e-12);
+        }
+        ends.push(motion.value);
+      }
+      return ends;
+    });
+    runs.forEach(run=>run.forEach((value,index)=>expect(value).toBeCloseTo(runs[0][index],12)));
+  });
+
+  it("holds the journey through modal/pause time, then resumes without a pose jump",()=>{
+    const motion=new ScrollJourney();motion.snap(.45);
+    expect(motion.update(0,5000,{detailOpen:true})).toBe(.45);
+    expect(motion.update(.9,5000,{paused:true})).toBe(.45);
+    expect(motion.update(.8,0)).toBe(.45);
+    expect(motion.update(.8,16.67)).toBeGreaterThan(.45);
+    expect(motion.value).toBeLessThan(.5);
+    expect(motion.update(.2,16.67,{reduced:true})).toBe(.2);
+  });
+
   it("starts and finishes a surface at rest, including every transform channel", () => {
     const motion = new SurfaceMotion([30,80,.5,.5,.25]);
     const end = [0,0,1,1,1];
@@ -86,6 +119,18 @@ describe.each([{label:"desktop",compact:false},{label:"mobile",compact:true}])("
     rig.update({...INITIAL_SCROLL_SNAPSHOT,progress,viewportWidth:1440,viewportHeight:900,reducedMotion:true},{x:0,y:0},0);
     return [...camera.position.toArray(),camera.fov];
   };
+
+  it("ignores pointer position and elapsed time without pitching or rolling the camera",()=>{
+    for(const progress of [0,.07,.18,.32,.48,.74,1]){
+      sample(progress);
+      const before=[...camera.position.toArray(),...camera.quaternion.toArray()];
+      rig.update({...INITIAL_SCROLL_SNAPSHOT,progress,viewportWidth:1440,viewportHeight:900},{x:.5,y:-.5},10000);
+      [...camera.position.toArray(),...camera.quaternion.toArray()].forEach((value,i)=>expect(value).toBeCloseTo(before[i],12));
+      expect(camera.quaternion.x).toBeCloseTo(0,12);
+      expect(camera.quaternion.y).toBeCloseTo(0,12);
+      expect(camera.quaternion.z).toBeCloseTo(0,12);
+    }
+  });
 
   it("keeps velocity continuous through travel keyframes", () => {
     const epsilon = .000001;

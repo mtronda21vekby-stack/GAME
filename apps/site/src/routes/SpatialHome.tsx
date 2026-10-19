@@ -2,12 +2,11 @@ import React from "react";
 import { PlatformHeader } from "../components/platform/PlatformHeader";
 import { SpatialPoster } from "../components/spatial/SpatialPoster";
 import { GameDetail, type PanelOrigin } from "../components/spatial/GameDetail";
-import { GamePanel, GamePanelLayer } from "../components/spatial/GamePanel";
+import { GamePanelGrid } from "../components/spatial/GamePanel";
 import type { SpatialSceneHandle } from "../components/spatial/SpatialScene";
 import { isSpatialGameLaunch, nextWorldIndex } from "../components/spatial/spatialState";
 import { platformGames } from "../lib/platformGames";
-import { readSpatialReturn, rememberSpatialReturn, SPATIAL_CATEGORIES } from "../components/spatial/spatialNavigation";
-import { spatialScrollWorld } from "../components/spatial/SpatialAxis";
+import { readSpatialReturn, rememberSpatialReturn, spatialReturnForGame, SPATIAL_CATEGORIES, type SpatialReturn } from "../components/spatial/spatialNavigation";
 import "../styles/spatial.css";
 
 const SpatialScene = React.lazy(() => import("../components/spatial/SpatialScene"));
@@ -16,10 +15,6 @@ const categories = SPATIAL_CATEGORIES;
 export default function SpatialHome() {
   const stageRef = React.useRef<HTMLElement>(null);
   const sceneRef = React.useRef<SpatialSceneHandle>(null);
-  const panelRootRef = React.useRef<HTMLDivElement>(null);
-  const choicesRef = React.useRef<HTMLDivElement>(null);
-  const galleryRef = React.useRef<HTMLElement>(null);
-  const deckRef = React.useRef<HTMLDivElement>(null);
   const [initialView] = React.useState(() => readSpatialReturn(window.history.state, window.location.pathname));
   const [worldIndex, setWorldIndex] = React.useState(initialView?.worldIndex ?? 0);
   const [category, setCategory] = React.useState<string>(initialView?.category ?? "Все игры");
@@ -30,7 +25,7 @@ export default function SpatialHome() {
   const panelOrigin = React.useRef<PanelOrigin | null>(null);
   const [sceneStatus, setSceneStatus] = React.useState<"loading" | "ready" | "fallback">("loading");
   const onProgress = React.useCallback(() => {}, []);
-  const closeDetail = React.useCallback(() => { setDetailFocus(false); setDetailOpen(false); }, []);
+  const closeDetail = React.useCallback(() => { sceneRef.current?.setDetailOpen(false); setDetailFocus(false); setDetailOpen(false); }, []);
   const startClosingDetail = React.useCallback(() => setDetailFocus(false), []);
   const visibleGames = React.useMemo(() => platformGames.flatMap((item, index) => category === "Все игры" || item.genre === category ? [index] : []), [category]);
   const game = platformGames[worldIndex];
@@ -38,60 +33,45 @@ export default function SpatialHome() {
   const view = React.useRef({ worldIndex, category, detailOpen });
   view.current = { worldIndex, category, detailOpen };
   const pageScroll = React.useRef(initialView?.scrollY ?? window.scrollY);
+  const launchView = React.useRef<SpatialReturn | null>(null);
   const entryPath = React.useRef(window.location.pathname);
   const rememberView = React.useCallback(() => {
-    if (window.location.pathname === entryPath.current) rememberSpatialReturn(window.history, entryPath.current, { ...view.current, scrollY: pageScroll.current });
+    if (window.location.pathname === entryPath.current) rememberSpatialReturn(window.history, entryPath.current, launchView.current ?? { ...view.current, scrollY: pageScroll.current });
   }, []);
 
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     let timer = 0;
-    const frame = requestAnimationFrame(() => {
-      if (initialView) window.scrollTo({ top: initialView.scrollY, behavior: "instant" });
-      pageScroll.current = window.scrollY;
-    });
+    // Restore before the lazy scene samples its initial scroll pose.
+    if (initialView) window.scrollTo({ top: initialView.scrollY, behavior: "instant" });
+    pageScroll.current = window.scrollY;
     const onScroll = () => {
-      if (view.current.detailOpen) return;
+      if (view.current.detailOpen || launchView.current) return;
       pageScroll.current = window.scrollY;
       window.clearTimeout(timer);
       // Write after the gesture, without replacing history on every animation frame.
       timer = window.setTimeout(rememberView, 160);
     };
+    const onPageShow = (event:PageTransitionEvent) => {
+      if(!event.persisted||!launchView.current)return;
+      const saved=launchView.current;launchView.current=null;
+      setWorldIndex(saved.worldIndex);setCategory(saved.category);
+      window.scrollTo({top:saved.scrollY,behavior:"instant"});pageScroll.current=saved.scrollY;
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("pagehide", rememberView);
-    return () => { cancelAnimationFrame(frame); window.clearTimeout(timer); window.removeEventListener("scroll", onScroll); window.removeEventListener("pagehide", rememberView); };
+    window.addEventListener("pageshow", onPageShow);
+    return () => { window.clearTimeout(timer); window.removeEventListener("scroll", onScroll); window.removeEventListener("pagehide", rememberView); window.removeEventListener("pageshow",onPageShow); };
   }, [initialView, rememberView]);
   React.useEffect(rememberView, [worldIndex, category, rememberView]);
 
-  React.useEffect(() => {
-    const section=galleryRef.current,deck=deckRef.current;
-    if(!section||!deck)return;
-    let start=0,end=0,enabled=false,last:number|undefined,ready=!initialView,settledFrame=0;
-    const measure=()=>{
-      const style=getComputedStyle(deck),head=section.querySelector(".spatialGalleryHead")!.getBoundingClientRect();
-      const inset=parseFloat(style.top)||0,box=section.getBoundingClientRect();
-      enabled=style.position==="sticky";
-      start=head.bottom+window.scrollY+(parseFloat(style.marginTop)||0)-inset;
-      end=box.bottom+window.scrollY-(parseFloat(getComputedStyle(section).paddingBottom)||0)-deck.offsetHeight-inset;
-      last=spatialScrollWorld(window.scrollY,start,end,visibleGames);
-    };
-    const onScroll=()=>{
-      if(!enabled||view.current.detailOpen)return;
-      // History restores scroll on the first frame; it must not replace a manual choice.
-      if(!ready){last=spatialScrollWorld(window.scrollY,start,end,visibleGames);return;}
-      if(window.scrollY<start){last=undefined;return;}
-      const next=spatialScrollWorld(window.scrollY,start,end,visibleGames);
-      if(next!==undefined&&next!==last){last=next;setWorldIndex(next);}
-    };
-    const observer=new ResizeObserver(measure);observer.observe(section);observer.observe(deck);
-    measure();const frame=requestAnimationFrame(()=>{measure();settledFrame=requestAnimationFrame(()=>{measure();ready=true;});});
-    window.addEventListener("resize",measure,{passive:true});window.addEventListener("scroll",onScroll,{passive:true});
-    return()=>{cancelAnimationFrame(frame);cancelAnimationFrame(settledFrame);observer.disconnect();window.removeEventListener("resize",measure);window.removeEventListener("scroll",onScroll);};
-  },[visibleGames,initialView]);
-
-  function openDetail() {
+  function openDetail(index: number) {
+    const game = platformGames[index];
+    setWorldIndex(index);
     const panel = [...document.querySelectorAll<HTMLElement>(`.spatialGamePanel[data-game-id="${game.id}"]`)].find(element => element.getClientRects().length && getComputedStyle(element).visibility !== "hidden");
     const box = (panel?.querySelector(".spatialPanelMedia") ?? panel)?.getBoundingClientRect();
     panelOrigin.current = box ? { gameId: game.id, left: box.left, top: box.top, width: box.width, height: box.height, viewportWidth: window.innerWidth, viewportHeight: window.innerHeight } : null;
+    // Freeze before the dialog's layout effect locks scrolling, not in a later passive effect.
+    sceneRef.current?.setDetailOpen(true);
     setDetailFocus(true); setDetailOpen(true);
   }
 
@@ -103,15 +83,13 @@ export default function SpatialHome() {
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
     const link = (event.target as Element).closest<HTMLAnchorElement>("a[href]");
     if (!link || (link.target && link.target !== "_self") || link.hasAttribute("download")) return;
-    rememberView();
-    if (isSpatialGameLaunch(link.href, window.location.origin)) { sceneRef.current?.dispose(); setSceneStatus("fallback"); }
-  }
-  function onChoiceKey(event: React.KeyboardEvent) {
-    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-    event.preventDefault();
-    const next = nextWorldIndex(worldIndex, event.key === "ArrowLeft" ? -1 : 1, visibleGames);
-    setWorldIndex(next);
-    choicesRef.current?.querySelector<HTMLButtonElement>('[data-world="' + next + '"]')?.focus();
+    if (isSpatialGameLaunch(link.href, window.location.origin)) {
+      const pathname=new URL(link.href).pathname;
+      const index=platformGames.findIndex(item=>new URL(item.href,window.location.origin).pathname===pathname);
+      launchView.current=spatialReturnForGame(index,{...view.current,scrollY:view.current.detailOpen?pageScroll.current:window.scrollY});
+      setWorldIndex(launchView.current.worldIndex);setCategory(launchView.current.category);
+      rememberView();sceneRef.current?.dispose();setSceneStatus("fallback");
+    } else rememberView();
   }
 
   return (
@@ -122,9 +100,8 @@ export default function SpatialHome() {
         <section className="spatialJourney" ref={stageRef} aria-label="Игровые миры BLACKCROWN">
           <div className="spatialCanvasSticky">
             <SpatialPoster />
-            <React.Suspense fallback={null}><SpatialScene ref={sceneRef} stageRef={stageRef} panelRootRef={panelRootRef} worldIndex={worldIndex} visibleGames={visibleGames} detailOpen={detailOpen} detailFocus={detailFocus} paused={paused} onStatus={setSceneStatus} onProgress={onProgress} /></React.Suspense>
+            <React.Suspense fallback={null}><SpatialScene ref={sceneRef} stageRef={stageRef} worldIndex={worldIndex} visibleGames={visibleGames} detailOpen={detailOpen} detailFocus={detailFocus} paused={paused} onStatus={setSceneStatus} onProgress={onProgress} /></React.Suspense>
             <div className="spatialVignette" aria-hidden="true" />
-            <GamePanelLayer rootRef={panelRootRef} selected={worldIndex} visible={visibleGames} onSelect={setWorldIndex} onOpen={openDetail}/>
           </div>
           <div className="spatialJourneyContent">
             <section className="spatialHero" aria-labelledby="spatial-title">
@@ -140,19 +117,11 @@ export default function SpatialHome() {
                 <a className="spatialScrollCue" href="#spatial-worlds">Исследовать коллекцию <span aria-hidden="true">↓</span></a>
               </div>
             </section>
-            <section className="spatialGallerySection" id="spatial-worlds" ref={galleryRef} style={{"--spatial-stops":visibleGames.length} as React.CSSProperties} aria-labelledby="spatial-world-title">
+            <section className="spatialGallerySection" id="spatial-worlds" aria-labelledby="spatial-world-title">
               <div className="spatialGalleryHead"><div className="spatialGalleryHeading"><p className="spatialEyebrow">01 / КОЛЛЕКЦИЯ</p><h2 id="spatial-world-title">Игровые миры.</h2></div><div className="spatialFilters" role="group" aria-label="Жанр игры">{categories.map(item => <button key={item} type="button" aria-label={item} aria-pressed={category === item} onClick={() => changeCategory(item)}>{item === "Все игры" ? "Все" : item}</button>)}</div></div>
-              <div className="spatialGalleryDeck" ref={deckRef}>
-              <div className="spatialGalleryControls">
-                <button type="button" disabled={visibleGames.length < 2} className="spatialArrow" onClick={() => step(-1)} aria-label="Предыдущая игра">←</button>
-                <div className="spatialWorldChoices" ref={choicesRef} role="group" aria-label="Выбор игры" onKeyDown={onChoiceKey}>{visibleGames.map(index => <button type="button" key={platformGames[index].id} data-world={index} aria-label={platformGames[index].title} title={platformGames[index].title} aria-pressed={worldIndex === index} onClick={() => setWorldIndex(index)}><span>{String(index + 1).padStart(2,"0")}</span><b>{platformGames[index].title}</b></button>)}</div>
-                <button type="button" disabled={visibleGames.length < 2} className="spatialArrow" onClick={() => step(1)} aria-label="Следующая игра">→</button>
-                <span className="spatialPanelCounter" role="status" aria-atomic="true">{String(visibleGames.indexOf(worldIndex) + 1).padStart(2,"0")} / {String(visibleGames.length).padStart(2,"0")} · {game.title}</span>
-              </div>
-              <div className="spatialGalleryVisual">
-                <div className="spatialPanelFallback"><GamePanel game={game} index={worldIndex} selected onSelect={() => {}} onOpen={openDetail}/></div>
-              </div>
-              <div className="spatialGalleryFoot"><span>Прокручивай — открывай следующий мир.</span><a className="platTextLink" href="/games/">Весь каталог <span aria-hidden="true">↗</span></a></div>
+              <div className="spatialGalleryDeck">
+                <GamePanelGrid selected={worldIndex} visible={visibleGames} onOpen={openDetail}/>
+                <div className="spatialGalleryFoot"><span>Выбери мир — и начинай игру.</span><a className="platTextLink" href="/games/">Весь каталог <span aria-hidden="true">↗</span></a></div>
               </div>
             </section>
             <section className="spatialMaterial" aria-labelledby="spatial-material-title">

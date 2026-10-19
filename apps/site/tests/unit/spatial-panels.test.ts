@@ -4,7 +4,7 @@ import { Matrix4, PerspectiveCamera, Vector3 } from "three";
 import { renderToStaticMarkup } from "react-dom/server";
 import { CameraRig } from "../../src/experience/camera/CameraRig";
 import { INITIAL_SCROLL_SNAPSHOT } from "../../src/experience/types";
-import { GamePanel } from "../../src/components/spatial/GamePanel";
+import { GamePanel, GamePanelGrid } from "../../src/components/spatial/GamePanel";
 import { GameDetail } from "../../src/components/spatial/GameDetail";
 import { panelCSSMatrix, panelFrontWidth, panelScreenPosition, panelScrollOffset, panelStyle } from "../../src/components/spatial/panelProjection";
 import { ORBIT_CARD_WIDTH } from "../../src/components/spatial/spatialState";
@@ -46,7 +46,7 @@ describe("Live spatial interface panels", () => {
   });
 
   it.each(platformGames)("keeps real text and an actual launch link in the $title panel", game => {
-    const html = renderToStaticMarkup(React.createElement(GamePanel, { game, index: 0, selected: true, onSelect: () => {}, onOpen: () => {} }));
+    const html = renderToStaticMarkup(React.createElement(GamePanel, { game, index: 0, selected: true, onOpen: () => {} }));
     expect(html).toContain(game.title);
     expect(html).toContain(game.status);
     expect(html).toContain(`href="${game.href}"`);
@@ -63,12 +63,21 @@ describe("Live spatial interface panels", () => {
     expect(detail).toContain('id="spatial-game-detail"');
   });
 
-  it("gives an unselected panel one native selection button and no accidental game launch", () => {
-    const html = renderToStaticMarkup(React.createElement(GamePanel, { game: platformGames[1], index: 1, selected: false, onSelect: () => {}, onOpen: () => {} }));
-    expect(html).toContain('aria-label="Выбрать EvoFish Next"');
-    expect(html.match(/<button\b/g)).toHaveLength(1);
-    expect(html).not.toContain("href=");
-    expect(html).not.toContain("aria-haspopup");
+  it("shows all four full game panels with direct launches without a preliminary selection",()=>{
+    const html=renderToStaticMarkup(React.createElement(GamePanelGrid,{selected:0,visible:[0,1,2,3],onOpen:()=>{}}));
+    expect(html.match(/<article\b/g)).toHaveLength(4);
+    expect(html.match(/<img\b/g)).toHaveLength(4);
+    expect(html.match(/aria-haspopup="dialog"/g)).toHaveLength(4);
+    for(const game of platformGames){
+      expect(html).toContain(game.title);
+      expect(html).toContain(`src="${game.image}"`);
+      expect(html).toContain(`href="${game.href}"`);
+    }
+    expect(html).not.toMatch(/<article\b[^>]*\shidden(?:[=>\s])/);
+    const filtered=renderToStaticMarkup(React.createElement(GamePanelGrid,{selected:1,visible:[1,2],onOpen:()=>{}}));
+    expect(filtered.match(/<article\b/g)).toHaveLength(2);
+    expect(filtered).not.toContain(`href="${platformGames[0].href}"`);
+    expect(filtered).toContain(`href="${platformGames[1].href}"`);
   });
 
   it("moves panels with their document slot while leaving following navigation clear", () => {

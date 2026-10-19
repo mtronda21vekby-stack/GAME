@@ -1,24 +1,24 @@
-import { useId, type RefObject } from "react";
-import { platformGames, type PlatformGame } from "../../lib/platformGames";
+import type { PlatformGame } from "../../lib/platformGames";
+import { platformGames } from "../../lib/platformGames";
 
-type Props = { game: PlatformGame; index: number; selected: boolean; onSelect: () => void; onOpen: () => void; spatial?: boolean };
+type Props = { game: PlatformGame; index: number; selected: boolean; onOpen: () => void };
 
-/** Text, links and buttons stay native DOM, including when this surface is in perspective. */
-export function GamePanel({ game, index, selected, onSelect, onOpen, spatial = false }: Props) {
-  const title = useId();
-  return <article className="spatialGamePanel" data-game-id={game.id} data-game-panel={spatial ? index : undefined} data-selected={selected} aria-labelledby={title}>
+/** A full native surface at every viewport size; each game always has a direct launch. */
+export function GamePanel({ game, index, selected, onOpen }: Props) {
+  const title = "spatial-panel-" + game.id;
+  return <article className="spatialGamePanel" role="listitem" data-game-id={game.id} data-selected={selected} aria-labelledby={title}>
     <div className="spatialPanelHeader"><span>{String(index + 1).padStart(2, "0")} / BLACKCROWN</span><span className="spatialPanelState">{game.status}</span></div>
-    <figure className="spatialPanelMedia"><img src={game.image} alt={game.imageAlt} width="1280" height="720" loading="eager" decoding="async"/><span className="spatialPanelMediaMark" aria-hidden="true">↗</span></figure>
+    <figure className="spatialPanelMedia"><img src={game.image} alt={game.imageAlt} width="1280" height="720" loading={index === 0 ? "eager" : "lazy"} decoding="async"/><span className="spatialPanelMediaMark" aria-hidden="true">↗</span></figure>
     <div className="spatialPanelBody"><div className="spatialPanelTitle"><p>{game.genre}</p><h3 id={title}>{game.title}</h3></div><p className="spatialPanelDescription">{game.description}</p>
-    <div className="spatialPanelActions">
-      <button className={"spatialPanelPrimary" + (selected ? "" : " spatialPanelSelect")} type="button" aria-label={(selected ? "Об игре " : "Выбрать ") + game.title} aria-haspopup={selected ? "dialog" : undefined} aria-controls={selected ? "spatial-game-detail" : undefined} onClick={selected ? onOpen : onSelect}><span className="spatialPanelActionLabel">{selected ? "Об игре" : "Выбрать игру"}</span><span aria-hidden="true">{selected ? "↗" : "→"}</span></button>
-      {selected ? <a className="spatialPanelLaunch" href={game.href} aria-label={(game.id === "crown-front" ? "Открыть альфу " : "Запустить ") + game.title}>{game.id === "crown-front" ? "Альфа" : "Играть"}<span aria-hidden="true">↗</span></a> : null}
-    </div>
+      <div className="spatialPanelActions">
+        <button className="spatialPanelPrimary" type="button" aria-label={"Об игре " + game.title} aria-haspopup="dialog" aria-controls="spatial-game-detail" onClick={onOpen}><span className="spatialPanelActionLabel">Об игре</span><span aria-hidden="true">↗</span></button>
+        <a className="spatialPanelLaunch" href={game.href} aria-label={(game.id === "crown-front" ? "Открыть альфу " : "Запустить ") + game.title}>{game.id === "crown-front" ? "Открыть альфу" : "Играть"}<span aria-hidden="true">↗</span></a>
+      </div>
     </div>
   </article>;
 }
 
-type LayerProps = { rootRef: RefObject<HTMLDivElement>; selected: number; visible: readonly number[]; onSelect: (index: number) => void; onOpen: () => void };
-export function GamePanelLayer({ rootRef, selected, visible, onSelect, onOpen }: LayerProps) {
-  return <div ref={rootRef} className="spatialPanelLayer" role="group" aria-label="Игры в пространственной галерее">{platformGames.map((game, index) => <div key={game.id} className="spatialPanelSlot" hidden={!visible.includes(index)}><GamePanel spatial game={game} index={index} selected={selected === index} onSelect={() => onSelect(index)} onOpen={onOpen}/></div>)}</div>;
+type GridProps = { selected: number; visible: readonly number[]; onOpen: (index: number) => void };
+export function GamePanelGrid({ selected, visible, onOpen }: GridProps) {
+  return <div className="spatialGameGrid" role="list" aria-label="Игры BLACKCROWN">{visible.map(index => <GamePanel key={platformGames[index].id} game={platformGames[index]} index={index} selected={selected === index} onOpen={() => onOpen(index)}/>)}</div>;
 }

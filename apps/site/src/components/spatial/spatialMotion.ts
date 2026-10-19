@@ -1,5 +1,19 @@
 export const SPATIAL_TIMING = { open: 1280, close: 1040, orbit: 1120, focus: 880 } as const;
 
+/** One scroll clock for both the camera and sculpture; it never overshoots its target. */
+export class ScrollJourney {
+  value = 0;
+  snap(target:number) { this.value = Math.max(0,Math.min(1,target)); return this.value; }
+  update(target:number,deltaMs:number,options:{paused?:boolean;detailOpen?:boolean;reduced?:boolean}={}) {
+    if(options.paused||options.detailOpen)return this.value;
+    if(options.reduced)return this.snap(target);
+    const destination=Math.max(0,Math.min(1,target));
+    const elapsed=Number.isFinite(deltaMs)?Math.max(0,deltaMs):0;
+    this.value+=(destination-this.value)*-Math.expm1(-elapsed/130);
+    return this.value;
+  }
+}
+
 /** Critically damped motion retains velocity when its destination changes. */
 export class DampedScalar {
   velocity = 0;

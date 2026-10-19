@@ -1,8 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
 import { detailOriginPose, type PanelOrigin } from "../../src/components/spatial/detailTransition";
-import { readSpatialReturn, rememberSpatialReturn } from "../../src/components/spatial/spatialNavigation";
+import { readSpatialReturn, rememberSpatialReturn, spatialReturnForGame } from "../../src/components/spatial/spatialNavigation";
 
 describe("Spatial navigation return", () => {
+  it.each([0,1,2,3])("remembers direct launch of card %i even when Ballcrown was selected",worldIndex=>{
+    const history={state:null as unknown,replaceState(data:unknown){this.state=data;}};
+    const next=spatialReturnForGame(worldIndex,{worldIndex:0,category:"Все игры",scrollY:1900});
+    rememberSpatialReturn(history,"/",next);
+    expect(readSpatialReturn(history.state,"/")).toEqual({worldIndex,category:"Все игры",scrollY:1900});
+  });
+  it("keeps the hero's Ballcrown shortcut return valid when another genre was active",()=>{
+    const history={state:null as unknown,replaceState(data:unknown){this.state=data;}};
+    rememberSpatialReturn(history,"/",spatialReturnForGame(0,{worldIndex:1,category:"Исследование",scrollY:0}));
+    expect(readSpatialReturn(history.state,"/")).toEqual({worldIndex:0,category:"Все игры",scrollY:0});
+  });
+
   it("restores the selected game, genre and scroll from the same history entry while preserving other state", () => {
     const history = { state: { otherRouter: { entry: 7 } } as unknown, replaceState(data: unknown) { this.state = data; } };
     rememberSpatialReturn(history, "/", { worldIndex: 2, category: "Симуляторы", scrollY: 844 });

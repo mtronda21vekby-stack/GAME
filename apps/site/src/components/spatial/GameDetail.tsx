@@ -67,7 +67,7 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
       focusFrame.current = requestAnimationFrame(() => {
         const candidates = [...document.querySelectorAll<HTMLElement>(`.spatialGamePanel[data-game-id="${currentGameId.current}"] button`)];
         const panel = candidates.find(element => element.getClientRects().length && getComputedStyle(element).visibility !== "hidden");
-        (panel ?? document.querySelector<HTMLElement>('.spatialWorldChoices button[aria-pressed="true"]') ?? (opener?.isConnected ? opener : null))?.focus({ preventScroll:true });
+        (panel ?? (opener?.isConnected ? opener : null))?.focus({ preventScroll:true });
       });
     };
   }

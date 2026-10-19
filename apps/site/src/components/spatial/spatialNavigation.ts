@@ -2,6 +2,14 @@ import { platformGames } from "../../lib/platformGames";
 
 export const SPATIAL_CATEGORIES = ["Все игры", "Экшн", "Исследование", "Симуляторы"] as const;
 export type SpatialReturn = { worldIndex: number; category: string; scrollY: number };
+
+/** Direct launch is available on every card, including one that was never selected. */
+export function spatialReturnForGame(worldIndex:number,view:SpatialReturn):SpatialReturn {
+  const game=platformGames[worldIndex];
+  if(!game)return view;
+  return {...view,worldIndex,category:view.category==="Все игры"||view.category===game.genre?view.category:"Все игры"};
+}
+
 const KEY = "blackcrownSpatialReturn";
 const isRecord = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === "object" && !Array.isArray(value);
 

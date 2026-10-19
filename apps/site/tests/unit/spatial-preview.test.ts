@@ -16,8 +16,8 @@ describe("Spatial preview", () => {
     expect(Number.isFinite(spatialProgress(10, 0, 0, 900))).toBe(true);
   });
 
-  it.each([320,390,1160])("starts at the head and keeps the same full axis in the %ipx camera frustum",width=>{
-    const compact=width<=760,height=844,slot={x:compact?width/2:850,y:compact?710:422,width:compact?width-40:450,height:compact?300:500};
+  it.each([320,390,800,1160])("starts at the head and keeps the same full axis in the %ipx camera frustum",width=>{
+    const compact=width<=760,height=844,slot={x:compact?width/2:width*.73,y:compact?710:422,width:compact?width-40:450,height:compact?300:500};
     const {axisHeight,frames}=spatialAxisJourney({compact,width,height,slot});
     const camera=new PerspectiveCamera(38,width/height,.1,100),rig=new CameraRig(camera,frames,true);
     const snapshot={...INITIAL_SCROLL_SNAPSHOT,viewportWidth:width,viewportHeight:height,reducedMotion:true};
