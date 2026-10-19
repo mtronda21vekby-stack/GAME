@@ -1,7 +1,7 @@
-/** Replace after reviewing the user's GLB: a wide crown or a tall skull/crown/spine.
- * Portrait proportions are detected by SpatialBrandAdapter; a rig is optional. */
+/** Authored PBR hero and a locally generated mobile LOD; source GLB is preserved. */
 export const SPATIAL_BRAND_MODEL = {
-  url: "/experience/crown/candidate-b/crown-candidate-b-lod2.glb",
+  url: "/experience/blackcrown-skull/blackcrown-skull-desktop.glb",
+  mobileUrl: "/experience/blackcrown-skull/blackcrown-skull-mobile.glb",
   fitSpan: 2.36,
-  finish: "blackcrown-metal" as "blackcrown-metal" | "original",
+  finish: "original" as "blackcrown-metal" | "original",
 };

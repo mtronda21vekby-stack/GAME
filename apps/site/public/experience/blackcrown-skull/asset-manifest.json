@@ -1,0 +1,102 @@
+{
+  "source_sha256": "7c1d400b5c8a91c3e3383c7d34fa07757e43a9bcdcbde3c3031c0a110e4c53a4",
+  "source_preserved": true,
+  "generated_with": "Blender 5.1.2",
+  "desktop": {
+    "file": "blackcrown-skull-desktop.glb",
+    "triangles": 80310,
+    "bytes": 6295892,
+    "sha256": "7c1d400b5c8a91c3e3383c7d34fa07757e43a9bcdcbde3c3031c0a110e4c53a4"
+  },
+  "mobile": {
+    "file": "blackcrown-skull-mobile.glb",
+    "triangles": 27200,
+    "parts": [
+      {
+        "name": "SKULL_REAR_LEFT",
+        "source_triangles": 1957,
+        "mobile_triangles": 542
+      },
+      {
+        "name": "SPINE",
+        "source_triangles": 22150,
+        "mobile_triangles": 6092
+      },
+      {
+        "name": "SKULL_REAR_RIGHT",
+        "source_triangles": 2100,
+        "mobile_triangles": 592
+      },
+      {
+        "name": "SKULL_CRANIUM",
+        "source_triangles": 3746,
+        "mobile_triangles": 991
+      },
+      {
+        "name": "SKULL_FACE",
+        "source_triangles": 22526,
+        "mobile_triangles": 6991
+      },
+      {
+        "name": "CROWN",
+        "source_triangles": 27831,
+        "mobile_triangles": 11992
+      }
+    ],
+    "textures": [
+      {
+        "name": "SKULL_ORM",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "SPINE_ORM",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "CROWN_ORM",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "SKULL_BaseColor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "CROWN_BaseColor",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "SPINE_BaseColor",
+        "size": [
+          512,
+          512
+        ]
+      }
+    ],
+    "bytes": 2164080,
+    "sha256": "8478540437c68bcf3bb1ac584f07a21dd08941b4aa4314b0c6f2ee5fca40d508"
+  },
+  "poster": "blackcrown-skull-poster.png",
+  "poster_details": {
+    "crop": "crown, skull and upper neck",
+    "source": "unchanged desktop source",
+    "width": 640,
+    "height": 760,
+    "bytes": 420559,
+    "sha256": "f0ec2b762569b6a0fb2ea1bc0161887233251484ac83d180d9c86c771209c4d9"
+  }
+}

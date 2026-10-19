@@ -27,7 +27,7 @@ export default defineConfig({
           if (id.includes("/three/examples/jsm/")) {
             return "nexus-gltf-loader";
           }
-          if (id.includes("/three/src/renderers/") || id.includes("/three/src/materials/ShaderMaterial.js") || id.includes("/three/src/extras/PMREMGenerator.js")) {
+          if (id.includes("/three/src/renderers/") || /\/three\/src\/materials\/(?:Raw)?ShaderMaterial\.js$/.test(id) || id.includes("/three/src/extras/PMREMGenerator.js")) {
             return "nexus-three-renderer";
           }
           if (id.includes("/node_modules/.pnpm/three@") || id.includes("/node_modules/three/")) {

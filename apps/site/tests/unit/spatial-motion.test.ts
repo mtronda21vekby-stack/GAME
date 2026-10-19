@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PerspectiveCamera } from "three";
 import { DampedScalar, SurfaceMotion } from "../../src/components/spatial/spatialMotion";
-import { DESKTOP_SPATIAL_CAMERA, MOBILE_SPATIAL_CAMERA } from "../../src/components/spatial/spatialState";
+import { spatialAxisJourney } from "../../src/components/spatial/SpatialAxis";
 import { CameraRig } from "../../src/experience/camera/CameraRig";
 import { INITIAL_SCROLL_SNAPSHOT } from "../../src/experience/types";
 
@@ -69,7 +69,8 @@ describe("Interruptible spatial motion", () => {
   });
 });
 
-describe.each([{label:"desktop",frames:DESKTOP_SPATIAL_CAMERA},{label:"mobile",frames:MOBILE_SPATIAL_CAMERA}])("Continuous $label camera path", ({frames}) => {
+describe.each([{label:"desktop",compact:false},{label:"mobile",compact:true}])("Continuous $label camera path", ({compact}) => {
+  const {frames}=spatialAxisJourney({compact,width:compact?390:1160,height:844,slot:{x:compact?195:850,y:compact?700:422,width:compact?342:450,height:compact?300:500}});
   const camera = new PerspectiveCamera();
   const rig = new CameraRig(camera,frames,true);
   const sample = (progress: number) => {
@@ -79,7 +80,7 @@ describe.each([{label:"desktop",frames:DESKTOP_SPATIAL_CAMERA},{label:"mobile",f
 
   it("keeps velocity continuous through travel keyframes", () => {
     const epsilon = .000001;
-    for (const progress of [.16,.3,.45,.72]) {
+    for (const progress of [.18,.32,.48,.74]) {
       const left = sample(progress-epsilon), at = sample(progress), right = sample(progress+epsilon);
       at.forEach((value,axis) => {
         expect((value-left[axis])/epsilon).toBeCloseTo((right[axis]-value)/epsilon,2);
@@ -87,8 +88,13 @@ describe.each([{label:"desktop",frames:DESKTOP_SPATIAL_CAMERA},{label:"mobile",f
     }
   });
 
-  it("holds the gallery camera still across its reading interval", () => {
-    const first = sample(.45);
-    for (const progress of [.5,.6,.72]) sample(progress).forEach((value,axis) => expect(value).toBeCloseTo(first[axis],10));
+  it("descends along the same axis and returns to each pose exactly on reverse scroll", () => {
+    const first=sample(0),middle=sample(.5),last=sample(1);
+    expect(first[1]-last[1]).toBeGreaterThan(10);
+    expect(middle[1]).toBeLessThan(first[1]);expect(last[1]).toBeLessThan(middle[1]);
+    for(let i=0;i<=100;i++){
+      const forward=sample(i/100);sample(1);
+      sample(i/100).forEach((value,axis)=>expect(value).toBeCloseTo(forward[axis],10));
+    }
   });
 });

@@ -6,8 +6,9 @@ import { CameraRig } from "../../src/experience/camera/CameraRig";
 import { INITIAL_SCROLL_SNAPSHOT } from "../../src/experience/types";
 import { GamePanel } from "../../src/components/spatial/GamePanel";
 import { GameDetail } from "../../src/components/spatial/GameDetail";
-import { panelCSSMatrix, panelFrontWidth, panelScrollOffset, panelStyle } from "../../src/components/spatial/panelProjection";
-import { MOBILE_SPATIAL_CAMERA, ORBIT_CARD_WIDTH } from "../../src/components/spatial/spatialState";
+import { panelCSSMatrix, panelFrontWidth, panelScreenPosition, panelScrollOffset, panelStyle } from "../../src/components/spatial/panelProjection";
+import { ORBIT_CARD_WIDTH } from "../../src/components/spatial/spatialState";
+import { spatialAxisJourney } from "../../src/components/spatial/SpatialAxis";
 import { platformGames } from "../../src/lib/platformGames";
 
 describe("Live spatial interface panels", () => {
@@ -28,10 +29,12 @@ describe("Live spatial interface panels", () => {
 
   it.each([320, 390])("keeps a 50px action tappable and the selected panel inside a %ipx view", viewportWidth => {
     const viewportHeight = 844, camera = new PerspectiveCamera(36, viewportWidth / viewportHeight, 0.1, 100);
-    new CameraRig(camera, MOBILE_SPATIAL_CAMERA).update({ ...INITIAL_SCROLL_SNAPSHOT, progress: 0.5, viewportWidth, viewportHeight }, { x: 0, y: 0 }, 0);
+    const {frames}=spatialAxisJourney({compact:true,width:viewportWidth,height:viewportHeight,slot:{x:viewportWidth/2,y:720,width:viewportWidth-40,height:300}});
+    new CameraRig(camera, frames,true).update({ ...INITIAL_SCROLL_SNAPSHOT, progress: 0.5, viewportWidth, viewportHeight }, { x: 0, y: 0 }, 0);
     camera.updateMatrixWorld();
-    const width = panelFrontWidth(camera, viewportWidth, ORBIT_CARD_WIDTH, new Vector3(0, 0.8, 3.6)), height = 430;
-    const world = new Matrix4().makeTranslation(0, 0.8, 3.85);
+    const center=panelScreenPosition(camera,viewportWidth/2,480,viewportWidth,viewportHeight,3.85);
+    const width=viewportWidth-40,height=430,scale=width/panelFrontWidth(camera,viewportWidth,ORBIT_CARD_WIDTH,center);
+    const world=new Matrix4().makeScale(scale,scale,scale);world.setPosition(center);
     const matrix = panelCSSMatrix(camera, world, viewportWidth, viewportHeight, width, height, ORBIT_CARD_WIDTH);
     for (const x of [0, width]) for (const y of [0, height]) {
       const point = new Vector3(x, y, 0).applyMatrix4(matrix);

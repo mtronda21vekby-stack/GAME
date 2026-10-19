@@ -22,6 +22,12 @@ export function panelFrontWidth(camera: PerspectiveCamera, width: number, worldW
   return Math.max(1, (right.x - left.x) * width / 2);
 }
 
+/** Anchor a real panel in its native sticky slot while the camera descends the axis. */
+export function panelScreenPosition(camera:PerspectiveCamera,x:number,y:number,width:number,height:number,z:number) {
+  const ray=new Vector3(x/width*2-1,1-y/height*2,.5).unproject(camera).sub(camera.position).normalize();
+  return camera.position.clone().addScaledVector(ray,(z-camera.position.z)/ray.z);
+}
+
 /** Follow the gallery's native document slot so panels never cover the controls below it. */
 export function panelScrollOffset(camera: PerspectiveCamera, center: Vector3, targetScreenY: number, viewportHeight: number) {
   const m = new Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse).elements;

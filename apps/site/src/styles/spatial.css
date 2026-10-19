@@ -22,7 +22,7 @@ html:has(.spatialPage) { scroll-behavior:smooth; scrollbar-gutter:stable; }
 .spatialPoster { transition:opacity .6s; }
 .spatialSceneCanvas { display:block; touch-action:pan-y pinch-zoom; }
 .spatialPoster,.spatialVignette { pointer-events:none; }
-.spatialVignette { background:radial-gradient(ellipse at 78% 42%,#a5cbd009,transparent 58%),linear-gradient(90deg,#090d116b,transparent 55%),linear-gradient(0deg,#090d11,transparent 28%,transparent 85%,#090d1159); }
+.spatialVignette { background:radial-gradient(ellipse at 78% 42%,#a5cbd009,transparent 58%),linear-gradient(90deg,#070c12c7,transparent 62%),linear-gradient(0deg,#090d11,transparent 28%,transparent 85%,#090d1159); }
 .spatialJourneyContent { position:relative; margin-top:-100svh; z-index:2; pointer-events:none; }
 .spatialHero { min-height:100svh; position:relative; display:grid; grid-template-columns:1.1fr 1fr; align-items:center; gap:20px; padding:155px clamp(24px,5vw,84px) 145px; }
 .spatialHeroCopy { position:relative; z-index:1; }
@@ -36,13 +36,16 @@ html:has(.spatialPage) { scroll-behavior:smooth; scrollbar-gutter:stable; }
 .spatialPage .platButton:hover { background:#bce0e3; border-color:#bce0e3; }
 .spatialPage .platTextLink { display:inline-flex; align-items:center; gap:18px; min-height:50px; color:#cad6d9; font:14px/1.4 var(--spatial-type); text-decoration:none; }
 .spatialPage .platTextLink:hover { color:#a9e1e5; }
-.spatialBrandSlot { width:100%; height:clamp(340px,60svh,660px); pointer-events:none; }
+.spatialBrandSlot { width:100%; height:clamp(340px,60svh,660px); pointer-events:none; overflow:hidden; }
+.spatialBrandPoster { display:block; width:100%; height:100%; object-fit:cover; object-position:50% 0; pointer-events:none; }
+[data-scene-state=ready] .spatialJourney[data-brand-ready="1"] .spatialBrandPoster { visibility:hidden; }
 .spatialHeroFoot { position:absolute; left:clamp(24px,5vw,84px); right:clamp(24px,5vw,84px); bottom:32px; display:flex; align-items:end; justify-content:space-between; gap:24px; padding:20px 125px 0 0; border-top:1px solid var(--spatial-line); }
 .spatialHeroFoot>span { color:#8e9fa7; font-size:12px; line-height:1.7; }
 .spatialHeroFoot b { color:#dce9e9; font-weight:500; }
 .spatialScrollCue { display:inline-flex; align-items:center; gap:25px; min-height:48px; font-size:13px; color:#d8e4e5; text-decoration:none; }
 .spatialScrollCue>span { font-size:24px; color:#a5d9df; }
-.spatialGallerySection { position:relative; display:flex; flex-direction:column; min-height:100svh; padding:110px clamp(24px,5vw,84px) 24px; scroll-margin-top:0; }
+.spatialGallerySection { position:relative; min-height:calc(100svh + var(--spatial-stops,4)*45svh); padding:110px clamp(24px,5vw,84px) 24px; scroll-margin-top:0; }
+.spatialGalleryDeck { position:sticky; top:100px; display:flex; flex-direction:column; min-height:calc(100svh - 112px); margin-top:12px; }
 .spatialGalleryHead { display:flex; justify-content:space-between; align-items:end; gap:28px; padding-bottom:28px; border-bottom:1px solid var(--spatial-line); }
 .spatialGalleryHeading .spatialEyebrow { margin-bottom:10px; }
 .spatialGalleryHeading h2 { font-size:clamp(36px,4.2vw,64px); font-weight:480; line-height:1.05; letter-spacing:-.055em; margin:0; }
@@ -148,11 +151,12 @@ html:has(.spatialPage) { scroll-behavior:smooth; scrollbar-gutter:stable; }
  .spatialActions { gap:4px 20px; }
  .spatialPage .platButton { font-size:13px; min-height:54px; padding:14px 18px; gap:24px; }
  .spatialPage .platTextLink { font-size:12px; gap:10px; }
- .spatialBrandSlot { height:250px; max-height:none; margin-top:4px; }
+ .spatialBrandSlot { height:clamp(280px,38svh,340px); max-height:none; margin-top:4px; }
  .spatialHeroFoot { left:24px; right:24px; bottom:24px; padding:16px 0 0; }
  .spatialHeroFoot>span { font-size:10px; }
  .spatialScrollCue { gap:14px; font-size:10px; }
- .spatialGallerySection { min-height:max(890px,100svh); padding:142px 20px 24px; }
+ .spatialGallerySection { padding:142px 20px 24px; }
+ .spatialGalleryDeck { top:122px; min-height:calc(100svh - 140px); }
  .spatialGalleryHead { display:block; padding-bottom:12px; }
  .spatialGalleryHeading h2 { font-size:34px; }
  .spatialGalleryHeading .spatialEyebrow { margin-bottom:10px; }
@@ -215,8 +219,10 @@ html:has(.spatialPage) { scroll-behavior:smooth; scrollbar-gutter:stable; }
  .spatialGalleryControls { gap:0; }
  .spatialDetailCopy h2 { font-size:36px; }
 }
-@media(max-height:579px),(max-width:760px) and (max-height:699px) {
+@media(max-height:739px) {
  .spatialPanelLayer { display:none; }
+ .spatialGallerySection { min-height:100svh; }
+ .spatialGalleryDeck { position:relative; top:auto; min-height:0; }
  .spatialGalleryVisual { height:auto; }
  [data-scene-state=ready] .spatialPanelFallback { visibility:visible; position:static; }
 }

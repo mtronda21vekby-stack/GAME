@@ -1,0 +1,22 @@
+import { HalfFloatType, Vector2, WebGLRenderTarget, type Camera, type Scene, type WebGLRenderer } from "three";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
+
+/** Desktop HDR bloom. Native HTML cards remain above this canvas and stay crisp. */
+export class SpatialBloom {
+  private readonly composer:EffectComposer;
+  private readonly bloom=new UnrealBloomPass(new Vector2(1,1),.3,.65,1.05);
+  private readonly output=new OutputPass();
+  constructor(renderer:WebGLRenderer,scene:Scene,camera:Camera) {
+    const target=new WebGLRenderTarget(1,1,{type:HalfFloatType,depthBuffer:true,stencilBuffer:false});
+    this.composer=new EffectComposer(renderer,target);
+    this.composer.addPass(new RenderPass(scene,camera));this.composer.addPass(this.bloom);this.composer.addPass(this.output);
+  }
+  resize(width:number,height:number,dpr:number) {
+    this.composer.setPixelRatio(Math.min(1.25,dpr));this.composer.setSize(width,height);
+  }
+  render(){this.composer.render();}
+  dispose(){this.bloom.dispose();this.output.dispose();this.composer.dispose();}
+}

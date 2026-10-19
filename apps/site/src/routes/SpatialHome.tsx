@@ -7,6 +7,7 @@ import type { SpatialSceneHandle } from "../components/spatial/SpatialScene";
 import { isSpatialGameLaunch, nextWorldIndex } from "../components/spatial/spatialState";
 import { platformGames } from "../lib/platformGames";
 import { readSpatialReturn, rememberSpatialReturn, SPATIAL_CATEGORIES } from "../components/spatial/spatialNavigation";
+import { spatialScrollWorld } from "../components/spatial/SpatialAxis";
 import "../styles/spatial.css";
 
 const SpatialScene = React.lazy(() => import("../components/spatial/SpatialScene"));
@@ -17,6 +18,8 @@ export default function SpatialHome() {
   const sceneRef = React.useRef<SpatialSceneHandle>(null);
   const panelRootRef = React.useRef<HTMLDivElement>(null);
   const choicesRef = React.useRef<HTMLDivElement>(null);
+  const galleryRef = React.useRef<HTMLElement>(null);
+  const deckRef = React.useRef<HTMLDivElement>(null);
   const [initialView] = React.useState(() => readSpatialReturn(window.history.state, window.location.pathname));
   const [worldIndex, setWorldIndex] = React.useState(initialView?.worldIndex ?? 0);
   const [category, setCategory] = React.useState<string>(initialView?.category ?? "Все игры");
@@ -57,6 +60,30 @@ export default function SpatialHome() {
     return () => { cancelAnimationFrame(frame); window.clearTimeout(timer); window.removeEventListener("scroll", onScroll); window.removeEventListener("pagehide", rememberView); };
   }, [initialView, rememberView]);
   React.useEffect(rememberView, [worldIndex, category, rememberView]);
+
+  React.useEffect(() => {
+    const section=galleryRef.current,deck=deckRef.current;
+    if(!section||!deck)return;
+    let start=0,end=0,enabled=false,last:number|undefined;
+    const measure=()=>{
+      const style=getComputedStyle(deck),head=section.querySelector(".spatialGalleryHead")!.getBoundingClientRect();
+      const inset=parseFloat(style.top)||0,box=section.getBoundingClientRect();
+      enabled=style.position==="sticky";
+      start=head.bottom+window.scrollY+(parseFloat(style.marginTop)||0)-inset;
+      end=box.bottom+window.scrollY-(parseFloat(getComputedStyle(section).paddingBottom)||0)-deck.offsetHeight-inset;
+      last=spatialScrollWorld(window.scrollY,start,end,visibleGames);
+    };
+    const onScroll=()=>{
+      if(!enabled||view.current.detailOpen)return;
+      if(window.scrollY<start){last=undefined;return;}
+      const next=spatialScrollWorld(window.scrollY,start,end,visibleGames);
+      if(next!==undefined&&next!==last){last=next;setWorldIndex(next);}
+    };
+    const observer=new ResizeObserver(measure);observer.observe(section);observer.observe(deck);
+    measure();const frame=requestAnimationFrame(measure);
+    window.addEventListener("resize",measure,{passive:true});window.addEventListener("scroll",onScroll,{passive:true});
+    return()=>{cancelAnimationFrame(frame);observer.disconnect();window.removeEventListener("resize",measure);window.removeEventListener("scroll",onScroll);};
+  },[visibleGames]);
 
   function openDetail() {
     const panel = [...document.querySelectorAll<HTMLElement>(`.spatialGamePanel[data-game-id="${game.id}"]`)].find(element => element.getClientRects().length && getComputedStyle(element).visibility !== "hidden");
@@ -104,14 +131,15 @@ export default function SpatialHome() {
                 <p className="spatialLead">От арены Ballcrown до тихой долины.<br/>Найди свой ритм. Выбери свой мир.</p>
                 <div className="spatialActions"><a className="platButton" href="#spatial-worlds">Выбрать игру <span aria-hidden="true">↓</span></a><a className="platTextLink" href={platformGames[0].href}>Начать с Ballcrown <span aria-hidden="true">↗</span></a></div>
               </div>
-              <div className="spatialBrandSlot" aria-hidden="true"/>
+              <div className="spatialBrandSlot" aria-hidden="true"><img className="spatialBrandPoster" src="/experience/blackcrown-skull/blackcrown-skull-poster.png" alt="" width="640" height="760" decoding="async"/></div>
               <div className="spatialHeroFoot">
                 <span><b>{String(platformGames.length).padStart(2,"0")}</b> разных мира.<br/>Следующий — твой.</span>
                 <a className="spatialScrollCue" href="#spatial-worlds">Исследовать коллекцию <span aria-hidden="true">↓</span></a>
               </div>
             </section>
-            <section className="spatialGallerySection" id="spatial-worlds" aria-labelledby="spatial-world-title">
+            <section className="spatialGallerySection" id="spatial-worlds" ref={galleryRef} style={{"--spatial-stops":visibleGames.length} as React.CSSProperties} aria-labelledby="spatial-world-title">
               <div className="spatialGalleryHead"><div className="spatialGalleryHeading"><p className="spatialEyebrow">01 / КОЛЛЕКЦИЯ</p><h2 id="spatial-world-title">Игровые миры.</h2></div><div className="spatialFilters" role="group" aria-label="Жанр игры">{categories.map(item => <button key={item} type="button" aria-label={item} aria-pressed={category === item} onClick={() => changeCategory(item)}>{item === "Все игры" ? "Все" : item}</button>)}</div></div>
+              <div className="spatialGalleryDeck" ref={deckRef}>
               <div className="spatialGalleryControls">
                 <button type="button" disabled={visibleGames.length < 2} className="spatialArrow" onClick={() => step(-1)} aria-label="Предыдущая игра">←</button>
                 <div className="spatialWorldChoices" ref={choicesRef} role="group" aria-label="Выбор игры" onKeyDown={onChoiceKey}>{visibleGames.map(index => <button type="button" key={platformGames[index].id} data-world={index} aria-label={platformGames[index].title} title={platformGames[index].title} aria-pressed={worldIndex === index} onClick={() => setWorldIndex(index)}><span>{String(index + 1).padStart(2,"0")}</span><b>{platformGames[index].title}</b></button>)}</div>
@@ -121,7 +149,8 @@ export default function SpatialHome() {
               <div className="spatialGalleryVisual">
                 <div className="spatialPanelFallback"><GamePanel game={game} index={worldIndex} selected onSelect={() => {}} onOpen={openDetail}/></div>
               </div>
-              <div className="spatialGalleryFoot"><span>Разные правила. Свой характер.</span><a className="platTextLink" href="/games/">Весь каталог <span aria-hidden="true">↗</span></a></div>
+              <div className="spatialGalleryFoot"><span>Прокручивай — открывай следующий мир.</span><a className="platTextLink" href="/games/">Весь каталог <span aria-hidden="true">↗</span></a></div>
+              </div>
             </section>
             <section className="spatialAbout" aria-labelledby="spatial-about-title">
               <div className="spatialAboutCopy"><p className="spatialEyebrow">02 / О ПЛАТФОРМЕ</p><h2 id="spatial-about-title">Один BLACKCROWN.<br/><span>Разный опыт.</span></h2></div><div className="spatialAboutText"><p>Быстрый бой, неизвестный океан или день в своей долине. Здесь у каждой игры — собственный мир, настроение и темп.</p><div className="spatialActions"><a className="platTextLink" href="/about">О проекте <span aria-hidden="true">↗</span></a><a className="platTextLink" href="/support">Нужна помощь? <span aria-hidden="true">↗</span></a><a className="platTextLink" href="/nexus-lab">Сцена короны <span aria-hidden="true">↗</span></a></div></div>

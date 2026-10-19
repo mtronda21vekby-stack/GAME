@@ -1,23 +1,4 @@
-import type { CameraKeyframe } from "../../experience/camera/CameraKeyframes";
 import { platformGames } from "../../lib/platformGames";
-
-export const DESKTOP_SPATIAL_CAMERA: readonly CameraKeyframe[] = [
-  { progress: 0, position: [0.2, 0.8, 10.4], target: [1, 0.2, 0], fov: 38 },
-  { progress: 0.16, position: [2.7, 1.8, 11.2], target: [0.5, 0.45, -0.7], fov: 37 },
-  { progress: 0.3, position: [-1.7, 1.1, 14.4], target: [0, 0.6, -0.2], fov: 42 },
-  { progress: 0.45, position: [0, 0.6, 12.7], target: [0, 0.5, 0.7], fov: 40 },
-  { progress: 0.72, position: [0, 0.6, 12.7], target: [0, 0.5, 0.7], fov: 40 },
-  { progress: 1, position: [0.5, 0.6, 11.8], target: [0.8, 0.3, 0], fov: 40 },
-];
-
-export const MOBILE_SPATIAL_CAMERA: readonly CameraKeyframe[] = [
-  { progress: 0, position: [1.3, 2.3, 17.2], target: [1.3, 3.7, 0], fov: 36 },
-  { progress: 0.16, position: [2.6, 3.6, 18.6], target: [0.5, 2.1, -0.6], fov: 36 },
-  { progress: 0.3, position: [-1.6, 2.8, 22.6], target: [0, 1.7, -0.1], fov: 38 },
-  { progress: 0.45, position: [0, 2, 20.6], target: [0, 1.75, 0.6], fov: 36 },
-  { progress: 0.72, position: [0, 2, 20.6], target: [0, 1.75, 0.6], fov: 36 },
-  { progress: 1, position: [0, 0.8, 20], target: [0, 1.2, 0], fov: 38 },
-];
 
 export const WORLD_ACCENTS = [0x9edfe6, 0x75b9e9, 0xb7ce9d, 0xd5a57a] as const;
 export const ALL_WORLD_INDICES = platformGames.map((_, index) => index);

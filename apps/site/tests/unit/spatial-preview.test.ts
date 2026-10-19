@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import { Group, InstancedMesh, Mesh, MeshStandardMaterial, PerspectiveCamera, Box3, BoxGeometry, Texture, Vector3 } from "three";
+import { Group, InstancedMesh, Mesh, MeshStandardMaterial, PerspectiveCamera, Box3, BoxGeometry, Frustum, Matrix4, Texture, Vector3 } from "three";
 import { CameraRig } from "../../src/experience/camera/CameraRig";
 import { INITIAL_SCROLL_SNAPSHOT } from "../../src/experience/types";
 import { disposeModel } from "../../src/components/platform/crownModel";
 import { createRibbons, createSpine, createWave } from "../../src/components/spatial/SpatialObjects";
 import { SpatialEnvironment } from "../../src/components/spatial/SpatialEnvironment";
-import { adaptSpatialBrand } from "../../src/components/spatial/SpatialBrandAdapter";
-import { DESKTOP_SPATIAL_CAMERA, MOBILE_SPATIAL_CAMERA, isSpatialGameLaunch, nearestOrbitTurn, nextWorldIndex, orbitCardPose, spatialProgress } from "../../src/components/spatial/spatialState";
+import { spatialAxisJourney, spatialScrollWorld } from "../../src/components/spatial/SpatialAxis";
+import { isSpatialGameLaunch, nearestOrbitTurn, nextWorldIndex, orbitCardPose, spatialProgress } from "../../src/components/spatial/spatialState";
 
 describe("Spatial preview", () => {
   it("maps native scroll into one bounded camera journey", () => {
@@ -16,29 +16,22 @@ describe("Spatial preview", () => {
     expect(Number.isFinite(spatialProgress(10, 0, 0, 900))).toBe(true);
   });
 
-  it("moves the physical camera from the brand object to the orbital gallery", () => {
-    const camera = new PerspectiveCamera();
-    const rig = new CameraRig(camera, DESKTOP_SPATIAL_CAMERA);
-    const snapshot = { ...INITIAL_SCROLL_SNAPSHOT, viewportWidth: 1440, viewportHeight: 900 };
-    rig.update(snapshot, { x: 0, y: 0 }, 0);
-    const start = camera.position.clone();
-    rig.update({ ...snapshot, progress: 0.5 }, { x: 0, y: 0 }, 0);
-    expect(camera.position.distanceTo(start)).toBeGreaterThan(2);
-    expect(camera.position.z).toBeCloseTo(12.7);
-    expect(camera.projectionMatrix.elements.every(Number.isFinite)).toBe(true);
-  });
-
-  it.each([320, 390])("keeps the mobile crown inside a %ipx camera frame", width => {
-    const camera = new PerspectiveCamera(37, width / 844, 0.1, 100);
-    const rig = new CameraRig(camera, MOBILE_SPATIAL_CAMERA);
-    rig.update({ ...INITIAL_SCROLL_SNAPSHOT, viewportWidth: width, viewportHeight: 844, reducedMotion: true }, { x: 0, y: 0 }, 0);
-    camera.updateMatrixWorld(true);
-    // Existing temporary Crown B, normalised by the replaceable model contract.
-    for (const x of [-1.18, 1.18]) for (const y of [-0.995, 0.995]) {
-      const screen = new Vector3(1.3 + x * 1.55, 0.1 + y * 1.55, 0.41 * 1.55).project(camera);
-      expect(Math.abs(screen.x)).toBeLessThan(1);
-      expect(Math.abs(screen.y)).toBeLessThan(1);
+  it.each([320,390,1160])("starts at the head and keeps the same full axis in the %ipx camera frustum",width=>{
+    const compact=width<=760,height=844,slot={x:compact?width/2:850,y:compact?710:422,width:compact?width-40:450,height:compact?300:500};
+    const {axisHeight,frames}=spatialAxisJourney({compact,width,height,slot});
+    const camera=new PerspectiveCamera(38,width/height,.1,100),rig=new CameraRig(camera,frames,true);
+    const snapshot={...INITIAL_SCROLL_SNAPSHOT,viewportWidth:width,viewportHeight:height,reducedMotion:true};
+    rig.update(snapshot,{x:0,y:0},0);camera.updateMatrixWorld(true);
+    const head=new Vector3(0,axisHeight*.35,0).project(camera);
+    expect((head.x+1)*width/2).toBeCloseTo(slot.x,5);expect((1-head.y)*height/2).toBeCloseTo(slot.y,5);
+    const bounds=new Box3(new Vector3(-axisHeight*.123,-axisHeight*.5,-axisHeight*.112),new Vector3(axisHeight*.123,axisHeight*.5,axisHeight*.112));
+    let previous=camera.position.y;
+    for(let step=0;step<=200;step++){
+      rig.update({...snapshot,progress:step/200},{x:0,y:0},0);camera.updateMatrixWorld(true);
+      expect(camera.position.y).toBeLessThanOrEqual(previous+.0001);previous=camera.position.y;
+      expect(new Frustum().setFromProjectionMatrix(new Matrix4().multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse)).intersectsBox(bounds)).toBe(true);
     }
+    expect(camera.position.y).toBeCloseTo(-axisHeight*.43);
   });
 
   it("takes the shortest orbit in both directions and keeps the wrapped card facing forward", () => {
@@ -53,24 +46,13 @@ describe("Spatial preview", () => {
     expect(Math.abs(afterBack.rotation - beforeBack.rotation)).toBeLessThan(0.01);
   });
 
-  it.each([320, 390])("fits a tall replacement GLB below the mobile copy at %ipx without a rig", width => {
-    const source = new Group().add(new Mesh(new BoxGeometry(2, 12, 1), new MeshStandardMaterial()));
-    source.position.set(4, 7, -2);
-    const adapted = adaptSpatialBrand(source, 2.36);
-    expect(adapted.portrait).toBe(true);
-    adapted.group.position.set(1.3, .6, 0);
-    adapted.group.updateMatrixWorld(true);
-    const bounds = new Box3().setFromObject(adapted.group);
-    const camera = new PerspectiveCamera(36, width / 844, .1, 100);
-    new CameraRig(camera, MOBILE_SPATIAL_CAMERA).update({ ...INITIAL_SCROLL_SNAPSHOT, viewportWidth:width, viewportHeight:844, reducedMotion:true }, {x:0,y:0}, 0);
-    camera.updateMatrixWorld(true);
-    for (const x of [bounds.min.x,bounds.max.x]) for (const y of [bounds.min.y,bounds.max.y]) for (const z of [bounds.min.z,bounds.max.z]) {
-      const screen = new Vector3(x,y,z).project(camera);
-      expect(Math.abs(screen.x)).toBeLessThan(1);
-      expect(screen.y).toBeGreaterThan(-1);
-      expect(screen.y).toBeLessThan(-.05);
-    }
-    disposeModel(adapted.group);
+  it("reveals the four real worlds in order on descent and in reverse on ascent",()=>{
+    const visible=[0,1,2,3],positions=[1000,1250,1500,1750,2000];
+    const forward=positions.map(y=>spatialScrollWorld(y,1000,2000,visible));
+    expect(forward).toEqual([0,1,2,3,3]);
+    expect([...positions].reverse().map(y=>spatialScrollWorld(y,1000,2000,visible))).toEqual([...forward].reverse());
+    expect(spatialScrollWorld(1500,1000,2000,[1])).toBe(1);
+    expect(spatialScrollWorld(1500,1000,2000,[0,3])).toBe(3);
   });
 
   it("cycles only actual games in the active genre, including a single-game selection", () => {
