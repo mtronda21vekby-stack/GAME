@@ -102,6 +102,12 @@ export class SpatialSceneRuntime {
       const adapted=adaptSpatialBrand(gltf.scene,SPATIAL_BRAND_MODEL.fitSpan);
       const previous=[...this.brand.children];this.brand.clear();this.brand.add(adapted.group);
       previous.forEach(disposeModel);
+      // The cloth is initially outside the viewport. Compile it before scroll can reveal it.
+      let warmed=true;
+      try{await (this.bloom?this.bloom.warmup():this.rendererHost!.renderer.compileAsync(this.scene,this.camera));}
+      catch{warmed=false;}
+      if(this.disposed||this.brandAbort!==controller)return;
+      this.options.stage.dataset.shaderWarmup=warmed?"ready":"fallback";
       this.brandReady=true;this.options.stage.dataset.brandReady="1";this.fitBrand();this.requestFrame();
     } catch { /* A missing hero model must not disable the games or their native fallback. */ }
     finally { if(!this.disposed&&this.brandAbort===controller)this.options.onProgress(1,1); }
@@ -248,7 +254,7 @@ export class SpatialSceneRuntime {
     this.resizeObserver?.disconnect();this.intersectionObserver?.disconnect();this.preferenceObserver?.disconnect();
     this.motionQuery.removeEventListener("change",this.onPreferenceChange);this.compactQuery.removeEventListener("change",this.onPreferenceChange);
     window.removeEventListener("scroll",this.onScroll);window.removeEventListener("resize",this.resize);window.removeEventListener("pointermove",this.onPointer);document.removeEventListener("visibilitychange",this.onVisibility);
-    delete this.options.stage.dataset.brandReady;this.atmosphere.dispose();this.cloth.dispose();this.bloom?.dispose();
+    delete this.options.stage.dataset.brandReady;delete this.options.stage.dataset.shaderWarmup;this.atmosphere.dispose();this.cloth.dispose();this.bloom?.dispose();
     disposeModel(this.scene);this.scene.clear();this.scene.environment=null;this.environment?.dispose();this.rendererHost?.dispose();
   }
 }

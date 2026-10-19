@@ -9,7 +9,7 @@ export class SpatialBloom {
   private readonly composer:EffectComposer;
   private readonly bloom=new UnrealBloomPass(new Vector2(1,1),.3,.65,1.05);
   private readonly output=new OutputPass();
-  constructor(renderer:WebGLRenderer,scene:Scene,camera:Camera) {
+  constructor(private readonly renderer:WebGLRenderer,private readonly scene:Scene,private readonly camera:Camera) {
     const target=new WebGLRenderTarget(1,1,{type:HalfFloatType,depthBuffer:true,stencilBuffer:false});
     this.composer=new EffectComposer(renderer,target);
     this.composer.addPass(new RenderPass(scene,camera));this.composer.addPass(this.bloom);this.composer.addPass(this.output);
@@ -18,5 +18,11 @@ export class SpatialBloom {
     this.composer.setPixelRatio(Math.min(1.25,dpr));this.composer.setSize(width,height);
   }
   render(){this.composer.render();}
+  /** Warm the same HDR shader variants as RenderPass, including currently hidden meshes. */
+  warmup(){
+    const previous=this.renderer.getRenderTarget();
+    try{this.renderer.setRenderTarget(this.composer.readBuffer);return this.renderer.compileAsync(this.scene,this.camera);}
+    finally{this.renderer.setRenderTarget(previous);}
+  }
   dispose(){this.bloom.dispose();this.output.dispose();this.composer.dispose();}
 }
