@@ -65,7 +65,7 @@ export default function SpatialHome() {
   React.useEffect(() => {
     const section=galleryRef.current,deck=deckRef.current;
     if(!section||!deck)return;
-    let start=0,end=0,enabled=false,last:number|undefined;
+    let start=0,end=0,enabled=false,last:number|undefined,ready=!initialView,settledFrame=0;
     const measure=()=>{
       const style=getComputedStyle(deck),head=section.querySelector(".spatialGalleryHead")!.getBoundingClientRect();
       const inset=parseFloat(style.top)||0,box=section.getBoundingClientRect();
@@ -76,15 +76,17 @@ export default function SpatialHome() {
     };
     const onScroll=()=>{
       if(!enabled||view.current.detailOpen)return;
+      // History restores scroll on the first frame; it must not replace a manual choice.
+      if(!ready){last=spatialScrollWorld(window.scrollY,start,end,visibleGames);return;}
       if(window.scrollY<start){last=undefined;return;}
       const next=spatialScrollWorld(window.scrollY,start,end,visibleGames);
       if(next!==undefined&&next!==last){last=next;setWorldIndex(next);}
     };
     const observer=new ResizeObserver(measure);observer.observe(section);observer.observe(deck);
-    measure();const frame=requestAnimationFrame(measure);
+    measure();const frame=requestAnimationFrame(()=>{measure();settledFrame=requestAnimationFrame(()=>{measure();ready=true;});});
     window.addEventListener("resize",measure,{passive:true});window.addEventListener("scroll",onScroll,{passive:true});
-    return()=>{cancelAnimationFrame(frame);observer.disconnect();window.removeEventListener("resize",measure);window.removeEventListener("scroll",onScroll);};
-  },[visibleGames]);
+    return()=>{cancelAnimationFrame(frame);cancelAnimationFrame(settledFrame);observer.disconnect();window.removeEventListener("resize",measure);window.removeEventListener("scroll",onScroll);};
+  },[visibleGames,initialView]);
 
   function openDetail() {
     const panel = [...document.querySelectorAll<HTMLElement>(`.spatialGamePanel[data-game-id="${game.id}"]`)].find(element => element.getClientRects().length && getComputedStyle(element).visibility !== "hidden");
