@@ -110,19 +110,19 @@ export default function SpatialHome() {
           </div>
           <div className="spatialJourneyContent">
             <section className="spatialHero" aria-labelledby="spatial-title">
-              <p className="spatialHeroLabel spatialEyebrow"><span className="spatialSignal" aria-hidden="true"/> НЕЗАВИСИМЫЕ ИГРОВЫЕ МИРЫ</p>
+              <p className="spatialHeroLabel spatialEyebrow">НЕЗАВИСИМЫЕ ИГРОВЫЕ МИРЫ</p>
               <div className="spatialBrandSlot" aria-hidden="true"><img className="spatialBrandPoster" src="/experience/blackcrown-skull/blackcrown-skull-poster.png" alt="" width="640" height="760" decoding="async"/></div>
               <div className="spatialHeroCopy">
-                <h1 id="spatial-title">Выбери<br/><span>свой мир.</span></h1>
-                <p className="spatialLead">Арена, океан или тихая долина.</p>
+                <h1 id="spatial-title">У каждого —<br/><span>свой мир.</span></h1>
+                <p className="spatialLead">От первого боя до тихой долины.</p>
               </div>
               <div className="spatialHeroDock">
-                <span className="spatialHeroCount">{String(platformGames.length).padStart(2,"0")} ИГРЫ / ОДНА КОЛЛЕКЦИЯ</span>
+                <span className="spatialHeroCount">{String(platformGames.length).padStart(2,"0")} МИРА ДЛЯ ТВОЕЙ ИСТОРИИ</span>
                 <div className="spatialActions"><a className="platButton" href="#spatial-worlds">Выбрать игру <span aria-hidden="true">↓</span></a><a className="platTextLink" href={platformGames[0].href}><span><span className="spatialHeroLaunchPrefix">Начать с </span>Ballcrown</span><span aria-hidden="true">↗</span></a></div>
               </div>
             </section>
             <section className="spatialGallerySection" id="spatial-worlds" aria-labelledby="spatial-world-title">
-              <div className="spatialGalleryHead"><div className="spatialGalleryHeading"><p className="spatialEyebrow">01 / КОЛЛЕКЦИЯ</p><h2 id="spatial-world-title">Игровые миры.</h2></div><div className="spatialFilters" role="group" aria-label="Жанр игры">{categories.map(item => <button key={item} type="button" aria-label={item} aria-pressed={category === item} onClick={() => changeCategory(item)}>{item === "Все игры" ? "Все" : item}</button>)}</div></div>
+              <div className="spatialGalleryHead"><div className="spatialGalleryHeading"><p className="spatialEyebrow">01 / КОЛЛЕКЦИЯ</p><h2 id="spatial-world-title">Выбери историю.</h2></div><div className="spatialFilters" role="group" aria-label="Жанр игры">{categories.map(item => <button key={item} type="button" aria-label={item} aria-pressed={category === item} onClick={() => changeCategory(item)}>{item === "Все игры" ? "Все" : item}</button>)}</div></div>
               <div className="spatialGalleryDeck">
                 <GamePanelGrid selected={worldIndex} visible={visibleGames} onOpen={openDetail}/>
                 <div className="spatialGalleryFoot"><span>Выбери мир — и начинай игру.</span><a className="platTextLink" href="/games/">Весь каталог <span aria-hidden="true">↗</span></a></div>

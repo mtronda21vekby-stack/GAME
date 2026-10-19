@@ -145,7 +145,7 @@ export class SpatialAtmosphere extends THREE.Group {
     const journey=THREE.MathUtils.smoothstep(progress,.08,.85);
     const opacity=(1-detail*.6)*(1-lab*.55);this.visible=opacity>.005;
     this.dust.material.uniforms.uDpr.value=dpr;
-    this.dust.material.uniforms.uOpacity.value=opacity*(this.compact?.52:.68);
+    this.dust.material.uniforms.uOpacity.value=opacity*(this.compact?.24:.34);
     this.dust.material.uniforms.uTravel.value=journey*2.5;
     this.haze.forEach((mesh,i)=>{
       mesh.material.uniforms.uOpacity.value=opacity*(.11-journey*.055)*(1-i*.12);

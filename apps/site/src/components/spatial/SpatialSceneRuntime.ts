@@ -35,7 +35,7 @@ export class SpatialSceneRuntime {
   private readonly accent = new THREE.Color(WORLD_ACCENTS[0]);
   private readonly desiredAccent = new THREE.Color(WORLD_ACCENTS[0]);
   private readonly atmosphereOrigin = new THREE.Vector3();
-  private readonly accentLight = new THREE.PointLight(WORLD_ACCENTS[0],14,22,2);
+  private readonly accentLight = new THREE.PointLight(WORLD_ACCENTS[0],5,22,2);
   private readonly faceLight = new THREE.DirectionalLight(0xe0e8e8,1);
   private readonly edgeLight = new THREE.DirectionalLight(0x92c5d5,1);
   private readonly keyLight = new THREE.DirectionalLight(0xf0eeeb,3.6);
@@ -85,9 +85,9 @@ export class SpatialSceneRuntime {
     const room=new RoomEnvironment(), pmrem=new PMREMGenerator(this.rendererHost!.renderer);
     try { this.environment=pmrem.fromScene(room,.05); this.scene.environment=this.environment.texture; }
     finally { room.dispose(); pmrem.dispose(); }
-    this.scene.add(new THREE.HemisphereLight(0xd8e3e5,0x101720,.65));
+    this.scene.add(new THREE.HemisphereLight(0xd8e3e5,0x101720,.35));
     this.keyLight.position.set(-5,9,6);
-    this.faceLight.position.set(1,0,9);this.faceLight.intensity=this.compact?1.45:.8;
+    this.faceLight.position.set(1,0,9);this.faceLight.intensity=this.compact?1.3:.85;
     this.edgeLight.position.set(5,2,-3);this.edgeLight.intensity=this.compact?3.1:3.5;
     this.accentLight.position.set(2,2,4);
     this.scene.add(this.keyLight,this.faceLight,this.edgeLight,this.accentLight);
@@ -234,7 +234,7 @@ export class SpatialSceneRuntime {
     this.compact=compact;this.reduced=prefersStaticPlatform(this.motionQuery);this.desiredPointer.x=this.desiredPointer.y=0;
     this.atmosphere.setQuality(compact,this.reduced);this.rendererHost?.setPreset(compact?COMPACT_PRESET:DESKTOP_PRESET);
     this.cloth.setQuality(compact,this.reduced);
-    this.faceLight.intensity=compact?1.45:.8;this.edgeLight.intensity=compact?3.1:3.5;
+    this.faceLight.intensity=compact?1.3:.85;this.edgeLight.intensity=compact?3.1:3.5;
     this.cloth.setHover(.5,.5,0);
     this.configureBloom();this.resize();if(changed)void this.loadBrand();
   };
@@ -275,7 +275,7 @@ export class SpatialSceneRuntime {
     const lab=this.journeyStops?THREE.MathUtils.smoothstep(p,this.journeyStops.exit,this.journeyStops.lab):0;
     this.bloom?.setLabPresence(lab);
     this.keyLight.intensity=3.6-lab*1.4;
-    this.faceLight.intensity=(this.compact?1.45:.8)*(1-lab*.5);
+    this.faceLight.intensity=(this.compact?1.3:.85)*(1-lab*.5);
     this.edgeLight.intensity=(this.compact?3.1:3.5)*(1-lab*.3);
     this.atmosphere.update(t,p,this.detail,this.pointer,this.atmosphereOrigin,this.rendererHost!.renderer.getPixelRatio(),this.accent,lab);
     this.accentLight.position.set(2,this.camera.position.y+2,4);

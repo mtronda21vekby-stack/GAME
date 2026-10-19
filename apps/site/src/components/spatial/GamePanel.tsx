@@ -6,16 +6,16 @@ type Props = { game: PlatformGame; index: number; selected: boolean; onOpen: () 
 /** A full native surface at every viewport size; each game always has a direct launch. */
 export function GamePanel({ game, index, selected, onOpen }: Props) {
   const title = "spatial-panel-" + game.id;
-  const titleBreak = game.title.indexOf("//");
   return <article className="spatialGamePanel" role="listitem" data-game-id={game.id} data-selected={selected} aria-labelledby={title}>
-    <div className="spatialPanelHeader"><span>{String(index + 1).padStart(2, "0")} / {game.genre}</span><span className="spatialPanelState">{game.status}</span></div>
-    <figure className="spatialPanelMedia"><img src={game.image} alt={game.imageAlt} width="1280" height="720" loading={index === 0 ? "eager" : "lazy"} decoding="async"/><span className="spatialPanelMediaMark" aria-hidden="true">↗</span></figure>
-    <div className="spatialPanelBody"><div className="spatialPanelSummary"><div className="spatialPanelTitle"><h3 id={title}>{titleBreak < 0 ? game.title : <>{game.title.slice(0,titleBreak+2)}<wbr/>{game.title.slice(titleBreak+2)}</>}</h3></div><p className="spatialPanelDescription">{game.description}</p></div>
+    <div className="spatialPanelHeader"><span>{String(index + 1).padStart(2, "0")}</span><span>{game.genre}</span></div>
+    <div className="spatialPanelWindow">
+    <figure className="spatialPanelMedia"><img src={game.image} alt={game.imageAlt} width="1280" height="720" loading={index === 0 ? "eager" : "lazy"} decoding="async"/><figcaption className="spatialPanelTitle"><span className="spatialPanelState">{game.status}</span><h3 id={title}>{game.title}</h3></figcaption></figure>
+    <div className="spatialPanelBody">
       <div className="spatialPanelActions">
-        <button className="spatialPanelPrimary" type="button" aria-label={"Об игре " + game.title} aria-haspopup="dialog" aria-controls="spatial-game-detail" onClick={onOpen}><span className="spatialPanelActionLabel">Об игре</span><span aria-hidden="true">↗</span></button>
+        <button className="spatialPanelPrimary" type="button" aria-label={"Об игре " + game.title} aria-haspopup="dialog" aria-controls="spatial-game-detail" onClick={onOpen}><span className="spatialPanelActionLabel">Подробнее</span><span aria-hidden="true">+</span></button>
         <a className="spatialPanelLaunch" href={game.href} aria-label={(game.id === "crown-front" ? "Открыть альфу " : "Запустить ") + game.title}>{game.id === "crown-front" ? "Открыть альфу" : "Играть"}<span aria-hidden="true">↗</span></a>
       </div>
-    </div>
+    </div></div>
   </article>;
 }
 

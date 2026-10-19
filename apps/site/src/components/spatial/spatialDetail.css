@@ -1,217 +1,66 @@
-/* The selected surface opens inside the scene with space around its window. */
-.spatialDetail {
-  --detail-type:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  --detail-mono:ui-monospace,"SFMono-Regular",Consolas,monospace;
-  --detail-line:#b6c9ce30;
-  position:fixed;
-  inset:0;
-  width:100%;
-  height:100%;
-  max-width:none;
-  max-height:none;
-  box-sizing:border-box;
-  margin:0;
-  padding:0;
-  border:0;
-  overflow-x:hidden;
-  overflow-y:auto;
-  overscroll-behavior:contain;
-  touch-action:pan-y pinch-zoom;
-  background:#070c1226;
-  color:#eef3f1;
-  font-family:var(--detail-type);
-  scrollbar-color:#637a8480 #0a1119;
-}
+/* One project plate, sharing the gallery's glass, type and restrained chrome. */
+.spatialDetail { --detail-line:#c0d1d02b; position:fixed; inset:0; width:100%; height:100%; max-width:none; max-height:none; margin:0; padding:0; border:0; overflow-x:hidden; overflow-y:auto; overscroll-behavior:contain; touch-action:pan-y pinch-zoom; background:#050a0f26; color:#e8ede7; font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
 .spatialDetail * { box-sizing:border-box; }
-.spatialDetail::backdrop { background:#03070a33; }
+.spatialDetail::backdrop { background:#04080c33; }
 .spatialDetail[data-phase=closing] { display:block; z-index:40; pointer-events:none; }
-.spatialDetail :focus-visible { outline:2px solid #b4e1e4; outline-offset:5px; }
-.spatialDetail button {
-  display:inline-flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:14px;
-  min-height:52px;
-  padding:10px 0;
-  border:0;
-  background:transparent;
-  color:#c2d4db;
-  font:500 13px/1.5 var(--detail-type);
-  cursor:pointer;
-}
+.spatialDetail :focus-visible { outline:2px solid #b8d7d5; outline-offset:4px; }
+.spatialDetail button { display:inline-flex; align-items:center; justify-content:space-between; min-height:48px; padding:8px 0; border:0; background:transparent; color:#aabfc5; font-family:inherit; font-size:13px; line-height:1.5; cursor:pointer; }
 .spatialDetail button:disabled { opacity:.3; cursor:default; }
-.spatialDetailTop {
-  position:sticky;
-  top:24px;
-  z-index:3;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:24px;
-  width:min(1060px,calc(100% - 96px));
-  min-height:74px;
-  margin:24px auto 0;
-  padding:8px clamp(12px,2.4vw,32px);
-  border:1px solid #b6c9ce30;
-  border-bottom:0;
-  border-radius:6px 6px 0 0;
-  background:#0a1119f5;
-}
-.spatialDetailTop>span {
-  display:flex;
-  align-items:center;
-  gap:16px;
-  color:#c2d1d6;
-  font:10px/1.6 var(--detail-mono);
-  letter-spacing:.08em;
-}
-.spatialDetailTop>span>span { color:#607b87; }
-.spatialDetailTop button { min-width:110px; justify-content:end; gap:14px; }
-.spatialDetailTop button>span { color:#e1edee; font-size:29px; font-weight:300; line-height:1; }
-.spatialDetailTop button:hover { color:#fff; }
-.spatialDetailInner {
-  width:min(1060px,calc(100% - 96px));
-  min-height:0;
-  margin:0 auto 36px;
-  padding:16px clamp(12px,2.4vw,32px) max(24px,env(safe-area-inset-bottom));
-  border:1px solid #b6c9ce30;
-  border-top:0;
-  border-radius:0 0 6px 6px;
-  background:#0a1119f0;
-}
-.spatialDetailCopy { position:relative; z-index:1; isolation:isolate; margin:0 0 20px; }
-.spatialDetailCopy::before,.spatialDetailInformation::before {
-  content:"";
-  position:absolute;
-  z-index:-1;
-  inset:-12px -8px;
-  background:linear-gradient(90deg,#070c1200,#070c12f5 6%,#070c12f5 94%,#070c1200);
-  -webkit-mask-image:linear-gradient(180deg,transparent,#000 16%,#000 84%,transparent);
-  mask-image:linear-gradient(180deg,transparent,#000 16%,#000 84%,transparent);
-  pointer-events:none;
-}
-.spatialDetailHeadingMeta { display:flex; align-items:start; justify-content:space-between; gap:20px; margin-bottom:14px; }
-.spatialDetailMeta,.spatialDetailState {
-  margin:0;
-  color:#a8bec8;
-  font:10px/1.7 var(--detail-mono);
-  letter-spacing:.07em;
-  text-transform:uppercase;
-}
-.spatialDetailState { color:#d7e4e6; text-align:right; }
-.spatialDetailCopy h2 {
-  max-width:100%;
-  margin:0;
-  color:#eff4f2;
-  font-size:clamp(60px,7vw,100px);
-  font-weight:460;
-  line-height:.97;
-  letter-spacing:-.065em;
-  overflow-wrap:anywhere;
-  text-shadow:0 5px 38px #02060b70;
-}
-.spatialDetailMedia {
-  position:relative;
-  z-index:2;
-  width:min(100%,calc(38svh * 16 / 9));
-  aspect-ratio:16/9;
-  margin:0 auto;
-  border:1px solid #d4e7e636;
-  border-radius:2px;
-  background:#060b10;
-  box-shadow:0 28px 100px #0009;
-  transform-origin:center;
-  will-change:transform;
-}
-.spatialDetailMedia>img { position:absolute; inset:0; display:block; width:100%; height:100%; object-fit:contain; }
-.spatialDetailInformation {
-  position:relative;
-  z-index:1;
-  isolation:isolate;
-  display:grid;
-  grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);
-  gap:40px;
-  align-items:start;
-  margin:20px 0 0;
-  padding:18px 0 0;
-  border-top:1px solid var(--detail-line);
-}
-.spatialDetailDescription { max-width:570px; }
-.spatialDetailDescription>p { margin:0; color:#d4e0e4; font-size:17px; line-height:1.7; }
-.spatialDetailDescription>.spatialDetailControls { margin-top:18px; color:#94aeb9; font:11px/1.8 var(--detail-mono); }
-.spatialDetailLinks { display:flex; flex-wrap:wrap; align-items:center; justify-content:end; gap:6px 24px; }
-.spatialDetailLinks>a {
-  display:inline-flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:28px;
-  min-width:210px;
-  max-width:100%;
-  min-height:58px;
-  padding:16px 22px;
-  border:1px solid #e5eeeb;
-  border-radius:2px;
-  background:#e5eeeb;
-  color:#10212a;
-  font:600 14px/1.5 var(--detail-type);
-  text-decoration:none;
-  overflow-wrap:anywhere;
-}
-.spatialDetailLinks>a>span { flex:none; font-size:23px; font-weight:400; }
-.spatialDetailLinks>a:hover { background:#bce0e3; border-color:#bce0e3; }
-.spatialDetailLinks>button { color:#b2c8d1; text-decoration:underline; text-underline-offset:5px; text-decoration-color:#90b8c06b; }
-.spatialDetailBottom {
-  display:grid;
-  grid-template-columns:1fr 1fr 1fr;
-  align-items:center;
-  gap:24px;
-  margin-top:28px;
-  padding-top:14px;
-  border-top:1px solid var(--detail-line);
-}
-.spatialDetailBottom button { color:#a7bdc8; font-size:12px; }
-.spatialDetailBottom button:nth-child(2) { justify-content:center; }
-.spatialDetailBottom .spatialDetailPause { justify-content:end; color:#7e9eab; }
+.spatialDetailFrame { width:min(960px,calc(100% - 128px)); margin:clamp(92px,13svh,150px) auto 64px; border:1px solid #c1d3d038; border-radius:12px; background:linear-gradient(135deg,#17252bed,#0a1219f0); box-shadow:0 36px 110px #0008; backdrop-filter:blur(18px); }
+.spatialDetailTop { position:sticky; top:20px; z-index:3; display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:64px; padding:6px 14px 6px 24px; border-radius:11px 11px 0 0; background:#101b22ec; border-bottom:1px solid #c0d1d017; }
+.spatialDetailTop>span { color:#94aab3; font:9px/1.6 ui-monospace,"SFMono-Regular",Consolas,monospace; letter-spacing:.07em; text-transform:uppercase; }
+.spatialDetailTools { display:flex; align-items:center; gap:3px; }
+.spatialDetail .spatialDetailTools button { width:48px; min-height:48px; justify-content:center; padding:0; border-radius:50%; font-family:inherit; font-size:18px; }
+.spatialDetail .spatialDetailTools button:last-child { border:1px solid #c1d3d029; color:#e0eae5; font-size:25px; font-weight:300; }
+.spatialDetailTools button:hover { background:#dae6e315; }
+.spatialDetailInner { display:grid; grid-template-columns:minmax(0,1.12fr) minmax(0,1fr); grid-template-areas:"media copy" "media information" "media bottom"; align-items:start; column-gap:30px; padding:28px; }
+.spatialDetailMedia { grid-area:media; position:relative; width:100%; margin:0; aspect-ratio:16/10; border:1px solid #c0d1d024; border-radius:6px; background:#071018; box-shadow:0 16px 46px #0004; transform-origin:center; will-change:transform; }
+.spatialDetailMedia>img { position:absolute; inset:0; width:100%; height:100%; display:block; object-fit:contain; border-radius:inherit; }
+.spatialDetailCopy { grid-area:copy; position:relative; margin:0 0 18px; }
+.spatialDetailHeadingMeta { margin-bottom:9px; }
+.spatialDetailState { margin:0; color:#8da4ae; font:8px/1.5 ui-monospace,"SFMono-Regular",Consolas,monospace; letter-spacing:.06em; }
+.spatialDetailCopy h2 { margin:0; font-size:clamp(32px,3.4vw,48px); line-height:1.05; letter-spacing:-.045em; font-weight:400; overflow-wrap:anywhere; }
+.spatialDetailInformation { grid-area:information; }
+.spatialDetailDescription>p { margin:0; color:#afc1c7; font-size:14px; line-height:1.75; }
+.spatialDetailDescription>.spatialDetailControls { margin-top:12px; color:#718d99; font-size:10px; line-height:1.5; }
+.spatialDetailLinks { margin-top:24px; }
+.spatialDetailLinks>a { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; min-height:54px; padding:8px 10px 8px 18px; border:1px solid #d6e2dc; border-radius:99px; background:#dce5df; color:#112028; font-size:13px; font-weight:550; line-height:1.4; text-decoration:none; }
+.spatialDetailLinks>a>span { display:grid; flex:none; place-items:center; width:32px; height:32px; border-radius:50%; color:#e5eee7; background:#172c33; font-size:18px; }
+.spatialDetailLinks>a:hover { background:#c3d5d1; }
+.spatialDetailLinks>button { display:none; }
+.spatialDetailBottom { grid-area:bottom; display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:14px; border-top:1px solid var(--detail-line); }
+.spatialDetailBottom>span { color:#526d79; font-size:11px; }
+.spatialDetail .spatialDetailBottom button { font-family:inherit; font-size:12px; white-space:nowrap; }
 @media(max-width:1050px) and (min-width:761px) {
-  .spatialDetailCopy h2 { font-size:clamp(60px,9vw,100px); }
-  .spatialDetailInformation { grid-template-columns:minmax(0,1fr) minmax(240px,.8fr); gap:30px; }
-  .spatialDetailLinks { justify-content:start; }
-  .spatialDetailBottom { gap:16px; }
-  .spatialDetailBottom button { font-size:11px; }
+ .spatialDetailFrame { width:calc(100% - 90px); }
+ .spatialDetailInner { gap:20px; padding:22px; grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+ .spatialDetailCopy h2 { font-size:36px; }
 }
 @media(max-width:760px) {
-  .spatialDetailTop,.spatialDetailInner { width:calc(88% - 42px); }
-  .spatialDetailTop { top:24px; min-height:60px; margin-top:24px; padding:4px 12px; gap:12px; }
-  .spatialDetailTop>span { max-width:calc(100% - 108px); flex-wrap:wrap; gap:0 6px; font-size:8px; letter-spacing:.04em; }
-  .spatialDetailTop button { min-width:96px; gap:10px; font-size:12px; }
-  .spatialDetailInner { padding:12px 12px max(16px,env(safe-area-inset-bottom)); }
-  .spatialDetailCopy { margin-bottom:12px; }
-  .spatialDetailHeadingMeta { gap:12px; margin-bottom:10px; }
-  .spatialDetailMeta,.spatialDetailState { font-size:8px; line-height:1.8; letter-spacing:.03em; }
-  .spatialDetailState { max-width:48%; }
-  .spatialDetailCopy h2 { font-size:clamp(36px,11.3vw,64px); line-height:1.01; letter-spacing:-.065em; }
-  .spatialDetailMedia { width:calc(100% + 24px); margin-inline:-12px; border-inline:0; border-radius:0; box-shadow:0 24px 60px #0008; }
-  .spatialDetailInformation { display:block; margin-top:12px; padding-top:12px; }
-  .spatialDetailDescription>p { font-size:15px; line-height:1.7; }
-  .spatialDetailDescription>.spatialDetailControls { margin-top:8px; font-size:10px; }
-  .spatialDetailLinks { display:block; margin-top:12px; }
-  .spatialDetailLinks>a { display:flex; width:100%; min-width:0; min-height:56px; padding:14px 12px; gap:12px; font-size:13px; }
-  .spatialDetailLinks>a>span { font-size:20px; }
-  .spatialDetailLinks>button { display:none; }
-  .spatialDetailBottom { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:0 12px; margin-top:12px; padding-top:4px; }
-  .spatialDetail .spatialDetailBottom button { min-height:52px; font-size:14px; }
-  .spatialDetailBottom button:nth-child(2) { justify-content:end; text-align:right; }
-  .spatialDetailBottom .spatialDetailPause { grid-column:1/-1; justify-content:start; min-height:48px; }
+ .spatialDetailFrame { width:min(304px,calc(100% - 56px)); margin:94px auto 48px; border-radius:10px; }
+ .spatialDetailTop { top:16px; min-height:58px; padding:4px 7px 4px 16px; border-radius:9px 9px 0 0; gap:4px; }
+ .spatialDetailTop>span { max-width:130px; font-size:8px; line-height:1.7; letter-spacing:.02em; }
+ .spatialDetail .spatialDetailTools button { width:48px; min-height:48px; font-size:16px; }
+ .spatialDetail .spatialDetailTools button:last-child { font-size:24px; border:0; }
+ .spatialDetailInner { display:block; padding:0 18px 12px; }
+ .spatialDetailMedia { width:calc(100% + 36px); margin-inline:-18px; aspect-ratio:16/9; border:0; border-radius:0; box-shadow:none; }
+ .spatialDetailCopy { margin:20px 0 15px; }
+ .spatialDetailHeadingMeta { margin-bottom:9px; }
+ .spatialDetailState { font-size:9px; letter-spacing:.05em; }
+ .spatialDetailCopy h2 { font-size:32px; }
+ .spatialDetailDescription>p { font-size:14px; line-height:1.65; }
+ .spatialDetailDescription>.spatialDetailControls { margin-top:10px; font-size:10px; }
+ .spatialDetailLinks { margin-top:20px; }
+ .spatialDetailLinks>a { font-size:13px; min-height:54px; padding-left:16px; }
+ .spatialDetailBottom { margin-top:14px; }
+ .spatialDetail .spatialDetailBottom button { min-height:48px; font-size:12px; }
 }
 @media(max-width:380px) {
-  .spatialDetailTop { padding-inline:12px; }
-  .spatialDetailTop>span { max-width:145px; flex-wrap:wrap; gap:0 7px; }
-  .spatialDetailInner { padding-inline:12px; }
-  .spatialDetailLinks { display:block; }
-  .spatialDetailLinks>a { width:100%; }
-  .spatialDetailLinks>button { margin-top:6px; }
+ .spatialDetailFrame { width:calc(100% - 48px); margin-top:84px; }
+ .spatialDetailInner { padding-inline:16px; }
+ .spatialDetailMedia { width:calc(100% + 32px); margin-inline:-16px; }
+ .spatialDetailCopy h2 { font-size:29px; }
+ .spatialDetailDescription>p { font-size:13px; }
 }
-@media(prefers-reduced-motion:reduce) {
-  .spatialDetail *,.spatialDetail *::before,.spatialDetail *::after { animation:none!important; transition:none!important; }
-}
-html[data-reduced-motion="1"] .spatialDetail *,html[data-reduced-motion="1"] .spatialDetail *::before,html[data-reduced-motion="1"] .spatialDetail *::after { animation:none!important; transition:none!important; }
+@media(prefers-reduced-motion:reduce) { .spatialDetail * { animation:none!important; transition:none!important; } }
+html[data-reduced-motion="1"] .spatialDetail * { animation:none!important; transition:none!important; }

@@ -161,18 +161,19 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
   },[]);
 
   return <dialog id="spatial-game-detail" ref={dialogRef} className="spatialDetail" data-game-id={visualGame.id} data-phase={closingVisual ? "closing" : undefined} aria-hidden={closingVisual || undefined} aria-labelledby="spatial-detail-title" aria-describedby="spatial-detail-description" onCancel={event => { event.preventDefault(); closePanel(); }}>
-    <div className="spatialDetailTop"><span>BLACKCROWN <span aria-hidden="true">/</span> КОЛЛЕКЦИЯ</span><button ref={closeRef} type="button" onClick={closePanel} aria-label="Закрыть панель и вернуться к выбранной игре"><span aria-hidden="true">×</span> Закрыть</button></div>
+    <div className="spatialDetailFrame">
+    <div className="spatialDetailTop"><span>BLACKCROWN / {visualGame.genre}</span><div className="spatialDetailTools"><button className="spatialDetailPause" type="button" aria-pressed={paused} aria-label={paused ? "Продолжить сцену" : "Пауза сцены"} onClick={onTogglePause}>{paused ? "▷" : "Ⅱ"}</button><button ref={closeRef} type="button" onClick={closePanel} aria-label="Закрыть панель и вернуться к выбранной игре"><span aria-hidden="true">×</span></button></div></div>
     <div className="spatialDetailInner">
+      <figure className="spatialDetailMedia" ref={mediaRef}><img key={visualGame.id} src={visualGame.image} alt={visualGame.imageAlt} width="1280" height="720"/></figure>
       <div className="spatialDetailCopy" ref={copyRef}>
-        <div className="spatialDetailHeadingMeta"><p className="spatialDetailMeta">ИГРОВОЙ МИР / {visualGame.genre}</p><p className="spatialDetailState">{visualGame.status}</p></div>
+        <div className="spatialDetailHeadingMeta"><p className="spatialDetailState">{visualGame.status}</p></div>
         <h2 id="spatial-detail-title">{visualGame.title}</h2>
       </div>
-      <figure className="spatialDetailMedia" ref={mediaRef}><img key={visualGame.id} src={visualGame.image} alt={visualGame.imageAlt} width="1280" height="720"/></figure>
       <div className="spatialDetailInformation" ref={informationRef}>
         <div className="spatialDetailDescription"><p id="spatial-detail-description">{visualGame.description}</p><p className="spatialDetailControls">{visualGame.detail}</p></div>
         <div className="spatialDetailLinks"><a href={visualGame.href}>{visualGame.id === "crown-front" ? "Открыть альфу" : "Играть в " + visualGame.title}<span aria-hidden="true">↗</span></a><button type="button" onClick={closePanel}>← К галерее</button></div>
       </div>
-      <div className="spatialDetailBottom"><button type="button" aria-label="← Предыдущая игра" disabled={!canCycle} onClick={() => { if (phase.current === "open") onPrevious(); }}>Предыдущая</button><button type="button" aria-label="Следующая игра →" disabled={!canCycle} onClick={() => { if (phase.current === "open") onNext(); }}>Следующая</button><button className="spatialDetailPause" type="button" aria-pressed={paused} onClick={onTogglePause}>{paused ? "▷ Продолжить сцену" : "Ⅱ Пауза сцены"}</button></div>
-    </div>
+      <div className="spatialDetailBottom"><button type="button" aria-label="← Предыдущая игра" disabled={!canCycle} onClick={() => { if (phase.current === "open") onPrevious(); }}>← Предыдущая</button><span aria-hidden="true">/</span><button type="button" aria-label="Следующая игра →" disabled={!canCycle} onClick={() => { if (phase.current === "open") onNext(); }}>Следующая →</button></div>
+    </div></div>
   </dialog>;
 }
