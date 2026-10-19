@@ -55,7 +55,7 @@ export class SpatialSceneRuntime {
   private progress=0; private desiredProgress=0;
   private detail=0; private detailOpen=false; private detailFocus=false;
   private pointer={x:0,y:0}; private desiredPointer={x:0,y:0};
-  private stageTop=0; private stageHeight=1; private clothSlot?:HTMLElement;
+  private stageTop=0; private stageHeight=1; private heroHeight=1; private clothSlot?:HTMLElement;
   private journeyStops?:SpatialJourneyStops;
   private viewportWidth=1; private viewportHeight=1;
   private brandReady=false;
@@ -85,10 +85,10 @@ export class SpatialSceneRuntime {
     const room=new RoomEnvironment(), pmrem=new PMREMGenerator(this.rendererHost!.renderer);
     try { this.environment=pmrem.fromScene(room,.05); this.scene.environment=this.environment.texture; }
     finally { room.dispose(); pmrem.dispose(); }
-    this.scene.add(new THREE.HemisphereLight(0xd8e3e5,0x101720,1.3));
-    this.keyLight.position.set(-4,7,8);
-    this.faceLight.position.set(1,0,9);this.faceLight.intensity=this.compact?1.75:1.1;
-    this.edgeLight.position.set(5,2,-3);this.edgeLight.intensity=this.compact?2.6:3.1;
+    this.scene.add(new THREE.HemisphereLight(0xd8e3e5,0x101720,.65));
+    this.keyLight.position.set(-5,9,6);
+    this.faceLight.position.set(1,0,9);this.faceLight.intensity=this.compact?1.45:.8;
+    this.edgeLight.position.set(5,2,-3);this.edgeLight.intensity=this.compact?3.1:3.5;
     this.accentLight.position.set(2,2,4);
     this.scene.add(this.keyLight,this.faceLight,this.edgeLight,this.accentLight);
   }
@@ -185,12 +185,14 @@ export class SpatialSceneRuntime {
     if(slot)this.brandSlot={x:slot.left+slot.width/2,pageY:slot.top+window.scrollY+slot.height/2,width:slot.width,height:slot.height};
     this.clothSlot=this.options.stage.querySelector<HTMLElement>(".spatialClothControl")??undefined;
     const hero=this.options.stage.querySelector(".spatialHero")?.getBoundingClientRect();
+    if(hero)this.heroHeight=hero.height;
+    const heading=this.options.stage.querySelector(".spatialGalleryHead")?.getBoundingClientRect();
     const panels=[...this.options.stage.querySelectorAll<HTMLElement>(".spatialGamePanel")].map(element=>element.getBoundingClientRect());
     const material=this.options.stage.querySelector(".spatialMaterial")?.getBoundingClientRect();
     const span=Math.max(1,this.stageHeight-this.viewportHeight);
     const at=(y:number)=>Math.max(0,Math.min(.98,(y+window.scrollY-this.stageTop)/span));
-    if(hero&&panels.length&&material)this.journeyStops={
-      intro:at((hero.bottom+panels[0].top)/2-this.viewportHeight*.5),
+    if(hero&&heading&&panels.length&&material)this.journeyStops={
+      intro:at(heading.top-this.viewportHeight*.35),
       projects:panels.map(panel=>at(panel.top+panel.height*.5-this.viewportHeight*.5)),
       exit:at(material.top-this.viewportHeight*.88),
       lab:at(material.top-this.viewportHeight*.18),
@@ -207,6 +209,10 @@ export class SpatialSceneRuntime {
   private onScroll=()=>{
     // Native dialog scroll locking must never rewind the sculpture timeline.
     if(this.detailOpen)return;
+    const heroTravel=Math.max(0,window.scrollY-this.stageTop);
+    const heroOpacity=1-THREE.MathUtils.smoothstep(heroTravel,this.heroHeight*.18,this.heroHeight*.6);
+    this.options.stage.style.setProperty("--spatial-hero-ui-opacity",String(heroOpacity));
+    this.options.stage.dataset.heroUiHidden=heroOpacity===0?"1":"0";
     this.desiredProgress=spatialProgress(window.scrollY,this.stageTop,this.stageHeight,this.viewportHeight);
     this.requestFrame();
   };
@@ -228,7 +234,7 @@ export class SpatialSceneRuntime {
     this.compact=compact;this.reduced=prefersStaticPlatform(this.motionQuery);this.desiredPointer.x=this.desiredPointer.y=0;
     this.atmosphere.setQuality(compact,this.reduced);this.rendererHost?.setPreset(compact?COMPACT_PRESET:DESKTOP_PRESET);
     this.cloth.setQuality(compact,this.reduced);
-    this.faceLight.intensity=compact?1.75:1.1;this.edgeLight.intensity=compact?2.6:3.1;
+    this.faceLight.intensity=compact?1.45:.8;this.edgeLight.intensity=compact?3.1:3.5;
     this.cloth.setHover(.5,.5,0);
     this.configureBloom();this.resize();if(changed)void this.loadBrand();
   };
@@ -269,8 +275,8 @@ export class SpatialSceneRuntime {
     const lab=this.journeyStops?THREE.MathUtils.smoothstep(p,this.journeyStops.exit,this.journeyStops.lab):0;
     this.bloom?.setLabPresence(lab);
     this.keyLight.intensity=3.6-lab*1.4;
-    this.faceLight.intensity=(this.compact?1.75:1.1)*(1-lab*.5);
-    this.edgeLight.intensity=(this.compact?2.6:3.1)*(1-lab*.3);
+    this.faceLight.intensity=(this.compact?1.45:.8)*(1-lab*.5);
+    this.edgeLight.intensity=(this.compact?3.1:3.5)*(1-lab*.3);
     this.atmosphere.update(t,p,this.detail,this.pointer,this.atmosphereOrigin,this.rendererHost!.renderer.getPixelRatio(),this.accent,lab);
     this.accentLight.position.set(2,this.camera.position.y+2,4);
     const sheet=this.clothSlot?.getBoundingClientRect();
@@ -290,7 +296,8 @@ export class SpatialSceneRuntime {
     this.resizeObserver?.disconnect();this.intersectionObserver?.disconnect();this.preferenceObserver?.disconnect();
     this.motionQuery.removeEventListener("change",this.onPreferenceChange);this.compactQuery.removeEventListener("change",this.onPreferenceChange);
     window.removeEventListener("scroll",this.onScroll);window.removeEventListener("resize",this.resize);window.removeEventListener("pointermove",this.onPointer);document.removeEventListener("visibilitychange",this.onVisibility);
-    delete this.options.stage.dataset.brandReady;delete this.options.stage.dataset.shaderWarmup;this.atmosphere.dispose();this.cloth.dispose();this.bloom?.dispose();
+    delete this.options.stage.dataset.brandReady;delete this.options.stage.dataset.shaderWarmup;delete this.options.stage.dataset.heroUiHidden;
+    this.options.stage.style.removeProperty("--spatial-hero-ui-opacity");this.atmosphere.dispose();this.cloth.dispose();this.bloom?.dispose();
     disposeModel(this.scene);this.scene.clear();this.scene.environment=null;this.environment?.dispose();this.rendererHost?.dispose();
   }
 }

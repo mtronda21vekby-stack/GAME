@@ -1,4 +1,5 @@
 import React from "react";
+import { retireLegacySiteWorker } from "./pwa/registerSW";
 
 export class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -19,18 +20,7 @@ export class ErrorBoundary extends React.Component<
   }
 
   private recover = async () => {
-    try {
-      if ("serviceWorker" in navigator) {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(registrations.map((registration) => registration.unregister()));
-      }
-      if ("caches" in window) {
-        const keys = await caches.keys();
-        await Promise.all(keys.map((key) => caches.delete(key)));
-      }
-    } catch {
-      // Recovery must remain available even when browser storage APIs fail.
-    }
+    await retireLegacySiteWorker();
 
     const url = new URL(window.location.href);
     url.searchParams.set("bc-recover", String(Date.now()));

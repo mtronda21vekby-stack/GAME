@@ -41,8 +41,9 @@ export function spatialAxisJourney({compact,width,height,slot,stops}:AxisViewpor
       const descent=Math.min(previous.position[1],y);
       frames.push({progress,position:[0,descent,z],target:[0,descent,0],fov});
     };
-    append(stops.intro,axisHeight*.23);
-    stops.projects.forEach((progress,index)=>append(progress,axisHeight*(.13-.48*index/Math.max(1,stops.projects.length-1))));
+    // The jaw clears the collection heading before the first project arrives.
+    append(stops.intro,axisHeight*.045);
+    stops.projects.forEach((progress,index)=>append(progress,axisHeight*(-.035-.345*index/Math.max(1,stops.projects.length-1))));
     append(stops.exit,-axisHeight*.49);
     // Let the tip leave above the viewport before the sheet becomes the main subject.
     const belowTip=-axisHeight*.5-halfHeight*1.16;

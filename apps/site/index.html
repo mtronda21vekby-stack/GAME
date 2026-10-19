@@ -39,21 +39,25 @@
       (function () {
         function clearRuntimeCaches() {
           var tasks = [];
+          var siteScope = new URL("/", window.location.origin).href;
+          var siteScript = new URL("/sw.js", window.location.origin).href;
           if ("serviceWorker" in navigator) {
             tasks.push(navigator.serviceWorker.getRegistrations().then(function (items) {
-              return Promise.all(items.map(function (item) { return item.unregister(); }));
+              return Promise.allSettled(items.filter(function (item) {
+                if (item.scope !== siteScope) return false;
+                var workers = [item.active, item.waiting, item.installing].filter(Boolean);
+                return workers.length > 0 && workers.every(function (worker) { return worker.scriptURL === siteScript; });
+              }).map(function (item) { return item.unregister(); }));
             }).catch(function () {}));
           }
           if ("caches" in window) {
-            tasks.push(caches.keys().then(function (keys) {
-              return Promise.all(keys.map(function (key) { return caches.delete(key); }));
-            }).catch(function () {}));
+            tasks.push(caches.delete("bc-site-v1").catch(function () {}));
           }
           return Promise.all(tasks);
         }
 
         window.__bcRecover = function () {
-          clearRuntimeCaches().finally(function () {
+          return clearRuntimeCaches().finally(function () {
             var url = new URL(window.location.href);
             url.searchParams.delete("bc-recovered");
             url.searchParams.set("bc-recover", String(Date.now()));

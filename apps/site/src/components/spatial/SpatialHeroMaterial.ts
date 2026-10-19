@@ -7,7 +7,7 @@ export function animateHeroMaterials(root:Object3D,time:{value:number},motion:{v
     const mesh=object as Mesh;if(!mesh.isMesh)return;
     for(const material of Array.isArray(mesh.material)?mesh.material:[mesh.material]) {
       if(!(material instanceof MeshStandardMaterial)||visited.has(material))continue;
-      visited.add(material);material.envMapIntensity=1.2;
+      visited.add(material);material.envMapIntensity=.95;
       material.onBeforeCompile=shader=>{
         shader.uniforms.uBcTime=time;shader.uniforms.uBcMotion=motion;
         shader.vertexShader=shader.vertexShader.replace("#include <common>","#include <common>\nvarying vec3 vBcLocal;")
