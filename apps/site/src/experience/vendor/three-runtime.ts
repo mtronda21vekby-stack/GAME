@@ -69,6 +69,7 @@ export { Matrix3 } from "three/src/math/Matrix3.js";
 export { Quaternion } from "three/src/math/Quaternion.js";
 export { Vector2 } from "three/src/math/Vector2.js";
 export { Vector3 } from "three/src/math/Vector3.js";
+export { Vector4 } from "three/src/math/Vector4.js";
 export { MathUtils } from "three/src/math/MathUtils.js";
 export { Interpolant } from "three/src/math/Interpolant.js";
 export { AnimationClip } from "three/src/animation/AnimationClip.js";

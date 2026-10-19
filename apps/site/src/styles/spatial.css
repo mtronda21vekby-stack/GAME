@@ -95,6 +95,19 @@ html:has(.spatialPage) { scroll-behavior:smooth; scrollbar-gutter:stable; }
 .spatialGalleryFoot { display:flex; justify-content:space-between; align-items:center; gap:24px; margin-top:18px; padding-right:125px; }
 .spatialGalleryFoot>span { color:#758c97; font-size:12px; }
 .spatialGalleryFoot .platTextLink { font-size:12px; }
+.spatialMaterial { position:relative; min-height:105svh; display:grid; grid-template-columns:.9fr 1.1fr; align-items:center; gap:60px; padding:125px clamp(24px,5vw,84px) 90px; }
+.spatialMaterialCopy { max-width:440px; }
+.spatialMaterial h2 { margin:0 0 26px; font-size:clamp(42px,5vw,76px); line-height:1.05; font-weight:480; letter-spacing:-.055em; }
+.spatialMaterial h2>span { color:#94aeb8; }
+.spatialMaterialCopy>p:not(.spatialEyebrow) { color:#aebfc6; font-size:15px; line-height:1.8; }
+.spatialMaterialCopy .spatialClothStatus { min-height:26px; font-size:11px!important; color:#8caab5!important; }
+.spatialClothControl { position:relative; display:block; width:min(540px,100%); height:clamp(400px,65svh,650px); margin:auto; padding:0; border:0; border-radius:3px; background:transparent; color:#a7c0c8; touch-action:pan-y pinch-zoom; }
+.spatialClothFallback { position:absolute; inset:0; border-radius:8px; background:radial-gradient(ellipse at 30% 25%,#b0c0c7aa,transparent 50%),repeating-conic-gradient(#3c5966 0% 25%,#14252e 0% 50%) 50%/14px 17px; box-shadow:inset -20px -20px 90px #05090e; transform:perspective(600px) rotateY(-8deg); }
+[data-scene-state=ready] .spatialClothFallback,[data-scene-state=ready] .spatialClothPulse { display:none; }
+.spatialClothHint { position:absolute; inset:auto 14px 12px; display:flex; align-items:center; justify-content:space-between; gap:20px; min-height:48px; font:11px var(--spatial-type); color:#d0dfe3; text-shadow:0 2px 5px #000; pointer-events:none; }
+.spatialClothHint>span { display:grid; place-items:center; width:38px; height:38px; border:1px solid #c7e1e13d; border-radius:50%; font-size:22px; background:#08131a88; }
+.spatialClothPulse { position:absolute; width:70px; height:70px; margin:-35px; border:1px solid #d2ecec; border-radius:50%; pointer-events:none; opacity:.2; animation:spatialClothPulse 1.4s ease-out forwards; }
+@keyframes spatialClothPulse { from{transform:scale(.3);opacity:.7}to{transform:scale(4);opacity:0} }
 .spatialAbout { display:grid; grid-template-columns:1.2fr 1fr; align-items:center; gap:80px; min-height:70svh; padding:135px clamp(24px,5vw,84px); background:linear-gradient(0deg,#090d11,transparent); }
 .spatialAbout h2 { margin:0; font-size:clamp(38px,4.8vw,76px); line-height:1.08; font-weight:480; letter-spacing:-.05em; }
 .spatialAbout h2>span { color:#8ea5b1; }
@@ -183,6 +196,11 @@ html:has(.spatialPage) { scroll-behavior:smooth; scrollbar-gutter:stable; }
  .spatialGalleryFoot { gap:10px; margin-top:12px; padding-right:0; }
  .spatialGalleryFoot>span { font-size:10px; max-width:140px; line-height:1.6; }
  .spatialGalleryFoot .platTextLink { font-size:11px; }
+ .spatialMaterial { display:block; min-height:0; padding:140px 24px 50px; }
+ .spatialMaterial h2 { font-size:42px; }
+ .spatialMaterialCopy { max-width:100%; }
+ .spatialMaterialCopy>p:not(.spatialEyebrow) { font-size:14px; }
+ .spatialClothControl { height:clamp(380px,56svh,540px); margin-top:8px; }
  .spatialAbout { display:block; min-height:0; padding:95px 24px 110px; }
  .spatialAbout h2 { font-size:40px; }
  .spatialAboutText { margin-top:32px; }

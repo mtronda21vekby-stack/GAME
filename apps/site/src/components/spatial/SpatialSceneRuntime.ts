@@ -14,7 +14,8 @@ import { adaptSpatialBrand } from "./SpatialBrandAdapter";
 import { SpatialAtmosphere, SPATIAL_ATMOSPHERE_QUALITY } from "./SpatialAtmosphere";
 import { SpatialBloom } from "./SpatialBloom";
 import { animateHeroMaterials } from "./SpatialHeroMaterial";
-import { spatialAxisJourney } from "./SpatialAxis";
+import { spatialAxisJourney, spatialAxisTurn } from "./SpatialAxis";
+import { SpatialCloth } from "./SpatialCloth";
 import { panelCSSMatrix, panelFrontWidth, panelScreenPosition, panelStyle } from "./panelProjection";
 import { createOrbitCard } from "./SpatialObjects";
 import { DampedScalar, SurfaceMotion, SPATIAL_TIMING } from "./spatialMotion";
@@ -37,6 +38,7 @@ export class SpatialSceneRuntime {
   private readonly panelElements:HTMLElement[];
   private readonly panelSizes = platformGames.map(()=>({width:640,height:570}));
   private readonly orbitMotion = new DampedScalar(0,SPATIAL_TIMING.orbit);
+  private readonly turnMotion = new DampedScalar(-.14,840);
   private readonly detailMotion = new SurfaceMotion([0]);
   private readonly focusMotion = platformGames.map(()=>new DampedScalar(0,SPATIAL_TIMING.focus));
   private readonly accent = new THREE.Color(WORLD_ACCENTS[0]);
@@ -44,6 +46,7 @@ export class SpatialSceneRuntime {
   private readonly accentLight = new THREE.PointLight(WORLD_ACCENTS[0],14,22,2);
   private brandAbort?:AbortController;
   private readonly atmosphere:SpatialAtmosphere;
+  private readonly cloth:SpatialCloth;
   private bloom?:SpatialBloom;
   private readonly motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
   private readonly compactQuery = window.matchMedia("(max-width:760px)");
@@ -57,7 +60,7 @@ export class SpatialSceneRuntime {
   private progress=0; private desiredProgress=0; private orbit=0; private desiredOrbit=0;
   private detail=0; private detailOpen=false; private detailFocus=false;
   private pointer={x:0,y:0}; private desiredPointer={x:0,y:0};
-  private stageTop=0; private stageHeight=1; private gallerySlot?:HTMLElement;
+  private stageTop=0; private stageHeight=1; private gallerySlot?:HTMLElement; private clothSlot?:HTMLElement;
   private viewportWidth=1; private viewportHeight=1; private panelScale=1;
   private brandReady=false;
   private brandSlot={x:0,pageY:0,width:1,height:1};
@@ -68,9 +71,10 @@ export class SpatialSceneRuntime {
   constructor(private readonly options:SceneOptions) {
     this.atmosphere=new SpatialAtmosphere(this.compact);
     this.atmosphere.setQuality(this.compact,this.reduced);
+    this.cloth=new SpatialCloth(this.compact);this.cloth.setQuality(this.compact,this.reduced);
     this.panelElements=[...options.panelRoot.querySelectorAll<HTMLElement>("[data-game-panel]")];
     this.cards.forEach(card=>this.gallery.add(card.group));
-    this.scene.add(this.brand,this.gallery,this.atmosphere);
+    this.scene.add(this.brand,this.gallery,this.atmosphere,this.cloth);
     try {
       this.rendererHost=new RendererHost({container:options.host,preset:this.compact?COMPACT_PRESET:DESKTOP_PRESET,powerPreference:this.compact?"low-power":"high-performance",onContextState:state=>{if(state==="lost")this.fail();}});
       this.rendererHost.renderer.domElement.className="spatialSceneCanvas";
@@ -131,6 +135,12 @@ export class SpatialSceneRuntime {
     this.desiredAccent.set(WORLD_ACCENTS[this.worldIndex]); this.measurePanels(); this.requestFrame();
   }
   setDetailOpen(open:boolean){this.detailOpen=open;this.requestFrame();}
+  touchCloth(clientX?:number,clientY?:number) {
+    if(this.disposed||this.paused||this.reduced||this.detailOpen)return false;
+    const box=this.clothSlot?.getBoundingClientRect();if(!box?.width||!box.height)return false;
+    const u=clientX===undefined?.5:(clientX-box.left)/box.width,v=clientY===undefined?.5:1-(clientY-box.top)/box.height;
+    this.cloth.touch(u,v,this.elapsed);this.requestFrame();return true;
+  }
   setDetailFocus(focused:boolean){
     if(this.detailFocus===focused)return;
     this.detailFocus=focused;
@@ -160,7 +170,7 @@ export class SpatialSceneRuntime {
     });
     this.resizeObserver.observe(this.options.host);this.resizeObserver.observe(this.options.stage);
     this.panelElements.forEach(element=>this.resizeObserver!.observe(element));
-    for(const selector of [".spatialGalleryVisual",".spatialBrandSlot",".spatialPanelFallback"]){
+    for(const selector of [".spatialGalleryVisual",".spatialBrandSlot",".spatialPanelFallback",".spatialClothControl"]){
       const element=this.options.stage.querySelector(selector);if(element)this.resizeObserver.observe(element);
     }
     this.intersectionObserver=new IntersectionObserver(([entry])=>{this.inView=entry.isIntersecting;if(this.inView)this.requestFrame();else this.stop();});
@@ -183,6 +193,7 @@ export class SpatialSceneRuntime {
     const slot=this.options.stage.querySelector(".spatialBrandSlot")?.getBoundingClientRect();
     if(slot)this.brandSlot={x:slot.left+slot.width/2,pageY:slot.top+window.scrollY+slot.height/2,width:slot.width,height:slot.height};
     this.gallerySlot=this.options.stage.querySelector<HTMLElement>(".spatialGalleryVisual")??undefined;
+    this.clothSlot=this.options.stage.querySelector<HTMLElement>(".spatialClothControl")??undefined;
     this.fitBrand();this.measurePanels();this.onScroll();
   };
   private measurePanels(){
@@ -211,14 +222,14 @@ export class SpatialSceneRuntime {
       const size=this.panelSizes[index];
       const world=card.group.matrixWorld.clone().multiply(new THREE.Matrix4().makeTranslation(0,0,.066));
       element.style.transform=panelStyle(panelCSSMatrix(this.camera,world,this.viewportWidth,this.viewportHeight,size.width,size.height,ORBIT_CARD_WIDTH));
-      const entry=THREE.MathUtils.smoothstep(this.progress,.16,.30)*(1-THREE.MathUtils.smoothstep(this.progress,.88,1));
-      element.style.opacity=String((.35+.65*card.focus)*entry);
+      element.style.opacity=String(.35+.65*card.focus);
       element.style.zIndex=String(Math.round((pose.z+4)*10));
     });
   }
   private onScroll=()=>{this.desiredProgress=spatialProgress(window.scrollY,this.stageTop,this.stageHeight,this.viewportHeight);if(this.paused)this.progress=this.desiredProgress;this.requestFrame();};
   private onPointer=(event:PointerEvent)=>{
     if(this.compact||this.reduced||this.paused||this.detailOpen||!this.pointerQuery.matches||event.pointerType!=="mouse")return;
+    if((event.target as Element).closest(".spatialClothControl")){this.desiredPointer.x=this.desiredPointer.y=0;this.requestFrame();return;}
     this.desiredPointer.x=(event.clientX/Math.max(1,window.innerWidth)-.5)*.85;
     this.desiredPointer.y=(event.clientY/Math.max(1,window.innerHeight)-.5)*.65;this.requestFrame();
   };
@@ -226,6 +237,7 @@ export class SpatialSceneRuntime {
     const compact=this.compactQuery.matches,changed=compact!==this.compact;
     this.compact=compact;this.reduced=prefersStaticPlatform(this.motionQuery);this.desiredPointer.x=this.desiredPointer.y=0;
     this.atmosphere.setQuality(compact,this.reduced);this.rendererHost?.setPreset(compact?COMPACT_PRESET:DESKTOP_PRESET);
+    this.cloth.setQuality(compact,this.reduced);
     this.configureBloom();this.resize();if(changed)void this.loadBrand();
   };
   private onVisibility=()=>{if(document.hidden)this.stop();else this.requestFrame();};
@@ -269,9 +281,8 @@ export class SpatialSceneRuntime {
     const p=this.progress,t=this.elapsed;
     const galleryMix=THREE.MathUtils.smoothstep(p,.12,.32),end=THREE.MathUtils.smoothstep(p,.88,1);
     this.brand.visible=this.brandReady;
-    if(this.brand.visible){
-      this.brand.rotation.set(0,-.14+p*.6+this.pointer.x*.1,0);
-    }
+    const turn=this.reduced?this.turnMotion.snap(spatialAxisTurn(p,this.compact,true)):this.paused?this.turnMotion.value:this.turnMotion.update(spatialAxisTurn(p,this.compact),delta);
+    this.brand.rotation.set(0,turn+(this.reduced?0:this.pointer.x*.08),0);
     this.gallery.visible=galleryMix>.04&&end<.99;
     this.gallery.position.z=-6*(1-galleryMix)-end*8;
     const slot=this.gallerySlot?.getBoundingClientRect(),centerY=slot?slot.top+slot.height/2:this.viewportHeight/2;
@@ -280,6 +291,13 @@ export class SpatialSceneRuntime {
     this.panelScale=this.panelSizes[this.worldIndex].width/panelFrontWidth(this.camera,this.viewportWidth,ORBIT_CARD_WIDTH,center);
     this.atmosphere.update(t,p,this.detail,this.pointer,new THREE.Vector3(),this.rendererHost!.renderer.getPixelRatio(),this.accent);
     this.accentLight.position.set(2+Math.sin(t*.12)*1.3,this.anchorCamera.position.y+2,4);
+    const sheet=this.clothSlot?.getBoundingClientRect();
+    this.cloth.visible=!!sheet&&sheet.bottom>0&&sheet.top<this.viewportHeight&&!this.detailOpen;
+    if(sheet&&this.cloth.visible){
+      const position=panelScreenPosition(this.camera,sheet.left+sheet.width/2,sheet.top+sheet.height/2,this.viewportWidth,this.viewportHeight,4.4);
+      const unit=panelFrontWidth(this.camera,this.viewportWidth,1,position),worldWidth=sheet.width/unit;
+      this.cloth.position.copy(position);this.cloth.scale.set(worldWidth,sheet.height/unit,worldWidth*.7);this.cloth.update(this.reduced?0:t);
+    }
     this.cards.forEach((card,index)=>{
       const slot=this.visibleGames.indexOf(index);card.group.visible=slot>=0;if(slot<0)return;
       const pose=orbitCardPose(slot,this.visibleGames.length,this.orbit);
@@ -299,7 +317,7 @@ export class SpatialSceneRuntime {
     this.motionQuery.removeEventListener("change",this.onPreferenceChange);this.compactQuery.removeEventListener("change",this.onPreferenceChange);
     window.removeEventListener("scroll",this.onScroll);window.removeEventListener("resize",this.resize);window.removeEventListener("pointermove",this.onPointer);document.removeEventListener("visibilitychange",this.onVisibility);
     this.options.panelRoot.removeAttribute("data-projected");this.options.stage.style.removeProperty("--spatial-panel-height");
-    delete this.options.stage.dataset.brandReady;this.atmosphere.dispose();this.bloom?.dispose();
+    delete this.options.stage.dataset.brandReady;this.atmosphere.dispose();this.cloth.dispose();this.bloom?.dispose();
     for(const element of this.panelElements){for(const property of ["transform","width","opacity","z-index"])element.style.removeProperty(property);element.hidden=false;}
     disposeModel(this.scene);this.scene.clear();this.scene.environment=null;this.environment?.dispose();this.rendererHost?.dispose();
   }

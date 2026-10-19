@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { Color, Group, Mesh, Vector3 } from "three";
 import { SpatialAtmosphere } from "../../src/components/spatial/SpatialAtmosphere";
 import { createOrbitCard } from "../../src/components/spatial/SpatialObjects";
+import { SpatialCloth } from "../../src/components/spatial/SpatialCloth";
 
 function asset(name:string) {
   const bytes=readFileSync(new URL(`../../public/experience/blackcrown-skull/${name}`,import.meta.url));
@@ -21,14 +22,23 @@ describe("Spatial atmosphere and authored hero budgets",()=>{
       expect(primitive.attributes.TEXCOORD_0).toBeTypeOf("number");
       return total+mobile.json.accessors[primitive.indices].count/3;
     },0);
-    const atmosphere=new SpatialAtmosphere(true),root=new Group().add(atmosphere,...Array.from({length:4},()=>createOrbitCard().group));
+    const atmosphere=new SpatialAtmosphere(true),cloth=new SpatialCloth(true),root=new Group().add(atmosphere,cloth,...Array.from({length:4},()=>createOrbitCard().group));
     let background=0;root.traverse(object=>{const mesh=object as Mesh;if(mesh.isMesh)background+=(mesh.geometry.index?.count??mesh.geometry.attributes.position.count)/3;});
     expect(triangles).toBeLessThan(28000);expect(triangles+background).toBeLessThan(30000);
     expect(mobile.bytes.length).toBeLessThan(2.2*1024*1024);
     expect(mobile.json.images).toHaveLength(6);expect(mobile.json.materials).toHaveLength(3);
     expect(mobile.json.images.every((image:any)=>Number.isInteger(image.bufferView)&&!image.uri)).toBe(true);
     expect(mobile.json.buffers.every((buffer:any)=>!buffer.uri)).toBe(true);
-    atmosphere.dispose();
+    atmosphere.dispose();cloth.dispose();
+  });
+
+  it("keeps repeated cloth taps finite and bounded without rewriting the mesh buffer",()=>{
+    const cloth=new SpatialCloth(true),positions=cloth.geometry.attributes.position.array,copy=positions.slice();
+    for(let i=0;i<20;i++){cloth.touch(i/10,-i/10,i);cloth.update(i+.5);}
+    expect(cloth.hits.value).toHaveLength(4);
+    expect(cloth.hits.value.every(hit=>hit.x>=.02&&hit.x<=.98&&hit.y>=.02&&hit.y<=.98&&hit.toArray().every(Number.isFinite))).toBe(true);
+    expect(cloth.geometry.attributes.position.array).toBe(positions);expect(positions).toEqual(copy);
+    cloth.setQuality(true,true);expect(cloth.motion.value).toBe(0);cloth.dispose();
   });
 
   it("updates GPU uniforms without rewriting or reallocating particle position buffers",()=>{

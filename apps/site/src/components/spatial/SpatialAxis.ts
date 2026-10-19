@@ -7,7 +7,7 @@ type AxisViewport = {
   slot:{x:number;y:number;width:number;height:number};
 };
 
-/** A stationary skull/spine axis. Only the camera travels from its head to its tip. */
+/** One connected skull/spine axis; the camera travels from its head to its tip. */
 export function spatialAxisJourney({compact,width,height,slot}:AxisViewport) {
   const fov=compact?36:38,depth=18.8+(compact&&width<=820?(height<=520?.9:1.8):0);
   const halfHeight=depth*Math.tan(fov*Math.PI/360),pixelsPerUnit=height/(halfHeight*2);
@@ -24,6 +24,18 @@ export function spatialAxisJourney({compact,width,height,slot}:AxisViewport) {
     {progress:1,position:[compact?.3:-1.5,-axisHeight*.43,compact?16.5:19.8],target:[compact?0:-.6,-axisHeight*.43,0],fov:compact?38:40},
   ];
   return {axisHeight,frames};
+}
+
+/** The first turns happen while the skull is still framed; every pose is scroll-owned. */
+export function spatialAxisTurn(progress:number,compact:boolean,reduced=false) {
+  if(reduced)return -.14;
+  const keys=compact?[[0,-.14],[.07,.32],[.17,-.38],[.32,.60],[.56,.83],[.8,.10],[1,-.22]]:
+    [[0,-.14],[.07,.54],[.17,-.64],[.32,.90],[.56,1.16],[.8,.16],[1,-.32]];
+  const p=Math.max(0,Math.min(1,progress));
+  const index=Math.min(keys.length-2,Math.max(0,keys.findIndex((key,i)=>i<keys.length-1&&p<=keys[i+1][0])));
+  const [a,b]=[keys[index],keys[index+1]],t=(p-a[0])/(b[0]-a[0]);
+  const blend=t*t*t*(t*(t*6-15)+10);
+  return a[1]+(b[1]-a[1])*blend;
 }
 
 /** Crossing the same scroll boundary in reverse reveals the previous real game. */

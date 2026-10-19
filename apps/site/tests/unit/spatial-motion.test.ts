@@ -1,11 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { PerspectiveCamera } from "three";
 import { DampedScalar, SurfaceMotion } from "../../src/components/spatial/spatialMotion";
-import { spatialAxisJourney } from "../../src/components/spatial/SpatialAxis";
+import { spatialAxisJourney,spatialAxisTurn } from "../../src/components/spatial/SpatialAxis";
 import { CameraRig } from "../../src/experience/camera/CameraRig";
 import { INITIAL_SCROLL_SNAPSHOT } from "../../src/experience/types";
 
 describe("Interruptible spatial motion", () => {
+  it("turns visibly while the skull is framed, reverses exactly, and limits mobile/reduced motion",()=>{
+    expect(spatialAxisTurn(.07,false)-spatialAxisTurn(0,false)).toBeGreaterThan(.6);
+    expect(spatialAxisTurn(.07,false)-spatialAxisTurn(.17,false)).toBeGreaterThan(1);
+    expect(Math.abs(spatialAxisTurn(.17,true))).toBeLessThan(Math.abs(spatialAxisTurn(.17,false)));
+    const positions=[0,.02,.07,.12,.17,.32,.56,.8,1];
+    const forward=positions.map(p=>spatialAxisTurn(p,false));
+    expect([...positions].reverse().map(p=>spatialAxisTurn(p,false))).toEqual([...forward].reverse());
+    expect(positions.map(p=>spatialAxisTurn(p,true,true))).toEqual(positions.map(()=>-.14));
+  });
   it("starts and finishes a surface at rest, including every transform channel", () => {
     const motion = new SurfaceMotion([30,80,.5,.5,.25]);
     const end = [0,0,1,1,1];
