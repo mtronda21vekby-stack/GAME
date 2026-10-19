@@ -5,10 +5,18 @@ type AxisViewport = {
   width:number;
   height:number;
   slot:{x:number;y:number;width:number;height:number};
+  stops?:SpatialJourneyStops;
+};
+
+export type SpatialJourneyStops = {
+  intro:number;
+  projects:readonly number[];
+  exit:number;
+  lab:number;
 };
 
 /** One connected skull/spine axis; the camera travels from its head to its tip. */
-export function spatialAxisJourney({compact,width,height,slot}:AxisViewport) {
+export function spatialAxisJourney({compact,width,height,slot,stops}:AxisViewport) {
   const fov=compact?36:38,depth=18.8+(compact&&width<=820?(height<=520?.9:1.8):0);
   const halfHeight=depth*Math.tan(fov*Math.PI/360),pixelsPerUnit=height/(halfHeight*2);
   const axisHeight=Math.min(compact?15.8:26,slot.width*.9/(pixelsPerUnit*.245),slot.height*.97/(pixelsPerUnit*.29))*(compact?1.16:1.18);
@@ -23,6 +31,25 @@ export function spatialAxisJourney({compact,width,height,slot}:AxisViewport) {
     {progress:.74,position:[0,-axisHeight*.29,18.8],target:[0,-axisHeight*.29,0],fov},
     {progress:1,position:[0,-axisHeight*.43,19.8],target:[0,-axisHeight*.43,0],fov},
   ];
+  if(stops){
+    // The path follows actual document chapters, including filtered collections.
+    // It recentres once, then descends straight down: no lateral slalom or idle turn.
+    frames.splice(1);
+    const append=(progress:number,y:number,z=18.8)=>{
+      const previous=frames[frames.length-1];
+      if(progress<=previous.progress+.004||progress>=.995)return;
+      const descent=Math.min(previous.position[1],y);
+      frames.push({progress,position:[0,descent,z],target:[0,descent,0],fov});
+    };
+    append(stops.intro,axisHeight*.23);
+    stops.projects.forEach((progress,index)=>append(progress,axisHeight*(.13-.48*index/Math.max(1,stops.projects.length-1))));
+    append(stops.exit,-axisHeight*.49);
+    // Let the tip leave above the viewport before the sheet becomes the main subject.
+    const belowTip=-axisHeight*.5-halfHeight*1.16;
+    append(stops.lab,belowTip,19.8);
+    const endY=Math.min(frames[frames.length-1].position[1],belowTip);
+    frames.push({progress:1,position:[0,endY,19.8],target:[0,endY,0],fov});
+  }
   return {axisHeight,frames};
 }
 

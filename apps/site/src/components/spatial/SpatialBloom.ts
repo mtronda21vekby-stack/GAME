@@ -7,7 +7,7 @@ import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 /** Desktop HDR bloom. Native HTML cards remain above this canvas and stay crisp. */
 export class SpatialBloom {
   private readonly composer:EffectComposer;
-  private readonly bloom=new UnrealBloomPass(new Vector2(1,1),.3,.65,1.05);
+  private readonly bloom=new UnrealBloomPass(new Vector2(1,1),.24,.65,1.35);
   private readonly output=new OutputPass();
   constructor(private readonly renderer:WebGLRenderer,private readonly scene:Scene,private readonly camera:Camera) {
     const target=new WebGLRenderTarget(1,1,{type:HalfFloatType,depthBuffer:true,stencilBuffer:false});
@@ -18,6 +18,7 @@ export class SpatialBloom {
     this.composer.setPixelRatio(Math.min(1.25,dpr));this.composer.setSize(width,height);
   }
   render(){this.composer.render();}
+  setLabPresence(amount:number){this.bloom.strength=.24*(1-Math.max(0,Math.min(1,amount))*.75);}
   /** Warm the same HDR shader variants as RenderPass, including currently hidden meshes. */
   warmup(){
     const previous=this.renderer.getRenderTarget();

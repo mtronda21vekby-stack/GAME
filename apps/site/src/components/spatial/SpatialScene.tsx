@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, type RefObject } from "react";
 import { SpatialSceneRuntime } from "./SpatialSceneRuntime";
 
-export type SpatialSceneHandle = { dispose: () => void; touchCloth:(x?:number,y?:number)=>boolean; setDetailOpen:(open:boolean)=>void };
+export type SpatialSceneHandle = { dispose: () => void; touchCloth:(x?:number,y?:number)=>boolean; setDetailOpen:(open:boolean)=>void;setPaused:(paused:boolean)=>void };
 type Props = { stageRef: RefObject<HTMLElement>; worldIndex: number; visibleGames: readonly number[]; paused: boolean; detailOpen: boolean; detailFocus: boolean; onStatus: (status: "ready" | "fallback") => void; onProgress: (complete: number, total: number) => void };
 
 const SpatialScene = forwardRef<SpatialSceneHandle, Props>(function SpatialScene({ stageRef, worldIndex, visibleGames, paused, detailOpen, detailFocus, onStatus, onProgress }, ref) {
@@ -9,7 +9,7 @@ const SpatialScene = forwardRef<SpatialSceneHandle, Props>(function SpatialScene
   const runtimeRef = useRef<SpatialSceneRuntime | null>(null);
   const settings = useRef({ worldIndex, visibleGames, paused, detailOpen, detailFocus });
   settings.current = { worldIndex, visibleGames, paused, detailOpen, detailFocus };
-  useImperativeHandle(ref, () => ({ dispose() { runtimeRef.current?.dispose(); runtimeRef.current = null; },touchCloth(x,y){return runtimeRef.current?.touchCloth(x,y)??false;},setDetailOpen(open){runtimeRef.current?.setDetailOpen(open);} }), []);
+  useImperativeHandle(ref, () => ({ dispose() { runtimeRef.current?.dispose(); runtimeRef.current = null; },touchCloth(x,y){return runtimeRef.current?.touchCloth(x,y)??false;},setDetailOpen(open){runtimeRef.current?.setDetailOpen(open);},setPaused(value){runtimeRef.current?.setPaused(value);} }), []);
   useEffect(() => {
     let alive = true;
     const initialize = () => {

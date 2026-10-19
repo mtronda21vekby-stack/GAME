@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PerspectiveCamera } from "three";
+import { PerspectiveCamera, Vector3 } from "three";
 import { DampedScalar, ScrollJourney, SurfaceMotion } from "../../src/components/spatial/spatialMotion";
 import { spatialAxisJourney,spatialAxisTurn } from "../../src/components/spatial/SpatialAxis";
 import { CameraRig } from "../../src/experience/camera/CameraRig";
@@ -150,5 +150,29 @@ describe.each([{label:"desktop",compact:false},{label:"mobile",compact:true}])("
       const forward=sample(i/100);sample(1);
       sample(i/100).forEach((value,axis)=>expect(value).toBeCloseTo(forward[axis],10));
     }
+  });
+});
+
+describe.each([false,true])("Document-aligned sculpture journey (compact=%s)",compact=>{
+  it.each([{projects:[.25,.42,.59,.76]},{projects:[.38]}])("keeps a straight reversible descent for full and filtered collections",({projects})=>{
+    const width=compact?390:1440,height=844;
+    const stops={intro:.14,projects,exit:.83,lab:.94};
+    const {axisHeight,frames}=spatialAxisJourney({compact,width,height,slot:{x:width*.73,y:height*.5,width:compact?340:570,height:500},stops});
+    const camera=new PerspectiveCamera(38,width/height,.1,100),rig=new CameraRig(camera,frames,true);
+    const snapshot={...INITIAL_SCROLL_SNAPSHOT,viewportWidth:width,viewportHeight:height};
+    let previous=Infinity;
+    for(let i=0;i<=500;i++){
+      rig.update({...snapshot,progress:i/500},{x:.4,y:-.2},1000);
+      expect(camera.position.y).toBeLessThanOrEqual(previous+1e-8);previous=camera.position.y;
+      if(i/500>=stops.intro)expect(camera.position.x).toBeCloseTo(0,9);
+      expect(camera.quaternion.x).toBeCloseTo(0,9);expect(camera.quaternion.y).toBeCloseTo(0,9);
+    }
+    for(const progress of projects){
+      rig.update({...snapshot,progress},{x:0,y:0},0);const forward=camera.position.toArray();
+      rig.update({...snapshot,progress:1},{x:0,y:0},0);rig.update({...snapshot,progress},{x:0,y:0},0);
+      expect(camera.position.toArray()).toEqual(forward);
+    }
+    rig.update({...snapshot,progress:stops.lab},{x:0,y:0},0);camera.updateMatrixWorld();
+    expect(new Vector3(0,-axisHeight*.5,0).project(camera).y).toBeGreaterThan(1);
   });
 });

@@ -115,11 +115,11 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
     if (staticMotion()) { surface.rebase(rest); paintSurface(); return; }
     surface.moveTo(rest,SPATIAL_TIMING.open,now); paintSurface();
     animations.current.push(dialog.animate([{ opacity:veil },{ opacity:1 }],{ duration:280,easing:"ease-in-out" }));
-    // Let the shared image pass the copy before revealing it on stacked layouts.
-    // Reversing a close retains the current copy opacity instead of flashing to zero.
+    // The image keeps its long shared-surface flight, while the title and actions
+    // acknowledge the click immediately. Reopening retains the visible copy.
     if (copyRef.current) animations.current.push(copyRef.current.animate(
-      [{ opacity:copyOpacity,transform:reopening ? "none" : "translateY(16px)" },{ opacity:1,transform:"none" }],
-      { duration:360,delay:reopening ? 0 : SPATIAL_TIMING.open-360,fill:"backwards",easing:"cubic-bezier(.3,0,.2,1)" },
+      [{ opacity:reopening?copyOpacity:.45,transform:reopening ? "none" : "translateY(12px)" },{ opacity:1,transform:"none" }],
+      { duration:620,fill:"backwards",easing:"cubic-bezier(.3,0,.2,1)" },
     ));
     frame.current = requestAnimationFrame(tick);
   },[open]);

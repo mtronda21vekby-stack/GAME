@@ -1,8 +1,8 @@
 import * as THREE from "three";
 
 export const SPATIAL_ATMOSPHERE_QUALITY = {
-  desktop: { particles: 2800, hazeLayers: 3, shafts: 2, bloom: true, dpr: 1.5 },
-  mobile: { particles: 640, hazeLayers: 2, shafts: 1, bloom: false, dpr: 1.25 },
+  desktop: { particles: 1800, hazeLayers: 2, shafts: 2, bloom: true, dpr: 1.5 },
+  mobile: { particles: 480, hazeLayers: 1, shafts: 1, bloom: false, dpr: 1.25 },
 } as const;
 
 const dustVertex = `
@@ -79,12 +79,8 @@ export class SpatialAtmosphere extends THREE.Group {
   readonly time = { value: 0 };
   readonly motion = { value: 1 };
   readonly dust: THREE.Points<THREE.BufferGeometry, THREE.ShaderMaterial>;
-  private readonly far = new THREE.Group();
-  private readonly near = new THREE.Group();
   private readonly haze: THREE.Mesh<THREE.PlaneGeometry,THREE.ShaderMaterial>[] = [];
   private readonly shafts: THREE.Mesh<THREE.PlaneGeometry,THREE.ShaderMaterial>[] = [];
-  private readonly floor:THREE.Mesh;
-  private readonly arch:THREE.Mesh;
   private compact: boolean;
   private reduced = false;
 
@@ -107,16 +103,9 @@ export class SpatialAtmosphere extends THREE.Group {
       vertexShader:dustVertex,fragmentShader:dustFragment,transparent:true,
       blending:THREE.AdditiveBlending,depthWrite:false,depthTest:true,
     }));
-    this.dust.name="GPU_DUST_VOLUME"; this.dust.frustumCulled=false; this.add(this.dust,this.far,this.near);
-    const metal=new THREE.MeshStandardMaterial({color:0x1d3038,metalness:.85,roughness:.4});
-    const arch=this.arch=new THREE.Mesh(new THREE.TorusGeometry(1,.012,6,72,Math.PI*1.45),metal);
-    arch.position.set(-1,-.2,-12); arch.scale.set(9,6.6,9); arch.rotation.set(.18,.15,.26); this.far.add(arch);
-    const floor=this.floor=new THREE.Mesh(new THREE.PlaneGeometry(32,32),new THREE.MeshStandardMaterial({color:0x0c171e,metalness:.7,roughness:.56}));
-    floor.rotation.x=-Math.PI/2; floor.position.set(0,-4.8,-6); this.far.add(floor);
-    const finGeometry=new THREE.BoxGeometry(.13,14,.5);
-    [[7.8,.7,3.4,-.16],[-8.8,-.4,4.2,.12]].forEach(([x,y,z,tilt])=>{
-      const fin=new THREE.Mesh(finGeometry,metal);fin.position.set(x,y,z);fin.rotation.set(.05,.22,tilt);this.near.add(fin);
-    });
+    // Depth comes from the sculpture and atmospheric layers, without a fake floor,
+    // orbit ring or foreground rails crossing the actual interface.
+    this.dust.name="GPU_DUST_VOLUME"; this.dust.frustumCulled=false; this.add(this.dust);
     [-10,-3,3].forEach((z,i)=>{
       const mesh=this.makeHaze(false);mesh.position.set(i-1,-1+i*.6,z);mesh.scale.set(22,15,1);mesh.rotation.z=-.12+i*.1;
       this.haze.push(mesh);this.add(mesh);
@@ -142,23 +131,19 @@ export class SpatialAtmosphere extends THREE.Group {
     this.dust.geometry.setDrawRange(0,reduced?Math.min(quality.particles,compact?160:500):quality.particles);
     this.haze.forEach((mesh,i)=>{mesh.visible=i<quality.hazeLayers;});
     this.shafts.forEach((mesh,i)=>{mesh.visible=i<quality.shafts;});
-    this.near.visible=!compact;this.motion.value=reduced?0:1;
+    this.motion.value=reduced?0:1;
   }
 
   setAxisHeight(height:number) {
     this.dust.material.uniforms.uAxisHeight.value=height;
-    this.floor.position.y=-height*.5-1.2;this.arch.position.y=height*.29;
     this.haze.forEach((mesh,i)=>{mesh.scale.y=height*1.5;mesh.position.y=height*(.22-i*.18);});
     this.shafts.forEach(mesh=>{mesh.scale.y=height*1.7;mesh.position.y=0;});
-    this.near.scale.y=height/14;
   }
 
-  update(time:number,progress:number,detail:number,pointer:{x:number;y:number},anchor:THREE.Vector3,dpr:number,accent:THREE.Color) {
+  update(time:number,progress:number,detail:number,pointer:{x:number;y:number},anchor:THREE.Vector3,dpr:number,accent:THREE.Color,lab=0) {
     this.time.value=this.reduced?0:time;this.position.copy(anchor);
     const journey=THREE.MathUtils.smoothstep(progress,.08,.85);
-    const opacity=1-detail*.95;this.visible=opacity>.005;
-    this.far.rotation.y=pointer.x*.08+journey*.12;
-    this.near.position.x=pointer.x*.8;this.near.rotation.z=pointer.y*.035-journey*.07;
+    const opacity=(1-detail*.6)*(1-lab*.55);this.visible=opacity>.005;
     this.dust.material.uniforms.uDpr.value=dpr;
     this.dust.material.uniforms.uOpacity.value=opacity*(this.compact?.52:.68);
     this.dust.material.uniforms.uTravel.value=journey*2.5;

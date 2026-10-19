@@ -19,7 +19,7 @@ export default function SpatialHome() {
   const [worldIndex, setWorldIndex] = React.useState(initialView?.worldIndex ?? 0);
   const [category, setCategory] = React.useState<string>(initialView?.category ?? "Все игры");
   const [paused, setPaused] = React.useState(false);
-  const [clothTouch,setClothTouch] = React.useState<{x:number;y:number;key:number}|null>(null);
+  const [clothTouch,setClothTouch] = React.useState<{x:number;y:number;key:number;accepted:boolean}|null>(null);
   const [detailOpen, setDetailOpen] = React.useState(false);
   const [detailFocus, setDetailFocus] = React.useState(false);
   const panelOrigin = React.useRef<PanelOrigin | null>(null);
@@ -79,6 +79,11 @@ export default function SpatialHome() {
     setCategory(next);
     if (next !== "Все игры" && game.genre !== next) setWorldIndex(Math.max(0, platformGames.findIndex(item => item.genre === next)));
   }
+  function togglePause(){
+    const next=!paused;
+    // Acknowledge the control in this event, before React's passive prop effects.
+    sceneRef.current?.setPaused(next);setPaused(next);
+  }
   function releaseBeforeGame(event: React.MouseEvent) {
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
     const link = (event.target as Element).closest<HTMLAnchorElement>("a[href]");
@@ -124,14 +129,14 @@ export default function SpatialHome() {
                 <div className="spatialGalleryFoot"><span>Выбери мир — и начинай игру.</span><a className="platTextLink" href="/games/">Весь каталог <span aria-hidden="true">↗</span></a></div>
               </div>
             </section>
-            <section className="spatialMaterial" aria-labelledby="spatial-material-title">
-              <div className="spatialMaterialCopy"><p className="spatialEyebrow">02 / МАТЕРИЯ</p><h2 id="spatial-material-title">Коснись.<br/><span>Оставь волну.</span></h2><p id="spatial-cloth-help">Металл тоже может двигаться.<br/>Коснись полотна в любой точке.</p><p className="spatialClothStatus" role="status">{clothTouch?(paused?"Сцена на паузе.":"Касание принято."):""}</p></div>
+            <section className="spatialMaterial" id="spatial-lab" aria-labelledby="spatial-material-title">
+              <div className="spatialMaterialCopy"><p className="spatialEyebrow">02 / BLACKCROWN LAB</p><h2 id="spatial-material-title">Коснись.<br/><span>Оставь волну.</span></h2><p id="spatial-cloth-help">Проведи по металлу или коснись полотна.<br/>Форма отвечает на твой жест.</p><p className="spatialClothStatus" role="status">{clothTouch?(paused?"Сцена на паузе.":clothTouch.accepted?"Касание принято.":"Движение отключено."):""}</p></div>
               <button className="spatialClothControl" type="button" aria-label="Коснуться металлического полотна" aria-describedby="spatial-cloth-help" onClick={event=>{
                 const box=event.currentTarget.getBoundingClientRect(),keyboard=event.detail===0;
                 const x=keyboard?box.width/2:event.clientX-box.left,y=keyboard?box.height/2:event.clientY-box.top;
-                sceneRef.current?.touchCloth(keyboard?undefined:event.clientX,keyboard?undefined:event.clientY);
-                setClothTouch({x,y,key:(clothTouch?.key??0)+1});
-              }}><span className="spatialClothFallback" aria-hidden="true"/>{clothTouch&&<span key={clothTouch.key} className="spatialClothPulse" style={{left:clothTouch.x,top:clothTouch.y}} aria-hidden="true"/>}<span className="spatialClothHint" aria-hidden="true">Коснись поверхности <span>+</span></span></button>
+                const accepted=sceneRef.current?.touchCloth(keyboard?undefined:event.clientX,keyboard?undefined:event.clientY)??false;
+                setClothTouch({x,y,key:(clothTouch?.key??0)+1,accepted});
+              }}><span className="spatialClothFallback" aria-hidden="true"/>{clothTouch?.accepted&&<span key={clothTouch.key} className="spatialClothPulse" style={{left:clothTouch.x,top:clothTouch.y}} aria-hidden="true"/>}<span className="spatialClothHint" aria-hidden="true">Коснись поверхности <span>+</span></span></button>
             </section>
             <section className="spatialAbout" aria-labelledby="spatial-about-title">
               <div className="spatialAboutCopy"><p className="spatialEyebrow">03 / О ПЛАТФОРМЕ</p><h2 id="spatial-about-title">Один BLACKCROWN.<br/><span>Разный опыт.</span></h2></div><div className="spatialAboutText"><p>Быстрый бой, неизвестный океан или день в своей долине. Здесь у каждой игры — собственный мир, настроение и темп.</p><div className="spatialActions"><a className="platTextLink" href="/about">О проекте <span aria-hidden="true">↗</span></a><a className="platTextLink" href="/support">Нужна помощь? <span aria-hidden="true">↗</span></a><a className="platTextLink" href="/nexus-lab">Сцена короны <span aria-hidden="true">↗</span></a></div></div>
@@ -139,8 +144,8 @@ export default function SpatialHome() {
           </div>
         </section>
       </main>
-      <button className="spatialMotionToggle" type="button" aria-pressed={paused} aria-label={paused ? "Продолжить движение сцены" : "Пауза движения сцены"} onClick={() => setPaused(value => !value)}><span aria-hidden="true">{paused ? "▷" : "Ⅱ"}</span><span>{paused ? "Продолжить" : "Пауза"}</span></button>
-      <GameDetail open={detailOpen} origin={panelOrigin.current} game={game} canCycle={visibleGames.length > 1} paused={paused} onTogglePause={() => setPaused(value => !value)} onClosing={startClosingDetail} onClose={closeDetail} onPrevious={() => step(-1)} onNext={() => step(1)}/>
+      <button className="spatialMotionToggle" type="button" aria-pressed={paused} aria-label={paused ? "Продолжить движение сцены" : "Пауза движения сцены"} onClick={togglePause}><span aria-hidden="true">{paused ? "▷" : "Ⅱ"}</span><span>{paused ? "Продолжить" : "Пауза"}</span></button>
+      <GameDetail open={detailOpen} origin={panelOrigin.current} game={game} canCycle={visibleGames.length > 1} paused={paused} onTogglePause={togglePause} onClosing={startClosingDetail} onClose={closeDetail} onPrevious={() => step(-1)} onNext={() => step(1)}/>
     </div>
   );
 }

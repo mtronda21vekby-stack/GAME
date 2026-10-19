@@ -47,9 +47,9 @@ describe("Spatial atmosphere and authored hero budgets",()=>{
     atmosphere.update(0,0,0,{x:0,y:0},anchor,1.5,accent);
     atmosphere.update(45,.4,0,{x:.3,y:.1},anchor,1.5,accent);
     expect(positions.array).toBe(buffer);expect(positions.array).toEqual(copy);
-    expect(atmosphere.time.value).toBe(45);expect(atmosphere.dust.geometry.drawRange.count).toBe(2800);
+    expect(atmosphere.time.value).toBe(45);expect(atmosphere.dust.geometry.drawRange.count).toBe(1800);
     expect(atmosphere.dust.material.depthTest).toBe(true);
-    atmosphere.setQuality(true,false);expect(atmosphere.dust.geometry.drawRange.count).toBe(640);
+    atmosphere.setQuality(true,false);expect(atmosphere.dust.geometry.drawRange.count).toBe(480);
     atmosphere.dispose();
   });
 
