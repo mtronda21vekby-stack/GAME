@@ -14,8 +14,8 @@
 .spatialCatalogPage .platGameGrid { gap:60px 36px; }
 .spatialCatalogPage .platGame { min-width:0; padding:0 0 30px; border-color:#b6c9ce24; }
 .spatialCatalogPage .platGameImage { aspect-ratio:16/10; border:1px solid #b8d1d52c; border-radius:6px; background:#080d13; }
-.spatialCatalogPage .platImageDepth { transform:none; }
-.spatialCatalogPage .platGameImage img { opacity:1; transform:none; filter:none; }
+.spatialCatalogPage .platImageDepth { inset:0; transform:none; }
+.spatialCatalogPage .platGameImage img { object-fit:contain; opacity:1; transform:none; filter:none; }
 .spatialCatalogPage .platGameImage:after { display:none; }
 .spatialCatalogPage .platGameStatus { background:#0b141bd9; color:#c2dce3; font-size:9px; border:1px solid #b4d9e31f; }
 .spatialCatalogPage .platGameMeta { color:#7995a3; font-size:10px; margin:22px 0 16px; }
@@ -43,7 +43,7 @@
  .spatialCatalogPage .platSearch { max-width:none; }
  .spatialCatalogPage .platGameGrid { gap:40px; }
  .spatialCatalogPage .platGame:first-child { display:block; padding-bottom:30px; }
- .spatialCatalogPage .platGame:first-child>.platGameImage { min-height:0; aspect-ratio:16/10; }
+ .spatialCatalogPage .platGame:first-child>.platGameImage { height:auto; min-height:0; aspect-ratio:16/10; }
  .spatialCatalogPage .platGame:first-child>.platGameMeta { margin-top:20px; }
  .spatialCatalogPage .platGame h3,.spatialCatalogPage .platGame:first-child>h3 { font-size:32px; }
  .spatialCatalogPage .platGame>p { font-size:14px; }

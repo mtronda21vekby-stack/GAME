@@ -99,6 +99,7 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
     surface.sample(now); paintSurface();
     const previousBox = reopening ? media.getBoundingClientRect() : null;
     const opacity = surface.value[4], veil = reopening ? getComputedStyle(dialog).opacity : "0";
+    const copyOpacity = reopening && copyRef.current ? getComputedStyle(copyRef.current).opacity : "0";
     cancelAnimationFrame(frame.current); cancelAnimationFrame(focusFrame.current); cancelAnimations();
     phase.current = "open"; setClosingVisual(false); delete dialog.dataset.phase;
     dialog.inert = false; dialog.removeAttribute("aria-hidden");
@@ -114,7 +115,12 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
     if (staticMotion()) { surface.rebase(rest); paintSurface(); return; }
     surface.moveTo(rest,SPATIAL_TIMING.open,now); paintSurface();
     animations.current.push(dialog.animate([{ opacity:veil },{ opacity:1 }],{ duration:280,easing:"ease-in-out" }));
-    if (copyRef.current) animations.current.push(copyRef.current.animate([{ opacity:0,transform:"translateY(16px)" },{ opacity:1,transform:"none" }],{ duration:560,delay:reopening ? 0 : 220,fill:"backwards",easing:"cubic-bezier(.3,0,.2,1)" }));
+    // Let the shared image pass the copy before revealing it on stacked layouts.
+    // Reversing a close retains the current copy opacity instead of flashing to zero.
+    if (copyRef.current) animations.current.push(copyRef.current.animate(
+      [{ opacity:copyOpacity,transform:reopening ? "none" : "translateY(16px)" },{ opacity:1,transform:"none" }],
+      { duration:360,delay:reopening ? 0 : SPATIAL_TIMING.open-360,fill:"backwards",easing:"cubic-bezier(.3,0,.2,1)" },
+    ));
     frame.current = requestAnimationFrame(tick);
   },[open]);
   useClientLayoutEffect(() => {
