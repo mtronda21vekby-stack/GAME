@@ -112,7 +112,7 @@ export default function SpatialHome() {
           <div className="spatialJourneyContent">
             <section className="spatialHero" aria-labelledby="spatial-title">
               <p className="spatialHeroLabel spatialEyebrow">НЕЗАВИСИМЫЕ ИГРОВЫЕ МИРЫ</p>
-              <div className="spatialBrandSlot" aria-hidden="true"><img className="spatialBrandPoster" src={SPATIAL_BRAND_MODEL.posterUrl} alt="" width="640" height="760" decoding="async"/></div>
+              <div className="spatialBrandSlot" aria-hidden="true"><picture><source media="(max-width:760px)" srcSet={SPATIAL_BRAND_MODEL.mobilePosterUrl}/><img className="spatialBrandPoster" src={SPATIAL_BRAND_MODEL.posterUrl} alt="" width="640" height="464" decoding="async"/></picture></div>
               <div className="spatialHeroCopy">
                 <h1 id="spatial-title">У каждого —<br/><span>свой мир.</span></h1>
                 <p className="spatialLead">От первого боя до тихой долины.</p>

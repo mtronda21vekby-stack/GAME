@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
 const folds=`
-  uniform float uClothTime,uClothMotion;
+  uniform float uClothTime,uClothMotion,uClothEntrance;
   uniform vec4 uClothHits[4];
   uniform vec3 uClothHover;
   varying vec2 vClothUv;
@@ -29,6 +29,10 @@ const folds=`
     float x=p.x-.5+sin(free*3.1+.2)*.065*free;
     float y=p.y-.5-sin(p.x*3.141593)*sin(p.x*3.141593)*free*.075;
     x+=sin(p.y*4.+uClothTime*.18)*free*.008*uClothMotion;
+    float opening=smoothstep(0.,1.,uClothEntrance);
+    x*=mix(.08,1.,opening);
+    z+=sin((p.x-.5)*6.283185)*.16*(1.-opening);
+    y+=sin(p.x*3.141593)*.08*(1.-opening);
     return vec3(x,y,z);
   }
 `;
@@ -66,6 +70,7 @@ const weave=`
 export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshStandardMaterial> {
   readonly time={value:0};
   readonly motion={value:1};
+  readonly entrance={value:1};
   readonly hits={value:Array.from({length:4},()=>new THREE.Vector4(.5,.5,-100,0))};
   readonly hover={value:new THREE.Vector3(.5,.5,0)};
   private readonly hoverTarget=new THREE.Vector3(.5,.5,0);
@@ -76,7 +81,7 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshStand
     }));
     this.name="INTERACTIVE_METAL_CLOTH";this.frustumCulled=false;this.visible=false;
     this.material.onBeforeCompile=shader=>{
-      shader.uniforms.uClothTime=this.time;shader.uniforms.uClothMotion=this.motion;
+      shader.uniforms.uClothTime=this.time;shader.uniforms.uClothMotion=this.motion;shader.uniforms.uClothEntrance=this.entrance;
       shader.uniforms.uClothHits=this.hits;shader.uniforms.uClothHover=this.hover;
       shader.vertexShader=shader.vertexShader.replace("#include <common>","#include <common>\n"+folds)
         .replace("#include <beginnormal_vertex>",`#include <beginnormal_vertex>
@@ -98,7 +103,7 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshStand
         .replace("#include <normal_fragment_maps>",`#include <normal_fragment_maps>
           normal=clothWeaveNormal(normal,vClothUv,cloth.w);`);
     };
-    this.material.customProgramCacheKey=()=>"blackcrown-metal-cloth-v2";
+    this.material.customProgramCacheKey=()=>"blackcrown-metal-cloth-unfold-v3";
   }
   setQuality(compact:boolean,reduced:boolean) {
     const columns=compact?20:32,rows=compact?26:48;
@@ -113,6 +118,7 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshStand
       this.motion.value?THREE.MathUtils.clamp(Number.isFinite(strength)?strength:0,0,1):0,
     );
   }
+  setEntrance(progress:number){this.entrance.value=THREE.MathUtils.clamp(Number.isFinite(progress)?progress:1,0,1);}
   touch(u:number,v:number,time:number) {
     if(!this.motion.value)return;
     this.hits.value[this.nextHit].set(

@@ -9,8 +9,11 @@ function curveValue(frames: readonly CameraKeyframe[], index: number, amount: nu
   const tangent = (at: number) => {
     if (!at || at === frames.length-1) return 0;
     const before = read(frames[at-1]), current = read(frames[at]), after = read(frames[at+1]);
-    if (before === current || after === current) return 0;
-    return .75*(after-before)/(frames[at+1].progress-frames[at-1].progress);
+    if ((current-before)*(after-current)<=0) return 0;
+    const left=(current-before)/(frames[at].progress-frames[at-1].progress);
+    const right=(after-current)/(frames[at+1].progress-frames[at].progress);
+    const slope=.75*(after-before)/(frames[at+1].progress-frames[at-1].progress);
+    return Math.sign(slope)*Math.min(Math.abs(slope),3*Math.abs(left),3*Math.abs(right));
   };
   const t = amount, span = frames[index+1].progress-frames[index].progress;
   return (2*t*t*t-3*t*t+1)*a+(t*t*t-2*t*t+t)*span*tangent(index)+(-2*t*t*t+3*t*t)*b+(t*t*t-t*t)*span*tangent(index+1);

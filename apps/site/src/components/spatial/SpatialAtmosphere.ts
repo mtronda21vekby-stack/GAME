@@ -6,7 +6,7 @@ export const SPATIAL_ATMOSPHERE_QUALITY = {
 } as const;
 
 const dustVertex = `
-  uniform float uTime, uDpr, uOpacity, uTravel, uAxisHeight;
+  uniform float uTime, uDpr, uOpacity, uTravel, uAxisHeight, uArrival, uDeparture, uHeadY;
   attribute float aSeed;
   attribute vec3 aTint;
   varying vec3 vTint;
@@ -17,6 +17,16 @@ const dustVertex = `
     float radius=length(position.xz),angle=aSeed*62.83+p.y*.26+uTime*.035+uTravel*.2;
     p.x = cos(angle)*radius+sin(uTime*.11+aSeed*19.)*.16;
     p.z = sin(angle)*radius;
+    float boneT=clamp((.26986-p.y/uAxisHeight)/.76973,0.,1.);
+    float envelope=pow(sin(boneT*3.141593),2.);
+    p.x+=uAxisHeight*.02167*sin(boneT*6.283185)*envelope;
+    p.z+=uAxisHeight*.035*sin(boneT*6.283185-.35)*envelope;
+    float travel=fract(aSeed+uArrival*.72+uTime*.012);
+    vec3 stream=vec3(cos(angle)*radius*1.3,uHeadY+sin(angle)*radius*.6+(travel-.5)*.8,mix(-7.,14.,travel));
+    float streamFade=smoothstep(0.,.12,travel)*(1.-smoothstep(.88,1.,travel));
+    p=mix(stream,p,uArrival);
+    p.x=mix(p.x,p.x*.55,uDeparture);
+    p.z+=uDeparture*3.;
     vec4 mv = modelViewMatrix*vec4(p,1.);
     gl_Position = projectionMatrix*mv;
     float screenX = gl_Position.x/gl_Position.w*.5+.5;
@@ -24,7 +34,7 @@ const dustVertex = `
     vSpark = step(.982,aSeed);
     gl_PointSize = clamp((12.+aSeed*35.+vSpark*22.)*uDpr/max(1.,-mv.z),1.,10.*uDpr);
     vTint = aTint;
-    vAlpha = uOpacity*distanceFade*(.22+.78*smoothstep(.12,.6,screenX));
+    vAlpha = uOpacity*distanceFade*(.22+.78*smoothstep(.12,.6,screenX))*mix(streamFade,1.,uArrival);
   }
 `;
 const dustFragment = `
@@ -88,10 +98,10 @@ export class SpatialAtmosphere extends THREE.Group {
     super(); this.name="BLACKCROWN_ATMOSPHERE"; this.compact=compact;
     const positions:number[]=[], seeds:number[]=[], colors:number[]=[];
     for(let i=0;i<SPATIAL_ATMOSPHERE_QUALITY.desktop.particles;i++) {
-      const radius=1.4+random(i*4)*4.4,angle=random(i*4+2)*Math.PI*2;
+      const radius=.85+Math.pow(random(i*4),1.4)*2.7,angle=random(i*4+2)*Math.PI*2;
       positions.push(Math.cos(angle)*radius,(random(i*4+1)-.5)*36,Math.sin(angle)*radius);
       const seed=random(i*4+3); seeds.push(seed);
-      const color=new THREE.Color(i%37===0?0xd2b79d:i%4===0?0xc4dce0:0x88b4c1);
+      const color=new THREE.Color(i%37===0?0xb7aed4:i%4===0?0xc4dce0:0x88b4c1);
       color.multiplyScalar(seed>.982?2.8:.55); colors.push(color.r,color.g,color.b);
     }
     const geometry=new THREE.BufferGeometry();
@@ -99,7 +109,7 @@ export class SpatialAtmosphere extends THREE.Group {
     geometry.setAttribute("aSeed",new THREE.Float32BufferAttribute(seeds,1));
     geometry.setAttribute("aTint",new THREE.Float32BufferAttribute(colors,3));
     this.dust=new THREE.Points(geometry,new THREE.ShaderMaterial({
-      uniforms:{uTime:this.time,uDpr:{value:1},uOpacity:{value:.6},uTravel:{value:0},uAxisHeight:{value:26}},
+      uniforms:{uTime:this.time,uDpr:{value:1},uOpacity:{value:.6},uTravel:{value:0},uAxisHeight:{value:26},uArrival:{value:1},uDeparture:{value:0},uHeadY:{value:9}},
       vertexShader:dustVertex,fragmentShader:dustFragment,transparent:true,
       blending:THREE.AdditiveBlending,depthWrite:false,depthTest:true,
     }));
@@ -136,8 +146,13 @@ export class SpatialAtmosphere extends THREE.Group {
 
   setAxisHeight(height:number) {
     this.dust.material.uniforms.uAxisHeight.value=height;
+    this.dust.material.uniforms.uHeadY.value=height*.35;
     this.haze.forEach((mesh,i)=>{mesh.scale.y=height*1.5;mesh.position.y=height*(.22-i*.18);});
     this.shafts.forEach(mesh=>{mesh.scale.y=height*1.7;mesh.position.y=0;});
+  }
+  setChoreography(arrival:number,departure:number){
+    this.dust.material.uniforms.uArrival.value=this.reduced?1:THREE.MathUtils.clamp(arrival,0,1);
+    this.dust.material.uniforms.uDeparture.value=this.reduced?0:THREE.MathUtils.clamp(departure,0,1);
   }
 
   update(time:number,progress:number,detail:number,pointer:{x:number;y:number},anchor:THREE.Vector3,dpr:number,accent:THREE.Color,lab=0) {
@@ -145,7 +160,7 @@ export class SpatialAtmosphere extends THREE.Group {
     const journey=THREE.MathUtils.smoothstep(progress,.08,.85);
     const opacity=(1-detail*.6)*(1-lab*.55);this.visible=opacity>.005;
     this.dust.material.uniforms.uDpr.value=dpr;
-    this.dust.material.uniforms.uOpacity.value=opacity*(this.compact?.24:.34);
+    this.dust.material.uniforms.uOpacity.value=opacity*(this.compact?.32:.43);
     this.dust.material.uniforms.uTravel.value=journey*2.5;
     this.haze.forEach((mesh,i)=>{
       mesh.material.uniforms.uOpacity.value=opacity*(.11-journey*.055)*(1-i*.12);

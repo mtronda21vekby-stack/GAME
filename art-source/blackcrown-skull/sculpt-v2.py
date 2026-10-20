@@ -7,6 +7,7 @@ import bpy
 import hashlib
 import json
 import math
+import struct
 import sys
 import tempfile
 from pathlib import Path
@@ -14,10 +15,17 @@ from mathutils import Matrix, Vector
 
 arguments=sys.argv[sys.argv.index('--')+1:]
 repo=Path(arguments[0]).resolve()
+profile={'folder':'sculpt-v2','spine_lateral':.00085,'spine_depth':.00175,'spine_width':.035}
+if len(arguments)>2:
+    settings=json.loads(Path(arguments[2]).read_text())
+    assert set(settings)==set(profile)
+    assert settings['folder'].startswith('sculpt-') and '/' not in settings['folder']
+    assert all(0.<=settings[key]<=limit for key,limit in [('spine_lateral',.004),('spine_depth',.006),('spine_width',.1)])
+    profile.update(settings)
 original=repo/'apps/site/public/experience/blackcrown-skull/blackcrown-skull-desktop.glb'
 source_sha=hashlib.sha256(original.read_bytes()).hexdigest()
 assert source_sha=='7c1d400b5c8a91c3e3383c7d34fa07757e43a9bcdcbde3c3031c0a110e4c53a4'
-out=original.parent/'sculpt-v2'
+out=original.parent/profile['folder']
 out.mkdir(parents=True,exist_ok=True)
 work=Path(arguments[1]).resolve() if len(arguments)>1 else Path(tempfile.mkdtemp(prefix='blackcrown-sculpt-v2-'))
 work.mkdir(exist_ok=True)
@@ -69,9 +77,9 @@ def sculpt(x,height,front,name):
         t=max(0.,min(1.,(.0323833-height)/.0923679))
         envelope=math.sin(math.pi*t)**2
         # Gentle, fixed anatomical S-curve. Both end joints stay connected.
-        x+=.00085*math.sin(2.*math.pi*t)*envelope
-        front+=.00175*math.sin(2.*math.pi*t-.35)*envelope
-        x*=1.+.035*math.sin(3.*math.pi*t)*envelope
+        x+=profile['spine_lateral']*math.sin(2.*math.pi*t)*envelope
+        front+=profile['spine_depth']*math.sin(2.*math.pi*t-.35)*envelope
+        x*=1.+profile['spine_width']*math.sin(3.*math.pi*t)*envelope
     return Vector((x,-front,height)),cavity
 
 changes=[]
@@ -145,7 +153,7 @@ def export(path):
 desktop=out/'blackcrown-skull-desktop.glb'
 desktop_parts=summary();assert sum(p['triangles'] for p in desktop_parts)==80310
 export(desktop)
-bpy.ops.wm.save_as_mainfile(filepath=str(work/'blackcrown-sculpt-v2.blend'))
+bpy.ops.wm.save_as_mainfile(filepath=str(work/('blackcrown-'+profile['folder']+'.blend')))
 
 targets={'SKULL_REAR_LEFT':550,'SKULL_REAR_RIGHT':600,'SKULL_CRANIUM':1000,'SPINE':6098,'SKULL_FACE':6996,'CROWN':12000}
 for obj in meshes:
@@ -172,10 +180,12 @@ assert sum(p['triangles'] for p in mobile_parts)<=27200
 export(mobile)
 assert hashlib.sha256(original.read_bytes()).hexdigest()==source_sha
 def record(file,parts):return {'file':file.name,'bytes':file.stat().st_size,'sha256':hashlib.sha256(file.read_bytes()).hexdigest(),'triangles':sum(p['triangles'] for p in parts),'parts':parts}
-manifest={'source_sha256':source_sha,'source_preserved':True,'generated_with':'Blender '+bpy.app.version_string,'changes':changes,'desktop':record(desktop,desktop_parts),'mobile':record(mobile,mobile_parts),'new_meshes':0,'subdivisions':0,'poster':'../blackcrown-skull-poster.png'}
+manifest={'source_sha256':source_sha,'source_preserved':True,'generated_with':'Blender '+bpy.app.version_string,'profile':profile,'changes':changes,'desktop':record(desktop,desktop_parts),'mobile':record(mobile,mobile_parts),'new_meshes':0,'subdivisions':0,'poster':'../blackcrown-skull-poster.png'}
 poster=out/'blackcrown-skull-poster.png'
 if poster.exists():
     manifest['poster']=poster.name
-    manifest['poster_details']={'width':640,'height':760,'bytes':poster.stat().st_size,'sha256':hashlib.sha256(poster.read_bytes()).hexdigest()}
+    poster_bytes=poster.read_bytes()
+    width,height=struct.unpack('>II',poster_bytes[16:24])
+    manifest['poster_details']={'width':width,'height':height,'bytes':len(poster_bytes),'sha256':hashlib.sha256(poster_bytes).hexdigest()}
 (out/'asset-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
 print('SCULPT_RESULT '+json.dumps(manifest),flush=True)

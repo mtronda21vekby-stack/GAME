@@ -1,4 +1,5 @@
 import type { CameraKeyframe } from "../../experience/camera/CameraKeyframes";
+import { spatialArrivalEnd } from "./SpatialChoreography";
 
 type AxisViewport = {
   compact:boolean;
@@ -23,18 +24,24 @@ export function spatialAxisJourney({compact,width,height,slot,stops}:AxisViewpor
   const headCenter=axisHeight*.35;
   const headX=-(slot.x/Math.max(1,width)*2-1)*halfHeight*width/Math.max(1,height);
   const headY=headCenter-(1-slot.y/Math.max(1,height)*2)*halfHeight;
+  const entranceScale=(26.8+depth-18.8)/depth;
+  const entrancePosition:[number,number,number]=[headX*entranceScale,headCenter+(headY-headCenter)*entranceScale,26.8];
   const frames:CameraKeyframe[]=[
-    {progress:0,position:[headX,headY,18.8],target:[headX,headY,0],fov},
+    {progress:0,position:entrancePosition,target:[entrancePosition[0],entrancePosition[1],0],fov},
+    {progress:.08,position:[headX,headY,18.8],target:[headX,headY,0],fov},
     {progress:.18,position:[headX,axisHeight*.20,18.8],target:[headX,axisHeight*.20,0],fov},
     {progress:.32,position:[headX*.45,axisHeight*.08,18.8],target:[headX*.45,axisHeight*.08,0],fov},
     {progress:.48,position:[0,-axisHeight*.09,18.8],target:[0,-axisHeight*.09,0],fov},
     {progress:.74,position:[0,-axisHeight*.29,18.8],target:[0,-axisHeight*.29,0],fov},
-    {progress:1,position:[0,-axisHeight*.43,19.8],target:[0,-axisHeight*.43,0],fov},
+    {progress:.82,position:[0,-axisHeight*.49,20.4],target:[0,-axisHeight*.49,0],fov},
+    {progress:.9,position:[0,-axisHeight*.5-halfHeight*1.16,17.8],target:[0,-axisHeight*.5-halfHeight*1.16,0],fov},
+    {progress:1,position:[0,-axisHeight*.5-halfHeight*1.16,17.8],target:[0,-axisHeight*.5-halfHeight*1.16,0],fov},
   ];
   if(stops){
     // The path follows actual document chapters, including filtered collections.
     // It recentres once, then descends straight down: no lateral slalom or idle turn.
     frames.splice(1);
+    frames.push({progress:spatialArrivalEnd(stops),position:[headX,headY,18.8],target:[headX,headY,0],fov});
     const append=(progress:number,y:number,z=18.8)=>{
       const previous=frames[frames.length-1];
       if(progress<=previous.progress+.004||progress>=.995)return;
@@ -44,12 +51,12 @@ export function spatialAxisJourney({compact,width,height,slot,stops}:AxisViewpor
     // The jaw clears the collection heading before the first project arrives.
     append(stops.intro,axisHeight*.045);
     stops.projects.forEach((progress,index)=>append(progress,axisHeight*(-.035-.345*index/Math.max(1,stops.projects.length-1))));
-    append(stops.exit,-axisHeight*.49);
+    append(stops.exit,-axisHeight*.49,20.4);
     // Let the tip leave above the viewport before the sheet becomes the main subject.
     const belowTip=-axisHeight*.5-halfHeight*1.16;
-    append(stops.lab,belowTip,19.8);
+    append(stops.lab,belowTip,17.8);
     const endY=Math.min(frames[frames.length-1].position[1],belowTip);
-    frames.push({progress:1,position:[0,endY,19.8],target:[0,endY,0],fov});
+    frames.push({progress:1,position:[0,endY,17.8],target:[0,endY,0],fov});
   }
   return {axisHeight,frames};
 }

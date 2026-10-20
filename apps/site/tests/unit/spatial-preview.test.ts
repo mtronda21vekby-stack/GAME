@@ -16,7 +16,7 @@ describe("Spatial preview", () => {
     expect(Number.isFinite(spatialProgress(10, 0, 0, 900))).toBe(true);
   });
 
-  it.each([320,390,800,1160])("starts at the head and keeps the same full axis in the %ipx camera frustum",width=>{
+  it.each([320,390,800,1160])("frames the head, descends the axis and clears its tip at %ipx",width=>{
     const compact=width<=760,height=844,slot={x:compact?width/2:width*.73,y:compact?710:422,width:compact?width-40:450,height:compact?300:500};
     const {axisHeight,frames}=spatialAxisJourney({compact,width,height,slot});
     const camera=new PerspectiveCamera(38,width/height,.1,100),rig=new CameraRig(camera,frames,true);
@@ -29,9 +29,10 @@ describe("Spatial preview", () => {
     for(let step=0;step<=200;step++){
       rig.update({...snapshot,progress:step/200},{x:0,y:0},0);camera.updateMatrixWorld(true);
       expect(camera.position.y).toBeLessThanOrEqual(previous+.0001);previous=camera.position.y;
-      expect(new Frustum().setFromProjectionMatrix(new Matrix4().multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse)).intersectsBox(bounds)).toBe(true);
+      if(step/200<=.82)expect(new Frustum().setFromProjectionMatrix(new Matrix4().multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse)).intersectsBox(bounds)).toBe(true);
     }
-    expect(camera.position.y).toBeCloseTo(-axisHeight*.43);
+    const tip=new Vector3(0,-axisHeight*.5,0).project(camera);
+    expect(tip.y).toBeGreaterThan(1);
   });
 
   it("takes the shortest orbit in both directions and keeps the wrapped card facing forward", () => {

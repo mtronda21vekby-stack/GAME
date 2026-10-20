@@ -13,6 +13,8 @@ import { SpatialAtmosphere, SPATIAL_ATMOSPHERE_QUALITY } from "./SpatialAtmosphe
 import { SpatialBloom } from "./SpatialBloom";
 import { finishHeroMaterials } from "./SpatialHeroMaterial";
 import { createHeroStudio } from "./SpatialHeroStudio";
+import { SpatialGalleryStage } from "./SpatialGalleryStage";
+import { spatialChoreography } from "./SpatialChoreography";
 import { spatialAxisJourney, spatialAxisTurn, type SpatialJourneyStops } from "./SpatialAxis";
 import { SpatialCloth } from "./SpatialCloth";
 import { panelFrontWidth, panelScreenPosition } from "./panelProjection";
@@ -38,6 +40,11 @@ export class SpatialSceneRuntime {
   private readonly faceLight = new THREE.DirectionalLight(0xe0e8e8,1);
   private readonly edgeLight = new THREE.DirectionalLight(0x92c5d5,1);
   private readonly keyLight = new THREE.DirectionalLight(0xe3e8e9,3.05);
+  private readonly anatomyLight = new THREE.SpotLight(0xc7d5da,55,11,.34,.8,2);
+  private readonly spineLight = new THREE.SpotLight(0x91b9c9,85,14,.42,.85,2);
+  private readonly lightAim = new THREE.Vector3();
+  private readonly gallery:SpatialGalleryStage;
+  private axisHeight=1;
   private brandAbort?:AbortController;
   private readonly atmosphere:SpatialAtmosphere;
   private readonly cloth:SpatialCloth;
@@ -63,6 +70,7 @@ export class SpatialSceneRuntime {
   private paused=false; private inView=true; private disposed=false;
 
   constructor(private readonly options:SceneOptions) {
+    this.gallery=new SpatialGalleryStage(options.stage);
     this.atmosphere=new SpatialAtmosphere(this.compact);
     this.atmosphere.setQuality(this.compact,this.reduced);
     this.cloth=new SpatialCloth(this.compact);this.cloth.setQuality(this.compact,this.reduced);
@@ -88,6 +96,7 @@ export class SpatialSceneRuntime {
     this.edgeLight.position.set(5,2,-3);this.edgeLight.intensity=this.compact?2.65:2.4;
     this.accentLight.position.set(2,2,4);
     this.scene.add(this.keyLight,this.faceLight,this.edgeLight,this.accentLight);
+    this.scene.add(this.anatomyLight,this.anatomyLight.target,this.spineLight,this.spineLight.target);
   }
 
   private async loadBrand() {
@@ -111,7 +120,7 @@ export class SpatialSceneRuntime {
       catch{warmed=false;}
       if(this.disposed||this.brandAbort!==controller)return;
       this.options.stage.dataset.shaderWarmup=warmed?"ready":"fallback";
-      this.brandReady=true;this.options.stage.dataset.brandReady="1";this.fitBrand();this.requestFrame();
+      this.brandReady=true;this.options.stage.dataset.brandReady="1";this.resize();this.requestFrame();
     } catch { /* A missing hero model must not disable the games or their native fallback. */ }
     finally { if(!this.disposed&&this.brandAbort===controller)this.options.onProgress(1,1); }
   }
@@ -131,6 +140,7 @@ export class SpatialSceneRuntime {
   setDetailOpen(open:boolean){
     if(this.detailOpen===open)return;
     this.detailOpen=open;
+    this.gallery.invalidate();
     if(!open)this.onScroll();
     this.requestFrame();
   }
@@ -152,6 +162,7 @@ export class SpatialSceneRuntime {
     if(paused&&!this.paused){this.pausedAt=performance.now();this.detailMotion.sample(this.pausedAt);}
     if(!paused&&this.paused)this.detailMotion.delay(performance.now()-this.pausedAt);
     this.paused=paused;
+    this.gallery.invalidate();
     if(paused)this.cloth.setHover(.5,.5,0);
     this.stop();this.requestFrame();
   }
@@ -176,6 +187,7 @@ export class SpatialSceneRuntime {
     this.rendererHost.resize(this.viewportWidth,this.viewportHeight);
     this.bloom?.resize(this.viewportWidth,this.viewportHeight,this.rendererHost.renderer.getPixelRatio());
     this.camera.aspect=this.viewportWidth/Math.max(1,this.viewportHeight);this.camera.updateProjectionMatrix();
+    this.gallery.layout(this.viewportWidth,this.viewportHeight,this.compact,this.reduced||!this.brandReady);
     const box=this.options.stage.getBoundingClientRect();
     this.stageTop=box.top+window.scrollY;this.stageHeight=box.height;
     const slot=this.options.stage.querySelector(".spatialBrandSlot")?.getBoundingClientRect();
@@ -186,13 +198,14 @@ export class SpatialSceneRuntime {
     const heading=this.options.stage.querySelector(".spatialGalleryHead")?.getBoundingClientRect();
     const panels=[...this.options.stage.querySelectorAll<HTMLElement>(".spatialGamePanel")].map(element=>element.getBoundingClientRect());
     const material=this.options.stage.querySelector(".spatialMaterial")?.getBoundingClientRect();
+    const cloth=this.clothSlot?.getBoundingClientRect();
     const span=Math.max(1,this.stageHeight-this.viewportHeight);
     const at=(y:number)=>Math.max(0,Math.min(.98,(y+window.scrollY-this.stageTop)/span));
     if(hero&&heading&&panels.length&&material)this.journeyStops={
       intro:at(heading.top-this.viewportHeight*.35),
       projects:panels.map(panel=>at(panel.top+panel.height*.5-this.viewportHeight*.5)),
       exit:at(material.top-this.viewportHeight*.88),
-      lab:at(material.top-this.viewportHeight*.18),
+      lab:at(cloth?cloth.top+cloth.height*.5-this.viewportHeight*.5:material.top-this.viewportHeight*.18),
     };
     this.fitBrand();this.onScroll();
   };
@@ -201,6 +214,9 @@ export class SpatialSceneRuntime {
       slot:{x:this.brandSlot.x,y:this.brandSlot.pageY-this.stageTop,width:this.brandSlot.width,height:this.brandSlot.height},stops:this.journeyStops});
     this.cameraRig=new CameraRig(this.camera,journey.frames,true);
     this.brand.scale.setScalar(journey.axisHeight/4.2);this.brand.position.set(0,0,0);
+    this.axisHeight=journey.axisHeight;
+    this.anatomyLight.position.set(-this.axisHeight*.1,this.axisHeight*.285,5.5);
+    this.anatomyLight.target.position.set(-.1,this.axisHeight*.275,.5);
     this.atmosphere.setAxisHeight(journey.axisHeight);
   }
   private onScroll=()=>{
@@ -261,6 +277,7 @@ export class SpatialSceneRuntime {
     this.camera.updateMatrixWorld();
     this.updateObjects();
     this.scene.updateMatrixWorld();
+    if(!this.detailOpen)this.gallery.update(this.camera,this.paused?window.scrollY:this.stageTop+this.progress*(this.stageHeight-this.viewportHeight),window.scrollY,this.reduced,this.brandReady);
     try{if(this.bloom)this.bloom.render();else this.rendererHost.renderer.render(this.scene,this.camera);}catch{
       if(this.bloom){
         this.bloom.dispose();this.bloom=undefined;
@@ -274,22 +291,37 @@ export class SpatialSceneRuntime {
     const p=this.progress,t=this.elapsed;
     this.brand.visible=this.brandReady;
     this.brand.rotation.set(0,spatialAxisTurn(p,this.compact,this.reduced),0);
-    const lab=this.journeyStops?THREE.MathUtils.smoothstep(p,this.journeyStops.exit,this.journeyStops.lab):0;
+    const choreography=spatialChoreography(p,this.journeyStops),lab=choreography.departure;
     this.bloom?.setLabPresence(lab);
     this.keyLight.intensity=3.05-lab*.85;
     this.faceLight.intensity=(this.compact?.92:.65)*(1-lab*.35);
     this.edgeLight.intensity=(this.compact?2.65:2.4)*(1-lab*.25);
+    this.anatomyLight.intensity=(this.compact?55:40)*(.65+choreography.arrival*.35)*(1-lab)+(this.compact?95:75)*lab;
+    this.anatomyLight.position.set(-this.axisHeight*.1,this.axisHeight*.285,5.5);
+    this.anatomyLight.target.position.set(-.1,this.axisHeight*.275,.5);
+    const galleryPresence=this.journeyStops?THREE.MathUtils.smoothstep(p,this.journeyStops.intro*.6,this.journeyStops.intro*1.05):THREE.MathUtils.smoothstep(p,.08,.2);
+    const spineT=THREE.MathUtils.clamp((.26986-this.camera.position.y/this.axisHeight)/.76973,0,1);
+    const spineX=this.axisHeight*.02167*Math.sin(spineT*Math.PI*2)*Math.sin(spineT*Math.PI)**2;
+    this.spineLight.position.set(spineX+3.5,this.camera.position.y+1.4,4.6);
+    this.spineLight.target.position.set(spineX,this.camera.position.y-1,0);
+    this.spineLight.intensity=(this.compact?85:70)*galleryPresence*(1-lab);
+    this.atmosphereOrigin.set(0,this.reduced?0:this.camera.position.y*lab,0);
+    this.atmosphere.setChoreography(choreography.arrival,lab);
     this.atmosphere.update(t,p,this.detail,this.pointer,this.atmosphereOrigin,this.rendererHost!.renderer.getPixelRatio(),this.accent,lab);
     this.accentLight.position.set(2,this.camera.position.y+2,4);
     const sheet=this.clothSlot?.getBoundingClientRect();
     this.cloth.visible=!!sheet&&sheet.bottom>0&&sheet.top<this.viewportHeight&&!this.detailOpen;
+    this.cloth.setEntrance(this.reduced?1:lab);
     if(sheet&&this.cloth.visible){
       const position=panelScreenPosition(this.camera,sheet.left+sheet.width/2,sheet.top+sheet.height/2,this.viewportWidth,this.viewportHeight,4.4);
       const unit=panelFrontWidth(this.camera,this.viewportWidth,1,position),worldWidth=sheet.width/unit;
       this.cloth.position.copy(position);this.cloth.position.y+=sheet.height/unit*.015;
       // Keep the authored loose hem inside the interactive slot at both sizes.
       this.cloth.scale.set(worldWidth*.94,sheet.height/unit*.88,worldWidth*.66);this.cloth.update(this.reduced?0:t);
-      this.cloth.rotation.set(-.06,this.compact?-.035:-.14,-.035);
+      this.cloth.rotation.set(-.06,THREE.MathUtils.lerp(-.42,this.compact?-.035:-.14,this.reduced?1:lab),-.035);
+      this.lightAim.set(this.cloth.position.x-3,this.cloth.position.y+3,this.cloth.position.z+5.5);
+      this.anatomyLight.position.lerp(this.lightAim,lab);
+      this.anatomyLight.target.position.lerp(this.cloth.position,lab);
     }
   }
   private fail(){if(!this.disposed){this.options.onStatus("fallback");this.dispose();}}
@@ -299,7 +331,7 @@ export class SpatialSceneRuntime {
     this.motionQuery.removeEventListener("change",this.onPreferenceChange);this.compactQuery.removeEventListener("change",this.onPreferenceChange);
     window.removeEventListener("scroll",this.onScroll);window.removeEventListener("resize",this.resize);window.removeEventListener("pointermove",this.onPointer);document.removeEventListener("visibilitychange",this.onVisibility);
     delete this.options.stage.dataset.brandReady;delete this.options.stage.dataset.shaderWarmup;delete this.options.stage.dataset.heroUiHidden;
-    this.options.stage.style.removeProperty("--spatial-hero-ui-opacity");this.atmosphere.dispose();this.cloth.dispose();this.bloom?.dispose();
+    this.options.stage.style.removeProperty("--spatial-hero-ui-opacity");this.gallery.clear();this.atmosphere.dispose();this.cloth.dispose();this.bloom?.dispose();
     disposeModel(this.scene);this.scene.clear();this.scene.environment=null;this.environment?.dispose();this.rendererHost?.dispose();
   }
 }

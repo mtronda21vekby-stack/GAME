@@ -35,6 +35,7 @@ html:has(.spatialPage) { scroll-behavior:smooth; scrollbar-gutter:stable; }
 .spatialEyebrow { margin:0 0 18px; color:#8a9fa7; font:9px/1.6 var(--spatial-mono); letter-spacing:.12em; text-transform:uppercase; }
 .spatialHeroLabel { position:absolute; top:132px; left:clamp(24px,5vw,84px); z-index:2; }
 .spatialBrandSlot { position:absolute; top:clamp(150px,18svh,185px); left:50%; width:min(62vw,920px); height:72svh; transform:translateX(-50%); pointer-events:none; overflow:hidden; }
+.spatialBrandSlot>picture { display:block; height:100%; }
 .spatialBrandPoster { display:block; width:100%; height:100%; object-fit:cover; object-position:50% 0; pointer-events:none; }
 [data-scene-state=ready] .spatialJourney[data-brand-ready="1"] .spatialBrandPoster { visibility:hidden; }
 .spatialHeroDock { position:absolute; z-index:2; right:clamp(24px,5vw,84px); bottom:54px; }
@@ -56,21 +57,24 @@ html:has(.spatialPage) { scroll-behavior:smooth; scrollbar-gutter:stable; }
 .spatialFilters button { min-height:48px; padding:5px 14px; border:0; border-radius:99px; background:transparent; color:#8fa5ad; font:11px var(--spatial-type); }
 .spatialFilters button[aria-pressed=true] { background:#d3dfdb14; color:#ebeee7; }
 .spatialGameGrid { display:flex; flex-direction:column; gap:160px; padding:30px 0 140px; }
-.spatialGamePanel { position:relative; isolation:isolate; box-sizing:border-box; width:min(38%,470px); min-width:0; color:#e9ece6; font-family:var(--spatial-type); pointer-events:auto; touch-action:pan-y pinch-zoom; }
+.spatialGamePanel { position:relative; isolation:isolate; box-sizing:border-box; width:min(35%,440px); min-width:0; color:#e9ece6; font-family:var(--spatial-type); pointer-events:auto; touch-action:pan-y pinch-zoom; }
 .spatialGamePanel:nth-child(even) { align-self:flex-end; }
-.spatialPanelHeader { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:32px; padding:0 3px 12px; color:#92a6ae; font:10px/1.4 var(--spatial-mono); letter-spacing:.06em; }
+.spatialPanelSurface { position:relative; transform-origin:0 0; }
+[data-projection=ready]>.spatialPanelSurface { will-change:transform; }
+.spatialGamePanel[data-plane=far] .spatialPanelWindow { border-color:#b5c8cc3b; box-shadow:0 14px 36px #0004; background:linear-gradient(130deg,#263740a6,#101c24cc); }
+.spatialGamePanel[data-plane=far] .spatialPanelMedia>img { opacity:.89; }
+.spatialPanelHeader { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:32px; padding:0 3px 12px; color:#92a6ae; font:calc(10px / var(--plane-factor,1))/1.4 var(--spatial-mono); letter-spacing:.06em; }
 .spatialPanelWindow { border:1px solid #c2d3d23b; border-radius:9px; box-shadow:0 22px 65px #0005; background:linear-gradient(135deg,#16262cbd,#0a141cdd); }
-.spatialPanelMedia { position:relative; margin:0; width:100%; aspect-ratio:16/10; overflow:hidden; border-radius:8px 8px 0 0; background:#071016; transform:perspective(1600px) rotateY(5deg) rotateZ(-.3deg); transform-origin:center; transition:transform .7s cubic-bezier(.2,.7,.2,1); }
-.spatialGamePanel:nth-child(even) .spatialPanelMedia { transform:perspective(1600px) rotateY(-5deg) rotateZ(.3deg); }
+.spatialPanelMedia { position:relative; margin:0; width:100%; aspect-ratio:16/10; overflow:hidden; border-radius:8px 8px 0 0; background:#071016; }
 .spatialPanelMedia>img { position:absolute; inset:0; display:block; width:100%; height:100%; object-fit:cover; filter:saturate(.72) contrast(1.03); }
 .spatialGamePanel[data-game-id="crown-front"] .spatialPanelMedia>img { object-fit:contain; }
 .spatialPanelMedia:after { content:""; position:absolute; inset:0; pointer-events:none; background:linear-gradient(0deg,#050b11f2,transparent 70%); }
 .spatialPanelTitle { position:absolute; z-index:1; left:22px; right:16px; bottom:17px; }
 .spatialPanelState { display:block; margin-bottom:9px; color:#c1cfd0; font:8px/1.4 var(--spatial-mono); letter-spacing:.07em; }
-.spatialPanelTitle h3 { margin:0; font-size:clamp(28px,2.8vw,42px); font-weight:400; line-height:1.05; letter-spacing:-.045em; overflow-wrap:anywhere; }
+.spatialPanelTitle h3 { margin:0; font-size:calc(clamp(28px,2.8vw,42px) / var(--plane-factor,1)); font-weight:400; line-height:1.05; letter-spacing:-.045em; overflow-wrap:anywhere; }
 .spatialPanelBody { padding:0 18px; }
 .spatialPanelActions { display:flex; align-items:center; justify-content:space-between; gap:12px; }
-.spatialPanelActions button,.spatialPanelActions a { display:inline-flex; align-items:center; justify-content:space-between; gap:12px; min-height:54px; padding:10px 0; border:0; background:transparent; color:#c9d6d5; font:500 13px/1.4 var(--spatial-type); text-decoration:none; white-space:nowrap; }
+.spatialPanelActions button,.spatialPanelActions a { display:inline-flex; align-items:center; justify-content:space-between; gap:12px; min-height:64px; padding:10px 0; border:0; background:transparent; color:#c9d6d5; font:500 calc(13px / var(--plane-factor,1))/1.4 var(--spatial-type); text-decoration:none; white-space:nowrap; }
 .spatialPanelPrimary:before { content:""; position:absolute; inset:0; z-index:1; border-radius:9px; touch-action:pan-y pinch-zoom; }
 .spatialPanelPrimary:focus-visible { outline:none; }
 .spatialPanelPrimary:focus-visible:before { outline:2px solid #c1d7d6; outline-offset:4px; }
@@ -116,7 +120,7 @@ html:has(.spatialPage) { scroll-behavior:smooth; scrollbar-gutter:stable; }
  .spatialPage .platNav { width:100%; justify-content:space-between; gap:8px; }
  .spatialPage .platNav>a { min-height:48px; padding:0; font-size:12px; }
  .spatialPage .platNav>a:last-child { margin-left:0; }
- .spatialHero:before { content:""; position:absolute; inset:0; z-index:1; pointer-events:none; opacity:var(--spatial-hero-ui-opacity,1); background:linear-gradient(0deg,#090d11 8%,#090d11fa 24%,#090d1170 43%,transparent 60%); }
+ .spatialHero:before { content:""; position:absolute; inset:0; z-index:1; pointer-events:none; opacity:var(--spatial-hero-ui-opacity,1); background:linear-gradient(0deg,#090d11 8%,#090d11fa 24%,#090d1140 43%,transparent 60%); }
  .spatialHeroLabel { top:130px; left:20px; right:20px; text-align:center; font-size:8px; letter-spacing:.13em; }
  .spatialHeroCopy { left:20px; right:20px; bottom:164px; text-align:center; }
  .spatialHero h1 { font-size:44px; line-height:1.04; letter-spacing:-.055em; margin-bottom:15px; }
@@ -135,16 +139,15 @@ html:has(.spatialPage) { scroll-behavior:smooth; scrollbar-gutter:stable; }
  .spatialFilters { width:max-content; max-width:100%; margin-top:22px; padding:3px; }
  .spatialFilters button { padding:3px 11px; font-size:10px; min-height:48px; }
  .spatialGameGrid { gap:170px; padding:15px 0 100px; }
- .spatialGamePanel { width:min(276px,88%); align-self:flex-start; }
+ .spatialGamePanel { width:min(264px,86%); align-self:flex-start; }
  .spatialGamePanel:nth-child(even) { align-self:flex-end; }
- .spatialPanelHeader { min-height:30px; padding-bottom:10px; font-size:9px; }
- .spatialPanelMedia { transform:perspective(1400px) rotateY(4deg) rotateZ(-.3deg); }
- .spatialGamePanel:nth-child(even) .spatialPanelMedia { transform:perspective(1400px) rotateY(-4deg) rotateZ(.3deg); }
+ .spatialPanelHeader { min-height:30px; padding-bottom:10px; font-size:calc(9px / var(--plane-factor,1)); }
  .spatialPanelTitle { left:16px; right:12px; bottom:14px; }
  .spatialPanelState { font-size:9px; margin-bottom:7px; }
- .spatialPanelTitle h3 { font-size:30px; }
+ .spatialPanelTitle h3 { font-size:calc(30px / var(--plane-factor,1)); }
+ .spatialGamePanel[data-game-id=crown-front] .spatialPanelTitle h3 { font-size:calc(24px / var(--plane-factor,1)); white-space:nowrap; overflow-wrap:normal; }
  .spatialPanelBody { padding-inline:15px; }
- .spatialPanelActions button,.spatialPanelActions a { min-height:52px; font-size:12px; gap:8px; }
+ .spatialPanelActions button,.spatialPanelActions a { min-height:64px; font-size:calc(12px / var(--plane-factor,1)); gap:8px; }
  .spatialGalleryFoot { padding-right:0; gap:12px; }
  .spatialGalleryFoot>span { max-width:130px; line-height:1.6; font-size:11px; }
  .spatialPage .platTextLink { font-size:12px; }
@@ -174,10 +177,10 @@ html:has(.spatialPage) { scroll-behavior:smooth; scrollbar-gutter:stable; }
  .spatialGalleryHeading h2 { font-size:32px; }
  .spatialFilters button { padding-inline:9px; font-size:9px; }
  .spatialGamePanel { width:86%; }
- .spatialPanelTitle h3 { font-size:28px; }
+ .spatialPanelTitle h3 { font-size:calc(28px / var(--plane-factor,1)); }
  .spatialPanelState { font-size:9px; }
  .spatialPanelBody { padding-inline:12px; }
- .spatialPanelActions button,.spatialPanelActions a { font-size:12px; }
+ .spatialPanelActions button,.spatialPanelActions a { font-size:calc(12px / var(--plane-factor,1)); }
 }
 @media(prefers-reduced-motion:reduce) {
  html:has(.spatialPage) { scroll-behavior:auto; }
