@@ -57,7 +57,7 @@ html:has(.spatialPage) { scroll-behavior:smooth; scrollbar-gutter:stable; }
 .spatialFilters button { min-height:48px; padding:5px 14px; border:0; border-radius:99px; background:transparent; color:#8fa5ad; font:11px var(--spatial-type); }
 .spatialFilters button[aria-pressed=true] { background:#d3dfdb14; color:#ebeee7; }
 .spatialGameGrid { display:flex; flex-direction:column; gap:160px; padding:30px 0 140px; }
-.spatialGamePanel { position:relative; isolation:isolate; box-sizing:border-box; width:min(35%,440px); min-width:0; color:#e9ece6; font-family:var(--spatial-type); pointer-events:auto; touch-action:pan-y pinch-zoom; }
+.spatialGamePanel { position:relative; isolation:isolate; box-sizing:border-box; width:clamp(280px,30%,360px); min-width:0; color:#e9ece6; font-family:var(--spatial-type); pointer-events:auto; touch-action:pan-y pinch-zoom; }
 .spatialGamePanel:nth-child(even) { align-self:flex-end; }
 .spatialPanelSurface { position:relative; transform-origin:0 0; }
 [data-projection=ready]>.spatialPanelSurface { will-change:transform; }
