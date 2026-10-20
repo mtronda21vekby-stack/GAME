@@ -6,7 +6,7 @@ export const SPATIAL_ATMOSPHERE_QUALITY = {
 } as const;
 
 const dustVertex = `
-  uniform float uTime, uDpr, uOpacity, uTravel, uAxisHeight, uArrival, uDeparture, uHeadY;
+  uniform float uTime, uDpr, uOpacity, uTravel, uAxisHeight, uArrival, uDeparture, uHeadY, uDetail;
   attribute float aSeed;
   attribute vec3 aTint;
   varying vec3 vTint;
@@ -29,12 +29,17 @@ const dustVertex = `
     p.z+=uDeparture*3.;
     vec4 mv = modelViewMatrix*vec4(p,1.);
     gl_Position = projectionMatrix*mv;
+    vec2 lensCenter=vec2(sin(uTime*.17)*.4,cos(uTime*.13)*.35);
+    vec2 lensDelta=gl_Position.xy/gl_Position.w-lensCenter;
+    float lens=exp(-pow(length(lensDelta)/.36,4.))*uDetail;
+    gl_Position.xy+=normalize(lensDelta+vec2(.0001))*.075*lens*gl_Position.w;
     float screenX = gl_Position.x/gl_Position.w*.5+.5;
     float distanceFade = smoothstep(2.,7.,-mv.z)*(1.-smoothstep(25.,42.,-mv.z));
     vSpark = step(.982,aSeed);
     gl_PointSize = clamp((12.+aSeed*35.+vSpark*22.)*uDpr/max(1.,-mv.z),1.,10.*uDpr);
+    gl_PointSize=mix(gl_PointSize,(3.+aSeed*9.)*uDpr,uDetail);
     vTint = aTint;
-    vAlpha = uOpacity*distanceFade*(.22+.78*smoothstep(.12,.6,screenX))*mix(streamFade,1.,uArrival);
+    vAlpha = uOpacity*distanceFade*(.22+.78*smoothstep(.12,.6,screenX))*mix(streamFade,1.,uArrival)*(1.-lens*.92);
   }
 `;
 const dustFragment = `
@@ -89,6 +94,7 @@ export class SpatialAtmosphere extends THREE.Group {
   readonly time = { value: 0 };
   readonly motion = { value: 1 };
   readonly dust: THREE.Points<THREE.BufferGeometry, THREE.ShaderMaterial>;
+  readonly facets:THREE.Mesh<THREE.InstancedBufferGeometry,THREE.ShaderMaterial>;
   private readonly haze: THREE.Mesh<THREE.PlaneGeometry,THREE.ShaderMaterial>[] = [];
   private readonly shafts: THREE.Mesh<THREE.PlaneGeometry,THREE.ShaderMaterial>[] = [];
   private compact: boolean;
@@ -109,13 +115,23 @@ export class SpatialAtmosphere extends THREE.Group {
     geometry.setAttribute("aSeed",new THREE.Float32BufferAttribute(seeds,1));
     geometry.setAttribute("aTint",new THREE.Float32BufferAttribute(colors,3));
     this.dust=new THREE.Points(geometry,new THREE.ShaderMaterial({
-      uniforms:{uTime:this.time,uDpr:{value:1},uOpacity:{value:.6},uTravel:{value:0},uAxisHeight:{value:26},uArrival:{value:1},uDeparture:{value:0},uHeadY:{value:9}},
+      uniforms:{uTime:this.time,uDpr:{value:1},uOpacity:{value:.6},uTravel:{value:0},uAxisHeight:{value:26},uArrival:{value:1},uDeparture:{value:0},uHeadY:{value:9},uDetail:{value:0}},
       vertexShader:dustVertex,fragmentShader:dustFragment,transparent:true,
       blending:THREE.AdditiveBlending,depthWrite:false,depthTest:true,
     }));
     // Depth comes from the sculpture and atmospheric layers, without a fake floor,
     // orbit ring or foreground rails crossing the actual interface.
     this.dust.name="GPU_DUST_VOLUME"; this.dust.frustumCulled=false; this.add(this.dust);
+    const tetra=new THREE.TetrahedronGeometry(.035,0),facetGeometry=new THREE.InstancedBufferGeometry();
+    facetGeometry.index=tetra.index;facetGeometry.attributes.position=tetra.attributes.position;facetGeometry.attributes.normal=tetra.attributes.normal;
+    facetGeometry.setAttribute("aAnchor",new THREE.InstancedBufferAttribute(new Float32Array(positions.slice(0,360*3)),3));
+    facetGeometry.setAttribute("aSeed",new THREE.InstancedBufferAttribute(new Float32Array(seeds.slice(0,360)),1));
+    facetGeometry.setAttribute("aTint",new THREE.InstancedBufferAttribute(new Float32Array(colors.slice(0,360*3)),3));
+    const facetVertex=dustVertex.replace("attribute float aSeed;","attribute vec3 aAnchor; attribute float aSeed; varying vec3 vFacetNormal;")
+      .replace("vec3 p = position;","vec3 p = aAnchor;").replace("length(position.xz)","length(aAnchor.xz)")
+      .replace("vec4 mv = modelViewMatrix*vec4(p,1.);","float turn=aSeed*6.283185+uTime*.045;mat2 r=mat2(cos(turn),-sin(turn),sin(turn),cos(turn));vec3 facet=position*(.55+aSeed);facet.xz=r*facet.xz;p+=facet;vec3 n=normal;n.xz=r*n.xz;vFacetNormal=normalize(normalMatrix*n);vec4 mv=modelViewMatrix*vec4(p,1.);");
+    this.facets=new THREE.Mesh(facetGeometry,new THREE.ShaderMaterial({uniforms:this.dust.material.uniforms,vertexShader:facetVertex,fragmentShader:`varying vec3 vTint,vFacetNormal;varying float vAlpha,vSpark;void main(){float light=.35+.65*max(0.,dot(normalize(vFacetNormal),normalize(vec3(-.4,.8,1.))));gl_FragColor=vec4(vTint*light*(1.+vSpark),vAlpha*.8);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}`,transparent:true,depthWrite:false,side:THREE.DoubleSide}));
+    this.facets.name="GPU_METAL_GRAINS";this.facets.frustumCulled=false;this.add(this.facets);
     [-10,-3,3].forEach((z,i)=>{
       const mesh=this.makeHaze(false);mesh.position.set(i-1,-1+i*.6,z);mesh.scale.set(22,15,1);mesh.rotation.z=-.12+i*.1;
       this.haze.push(mesh);this.add(mesh);
@@ -139,6 +155,7 @@ export class SpatialAtmosphere extends THREE.Group {
     this.compact=compact;this.reduced=reduced;
     const quality=SPATIAL_ATMOSPHERE_QUALITY[compact?"mobile":"desktop"];
     this.dust.geometry.setDrawRange(0,reduced?Math.min(quality.particles,compact?160:500):quality.particles);
+    this.facets.geometry.instanceCount=reduced?(compact?24:80):(compact?96:360);
     this.haze.forEach((mesh,i)=>{mesh.visible=i<quality.hazeLayers;});
     this.shafts.forEach((mesh,i)=>{mesh.visible=i<quality.shafts;});
     this.motion.value=reduced?0:1;
@@ -158,7 +175,8 @@ export class SpatialAtmosphere extends THREE.Group {
   update(time:number,progress:number,detail:number,pointer:{x:number;y:number},anchor:THREE.Vector3,dpr:number,accent:THREE.Color,lab=0) {
     this.time.value=this.reduced?0:time;this.position.copy(anchor);
     const journey=THREE.MathUtils.smoothstep(progress,.08,.85);
-    const opacity=(1-detail*.6)*(1-lab*.55);this.visible=opacity>.005;
+    const opacity=(1-detail*.15)*(1-lab*.32);this.visible=opacity>.005;
+    this.dust.material.uniforms.uDetail.value=this.reduced?0:detail;
     this.dust.material.uniforms.uDpr.value=dpr;
     this.dust.material.uniforms.uOpacity.value=opacity*(this.compact?.32:.43);
     this.dust.material.uniforms.uTravel.value=journey*2.5;

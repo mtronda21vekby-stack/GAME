@@ -3,15 +3,17 @@ import type { PlatformGame } from "../../lib/platformGames";
 import { prefersStaticPlatform } from "../platform/usePlatformParallax";
 import { detailOriginPose, type PanelOrigin } from "./detailTransition";
 import { SurfaceMotion, SPATIAL_TIMING } from "./spatialMotion";
+import { CaseMedia } from "./CaseMedia";
+import { DecodedText } from "./DecodedText";
 import "./spatialDetail.css";
 
 export type { PanelOrigin } from "./detailTransition";
-type Props = { open: boolean; origin?: PanelOrigin | null; game: PlatformGame; canCycle: boolean; paused: boolean; onTogglePause: () => void; onClosing?: () => void; onClose: () => void; onPrevious: () => void; onNext: () => void };
+type Props = { open: boolean; origin?: PanelOrigin | null; game: PlatformGame; canCycle: boolean; paused: boolean; onTogglePause: () => void; onClosing?: () => void; onClose: () => void; onRequestClose:()=>void;onSearch:()=>void;onPrevious: () => void; onNext: () => void };
 const useClientLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 const rest = [0,0,1,1,1];
 
 /** Native modal while open; its outgoing surface becomes inert so a new action can interrupt it. */
-export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause, onClosing, onClose, onPrevious, onNext }: Props) {
+export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause, onClosing, onClose, onRequestClose,onSearch,onPrevious, onNext }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const mediaRef = useRef<HTMLElement>(null);
   const copyRef = useRef<HTMLDivElement>(null);
@@ -21,8 +23,9 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
   const [closingVisual,setClosingVisual] = useState(false);
   const outgoingGame = useRef(game);
   const visualGame = closingVisual ? outgoingGame.current : game;
-  const currentGameId = useRef(game.id); currentGameId.current = game.id;
+  const currentGameId = useRef(game.id); currentGameId.current = origin?.gameId??game.id;
   const previousGame = useRef(game.id);
+  const swipe=useRef<{x:number;y:number}|null>(null);
   const [surface] = useState(() => new SurfaceMotion(rest));
   const frame = useRef(0), focusFrame = useRef(0), closeScroll = useRef(0);
   const restorePage = useRef<(() => void) | null>(null);
@@ -66,13 +69,19 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
   function lockPage() {
     const overflow = document.body.style.overflow;
     const scroll = { top:window.scrollY,left:window.scrollX };
+    const viewport={width:innerWidth,height:innerHeight};
+    const sourceTop=document.querySelector(`.spatialGamePanel[data-game-id="${currentGameId.current}"]`)?.getBoundingClientRect().top??140;
     const location = window.location.pathname+window.location.search;
     const opener = document.activeElement as HTMLElement | null;
     // Locking the root as well breaks Safari's sticky scene behind the modal.
     document.body.style.overflow = "hidden";
     restorePage.current = () => {
       document.body.style.overflow = overflow;
-      if (window.location.pathname+window.location.search === location) window.scrollTo({ ...scroll,behavior:"instant" });
+      if (window.location.pathname+window.location.search === location){
+        const changed=viewport.width!==innerWidth||viewport.height!==innerHeight;
+        const panel=changed?document.querySelector(`.spatialGamePanel[data-game-id="${currentGameId.current}"]`):null;
+        window.scrollTo({left:scroll.left,top:panel?window.scrollY+panel.getBoundingClientRect().top-Math.min(Math.max(100,sourceTop),innerHeight*.35):scroll.top,behavior:"instant"});
+      }
       focusFrame.current = requestAnimationFrame(() => {
         const candidates = [...document.querySelectorAll<HTMLElement>(`.spatialGamePanel[data-game-id="${currentGameId.current}"] button`)];
         const panel = candidates.find(element => element.getClientRects().length && getComputedStyle(element).visibility !== "hidden");
@@ -85,7 +94,7 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
     const dialog = dialogRef.current;
     if (phase.current !== "open" || !dialog) return;
     const now = performance.now(); surface.sample(now); paintSurface();
-    const destination = originPose();
+    const destination = origin?.gameId===game.id?originPose():[0,18,.98,.98,0];
     const veil = getComputedStyle(dialog).opacity;
     const copy = copyRef.current ? getComputedStyle(copyRef.current).opacity : "1";
     outgoingGame.current = game; phase.current = "closing";
@@ -103,7 +112,8 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
   }
   useClientLayoutEffect(() => {
     const dialog = dialogRef.current, media = mediaRef.current;
-    if (!open || !dialog || !media) return;
+    if(!open){if(phase.current==="open")closePanel();return;}
+    if (!dialog || !media) return;
     const now = performance.now(), reopening = phase.current === "closing";
     surface.sample(now); paintSurface();
     const previousBox = reopening ? media.getBoundingClientRect() : null;
@@ -160,20 +170,23 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
     };
   },[]);
 
-  return <dialog id="spatial-game-detail" ref={dialogRef} className="spatialDetail" data-game-id={visualGame.id} data-phase={closingVisual ? "closing" : undefined} aria-hidden={closingVisual || undefined} aria-labelledby="spatial-detail-title" aria-describedby="spatial-detail-description" onCancel={event => { event.preventDefault(); closePanel(); }}>
+  return <dialog id="spatial-game-detail" ref={dialogRef} className="spatialDetail" data-game-id={visualGame.id} data-paused={paused} data-phase={closingVisual ? "closing" : undefined} aria-hidden={closingVisual || undefined} aria-labelledby="spatial-detail-title" aria-describedby="spatial-detail-description" onCancel={event => { event.preventDefault(); onRequestClose(); }} onClick={event=>{if(event.target===dialogRef.current)onRequestClose();}} onKeyDown={event=>{if(!canCycle||event.target instanceof HTMLInputElement)return;if(event.key==="ArrowLeft"){event.preventDefault();onPrevious();}if(event.key==="ArrowRight"){event.preventDefault();onNext();}}}>
+    <div className="spatialCaseOptics" aria-hidden="true"><i/><i/></div>
+    <nav className="spatialCaseNav" aria-label="Навигация BLACKCROWN в кейсе"><button type="button" onClick={onRequestClose}>Игры</button><a href="/store">Магазин</a><a href="/about">О проекте</a><a href="/account">Профиль ↗</a></nav>
     <div className="spatialDetailFrame">
-    <div className="spatialDetailTop"><span>BLACKCROWN / {visualGame.genre}</span><div className="spatialDetailTools"><button className="spatialDetailPause" type="button" aria-pressed={paused} aria-label={paused ? "Продолжить сцену" : "Пауза сцены"} onClick={onTogglePause}>{paused ? "▷" : "Ⅱ"}</button><button ref={closeRef} type="button" onClick={closePanel} aria-label="Закрыть панель и вернуться к выбранной игре"><span aria-hidden="true">×</span></button></div></div>
+    <div className="spatialDetailTop"><span>BLACKCROWN / <DecodedText text={visualGame.genre} token={visualGame.id}/></span><div className="spatialDetailTools"><button className="spatialDetailPause" type="button" aria-pressed={paused} aria-label={paused ? "Продолжить сцену" : "Пауза сцены"} onClick={onTogglePause}>{paused ? "▷" : "Ⅱ"}</button><button ref={closeRef} type="button" onClick={onRequestClose} aria-label="Закрыть панель и вернуться к выбранной игре"><span aria-hidden="true">×</span></button></div></div>
     <div className="spatialDetailInner">
-      <figure className="spatialDetailMedia" ref={mediaRef}><img key={visualGame.id} src={visualGame.image} alt={visualGame.imageAlt} width="1280" height="720"/></figure>
+      <figure className="spatialDetailMedia" ref={mediaRef} onPointerDown={e=>{if(e.pointerType==="touch")swipe.current={x:e.clientX,y:e.clientY};}} onPointerCancel={()=>swipe.current=null} onPointerUp={e=>{const start=swipe.current;swipe.current=null;if(!start||!canCycle)return;const dx=e.clientX-start.x,dy=e.clientY-start.y;if(Math.abs(dx)>55&&Math.abs(dy)<35){if(dx<0)onNext();else onPrevious();}}}><CaseMedia game={visualGame} open={open} paused={paused}/></figure>
       <div className="spatialDetailCopy" ref={copyRef}>
-        <div className="spatialDetailHeadingMeta"><p className="spatialDetailState">{visualGame.status}</p></div>
+        <div className="spatialDetailHeadingMeta"><p className="spatialDetailState"><DecodedText text={visualGame.status} token={visualGame.id}/></p></div>
         <h2 id="spatial-detail-title">{visualGame.title}</h2>
       </div>
       <div className="spatialDetailInformation" ref={informationRef}>
-        <div className="spatialDetailDescription"><p id="spatial-detail-description">{visualGame.description}</p><p className="spatialDetailControls">{visualGame.detail}</p></div>
-        <div className="spatialDetailLinks"><a href={visualGame.href}>{visualGame.id === "crown-front" ? "Открыть альфу" : "Играть в " + visualGame.title}<span aria-hidden="true">↗</span></a><button type="button" onClick={closePanel}>← К галерее</button></div>
+        <div className="spatialDetailDescription"><p id="spatial-detail-description"><DecodedText text={visualGame.description} token={visualGame.id}/></p><dl className="spatialCaseFacts"><div><dt>Жанр</dt><dd>{visualGame.genre}</dd></div><div><dt>Доступ</dt><dd>{visualGame.status}</dd></div><div><dt>Об игре</dt><dd>{visualGame.detail}</dd></div></dl></div>
+        <div className="spatialDetailLinks"><a href={visualGame.href}>{visualGame.id === "crown-front" ? "Открыть альфу" : "Играть в " + visualGame.title}<span aria-hidden="true">↗</span></a><a className="spatialCaseHelp" href="/support">Помощь с игрой <span aria-hidden="true">↗</span></a><button type="button" onClick={onRequestClose}>← К галерее</button></div>
       </div>
       <div className="spatialDetailBottom"><button type="button" aria-label="← Предыдущая игра" disabled={!canCycle} onClick={() => { if (phase.current === "open") onPrevious(); }}>← Предыдущая</button><span aria-hidden="true">/</span><button type="button" aria-label="Следующая игра →" disabled={!canCycle} onClick={() => { if (phase.current === "open") onNext(); }}>Следующая →</button></div>
+      <button className="spatialCaseSearch" type="button" onClick={onSearch}>Найти другой мир <span aria-hidden="true">⌕</span></button>
     </div></div>
   </dialog>;
 }

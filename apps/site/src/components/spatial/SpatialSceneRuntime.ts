@@ -23,7 +23,7 @@ import { WORLD_ACCENTS, spatialProgress } from "./spatialState";
 
 const COMPACT_PRESET = { ...QUALITY_PRESETS.low, dprCap:SPATIAL_ATMOSPHERE_QUALITY.mobile.dpr, antialias:true };
 const DESKTOP_PRESET = { ...QUALITY_PRESETS.high, dprCap:SPATIAL_ATMOSPHERE_QUALITY.desktop.dpr };
-type SceneOptions = { host:HTMLElement; stage:HTMLElement; onStatus:(status:"ready"|"fallback")=>void; onProgress:(complete:number,total:number)=>void };
+type SceneOptions = { host:HTMLElement; stage:HTMLElement; onStatus:(status:"ready"|"fallback")=>void; onProgress:(complete:number,total:number,phase?:"download"|"prepare"|"complete")=>void };
 
 /** The sculpture and atmosphere share one scroll clock; game panels stay in native layout. */
 export class SpatialSceneRuntime {
@@ -50,7 +50,7 @@ export class SpatialSceneRuntime {
   private readonly cloth:SpatialCloth;
   private bloom?:SpatialBloom;
   private readonly motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-  private readonly compactQuery = window.matchMedia("(max-width:760px)");
+  private readonly compactQuery = window.matchMedia("(max-width:760px), (max-width:1000px) and (max-height:520px)");
   private readonly pointerQuery = window.matchMedia("(hover:hover) and (pointer:fine)");
   private rendererHost?:RendererHost;
   private environment?:THREE.WebGLRenderTarget;
@@ -65,12 +65,15 @@ export class SpatialSceneRuntime {
   private journeyStops?:SpatialJourneyStops;
   private viewportWidth=1; private viewportHeight=1;
   private brandReady=false;
+  private grab?:{id:number;x:number;y:number;u:number;v:number;active:boolean;element:HTMLElement};
+  private grabFinished=0;
+  private focusSide=1;
   private brandSlot={x:0,pageY:0,width:1,height:1};
   private compact=this.compactQuery.matches; private reduced=prefersStaticPlatform(this.motionQuery);
   private paused=false; private inView=true; private disposed=false;
 
   constructor(private readonly options:SceneOptions) {
-    this.gallery=new SpatialGalleryStage(options.stage);
+    this.gallery=new SpatialGalleryStage(options.stage,this.scene,this.requestFrame);
     this.atmosphere=new SpatialAtmosphere(this.compact);
     this.atmosphere.setQuality(this.compact,this.reduced);
     this.cloth=new SpatialCloth(this.compact);this.cloth.setQuality(this.compact,this.reduced);
@@ -107,7 +110,14 @@ export class SpatialSceneRuntime {
     try {
       const response=await fetch(url,{signal:controller.signal});
       if(!response.ok)throw new Error("brand_"+response.status);
-      const gltf=await new GLTFLoader().parseAsync(await response.arrayBuffer(),url.slice(0,url.lastIndexOf("/")+1));
+      const total=Number(response.headers.get("content-length"))||0;let bytes:ArrayBuffer;
+      if(response.body){
+        const reader=response.body.getReader(),chunks:Uint8Array[]=[];let loaded=0,last=0;this.options.onProgress(0,total,"download");
+        while(true){const {done,value}=await reader.read();if(done)break;chunks.push(value);loaded+=value.byteLength;if(performance.now()-last>70){this.options.onProgress(loaded,total,"download");last=performance.now();}}
+        const joined=new Uint8Array(loaded);let offset=0;for(const chunk of chunks){joined.set(chunk,offset);offset+=chunk.byteLength;}bytes=joined.buffer;
+      }else bytes=await response.arrayBuffer();
+      this.options.onProgress(bytes.byteLength,bytes.byteLength,"prepare");
+      const gltf=await new GLTFLoader().parseAsync(bytes,url.slice(0,url.lastIndexOf("/")+1));
       if(this.disposed||this.brandAbort!==controller){disposeModel(gltf.scene);return;}
       if(SPATIAL_BRAND_MODEL.finish==="blackcrown-metal")finishMetal(gltf.scene);
       finishHeroMaterials(gltf.scene);
@@ -122,7 +132,7 @@ export class SpatialSceneRuntime {
       this.options.stage.dataset.shaderWarmup=warmed?"ready":"fallback";
       this.brandReady=true;this.options.stage.dataset.brandReady="1";this.resize();this.requestFrame();
     } catch { /* A missing hero model must not disable the games or their native fallback. */ }
-    finally { if(!this.disposed&&this.brandAbort===controller)this.options.onProgress(1,1); }
+    finally { if(!this.disposed&&this.brandAbort===controller)this.options.onProgress(1,1,"complete"); }
   }
 
   private configureBloom() {
@@ -140,6 +150,7 @@ export class SpatialSceneRuntime {
   setDetailOpen(open:boolean){
     if(this.detailOpen===open)return;
     this.detailOpen=open;
+    if(open){const selected=this.options.stage.querySelector<HTMLElement>('.spatialGamePanel[data-selected="true"]')?.getBoundingClientRect();this.focusSide=selected&&selected.left+selected.width*.5<this.viewportWidth*.5?-1:1;this.cloth.release();this.grab=undefined;}
     this.gallery.invalidate();
     if(!open)this.onScroll();
     this.requestFrame();
@@ -148,8 +159,9 @@ export class SpatialSceneRuntime {
     if(this.disposed||this.paused||this.reduced||this.detailOpen)return false;
     const box=this.clothSlot?.getBoundingClientRect();if(!box?.width||!box.height)return false;
     const u=clientX===undefined?.5:(clientX-box.left)/box.width,v=clientY===undefined?.5:1-(clientY-box.top)/box.height;
-    this.cloth.touch(u,v,this.elapsed);this.requestFrame();return true;
+    if(performance.now()-this.grabFinished>220)this.cloth.touch(u,v,this.elapsed);this.requestFrame();return true;
   }
+  syncScroll(){if(this.disposed)return;this.resize();this.progress=this.journey.snap(this.desiredProgress);this.requestFrame();}
   setDetailFocus(focused:boolean){
     if(this.detailFocus===focused)return;
     this.detailFocus=focused;
@@ -179,6 +191,7 @@ export class SpatialSceneRuntime {
     this.preferenceObserver.observe(document.documentElement,{attributes:true,attributeFilter:["data-reduced-motion"]});
     this.motionQuery.addEventListener("change",this.onPreferenceChange);this.compactQuery.addEventListener("change",this.onPreferenceChange);
     window.addEventListener("scroll",this.onScroll,{passive:true});window.addEventListener("resize",this.resize,{passive:true});
+    window.addEventListener("pointerdown",this.onGrabStart);window.addEventListener("pointerup",this.onGrabEnd);window.addEventListener("pointercancel",this.onGrabEnd);
     window.addEventListener("pointermove",this.onPointer,{passive:true});document.addEventListener("visibilitychange",this.onVisibility);
   }
   private resize=()=>{
@@ -198,13 +211,14 @@ export class SpatialSceneRuntime {
     const heading=this.options.stage.querySelector(".spatialGalleryHead")?.getBoundingClientRect();
     const panels=[...this.options.stage.querySelectorAll<HTMLElement>(".spatialGamePanel")].map(element=>element.getBoundingClientRect());
     const material=this.options.stage.querySelector(".spatialMaterial")?.getBoundingClientRect();
+    const transition=this.options.stage.querySelector(".spatialTransition")?.getBoundingClientRect();
     const cloth=this.clothSlot?.getBoundingClientRect();
     const span=Math.max(1,this.stageHeight-this.viewportHeight);
     const at=(y:number)=>Math.max(0,Math.min(.98,(y+window.scrollY-this.stageTop)/span));
     if(hero&&heading&&panels.length&&material)this.journeyStops={
       intro:at(heading.top-this.viewportHeight*.35),
       projects:panels.map(panel=>at(panel.top+panel.height*.5-this.viewportHeight*.5)),
-      exit:at(material.top-this.viewportHeight*.88),
+      exit:at((transition??material).top-this.viewportHeight*.65),
       lab:at(cloth?cloth.top+cloth.height*.5-this.viewportHeight*.5:material.top-this.viewportHeight*.18),
     };
     this.fitBrand();this.onScroll();
@@ -230,6 +244,12 @@ export class SpatialSceneRuntime {
     this.requestFrame();
   };
   private onPointer=(event:PointerEvent)=>{
+    if(this.grab?.id===event.pointerId){
+      const g=this.grab,dx=event.clientX-g.x,dy=event.clientY-g.y;
+      if(!g.active&&Math.abs(dy)>8&&Math.abs(dy)>Math.abs(dx)){this.grab=undefined;return;}
+      if(!g.active&&Math.abs(dx)>8&&Math.abs(dx)>Math.abs(dy)*1.2){g.active=true;g.element.setPointerCapture(event.pointerId);}
+      if(g.active){event.preventDefault();const b=g.element.getBoundingClientRect();this.cloth.grab(g.u,g.v,dx/b.width*.65,-dy/b.height*.4);this.requestFrame();return;}
+    }
     if(this.reduced||this.paused||this.detailOpen||!this.pointerQuery.matches||event.pointerType!=="mouse")return;
     const cloth=(event.target as Element).closest(".spatialClothControl");
     if(cloth){
@@ -238,10 +258,17 @@ export class SpatialSceneRuntime {
       this.desiredPointer.x=this.desiredPointer.y=0;this.requestFrame();return;
     }
     this.cloth.setHover(.5,.5,0);
+    this.gallery.pointer(event);
     if(this.compact)return;
     this.desiredPointer.x=(event.clientX/Math.max(1,window.innerWidth)-.5)*.85;
     this.desiredPointer.y=(event.clientY/Math.max(1,window.innerHeight)-.5)*.65;this.requestFrame();
   };
+  private onGrabStart=(event:PointerEvent)=>{
+    if(this.paused||this.reduced||this.detailOpen||event.button!==0)return;
+    const element=(event.target as Element).closest<HTMLElement>(".spatialClothControl");if(!element)return;const b=element.getBoundingClientRect();
+    this.grab={id:event.pointerId,x:event.clientX,y:event.clientY,u:(event.clientX-b.left)/b.width,v:1-(event.clientY-b.top)/b.height,active:false,element};
+  };
+  private onGrabEnd=(event:PointerEvent)=>{if(this.grab?.id!==event.pointerId)return;if(this.grab.active)this.grabFinished=performance.now();this.grab=undefined;this.cloth.release();this.requestFrame();};
   private onPreferenceChange=()=>{
     const compact=this.compactQuery.matches,changed=compact!==this.compact;
     this.compact=compact;this.reduced=prefersStaticPlatform(this.motionQuery);this.desiredPointer.x=this.desiredPointer.y=0;
@@ -274,10 +301,12 @@ export class SpatialSceneRuntime {
     this.accent.lerp(this.desiredAccent,blend);this.accentLight.color.copy(this.accent);
     const snapshot={...INITIAL_SCROLL_SNAPSHOT,progress:this.progress,viewportWidth:this.viewportWidth,viewportHeight:this.viewportHeight,reducedMotion:this.reduced};
     this.cameraRig!.update(snapshot,{x:0,y:0},0);
+    if(this.detail>0&&!this.reduced){this.camera.position.x+=this.focusSide*(this.compact?.55:1.15)*this.detail;this.camera.position.z-=(this.compact?1.1:2)*this.detail;this.camera.lookAt(this.camera.position.x,this.camera.position.y,0);}
     this.camera.updateMatrixWorld();
     this.updateObjects();
     this.scene.updateMatrixWorld();
     if(!this.detailOpen)this.gallery.update(this.camera,this.paused?window.scrollY:this.stageTop+this.progress*(this.stageHeight-this.viewportHeight),window.scrollY,this.reduced,this.brandReady);
+    this.gallery.focus(this.detail);
     try{if(this.bloom)this.bloom.render();else this.rendererHost.renderer.render(this.scene,this.camera);}catch{
       if(this.bloom){
         this.bloom.dispose();this.bloom=undefined;
@@ -285,7 +314,7 @@ export class SpatialSceneRuntime {
       }else{this.fail();return;}
     }
     // No 25/32fps idle cap: the turn and camera must share the display's frame cadence.
-    if(!staticScene&&(!this.detailOpen||this.detailMotion.active))this.requestFrame();else this.lastFrame=0;
+    if(!staticScene)this.requestFrame();else this.lastFrame=0;
   };
   private updateObjects(){
     const p=this.progress,t=this.elapsed;
@@ -310,14 +339,18 @@ export class SpatialSceneRuntime {
     this.atmosphere.update(t,p,this.detail,this.pointer,this.atmosphereOrigin,this.rendererHost!.renderer.getPixelRatio(),this.accent,lab);
     this.accentLight.position.set(2,this.camera.position.y+2,4);
     const sheet=this.clothSlot?.getBoundingClientRect();
-    this.cloth.visible=!!sheet&&sheet.bottom>0&&sheet.top<this.viewportHeight&&!this.detailOpen;
-    this.cloth.setEntrance(this.reduced?1:lab);
+    const transition=this.options.stage.querySelector(".spatialTransition")?.getBoundingClientRect();
+    const interlude=!!transition&&transition.top<this.viewportHeight&&transition.bottom>0;
+    this.cloth.visible=!!sheet&&((sheet.bottom>0&&sheet.top<this.viewportHeight)||interlude)&&!this.detailOpen;
+    this.cloth.setEntrance(this.reduced?1:Math.max(interlude?.3:0,lab));
     if(sheet&&this.cloth.visible){
-      const position=panelScreenPosition(this.camera,sheet.left+sheet.width/2,sheet.top+sheet.height/2,this.viewportWidth,this.viewportHeight,4.4);
-      const unit=panelFrontWidth(this.camera,this.viewportWidth,1,position),worldWidth=sheet.width/unit;
-      this.cloth.position.copy(position);this.cloth.position.y+=sheet.height/unit*.015;
+      const visibleBlend=THREE.MathUtils.smoothstep(lab,.38,.95);
+      const centerX=THREE.MathUtils.lerp(this.viewportWidth*(this.compact?.65:.62),sheet.left+sheet.width/2,visibleBlend),centerY=THREE.MathUtils.lerp(this.viewportHeight*.48,sheet.top+sheet.height/2,visibleBlend);
+      const position=panelScreenPosition(this.camera,centerX,centerY,this.viewportWidth,this.viewportHeight,4.4);
+      const unit=panelFrontWidth(this.camera,this.viewportWidth,1,position),width=THREE.MathUtils.lerp(this.viewportWidth*(this.compact?.7:.48),sheet.width,visibleBlend),height=THREE.MathUtils.lerp(this.viewportHeight*.67,sheet.height,visibleBlend),worldWidth=width/unit;
+      this.cloth.position.copy(position);this.cloth.position.y+=height/unit*.015;
       // Keep the authored loose hem inside the interactive slot at both sizes.
-      this.cloth.scale.set(worldWidth*.94,sheet.height/unit*.88,worldWidth*.66);this.cloth.update(this.reduced?0:t);
+      this.cloth.scale.set(worldWidth*.94,height/unit*.88,worldWidth*.66);this.cloth.update(this.reduced?0:t);
       this.cloth.rotation.set(-.06,THREE.MathUtils.lerp(-.42,this.compact?-.035:-.14,this.reduced?1:lab),-.035);
       this.lightAim.set(this.cloth.position.x-3,this.cloth.position.y+3,this.cloth.position.z+5.5);
       this.anatomyLight.position.lerp(this.lightAim,lab);
@@ -330,8 +363,9 @@ export class SpatialSceneRuntime {
     this.resizeObserver?.disconnect();this.intersectionObserver?.disconnect();this.preferenceObserver?.disconnect();
     this.motionQuery.removeEventListener("change",this.onPreferenceChange);this.compactQuery.removeEventListener("change",this.onPreferenceChange);
     window.removeEventListener("scroll",this.onScroll);window.removeEventListener("resize",this.resize);window.removeEventListener("pointermove",this.onPointer);document.removeEventListener("visibilitychange",this.onVisibility);
+    window.removeEventListener("pointerdown",this.onGrabStart);window.removeEventListener("pointerup",this.onGrabEnd);window.removeEventListener("pointercancel",this.onGrabEnd);
     delete this.options.stage.dataset.brandReady;delete this.options.stage.dataset.shaderWarmup;delete this.options.stage.dataset.heroUiHidden;
-    this.options.stage.style.removeProperty("--spatial-hero-ui-opacity");this.gallery.clear();this.atmosphere.dispose();this.cloth.dispose();this.bloom?.dispose();
+    this.options.stage.style.removeProperty("--spatial-hero-ui-opacity");this.gallery.dispose();this.atmosphere.dispose();this.cloth.dispose();this.bloom?.dispose();
     disposeModel(this.scene);this.scene.clear();this.scene.environment=null;this.environment?.dispose();this.rendererHost?.dispose();
   }
 }

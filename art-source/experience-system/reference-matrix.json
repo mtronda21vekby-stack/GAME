@@ -1,0 +1,201 @@
+{
+  "baseline": "29f34f415f95f44f77c60710042140456fc52f8b",
+  "source": "User supplied original 74-second mobile video; 1x playback samples in experience-system-review-20261020/reference-audit. Independent parent audit adds precise case boundaries. Public desktop normal navigation returned200; further interactions not yet examined.",
+  "constraints": [
+    "Local only; no publication",
+    "No third-party brands, images or closed source copied",
+    "Preserve crown/skull/long spine; compact windows; calm controlled motion",
+    "Preserve all games and user saves; record preview footage only in isolated new contexts with remote writes blocked",
+    "Fullscreen ENTER gate intentionally excluded by explicit user preference"
+  ],
+  "rows": [
+    {
+      "id": "load",
+      "timecodes": "0–10",
+      "reference_evidence": "visible",
+      "observed": "Числовой прогресс и круговой свет, затем сцена",
+      "baseline_29f34f4": "GLB грузится без видимого прогресса",
+      "implementation_target": "Неблокирующий индикатор фактических байтов и фаза подготовки GPU; без искусственной задержки и ENTER",
+      "acceptance": "Первая CTA доступна до загрузки; offline/failure оставляет постер и каталог",
+      "status": "adapted_nonblocking_unverified",
+      "verification": "pending"
+    },
+    {
+      "id": "route",
+      "timecodes": "10–33; 40–47",
+      "reference_evidence": "visible",
+      "observed": "Intro → about → каталог → пространственная вставка → LAB и обратный путь",
+      "baseline_29f34f4": "Intro/gallery/LAB есть, about расположен после LAB, отдельной вставки нет",
+      "implementation_target": "Связать главы единым обратимым маршрутом, about перед играми, отдельный переход к материалу",
+      "acceptance": "Forward/reverse по всем главам; никакого недоказанного бесконечного loop",
+      "status": "implemented_unverified",
+      "verification": "pending"
+    },
+    {
+      "id": "camera",
+      "timecodes": "10–30;40–49",
+      "reference_evidence": "visible",
+      "observed": "Подлёт, спуск и перспективный проход между панелями",
+      "baseline_29f34f4": "Подлёт и спуск есть; панельные слои мало связаны с раскрытием",
+      "implementation_target": "Единый scroll clock, фокус камеры на выбранном кейсе и точный обратный путь",
+      "acceptance": "Нет бросков/наклонов камеры; пауза, rapid reverse, resize",
+      "status": "implemented_unverified",
+      "verification": "pending"
+    },
+    {
+      "id": "panels",
+      "timecodes": "19–30;47–49",
+      "reference_evidence": "visible",
+      "observed": "Несколько панелей одновременно, разная глубина, выбранная читаема, соседи частично обрезаны",
+      "baseline_29f34f4": "Live HTML уже проектируется в камеру; мало локального взаимодействия",
+      "implementation_target": "Перспективная лента с соседями, ограниченный параллакс только панелей и свет на поверхности",
+      "acceptance": "Выбранная видна, controls ≥48px, нет горизонтального overflow",
+      "status": "implemented_unverified",
+      "verification": "pending"
+    },
+    {
+      "id": "nav",
+      "timecodes": "13–74",
+      "reference_evidence": "visible",
+      "observed": "Компактный WORK/CONTACT остаётся на всех сценах",
+      "baseline_29f34f4": "Основная навигация есть; внутри сцены нет постоянного индекса",
+      "implementation_target": "Сохранить Игры/Магазин/О проекте/Профиль; добавить компактный индекс глав/игр с поиском",
+      "acceptance": "Сцены/игры/закрытие доступны на 320px и с клавиатуры",
+      "status": "implemented_unverified",
+      "verification": "pending"
+    },
+    {
+      "id": "categories",
+      "timecodes": "23–30;47–49",
+      "reference_evidence": "visible_control_only",
+      "observed": "Список категорий; применение не показано",
+      "baseline_29f34f4": "Фильтры реальных четырёх игр уже работают, исчезают при прокрутке",
+      "implementation_target": "Доступный постоянный индекс, реальные категории и рабочий сброс",
+      "acceptance": "Все/каждая категория/пустой поиск/сброс; не приписывать оригиналу неподтверждённый алгоритм",
+      "status": "implemented_unverified",
+      "verification": "pending"
+    },
+    {
+      "id": "open",
+      "timecodes": "49.8–51.8;52.8–54;67.4–69",
+      "reference_evidence": "visible",
+      "observed": "Выбранная панель раскрывается в media+текст в общей сцене",
+      "baseline_29f34f4": "Общий полёт картинки есть, сцена замораживается без фокуса, history отсутствует",
+      "implementation_target": "Координировать фокус 3D-сцены, общее полотно карточки и компактный кейс, уникальные данные",
+      "acceptance": "Прерванное раскрытие/смена кейса/resize/нет второго тяжёлого WebGL",
+      "status": "implemented_unverified",
+      "verification": "pending"
+    },
+    {
+      "id": "close",
+      "timecodes": "52;64.5–65",
+      "reference_evidence": "visible",
+      "observed": "Возврат к той же карточке и позиции; повторное раскрытие",
+      "baseline_29f34f4": "Один кейс закрывается корректно, смена игры и browser history не покрыты",
+      "implementation_target": "URL-состояние кейса, Back/Forward, восстановление выбранной карточки, фокуса и позиции",
+      "acceptance": "Три цикла, rapid close/reopen, Escape, Back/Forward, нет утечки GPU/слушателей",
+      "status": "implemented_unverified",
+      "verification": "pending"
+    },
+    {
+      "id": "case_content",
+      "timecodes": "50–64;68–74",
+      "reference_evidence": "visible",
+      "observed": "Media, метаданные, описание, две ссылки и CLOSE; другой независимый кейс",
+      "baseline_29f34f4": "Описание/controls/играть уже есть; метаданные не структурированы",
+      "implementation_target": "Использовать реальные genre/status/controls; играть и существующая помощь, никакой выдуманной истории проекта",
+      "acceptance": "Контент соответствует выбранной игре, все ссылки действительные",
+      "status": "implemented_unverified",
+      "verification": "pending"
+    },
+    {
+      "id": "live_media",
+      "timecodes": "68–74",
+      "reference_evidence": "visible",
+      "observed": "Живое media в раскрытом кейсе",
+      "baseline_29f34f4": "Только статичная обложка",
+      "implementation_target": "Собственные записи сохранённых игровых интерфейсов; lazy video, pause, ошибка/autoplay/reduced-motion fallback",
+      "acceptance": "Нет чужих ассетов, реальные video time advance, остановка при закрытии/уходе, статичный кадр при ошибке",
+      "status": "implemented_unverified",
+      "verification": "pending"
+    },
+    {
+      "id": "lab",
+      "timecodes": "32–41",
+      "reference_evidence": "visible",
+      "observed": "Ячеистая поверхность, контур, блики и изображение деформируются вместе",
+      "baseline_29f34f4": "Металл деформируется, но нет связанной маркировки и мобильного drag",
+      "implementation_target": "Собственный UV-знак BLACKCROWN на той же GPU-поверхности, горизонтальный drag/возврат и tap",
+      "acceptance": "Mouse/touch/keyboard, vertical scroll не захвачен, нормали/маркировка следуют форме",
+      "status": "implemented_unverified",
+      "verification": "pending"
+    },
+    {
+      "id": "particles",
+      "timecodes": "13–49",
+      "reference_evidence": "visible",
+      "observed": "Частицы разной глубины и характера по фазам",
+      "baseline_29f34f4": "Редкая пыль; фазы уже частично связаны",
+      "implementation_target": "Глубинное зерно и мелкие грани из того же ограниченного поля; сцены меняют распределение",
+      "acceptance": "Нет новых тотемов/боковых костей/хаотического вращения, mobile budget",
+      "status": "implemented_unverified",
+      "verification": "pending"
+    },
+    {
+      "id": "case_lens",
+      "timecodes": "50–64;69–74",
+      "reference_evidence": "visible_effect_cause_unknown",
+      "observed": "Локальные округлые разрывы/искажения зернистого слоя с восстановлением",
+      "baseline_29f34f4": "Эффекта нет",
+      "implementation_target": "Оптическая маска только слоя частиц/зерна, core text и media остаются читаемыми",
+      "acceptance": "Восстановление, reduced motion; touch-причину оригинала не утверждать",
+      "status": "own_optical_layer_unverified",
+      "verification": "pending"
+    },
+    {
+      "id": "decode",
+      "timecodes": "23–30;50–54;64–69",
+      "reference_evidence": "visible",
+      "observed": "Короткое декодирование символов с устойчивым текстом",
+      "baseline_29f34f4": "Текст просто появляется",
+      "implementation_target": "Короткий ограниченный decode, исходный доступный текст и немедленные действия",
+      "acceptance": "Длительность ≤300мс; стабилен итог, reduced-motion без scramble",
+      "status": "implemented_unverified",
+      "verification": "pending"
+    },
+    {
+      "id": "ama",
+      "timecodes": "23–30;49–74",
+      "reference_evidence": "visible_control_only",
+      "observed": "ASK ME ANYTHING видно, ответы/отправка не показаны",
+      "baseline_29f34f4": "Аналога нет",
+      "implementation_target": "Честный локальный поиск по каталогу и описаниям, без фальшивого AI/сервера",
+      "acceptance": "Рабочий поиск/сброс, никакой внешней отправки или ключей",
+      "status": "adapted_local_search_unverified",
+      "verification": "pending"
+    },
+    {
+      "id": "mobile",
+      "timecodes": "0–74",
+      "reference_evidence": "visible",
+      "observed": "Портретное видео 512×1112 с Safari chrome",
+      "baseline_29f34f4": "390/320 проверялись; новые состояния ещё нет",
+      "implementation_target": "Safe area, крупные кнопки и native scroll; chrome браузера не копировать",
+      "acceptance": "320/390/landscape, CLOSE и focus, вертикальные жесты и игра→Back",
+      "status": "implemented_unverified",
+      "verification": "pending"
+    },
+    {
+      "id": "unknown",
+      "timecodes": "not demonstrated",
+      "reference_evidence": "unknown",
+      "observed": "Contact content, external link destinations, audio result, desktop hover/keyboard, exact physics and touch cause",
+      "baseline_29f34f4": "Не считается отсутствием доказанного соответствия",
+      "implementation_target": "Наши свойства проверять отдельно; не копировать закрытый код/бренды/клиентские материалы",
+      "acceptance": "Явно различать подтверждено/адаптировано/не проверено/осталось",
+      "status": "unknown_not_claimed",
+      "verification": "pending"
+    }
+  ],
+  "implementation_checkpoint_at": "2026-10-20T03:22:27.604096+00:00"
+}

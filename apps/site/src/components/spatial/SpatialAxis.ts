@@ -18,7 +18,7 @@ export type SpatialJourneyStops = {
 
 /** One connected skull/spine axis; the camera travels from its head to its tip. */
 export function spatialAxisJourney({compact,width,height,slot,stops}:AxisViewport) {
-  const fov=compact?36:38,depth=18.8+(compact&&width<=820?(height<=520?.9:1.8):0);
+  const fov=compact?36:38,depth=18.8+(compact?(height<=520?.9:1.8):0);
   const halfHeight=depth*Math.tan(fov*Math.PI/360),pixelsPerUnit=height/(halfHeight*2);
   const axisHeight=Math.min(compact?15.8:26,slot.width*.9/(pixelsPerUnit*.245),slot.height*.97/(pixelsPerUnit*.29))*(compact?1.16:1.18);
   const headCenter=axisHeight*.35;

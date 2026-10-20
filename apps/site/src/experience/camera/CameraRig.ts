@@ -66,7 +66,7 @@ export class CameraRig {
       this.directedTarget.set(0.5 + progress * 0.16, 0.48, -progress * 0.12);
     }
 
-    const mobileViewport = snapshot.viewportWidth <= (this.continuous ? 760 : 820);
+    const mobileViewport = this.continuous?(snapshot.viewportWidth<=760||(snapshot.viewportWidth<=1000&&snapshot.viewportHeight<=520)):snapshot.viewportWidth<=820;
     const mobileScale = mobileViewport ? 0.25 : 1;
     // The continuous sculpture journey owns its entire pose; ambience can use pointer/time.
     const pointerX = this.continuous ? 0 : pointer.x * 0.62 * mobileScale;

@@ -33,7 +33,7 @@ describe("Spatial atmosphere and authored hero budgets",()=>{
       return total+mobile.json.accessors[primitive.indices].count/3;
     },0);
     const atmosphere=new SpatialAtmosphere(true),cloth=new SpatialCloth(true),root=new Group().add(atmosphere,cloth,...Array.from({length:4},()=>createOrbitCard().group));
-    let background=0;root.traverse(object=>{const mesh=object as Mesh;if(mesh.isMesh)background+=(mesh.geometry.index?.count??mesh.geometry.attributes.position.count)/3;});
+    let background=0;root.traverse(object=>{const mesh=object as Mesh;if(mesh.isMesh)background+=(mesh.geometry.index?.count??mesh.geometry.attributes.position.count)/3*((mesh.geometry as any).isInstancedBufferGeometry?(mesh.geometry as any).instanceCount:1);});
     expect(triangles).toBeLessThanOrEqual(27200);expect(triangles+background).toBeLessThan(30000);
     expect(mobile.bytes.length).toBeLessThan(2.2*1024*1024);
     expect(mobile.json.images).toHaveLength(6);expect(mobile.json.materials).toHaveLength(3);

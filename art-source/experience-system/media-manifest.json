@@ -1,0 +1,54 @@
+{
+  "recordedFromCommit": "29f34f415f95f44f77c60710042140456fc52f8b",
+  "browser": "Installed Chrome for Testing on user Mac",
+  "results": [
+    {
+      "id": "ballcrown",
+      "route": "/games/ballcrown/",
+      "source": "Actual preserved BLACKCROWN runtime in isolated new Mac browser context; remote traffic and non-read HTTP methods blocked. No user account or existing game save loaded. Only entry UI dismissed; no rewards claimed.",
+      "bytes": 79190,
+      "width": 640,
+      "height": 360,
+      "duration": 6,
+      "file": "/media/game-previews/ballcrown.webm",
+      "sha256": "a34f36d3cfcf7408b5a4f9fbf4dbedbaeac5a71e942bfbd35f19036802344d00",
+      "label": "Запись экрана запуска"
+    },
+    {
+      "id": "evofish",
+      "route": "/game/?mode=next",
+      "source": "Actual preserved BLACKCROWN runtime in isolated new Mac browser context; remote traffic and non-read HTTP methods blocked. No user account or existing game save loaded. Only entry UI dismissed; no rewards claimed.",
+      "bytes": 170345,
+      "width": 640,
+      "height": 360,
+      "duration": 6,
+      "file": "/media/game-previews/evofish.webm",
+      "sha256": "cf78872ed86e7ade94725fc90ecc869dade95723c52f34771f07d02c2f69e2f9",
+      "label": "Запись интерфейса"
+    },
+    {
+      "id": "quiet-valley",
+      "route": "/games/quiet-valley/",
+      "source": "Actual preserved BLACKCROWN runtime in isolated new Mac browser context; remote traffic and non-read HTTP methods blocked. No user account or existing game save loaded. Only entry UI dismissed; no rewards claimed.",
+      "bytes": 189638,
+      "width": 640,
+      "height": 360,
+      "duration": 6,
+      "file": "/media/game-previews/quiet-valley.webm",
+      "sha256": "e13512eae7f966dd2ac4025f688ddf4b5c3841266463fc4f12d6957342099147",
+      "label": "Запись интерфейса"
+    },
+    {
+      "id": "crown-front",
+      "route": "/games/crown-front/",
+      "source": "Actual preserved BLACKCROWN runtime in isolated new Mac browser context; remote traffic and non-read HTTP methods blocked. No user account or existing game save loaded. Only entry UI dismissed; no rewards claimed.",
+      "bytes": 256424,
+      "width": 640,
+      "height": 360,
+      "duration": 6,
+      "file": "/media/game-previews/crown-front.webm",
+      "sha256": "599d09efa927a7cf26a6196d716b3c822e55e7880c44f42d256748719cf43b3c",
+      "label": "Запись интерфейса"
+    }
+  ]
+}

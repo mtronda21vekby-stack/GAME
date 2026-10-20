@@ -1,9 +1,18 @@
 import * as THREE from "three";
+import { DampedScalar } from "./spatialMotion";
+
+function brandMark(){
+  if(typeof document==="undefined")return new THREE.DataTexture(new Uint8Array([0,0,0,0]),1,1);
+  const canvas=document.createElement("canvas");canvas.width=canvas.height=512;const ctx=canvas.getContext("2d")!;
+  ctx.strokeStyle="#e5eee9";ctx.lineWidth=7;ctx.lineJoin="round";ctx.beginPath();ctx.moveTo(171,198);ctx.lineTo(202,223);ctx.lineTo(256,163);ctx.lineTo(310,223);ctx.lineTo(341,198);ctx.lineTo(327,274);ctx.lineTo(185,274);ctx.closePath();ctx.stroke();ctx.beginPath();ctx.moveTo(190,294);ctx.lineTo(322,294);ctx.stroke();ctx.fillStyle="#e5eee9";ctx.textAlign="center";ctx.font="18px ui-monospace,monospace";ctx.fillText("BLACKCROWN",256,340);ctx.font="12px ui-monospace,monospace";ctx.fillText("MATERIAL / LAB",256,365);
+  return new THREE.CanvasTexture(canvas);
+}
 
 const folds=`
   uniform float uClothTime,uClothMotion,uClothEntrance;
   uniform vec4 uClothHits[4];
   uniform vec3 uClothHover;
+  uniform vec4 uClothDrag;
   varying vec2 vClothUv;
   vec3 clothSurface(vec2 p) {
     p=clamp(p,vec2(0.),vec2(1.));
@@ -33,12 +42,17 @@ const folds=`
     x*=mix(.08,1.,opening);
     z+=sin((p.x-.5)*6.283185)*.16*(1.-opening);
     y+=sin(p.x*3.141593)*.08*(1.-opening);
+    vec2 grabDelta=(p-uClothDrag.xy)*vec2(.86,1.);
+    float grab=exp(-dot(grabDelta,grabDelta)*12.)*loose*uClothMotion;
+    x+=uClothDrag.z*grab;y+=uClothDrag.w*grab;
+    z-=length(uClothDrag.zw)*.5*grab;
     return vec3(x,y,z);
   }
 `;
 
 const weave=`
   varying vec2 vClothUv;
+  uniform sampler2D uClothMark;
   // Rounded apertures between crossing steel ribbons. Screen derivatives fade
   // microstructure before it becomes a subpixel grid on narrow phone screens.
   vec4 clothWeave(vec2 uv) {
@@ -73,6 +87,11 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshStand
   readonly entrance={value:1};
   readonly hits={value:Array.from({length:4},()=>new THREE.Vector4(.5,.5,-100,0))};
   readonly hover={value:new THREE.Vector3(.5,.5,0)};
+  readonly drag={value:new THREE.Vector4(.5,.5,0,0)};
+  readonly mark={value:brandMark()};
+  private readonly dragX=new DampedScalar(0,580);
+  private readonly dragY=new DampedScalar(0,580);
+  private readonly dragTarget=new THREE.Vector2();
   private readonly hoverTarget=new THREE.Vector3(.5,.5,0);
   private nextHit=0;
   constructor(compact:boolean) {
@@ -83,6 +102,7 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshStand
     this.material.onBeforeCompile=shader=>{
       shader.uniforms.uClothTime=this.time;shader.uniforms.uClothMotion=this.motion;shader.uniforms.uClothEntrance=this.entrance;
       shader.uniforms.uClothHits=this.hits;shader.uniforms.uClothHover=this.hover;
+      shader.uniforms.uClothDrag=this.drag;shader.uniforms.uClothMark=this.mark;
       shader.vertexShader=shader.vertexShader.replace("#include <common>","#include <common>\n"+folds)
         .replace("#include <beginnormal_vertex>",`#include <beginnormal_vertex>
           float e=.002;
@@ -99,17 +119,19 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshStand
           diffuseColor.rgb*=mix(.74,1.08,cloth.y)*(1.-cloth.z*.18);
           diffuseColor.rgb*=mix(vec3(1.),vec3(.88,.98,1.),cloth.z*.24);`)
         .replace("#include <roughnessmap_fragment>",`#include <roughnessmap_fragment>
-          roughnessFactor=clamp(roughnessFactor+cloth.z*.12-cloth.y*.065,.19,.55);`)
+          float mark=texture2D(uClothMark,vClothUv).a;
+          roughnessFactor=mix(clamp(roughnessFactor+cloth.z*.12-cloth.y*.065,.19,.55),.6,mark);
+          diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.68,.78,.8),mark*.85);`)
         .replace("#include <normal_fragment_maps>",`#include <normal_fragment_maps>
           normal=clothWeaveNormal(normal,vClothUv,cloth.w);`);
     };
-    this.material.customProgramCacheKey=()=>"blackcrown-metal-cloth-unfold-v3";
+    this.material.customProgramCacheKey=()=>"blackcrown-metal-cloth-grab-brand-v4";
   }
   setQuality(compact:boolean,reduced:boolean) {
     const columns=compact?20:32,rows=compact?26:48;
     if(this.geometry.parameters.widthSegments!==columns){this.geometry.dispose();this.geometry=new THREE.PlaneGeometry(1,1,columns,rows);}
     this.motion.value=reduced?0:1;
-    if(reduced){this.hover.value.z=this.hoverTarget.z=0;for(const hit of this.hits.value)hit.w=0;}
+    if(reduced){this.hover.value.z=this.hoverTarget.z=0;for(const hit of this.hits.value)hit.w=0;this.dragTarget.set(0,0);this.dragX.snap(0);this.dragY.snap(0);this.drag.value.z=this.drag.value.w=0;}
   }
   setHover(u:number,v:number,strength:number) {
     this.hoverTarget.set(
@@ -119,6 +141,12 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshStand
     );
   }
   setEntrance(progress:number){this.entrance.value=THREE.MathUtils.clamp(Number.isFinite(progress)?progress:1,0,1);}
+  grab(u:number,v:number,x:number,y:number){
+    if(!this.motion.value)return;
+    this.drag.value.x=THREE.MathUtils.clamp(u,.05,.95);this.drag.value.y=THREE.MathUtils.clamp(v,.05,.95);
+    this.dragTarget.set(THREE.MathUtils.clamp(x,-.26,.26),THREE.MathUtils.clamp(y,-.2,.2));
+  }
+  release(){this.dragTarget.set(0,0);}
   touch(u:number,v:number,time:number) {
     if(!this.motion.value)return;
     this.hits.value[this.nextHit].set(
@@ -132,7 +160,8 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshStand
     const next=Number.isFinite(time)?time:this.time.value;
     const delta=Math.max(0,next-this.time.value);
     this.time.value=next;
+    this.drag.value.z=this.dragX.update(this.dragTarget.x,delta*1000);this.drag.value.w=this.dragY.update(this.dragTarget.y,delta*1000);
     if(this.motion.value)this.hover.value.lerp(this.hoverTarget,-Math.expm1(-Math.min(delta,.1)/.095));
   }
-  dispose(){this.geometry.dispose();this.material.dispose();this.removeFromParent();}
+  dispose(){this.mark.value.dispose();this.geometry.dispose();this.material.dispose();this.removeFromParent();}
 }
