@@ -1,0 +1,100 @@
+{
+  "source_sha256": "7c1d400b5c8a91c3e3383c7d34fa07757e43a9bcdcbde3c3031c0a110e4c53a4",
+  "source_preserved": true,
+  "generated_with": "Blender 5.1.2",
+  "changes": [
+    {
+      "name": "SPINE",
+      "moved_vertices": 17729,
+      "max_local_displacement": 0.0014629276490944383,
+      "min_sculpt_jacobian": 0.9649813175201416
+    },
+    {
+      "name": "SKULL_CRANIUM",
+      "moved_vertices": 272,
+      "max_local_displacement": 0.0016500002324392248,
+      "min_sculpt_jacobian": 0.2929409444332123
+    },
+    {
+      "name": "SKULL_FACE",
+      "moved_vertices": 12514,
+      "max_local_displacement": 0.003149999981722425,
+      "min_sculpt_jacobian": 0.14060236513614655
+    }
+  ],
+  "desktop": {
+    "file": "blackcrown-skull-desktop.glb",
+    "bytes": 6455844,
+    "sha256": "08a69bebd8f23cce94575d76907ae0eed0df4e268234858b1694dada83b6caac",
+    "triangles": 80310,
+    "parts": [
+      {
+        "name": "SKULL_REAR_LEFT",
+        "triangles": 1957
+      },
+      {
+        "name": "SPINE",
+        "triangles": 22150
+      },
+      {
+        "name": "SKULL_REAR_RIGHT",
+        "triangles": 2100
+      },
+      {
+        "name": "SKULL_CRANIUM",
+        "triangles": 3746
+      },
+      {
+        "name": "SKULL_FACE",
+        "triangles": 22526
+      },
+      {
+        "name": "CROWN",
+        "triangles": 27831
+      }
+    ]
+  },
+  "mobile": {
+    "file": "blackcrown-skull-mobile.glb",
+    "bytes": 2226380,
+    "sha256": "44c412c4689bdee60ca9684546fcde38de47988f8e9b0752b95c6f9676508c9d",
+    "triangles": 27192,
+    "parts": [
+      {
+        "name": "SKULL_REAR_LEFT",
+        "triangles": 542
+      },
+      {
+        "name": "SPINE",
+        "triangles": 6089
+      },
+      {
+        "name": "SKULL_REAR_RIGHT",
+        "triangles": 592
+      },
+      {
+        "name": "SKULL_CRANIUM",
+        "triangles": 991
+      },
+      {
+        "name": "SKULL_FACE",
+        "triangles": 6986
+      },
+      {
+        "name": "CROWN",
+        "triangles": 11992
+      }
+    ]
+  },
+  "new_meshes": 0,
+  "subdivisions": 0,
+  "poster": "blackcrown-skull-poster.png",
+  "poster_details": {
+    "source": "Actual production Three renderer, corrective sculpt, neutral frontal pose, no UI or compositing",
+    "width": 640,
+    "height": 760,
+    "background": "#090d11",
+    "bytes": 319997,
+    "sha256": "dff55fa63b69e036a2dc1fa0568efc3087afb36b1b54cbe0bab1328402c82397"
+  }
+}

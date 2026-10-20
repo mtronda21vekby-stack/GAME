@@ -1,6 +1,4 @@
 import * as THREE from "three";
-import { PMREMGenerator } from "three/src/extras/PMREMGenerator.js";
-import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { CameraRig } from "../../experience/camera/CameraRig";
 import { RendererHost } from "../../experience/core/RendererHost";
@@ -13,7 +11,8 @@ import { SPATIAL_BRAND_MODEL } from "./brandModel";
 import { adaptSpatialBrand } from "./SpatialBrandAdapter";
 import { SpatialAtmosphere, SPATIAL_ATMOSPHERE_QUALITY } from "./SpatialAtmosphere";
 import { SpatialBloom } from "./SpatialBloom";
-import { animateHeroMaterials } from "./SpatialHeroMaterial";
+import { finishHeroMaterials } from "./SpatialHeroMaterial";
+import { createHeroStudio } from "./SpatialHeroStudio";
 import { spatialAxisJourney, spatialAxisTurn, type SpatialJourneyStops } from "./SpatialAxis";
 import { SpatialCloth } from "./SpatialCloth";
 import { panelFrontWidth, panelScreenPosition } from "./panelProjection";
@@ -38,7 +37,7 @@ export class SpatialSceneRuntime {
   private readonly accentLight = new THREE.PointLight(WORLD_ACCENTS[0],5,22,2);
   private readonly faceLight = new THREE.DirectionalLight(0xe0e8e8,1);
   private readonly edgeLight = new THREE.DirectionalLight(0x92c5d5,1);
-  private readonly keyLight = new THREE.DirectionalLight(0xf0eeeb,3.6);
+  private readonly keyLight = new THREE.DirectionalLight(0xe3e8e9,3.05);
   private brandAbort?:AbortController;
   private readonly atmosphere:SpatialAtmosphere;
   private readonly cloth:SpatialCloth;
@@ -82,13 +81,11 @@ export class SpatialSceneRuntime {
   }
 
   private buildLighting() {
-    const room=new RoomEnvironment(), pmrem=new PMREMGenerator(this.rendererHost!.renderer);
-    try { this.environment=pmrem.fromScene(room,.05); this.scene.environment=this.environment.texture; }
-    finally { room.dispose(); pmrem.dispose(); }
-    this.scene.add(new THREE.HemisphereLight(0xd8e3e5,0x101720,.35));
-    this.keyLight.position.set(-5,9,6);
-    this.faceLight.position.set(1,0,9);this.faceLight.intensity=this.compact?1.3:.85;
-    this.edgeLight.position.set(5,2,-3);this.edgeLight.intensity=this.compact?3.1:3.5;
+    this.environment=createHeroStudio(this.rendererHost!.renderer,this.compact);this.scene.environment=this.environment.texture;
+    this.scene.add(new THREE.HemisphereLight(0xc2d7e0,0x090d15,.17));
+    this.keyLight.position.set(-5,8,5);
+    this.faceLight.position.set(1,0,9);this.faceLight.intensity=this.compact?.92:.65;
+    this.edgeLight.position.set(5,2,-3);this.edgeLight.intensity=this.compact?2.65:2.4;
     this.accentLight.position.set(2,2,4);
     this.scene.add(this.keyLight,this.faceLight,this.edgeLight,this.accentLight);
   }
@@ -104,7 +101,7 @@ export class SpatialSceneRuntime {
       const gltf=await new GLTFLoader().parseAsync(await response.arrayBuffer(),url.slice(0,url.lastIndexOf("/")+1));
       if(this.disposed||this.brandAbort!==controller){disposeModel(gltf.scene);return;}
       if(SPATIAL_BRAND_MODEL.finish==="blackcrown-metal")finishMetal(gltf.scene);
-      animateHeroMaterials(gltf.scene,this.atmosphere.time,this.atmosphere.motion);
+      finishHeroMaterials(gltf.scene);
       const adapted=adaptSpatialBrand(gltf.scene,SPATIAL_BRAND_MODEL.fitSpan);
       const previous=[...this.brand.children];this.brand.clear();this.brand.add(adapted.group);
       previous.forEach(disposeModel);
@@ -234,8 +231,13 @@ export class SpatialSceneRuntime {
     this.compact=compact;this.reduced=prefersStaticPlatform(this.motionQuery);this.desiredPointer.x=this.desiredPointer.y=0;
     this.atmosphere.setQuality(compact,this.reduced);this.rendererHost?.setPreset(compact?COMPACT_PRESET:DESKTOP_PRESET);
     this.cloth.setQuality(compact,this.reduced);
-    this.faceLight.intensity=compact?1.3:.85;this.edgeLight.intensity=compact?3.1:3.5;
+    this.faceLight.intensity=compact?.92:.65;this.edgeLight.intensity=compact?2.65:2.4;
     this.cloth.setHover(.5,.5,0);
+    if(changed&&this.rendererHost){
+      const previous=this.environment;
+      this.environment=createHeroStudio(this.rendererHost.renderer,compact);this.scene.environment=this.environment.texture;
+      previous?.dispose();
+    }
     this.configureBloom();this.resize();if(changed)void this.loadBrand();
   };
   private onVisibility=()=>{if(document.hidden)this.stop();else this.requestFrame();};
@@ -274,9 +276,9 @@ export class SpatialSceneRuntime {
     this.brand.rotation.set(0,spatialAxisTurn(p,this.compact,this.reduced),0);
     const lab=this.journeyStops?THREE.MathUtils.smoothstep(p,this.journeyStops.exit,this.journeyStops.lab):0;
     this.bloom?.setLabPresence(lab);
-    this.keyLight.intensity=3.6-lab*1.4;
-    this.faceLight.intensity=(this.compact?1.3:.85)*(1-lab*.5);
-    this.edgeLight.intensity=(this.compact?3.1:3.5)*(1-lab*.3);
+    this.keyLight.intensity=3.05-lab*.85;
+    this.faceLight.intensity=(this.compact?.92:.65)*(1-lab*.35);
+    this.edgeLight.intensity=(this.compact?2.65:2.4)*(1-lab*.25);
     this.atmosphere.update(t,p,this.detail,this.pointer,this.atmosphereOrigin,this.rendererHost!.renderer.getPixelRatio(),this.accent,lab);
     this.accentLight.position.set(2,this.camera.position.y+2,4);
     const sheet=this.clothSlot?.getBoundingClientRect();

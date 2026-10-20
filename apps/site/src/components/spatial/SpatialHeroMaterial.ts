@@ -1,23 +1,25 @@
 import { MeshStandardMaterial, type Mesh, type Object3D } from "three";
 
-/** Keep the user's PBR maps; add a restrained quiet graphite finish and a subtle roughness variation. */
-export function animateHeroMaterials(root:Object3D,time:{value:number},motion:{value:number}) {
+/** Original PBR maps, satin bone contours and rough, genuinely recessed orbits. */
+export function finishHeroMaterials(root:Object3D) {
   const visited=new Set<MeshStandardMaterial>();
   root.traverse(object=>{
     const mesh=object as Mesh;if(!mesh.isMesh)return;
     for(const material of Array.isArray(mesh.material)?mesh.material:[mesh.material]) {
       if(!(material instanceof MeshStandardMaterial)||visited.has(material))continue;
-      visited.add(material);material.envMapIntensity=.82;
-      material.color.multiplyScalar(material.name.includes("SKULL")?.56:material.name.includes("SPINE")?.75:.88);
-      material.roughness*=.86;
+      visited.add(material);
+      const skull=material.name.includes("SKULL"),spine=material.name.includes("SPINE");
+      material.envMapIntensity=skull?1.1:spine?1.15:1.35;
+      material.color.multiplyScalar(skull?.62:spine?.68:.83);
+      material.roughness*=skull?1.18:spine?.98:.92;
       material.onBeforeCompile=shader=>{
-        shader.uniforms.uBcTime=time;shader.uniforms.uBcMotion=motion;
-        shader.vertexShader=shader.vertexShader.replace("#include <common>","#include <common>\nvarying vec3 vBcLocal;")
-          .replace("#include <begin_vertex>","#include <begin_vertex>\nvBcLocal=position;");
-        shader.fragmentShader=shader.fragmentShader.replace("#include <common>","#include <common>\nvarying vec3 vBcLocal; uniform float uBcTime,uBcMotion;")
-          .replace("#include <roughnessmap_fragment>","#include <roughnessmap_fragment>\nroughnessFactor=clamp(roughnessFactor+sin(vBcLocal.y*90.-uBcTime*.32)*.015*uBcMotion,.04,1.);");
+        shader.fragmentShader=shader.fragmentShader.replace("#include <roughnessmap_fragment>",`#include <roughnessmap_fragment>
+          roughnessFactor=clamp(roughnessFactor,${skull?".38,.76":spine?".29,.58":".19,.46"});
+          #if defined(USE_COLOR) || defined(USE_COLOR_ALPHA)
+            roughnessFactor=mix(roughnessFactor,.88,clamp((1.-vColor.r)*1.2,0.,1.));
+          #endif`);
       };
-      material.customProgramCacheKey=()=>"blackcrown-graphite-v2";
+      material.customProgramCacheKey=()=>"blackcrown-sculpt-satin-v3-"+(skull?"skull":spine?"spine":"crown");
       material.needsUpdate=true;
     }
   });
