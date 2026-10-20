@@ -12,6 +12,17 @@ import { spatialAxisJourney } from "../../src/components/spatial/SpatialAxis";
 import { platformGames } from "../../src/lib/platformGames";
 
 describe("Live spatial interface panels", () => {
+  it("serializes the reported mobile projection with unit W without moving its corners",()=>{
+    // Captured at the fourth card on5fcfa05: correct bounds but WebKit mispainted W≈23.36.
+    const raw=new Matrix4().fromArray([20.457893,-.200432,.00144,-.001438,.023677,20.685309,-.000265,.000264,-3.257048,-2.626752,.018878,-.01884,228.528458,417.24223,-23.206809,23.360242]);
+    const original=raw.elements.slice(),values=panelStyle(raw).slice(9,-1).split(",").map(Number),css=new Matrix4().fromArray(values);
+    expect(values.every(Number.isFinite)).toBe(true);expect(css.elements[15]).toBe(1);
+    for(const x of [0,264])for(const y of [0,259.75]){
+      const a=new Vector3(x,y,0).applyMatrix4(raw),b=new Vector3(x,y,0).applyMatrix4(css);
+      expect(b.x).toBeCloseTo(a.x,6);expect(b.y).toBeCloseTo(a.y,6);
+    }
+    expect(raw.elements).toEqual(original);
+  });
   it("projects native HTML corners onto the same pixels as a rotated WebGL surface", () => {
     const camera = new PerspectiveCamera(40, 1440 / 900, 0.1, 100);
     camera.position.set(2, 1, 12); camera.lookAt(0, 0.5, 0); camera.updateMatrixWorld();

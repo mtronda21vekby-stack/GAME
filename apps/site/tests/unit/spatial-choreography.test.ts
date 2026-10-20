@@ -3,10 +3,24 @@ import { PerspectiveCamera, Vector3 } from "three";
 import { CameraRig } from "../../src/experience/camera/CameraRig";
 import { INITIAL_SCROLL_SNAPSHOT } from "../../src/experience/types";
 import { spatialAxisJourney } from "../../src/components/spatial/SpatialAxis";
-import { spatialArrivalEnd, spatialChoreography } from "../../src/components/spatial/SpatialChoreography";
+import { spatialArrivalEnd, spatialChoreography, spatialInterludeVisible } from "../../src/components/spatial/SpatialChoreography";
 import { SpatialCloth } from "../../src/components/spatial/SpatialCloth";
 
 describe("Scroll owned entrance and exit",()=>{
+  it.each([390,650,710,844,900])("keeps LAB out of the last visible game at viewport height %i, in both directions",height=>{
+    // Reproduction: the last card occupies y200..460; the next chapter starts at678.
+    // The old bottom-edge trigger showed a full-height sheet before the card left.
+    const steps=Array.from({length:141},(_,i)=>i*10);
+    const forward=steps.map(scroll=>spatialInterludeVisible({top:678-scroll,bottom:1317-scroll}));
+    for(const scroll of [...steps,...steps.slice().reverse()]){
+      const visible=spatialInterludeVisible({top:678-scroll,bottom:1317-scroll});
+      if(460-scroll>104&&200-scroll<height)expect(visible).toBe(false);
+      expect(visible).toBe(forward[scroll/10]);
+    }
+    expect(spatialInterludeVisible({top:0,bottom:639})).toBe(true);
+    expect(spatialInterludeVisible({top:-639,bottom:0})).toBe(false);
+    expect(spatialInterludeVisible(undefined)).toBe(false);
+  });
   it("keeps the portrait head centred in its slot at both ends of the dolly",()=>{
     const width=390,height=844,slot={x:195,y:352,width:350,height:405};
     const stops={intro:.16,projects:[.26,.4,.54,.68],exit:.78,lab:.9};

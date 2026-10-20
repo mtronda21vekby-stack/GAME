@@ -14,7 +14,7 @@ import { SpatialBloom } from "./SpatialBloom";
 import { finishHeroMaterials } from "./SpatialHeroMaterial";
 import { createHeroStudio } from "./SpatialHeroStudio";
 import { SpatialGalleryStage } from "./SpatialGalleryStage";
-import { spatialChoreography } from "./SpatialChoreography";
+import { spatialChoreography, spatialInterludeVisible } from "./SpatialChoreography";
 import { spatialAxisJourney, spatialAxisTurn, type SpatialJourneyStops } from "./SpatialAxis";
 import { SpatialCloth } from "./SpatialCloth";
 import { panelFrontWidth, panelScreenPosition } from "./panelProjection";
@@ -340,7 +340,7 @@ export class SpatialSceneRuntime {
     this.accentLight.position.set(2,this.camera.position.y+2,4);
     const sheet=this.clothSlot?.getBoundingClientRect();
     const transition=this.options.stage.querySelector(".spatialTransition")?.getBoundingClientRect();
-    const interlude=!!transition&&transition.top<this.viewportHeight&&transition.bottom>0;
+    const interlude=spatialInterludeVisible(transition);
     this.cloth.visible=!!sheet&&((sheet.bottom>0&&sheet.top<this.viewportHeight)||interlude)&&!this.detailOpen;
     this.cloth.setEntrance(this.reduced?1:Math.max(interlude?.3:0,lab));
     if(sheet&&this.cloth.visible){

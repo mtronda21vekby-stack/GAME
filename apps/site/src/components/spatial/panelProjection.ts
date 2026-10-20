@@ -13,7 +13,10 @@ export function panelCSSMatrix(camera: PerspectiveCamera, world: Matrix4, width:
 }
 
 export function panelStyle(matrix: Matrix4) {
-  return `matrix3d(${matrix.elements.map(value => Math.abs(value) < 1e-10 ? 0 : value).join(",")})`;
+  // Equivalent homogeneous coordinates with W=1 also paint correctly in WebKit.
+  const w = matrix.elements[15];
+  const factor = Number.isFinite(w) && Math.abs(w) > 1e-8 ? 1 / w : 1;
+  return `matrix3d(${matrix.elements.map(value => Math.abs(value * factor) < 1e-10 ? 0 : value * factor).join(",")})`;
 }
 
 export function panelFrontWidth(camera: PerspectiveCamera, width: number, worldWidth: number, position: Vector3) {
