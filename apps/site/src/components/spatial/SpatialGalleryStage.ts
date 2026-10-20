@@ -56,6 +56,9 @@ export class SpatialGalleryStage {
       const id=article.dataset.gameId??"";let backing=this.backings.get(id);
       if(!backing){backing=new Mesh(this.plane,new MeshBasicMaterial({map:texture.texture??this.placeholder,transparent:true,opacity:1,depthWrite:false,depthTest:true,side:DoubleSide,toneMapped:false,fog:false}));backing.matrixAutoUpdate=false;this.backings.set(id,backing);}
       backing.material.map=texture.texture??this.placeholder;backing.visible=false;this.backingGroup.add(backing);
+      // On narrow screens the media shares the foreground with its DOM frame and actions.
+      backing.material.depthTest=!compact;
+      backing.renderOrder=compact?100+plane.order:0;
       return [{article,element,left:box.left+window.scrollX,top:box.top+window.scrollY,width:element.offsetWidth,height:element.offsetHeight,mediaTop:media?.offsetTop??40,mediaHeight:media?.offsetHeight??160,z:single?0:plane.z,yaw:single?plane.yaw*.4:plane.yaw,pitch:plane.pitch,style:"",backing,texture}];
     });
     this.invalidate();

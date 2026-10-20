@@ -1,6 +1,6 @@
 import React from "react";
-import { describe, expect, it } from "vitest";
-import { Matrix4, PerspectiveCamera, Vector3 } from "three";
+import { describe, expect, it, vi } from "vitest";
+import { Group, Matrix4, Mesh, MeshBasicMaterial, PerspectiveCamera, Vector3 } from "three";
 import { renderToStaticMarkup } from "react-dom/server";
 import { CameraRig } from "../../src/experience/camera/CameraRig";
 import { INITIAL_SCROLL_SNAPSHOT } from "../../src/experience/types";
@@ -10,8 +10,38 @@ import { panelCSSMatrix, panelFrontWidth, panelScreenPosition, panelScrollOffset
 import { ORBIT_CARD_WIDTH } from "../../src/components/spatial/spatialState";
 import { spatialAxisJourney } from "../../src/components/spatial/SpatialAxis";
 import { platformGames } from "../../src/lib/platformGames";
+import { SpatialGalleryStage } from "../../src/components/spatial/SpatialGalleryStage";
 
 describe("Live spatial interface panels", () => {
+  it("keeps mobile covers in front and restores world occlusion on cached desktop meshes",()=>{
+    vi.stubGlobal("window",{scrollX:0,scrollY:0});
+    try {
+    const style=()=>({setProperty(){},removeProperty(){}});
+    const articles=["evofish","quiet-valley"].map(gameId=>{
+      const surface={offsetWidth:264,offsetHeight:260,style:style()};
+      return {dataset:{gameId},style:style(),getBoundingClientRect:()=>({left:22,top:200}),
+        querySelector:(selector:string)=>selector===".spatialPanelSurface"?surface:selector===".spatialPanelMedia"?{offsetTop:32,offsetHeight:165}:null};
+    });
+    const stage={querySelectorAll:()=>articles} as unknown as HTMLElement,scene=new Group();
+    const gallery=new SpatialGalleryStage(stage,scene);
+    gallery.layout(393,710,true,false);
+    const group=scene.children[0] as Group,meshes=group.children.slice() as Mesh[],materials=meshes.map(m=>m.material as MeshBasicMaterial);
+    expect(meshes).toHaveLength(2);
+    expect(materials.every(m=>!m.depthTest&&!m.depthWrite)).toBe(true);
+    expect(meshes.every(m=>m.renderOrder>100)).toBe(true);
+    expect(meshes[0].renderOrder).toBeLessThan(meshes[1].renderOrder);
+    gallery.layout(1440,900,false,false);
+    expect(group.children).toEqual(meshes);
+    expect(meshes.map(m=>m.material)).toEqual(materials);
+    expect(materials.every(m=>m.depthTest&&!m.depthWrite)).toBe(true);
+    expect(meshes.every(m=>m.renderOrder===0)).toBe(true);
+    gallery.layout(393,710,true,false);
+    expect(group.children).toEqual(meshes);
+    expect(materials.every(m=>!m.depthTest)).toBe(true);
+    expect(meshes.every(m=>m.renderOrder>100)).toBe(true);
+    gallery.dispose();
+    } finally { vi.unstubAllGlobals(); }
+  });
   it("serializes the reported mobile projection with unit W without moving its corners",()=>{
     // Captured at the fourth card on5fcfa05: correct bounds but WebKit mispainted W≈23.36.
     const raw=new Matrix4().fromArray([20.457893,-.200432,.00144,-.001438,.023677,20.685309,-.000265,.000264,-3.257048,-2.626752,.018878,-.01884,228.528458,417.24223,-23.206809,23.360242]);
