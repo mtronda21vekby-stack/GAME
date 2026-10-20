@@ -81,7 +81,7 @@ export class SpatialGalleryStage {
       const focus=1-Math.min(1,Math.abs(y-this.height*.52)/(this.height*.75));
       const z=surface.z<0?surface.z+.8*focus:surface.z,factor=camera.position.z/(camera.position.z-z);
       const center=this.width*.5,nativeCenter=surface.left+surface.width*.5,side=nativeCenter<center?-1:1;
-      const half=Math.min(center-8,surface.width*factor*.5+8);
+      const half=Math.min(center-8,surface.width*factor*.5+18);
       const projectedX=Math.max(half,Math.min(this.width-half,center+(nativeCenter-center)*factor+side*phase*(this.width<=760?14:46)));
       const axisX=center+(projectedX-center)/factor;
       const position=panelScreenPosition(camera,axisX,y,this.width,this.height,0);

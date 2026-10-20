@@ -17,8 +17,15 @@
       "baseline_29f34f4": "GLB грузится без видимого прогресса",
       "implementation_target": "Неблокирующий индикатор фактических байтов и фаза подготовки GPU; без искусственной задержки и ENTER",
       "acceptance": "Первая CTA доступна до загрузки; offline/failure оставляет постер и каталог",
-      "status": "adapted_nonblocking_unverified",
-      "verification": "pending"
+      "status": "adapted_verified",
+      "verification": "Задержанный GLB: первая CTA видна и открывает каталог до модели; завершение убирает badge. 404 оставляет постер и доступный кейс. Процент привязан к фактическим byte chunks в runtime.",
+      "proof_files": [
+        "checks/desktop/results.json",
+        "checks/390/results.json",
+        "checks/320/results.json",
+        "checks/landscape/results.json",
+        "checks/safety-results.json"
+      ]
     },
     {
       "id": "route",
@@ -28,8 +35,15 @@
       "baseline_29f34f4": "Intro/gallery/LAB есть, about расположен после LAB, отдельной вставки нет",
       "implementation_target": "Связать главы единым обратимым маршрутом, about перед играми, отдельный переход к материалу",
       "acceptance": "Forward/reverse по всем главам; никакого недоказанного бесконечного loop",
-      "status": "implemented_unverified",
-      "verification": "pending"
+      "status": "verified",
+      "verification": "Chrome: forward/reverse и быстрые смены направления на 1440×900, 390×844, 320×844, 844×390; все главы пройдены. Непрерывные записи desktop/mobile сохранены отдельно.",
+      "proof_files": [
+        "checks/desktop/results.json",
+        "checks/390/results.json",
+        "checks/320/results.json",
+        "checks/landscape/results.json",
+        "checks/safety-results.json"
+      ]
     },
     {
       "id": "camera",
@@ -39,8 +53,15 @@
       "baseline_29f34f4": "Подлёт и спуск есть; панельные слои мало связаны с раскрытием",
       "implementation_target": "Единый scroll clock, фокус камеры на выбранном кейсе и точный обратный путь",
       "acceptance": "Нет бросков/наклонов камеры; пауза, rapid reverse, resize",
-      "status": "implemented_unverified",
-      "verification": "pending"
+      "status": "verified",
+      "verification": "19 прогретых программ, новых во время forward/reverse нет. Upright camera, собственный focus-кейс и возврат; пять resize-переходов без потери контекста. Числа кадров относятся к Mac M5 Max, не физическому телефону.",
+      "proof_files": [
+        "checks/desktop/results.json",
+        "checks/390/results.json",
+        "checks/320/results.json",
+        "checks/landscape/results.json",
+        "checks/safety-results.json"
+      ]
     },
     {
       "id": "panels",
@@ -50,8 +71,15 @@
       "baseline_29f34f4": "Live HTML уже проектируется в камеру; мало локального взаимодействия",
       "implementation_target": "Перспективная лента с соседями, ограниченный параллакс только панелей и свет на поверхности",
       "acceptance": "Выбранная видна, controls ≥48px, нет горизонтального overflow",
-      "status": "implemented_unverified",
-      "verification": "pending"
+      "status": "verified",
+      "verification": "Четыре реальные обложки имеют 3D photo backing. Выбранные поверхности помещаются в viewport, заголовки не переполняются, действия ≥48px на четырёх размерах. Landscape safe margin увеличен после обнаруженного выхода 1.22px.",
+      "proof_files": [
+        "checks/desktop/results.json",
+        "checks/390/results.json",
+        "checks/320/results.json",
+        "checks/landscape/results.json",
+        "checks/safety-results.json"
+      ]
     },
     {
       "id": "nav",
@@ -61,8 +89,15 @@
       "baseline_29f34f4": "Основная навигация есть; внутри сцены нет постоянного индекса",
       "implementation_target": "Сохранить Игры/Магазин/О проекте/Профиль; добавить компактный индекс глав/игр с поиском",
       "acceptance": "Сцены/игры/закрытие доступны на 320px и с клавиатуры",
-      "status": "implemented_unverified",
-      "verification": "pending"
+      "status": "verified",
+      "verification": "Сохранены Игры/Магазин/О проекте/Профиль и существующая помощь. Индекс работает из корня и кейса. Корректность backend/account/payment операций в этот локальный проход не проверялась.",
+      "proof_files": [
+        "checks/desktop/results.json",
+        "checks/390/results.json",
+        "checks/320/results.json",
+        "checks/landscape/results.json",
+        "checks/safety-results.json"
+      ]
     },
     {
       "id": "categories",
@@ -72,8 +107,15 @@
       "baseline_29f34f4": "Фильтры реальных четырёх игр уже работают, исчезают при прокрутке",
       "implementation_target": "Доступный постоянный индекс, реальные категории и рабочий сброс",
       "acceptance": "Все/каждая категория/пустой поиск/сброс; не приписывать оригиналу неподтверждённый алгоритм",
-      "status": "implemented_unverified",
-      "verification": "pending"
+      "status": "verified",
+      "verification": "Фильтр Симуляторы даёт одну карточку; Все возвращает четыре. Поиск долина даёт один результат, zzzz — ноль; сброс возвращает четыре; выбор результата фокусирует соответствующий мир.",
+      "proof_files": [
+        "checks/desktop/results.json",
+        "checks/390/results.json",
+        "checks/320/results.json",
+        "checks/landscape/results.json",
+        "checks/safety-results.json"
+      ]
     },
     {
       "id": "open",
@@ -83,8 +125,15 @@
       "baseline_29f34f4": "Общий полёт картинки есть, сцена замораживается без фокуса, history отсутствует",
       "implementation_target": "Координировать фокус 3D-сцены, общее полотно карточки и компактный кейс, уникальные данные",
       "acceptance": "Прерванное раскрытие/смена кейса/resize/нет второго тяжёлого WebGL",
-      "status": "implemented_unverified",
-      "verification": "pending"
+      "status": "verified",
+      "verification": "Кейсы Quiet Valley, Ballcrown, EvoFish и CROWN//FRONT используют свои данные. Next/Previous меняют единственную запись history. Прерванное закрытие→Enter повторно раскрывает нормальную media-геометрию. Resize сохраняет доступный CLOSE.",
+      "proof_files": [
+        "checks/desktop/results.json",
+        "checks/390/results.json",
+        "checks/320/results.json",
+        "checks/landscape/results.json",
+        "checks/safety-results.json"
+      ]
     },
     {
       "id": "close",
@@ -94,8 +143,15 @@
       "baseline_29f34f4": "Один кейс закрывается корректно, смена игры и browser history не покрыты",
       "implementation_target": "URL-состояние кейса, Back/Forward, восстановление выбранной карточки, фокуса и позиции",
       "acceptance": "Три цикла, rapid close/reopen, Escape, Back/Forward, нет утечки GPU/слушателей",
-      "status": "implemented_unverified",
-      "verification": "pending"
+      "status": "verified",
+      "verification": "По три цикла на четырёх размерах: фокус возвращается исходной кнопке, origin.scrollY совпадает (0px), history ограничена одной записью, GPU geometries/textures не растут. Back закрывает, Forward открывает; смена связанного кейса сохраняет исходный контекст. Из игры→Back восстанавливает кейс и галерею.",
+      "proof_files": [
+        "checks/desktop/results.json",
+        "checks/390/results.json",
+        "checks/320/results.json",
+        "checks/landscape/results.json",
+        "checks/safety-results.json"
+      ]
     },
     {
       "id": "case_content",
@@ -105,8 +161,15 @@
       "baseline_29f34f4": "Описание/controls/играть уже есть; метаданные не структурированы",
       "implementation_target": "Использовать реальные genre/status/controls; играть и существующая помощь, никакой выдуманной истории проекта",
       "acceptance": "Контент соответствует выбранной игре, все ссылки действительные",
-      "status": "implemented_unverified",
-      "verification": "pending"
+      "status": "verified",
+      "verification": "Проверены реальные названия/genre/status и ссылки запуска четырёх сохранённых игр. Второй CTA ведёт в существующую /support. Нет выдуманных клиентских проектов или товаров.",
+      "proof_files": [
+        "checks/desktop/results.json",
+        "checks/390/results.json",
+        "checks/320/results.json",
+        "checks/landscape/results.json",
+        "checks/safety-results.json"
+      ]
     },
     {
       "id": "live_media",
@@ -116,8 +179,15 @@
       "baseline_29f34f4": "Только статичная обложка",
       "implementation_target": "Собственные записи сохранённых игровых интерфейсов; lazy video, pause, ошибка/autoplay/reduced-motion fallback",
       "acceptance": "Нет чужих ассетов, реальные video time advance, остановка при закрытии/уходе, статичный кадр при ошибке",
-      "status": "implemented_unverified",
-      "verification": "pending"
+      "status": "verified",
+      "verification": "Chrome: currentTime реально растёт; общая пауза останавливает media. При 404 остаётся статичный кадр; reduced-motion не загружает/не запускает видео до явного нажатия. Собственные 6-секундные интерфейсные записи; Ballcrown обозначен как экран запуска, не gameplay.",
+      "proof_files": [
+        "checks/desktop/results.json",
+        "checks/390/results.json",
+        "checks/320/results.json",
+        "checks/landscape/results.json",
+        "checks/safety-results.json"
+      ]
     },
     {
       "id": "lab",
@@ -127,8 +197,15 @@
       "baseline_29f34f4": "Металл деформируется, но нет связанной маркировки и мобильного drag",
       "implementation_target": "Собственный UV-знак BLACKCROWN на той же GPU-поверхности, горизонтальный drag/возврат и tap",
       "acceptance": "Mouse/touch/keyboard, vertical scroll не захвачен, нормали/маркировка следуют форме",
-      "status": "implemented_unverified",
-      "verification": "pending"
+      "status": "verified",
+      "verification": "Реальный CDP touch drag в Chrome mobile и mouse drag desktop двигают GPU-поле; release возвращается в ноль. Вертикальный touch сохраняет native scroll. UV-знак, контур и нормали используют одну поверхность. Reduced-motion: два кадра через 900мс идентичны, impulses=0.",
+      "proof_files": [
+        "checks/desktop/results.json",
+        "checks/390/results.json",
+        "checks/320/results.json",
+        "checks/landscape/results.json",
+        "checks/safety-results.json"
+      ]
     },
     {
       "id": "particles",
@@ -138,8 +215,15 @@
       "baseline_29f34f4": "Редкая пыль; фазы уже частично связаны",
       "implementation_target": "Глубинное зерно и мелкие грани из того же ограниченного поля; сцены меняют распределение",
       "acceptance": "Нет новых тотемов/боковых костей/хаотического вращения, mobile budget",
-      "status": "implemented_unverified",
-      "verification": "pending"
+      "status": "verified",
+      "verification": "Ограниченное собственное поле: 1800/480 points и 360/96 instanced facets desktop/mobile. Ни новых props, ни изменений скульптуры. Полный scroll не добавляет shader programs; сохранены исходные мобильные mesh budgets.",
+      "proof_files": [
+        "checks/desktop/results.json",
+        "checks/390/results.json",
+        "checks/320/results.json",
+        "checks/landscape/results.json",
+        "checks/safety-results.json"
+      ]
     },
     {
       "id": "case_lens",
@@ -149,8 +233,15 @@
       "baseline_29f34f4": "Эффекта нет",
       "implementation_target": "Оптическая маска только слоя частиц/зерна, core text и media остаются читаемыми",
       "acceptance": "Восстановление, reduced motion; touch-причину оригинала не утверждать",
-      "status": "own_optical_layer_unverified",
-      "verification": "pending"
+      "status": "adapted_verified",
+      "verification": "Собственная округлая маска зерна/частиц в пределах существующего поля; текст и media остаются читаемыми. Визуально проверены кейсы и пауза/reduced-motion. Причина и физика эффекта оригинала не утверждаются.",
+      "proof_files": [
+        "checks/desktop/results.json",
+        "checks/390/results.json",
+        "checks/320/results.json",
+        "checks/landscape/results.json",
+        "checks/safety-results.json"
+      ]
     },
     {
       "id": "decode",
@@ -160,8 +251,15 @@
       "baseline_29f34f4": "Текст просто появляется",
       "implementation_target": "Короткий ограниченный decode, исходный доступный текст и немедленные действия",
       "acceptance": "Длительность ≤300мс; стабилен итог, reduced-motion без scramble",
-      "status": "implemented_unverified",
-      "verification": "pending"
+      "status": "verified",
+      "verification": "Свой 240мс decode с максимум восемью визуальными этапами; accessible aria-label неизменен. Стабильные заголовки проверены после открытия; reduced-motion обходит scramble. Это не воспроизведение закрытого алгоритма оригинала.",
+      "proof_files": [
+        "checks/desktop/results.json",
+        "checks/390/results.json",
+        "checks/320/results.json",
+        "checks/landscape/results.json",
+        "checks/safety-results.json"
+      ]
     },
     {
       "id": "ama",
@@ -171,8 +269,15 @@
       "baseline_29f34f4": "Аналога нет",
       "implementation_target": "Честный локальный поиск по каталогу и описаниям, без фальшивого AI/сервера",
       "acceptance": "Рабочий поиск/сброс, никакой внешней отправки или ключей",
-      "status": "adapted_local_search_unverified",
-      "verification": "pending"
+      "status": "adapted_verified",
+      "verification": "Проверен честный локальный поиск по четырём играм и описаниям, фильтры и сброс. Сетевой отправки, имитации AI и ключей нет. Backend ASK ME ANYTHING оригинала не показан, аналог AI не заявляется.",
+      "proof_files": [
+        "checks/desktop/results.json",
+        "checks/390/results.json",
+        "checks/320/results.json",
+        "checks/landscape/results.json",
+        "checks/safety-results.json"
+      ]
     },
     {
       "id": "mobile",
@@ -182,8 +287,15 @@
       "baseline_29f34f4": "390/320 проверялись; новые состояния ещё нет",
       "implementation_target": "Safe area, крупные кнопки и native scroll; chrome браузера не копировать",
       "acceptance": "320/390/landscape, CLOSE и focus, вертикальные жесты и игра→Back",
-      "status": "implemented_unverified",
-      "verification": "pending"
+      "status": "verified",
+      "verification": "Chrome: 390/320/844×390, normal scroll, ≥48px действия, safe bounds, горизонтальный drag/вертикальный pan, повторные кейсы и четыре game→Back. Mac WebKit отдельно: pass. Физический iPhone/Safari, нестабильная мобильная сеть и реальная thermal-нагрузка не проверены.",
+      "proof_files": [
+        "checks/desktop/results.json",
+        "checks/390/results.json",
+        "checks/320/results.json",
+        "checks/landscape/results.json",
+        "checks/safety-results.json"
+      ]
     },
     {
       "id": "unknown",
@@ -194,8 +306,100 @@
       "implementation_target": "Наши свойства проверять отдельно; не копировать закрытый код/бренды/клиентские материалы",
       "acceptance": "Явно различать подтверждено/адаптировано/не проверено/осталось",
       "status": "unknown_not_claimed",
-      "verification": "pending"
+      "verification": "Видео не доказывает содержимое Contact, поведение внешних ссылок/аудио/AMA backend, desktop hover/keyboard, точную физику и причину touch-деформаций. Соответствие этим непоказанным свойствам не заявляется.",
+      "proof_files": []
     }
   ],
-  "implementation_checkpoint_at": "2026-10-20T03:22:27.604096+00:00"
+  "implementation_checkpoint_at": "2026-10-20T03:22:27.604096+00:00",
+  "verification": {
+    "at": "2026-10-20T03:59:56.470605+00:00",
+    "source_checkpoint": "2360d2bada22cecd8810a59f06d9e318bb2aa51a + safe projection margin 8→18px",
+    "method": "Actual installed browsers on user Mac, anonymous isolated contexts, GPU Metal; remote hosts and HTTP mutations blocked. Observation-only runtime hook used for measurement; final videos have no runtime hook. Mobile viewport emulation, not a physical iPhone.",
+    "chrome_viewports": [
+      {
+        "size": {
+          "name": "desktop",
+          "width": 1440,
+          "height": 900,
+          "mobile": false
+        },
+        "status": "pass",
+        "frames": {
+          "count": 1171,
+          "p50": 8.300000000000182,
+          "p95": 9.399999999999636,
+          "p99": 10.199999999999818,
+          "max": 10.400000000000546,
+          "over50": 0
+        },
+        "programsBefore": 19,
+        "programsDuringMotion": 19
+      },
+      {
+        "size": {
+          "name": "390",
+          "width": 390,
+          "height": 844,
+          "mobile": true
+        },
+        "status": "pass",
+        "frames": {
+          "count": 1171,
+          "p50": 8.300000000000182,
+          "p95": 9.300000000001091,
+          "p99": 10.200000000000045,
+          "max": 10.399999999999636,
+          "over50": 0
+        },
+        "programsBefore": 10,
+        "programsDuringMotion": 10
+      },
+      {
+        "size": {
+          "name": "320",
+          "width": 320,
+          "height": 844,
+          "mobile": true
+        },
+        "status": "pass",
+        "frames": {
+          "count": 1171,
+          "p50": 8.300000000000182,
+          "p95": 9.199999999999818,
+          "p99": 10.199999999999818,
+          "max": 10.399999999999636,
+          "over50": 0
+        },
+        "programsBefore": 10,
+        "programsDuringMotion": 10
+      },
+      {
+        "size": {
+          "name": "landscape",
+          "width": 844,
+          "height": 390,
+          "mobile": true
+        },
+        "status": "pass",
+        "frames": {
+          "count": 1170,
+          "p50": 8.300000000000182,
+          "p95": 9.599999999999909,
+          "p99": 10.199999999999818,
+          "max": 10.400000000000091,
+          "over50": 0
+        },
+        "programsBefore": 10,
+        "programsDuringMotion": 10
+      }
+    ],
+    "webkit_status": "pass",
+    "safety_status": "pass",
+    "limits": [
+      "No physical iPhone or actual Safari application QA",
+      "No authenticated account, payments, live backend or external contact sends",
+      "Public blackcrown.work was not revisited after the previously observed Cloudflare challenge; this candidate is local only",
+      "Original implementation, exact physics and unshown controls remain unknown"
+    ]
+  }
 }
