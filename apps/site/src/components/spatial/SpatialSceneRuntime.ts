@@ -394,7 +394,10 @@ export class SpatialSceneRuntime {
         const copy=this.options.stage.querySelector(".spatialAboutText")?.getBoundingClientRect();
         if(copy)centerY=THREE.MathUtils.lerp(centerY,Math.max(centerY,copy.bottom+28+height*.55),THREE.MathUtils.smoothstep(closingTravel,.15,.35));
       }
-      const position=panelScreenPosition(this.camera,centerX,centerY,this.viewportWidth,this.viewportHeight,4.4);
+      // At the journey's end the sticky canvas leaves with its section. Native
+      // slots remain in viewport coordinates, so map them into the canvas first.
+      const canvasBox=this.options.host.getBoundingClientRect();
+      const position=panelScreenPosition(this.camera,centerX-canvasBox.left,centerY-canvasBox.top,this.viewportWidth,this.viewportHeight,4.4);
       const unit=panelFrontWidth(this.camera,this.viewportWidth,1,position),worldWidth=width/unit;
       this.cloth.position.copy(position);this.cloth.position.y+=height/unit*.015;
       // Keep the authored loose hem inside the interactive slot at both sizes.
