@@ -387,7 +387,7 @@ export class SpatialSceneRuntime {
       // closing frame. It never remains as an accidentally cropped side strip.
       const returnArc=nativeOutro?(.4*THREE.MathUtils.smoothstep(farewell,0,.5)+.8*Math.sin(Math.PI*closingTravel))*(1-closingTravel):0;
       const centerX=THREE.MathUtils.lerp(slotX,outroX,farewell)+returnArc*this.viewportWidth;
-      const width=THREE.MathUtils.lerp(sheet.width,nativeOutro?.width??this.viewportWidth*.39,closingTravel);
+      const width=THREE.MathUtils.lerp(sheet.width,nativeOutro?.width??this.viewportWidth*(this.reduced?.34:.39),closingTravel);
       const height=THREE.MathUtils.lerp(sheet.height,nativeOutro?.height??this.viewportHeight*.86,closingTravel);
       let centerY=THREE.MathUtils.lerp(slotY,outroY,closingTravel);
       if(nativeOutro){
