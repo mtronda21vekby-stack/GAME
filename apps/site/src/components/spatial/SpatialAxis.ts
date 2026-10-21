@@ -25,8 +25,9 @@ export function spatialAxisJourney({compact,width,height,slot,stops}:AxisViewpor
   const headCenter=axisHeight*.35;
   const headX=-(slot.x/Math.max(1,width)*2-1)*halfHeight*width/Math.max(1,height);
   const headY=headCenter-(1-slot.y/Math.max(1,height)*2)*halfHeight;
-  const entranceScale=(26.8+depth-18.8)/depth;
-  const entrancePosition:[number,number,number]=[headX*entranceScale,headCenter+(headY-headCenter)*entranceScale,26.8];
+  const entranceDepth=compact?22.2:26.8;
+  const entranceScale=(entranceDepth+depth-18.8)/depth;
+  const entrancePosition:[number,number,number]=[headX*entranceScale,headCenter+(headY-headCenter)*entranceScale,entranceDepth];
   const frames:CameraKeyframe[]=[
     {progress:0,position:entrancePosition,target:[entrancePosition[0],entrancePosition[1],0],fov},
     {progress:.08,position:[headX,headY,18.8],target:[headX,headY,0],fov},

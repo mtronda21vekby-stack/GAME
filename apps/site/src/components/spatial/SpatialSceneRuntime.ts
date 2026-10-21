@@ -14,7 +14,7 @@ import { SpatialBloom } from "./SpatialBloom";
 import { finishHeroMaterials } from "./SpatialHeroMaterial";
 import { createHeroStudio } from "./SpatialHeroStudio";
 import { SpatialGalleryStage } from "./SpatialGalleryStage";
-import { spatialChoreography, spatialInterludeVisible, spatialWorldBlend } from "./SpatialChoreography";
+import { spatialArrivalEnd, spatialChoreography, spatialInterludeVisible, spatialWorldBlend } from "./SpatialChoreography";
 import { spatialAxisJourney, spatialAxisTurn, type SpatialJourneyStops } from "./SpatialAxis";
 import { SpatialCloth } from "./SpatialCloth";
 import { panelFrontWidth, panelScreenPosition } from "./panelProjection";
@@ -67,6 +67,7 @@ export class SpatialSceneRuntime {
   private journeyStops?:SpatialJourneyStops;
   private viewportWidth=1; private viewportHeight=1;
   private brandReady=false;
+  private brandArrival=0;
   private grab?:{id:number;x:number;y:number;u:number;v:number;active:boolean;element:HTMLElement};
   private grabFinished=0;
   private focusSide=1;
@@ -132,6 +133,7 @@ export class SpatialSceneRuntime {
       catch{warmed=false;}
       if(this.disposed||this.brandAbort!==controller)return;
       this.options.stage.dataset.shaderWarmup=warmed?"ready":"fallback";
+      if(!this.brandReady)this.brandArrival=this.elapsed;
       this.brandReady=true;this.options.stage.dataset.brandReady="1";this.resize();this.requestFrame();
     } catch { /* A missing hero model must not disable the games or their native fallback. */ }
     finally { if(!this.disposed&&this.brandAbort===controller)this.options.onProgress(1,1,"complete"); }
@@ -312,6 +314,11 @@ export class SpatialSceneRuntime {
     this.accent.lerp(this.desiredAccent,blend);this.accentLight.color.copy(this.accent);
     const snapshot={...INITIAL_SCROLL_SNAPSHOT,progress:this.progress,viewportWidth:this.viewportWidth,viewportHeight:this.viewportHeight,reducedMotion:this.reduced};
     this.cameraRig!.update(snapshot,{x:0,y:0},0);
+    // One restrained arrival, then scroll owns the pose. Elapsed freezes on pause.
+    if(this.compact&&this.brandReady&&!this.reduced){
+      const opening=1-THREE.MathUtils.smoothstep(this.progress,0,spatialArrivalEnd(this.journeyStops));
+      this.camera.position.z+=2.2*(1-THREE.MathUtils.smoothstep(this.elapsed-this.brandArrival,0,2.2))*opening;
+    }
     if(this.detail>0&&!this.reduced){this.camera.position.x+=this.focusSide*(this.compact?.55:1.15)*this.detail;this.camera.position.z-=(this.compact?1.1:2)*this.detail;this.camera.lookAt(this.camera.position.x,this.camera.position.y,0);}
     this.camera.updateMatrixWorld();
     this.updateObjects();
@@ -333,9 +340,10 @@ export class SpatialSceneRuntime {
     this.brand.rotation.set(0,spatialAxisTurn(p,this.compact,this.reduced),0);
     const choreography=spatialChoreography(p,this.journeyStops),lab=choreography.departure;
     this.bloom?.setLabPresence(lab);
-    this.keyLight.intensity=3.05-lab*.85;
-    this.faceLight.intensity=(this.compact?1.05:.82)*(1-lab*.35);
-    this.edgeLight.intensity=(this.compact?2.65:2.4)*(1-lab*.25);
+    const opening=this.compact?1-THREE.MathUtils.smoothstep(p,0,spatialArrivalEnd(this.journeyStops)):0;
+    this.keyLight.intensity=3.05+opening*1.2-lab*.85;
+    this.faceLight.intensity=((this.compact?1.05:.82)+opening*.55)*(1-lab*.35);
+    this.edgeLight.intensity=((this.compact?2.65:2.4)+opening*.45)*(1-lab*.25);
     this.anatomyLight.intensity=(this.compact?55:40)*(.65+choreography.arrival*.35)*(1-lab)+(this.compact?95:75)*lab;
     this.anatomyLight.position.set(-this.axisHeight*.1,this.axisHeight*.285,5.5);
     this.anatomyLight.target.position.set(-.1,this.axisHeight*.275,.5);
@@ -357,18 +365,19 @@ export class SpatialSceneRuntime {
     const outro=this.options.stage.querySelector(".spatialAbout")?.getBoundingClientRect();
     const outroPresence=!!outro&&outro.top<this.viewportHeight&&outro.bottom>0;
     const farewell=outro?1-THREE.MathUtils.smoothstep(outro.top,this.viewportHeight*.12,this.viewportHeight*.95):0;
-    this.cloth.visible=!!sheet&&((sheet.bottom>0&&sheet.top<this.viewportHeight)||interlude||outroPresence)&&!this.detailOpen;
+    const catalogueCleared=!!transition&&transition.top<=0;
+    this.cloth.visible=!!sheet&&catalogueCleared&&((sheet.bottom>0&&sheet.top<this.viewportHeight)||interlude||outroPresence)&&!this.detailOpen;
     const interludeReveal=transition?THREE.MathUtils.smoothstep(-transition.top,0,this.viewportHeight*.24):0;
     this.cloth.material.opacity=(interlude?interludeReveal:1)*(1-farewell*.24);
     // A visible folded volume arrives only after the last game has cleared.
     // Its opening is continuous and reversible; it never spends a chapter edge-on.
     this.cloth.setEntrance(this.reduced?1:THREE.MathUtils.lerp(Math.max(interlude?.46+interludeReveal*.2:0,lab),.66,farewell));
     if(sheet&&this.cloth.visible){
-      const visibleBlend=THREE.MathUtils.smoothstep(lab,.38,.95);
-      const slotX=THREE.MathUtils.lerp(this.viewportWidth*(this.compact?.72:.7),sheet.left+sheet.width/2,visibleBlend),slotY=THREE.MathUtils.lerp(this.viewportHeight*(this.compact?.68:.52),sheet.top+sheet.height/2,visibleBlend);
+      // The sheet enters below the copy in its real native slot, never behind it.
+      const slotX=sheet.left+sheet.width/2,slotY=sheet.top+sheet.height/2;
       const centerX=THREE.MathUtils.lerp(slotX,this.viewportWidth*(this.compact?.96:.79),farewell),centerY=THREE.MathUtils.lerp(slotY,this.viewportHeight*(this.compact?.73:.54),farewell);
       const position=panelScreenPosition(this.camera,centerX,centerY,this.viewportWidth,this.viewportHeight,4.4);
-      const unit=panelFrontWidth(this.camera,this.viewportWidth,1,position),width=THREE.MathUtils.lerp(THREE.MathUtils.lerp(this.viewportWidth*(this.compact?1.14:.65),sheet.width,visibleBlend),this.viewportWidth*(this.compact?.62:.39),farewell),height=THREE.MathUtils.lerp(THREE.MathUtils.lerp(this.viewportHeight*(this.compact?.62:.8),sheet.height,visibleBlend),this.viewportHeight*(this.compact?.56:.86),farewell),worldWidth=width/unit;
+      const unit=panelFrontWidth(this.camera,this.viewportWidth,1,position),width=THREE.MathUtils.lerp(sheet.width,this.viewportWidth*(this.compact?.62:.39),farewell),height=THREE.MathUtils.lerp(sheet.height,this.viewportHeight*(this.compact?.56:.86),farewell),worldWidth=width/unit;
       this.cloth.position.copy(position);this.cloth.position.y+=height/unit*.015;
       // Keep the authored loose hem inside the interactive slot at both sizes.
       this.cloth.scale.set(worldWidth*.94,height/unit*.88,worldWidth*.66);this.cloth.update(this.reduced?0:t);

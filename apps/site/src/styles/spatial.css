@@ -46,7 +46,7 @@ html:has(.spatialPage) { scroll-behavior:smooth; scrollbar-gutter:stable; }
 .spatialIntro h2>span,.spatialTransition h2>span { color:#a0b6bd; }
 .spatialIntro>p:not(.spatialEyebrow) { color:#b0c0c6; max-width:430px; font-size:15px;line-height:1.8;text-shadow:0 2px 16px #000; }
 .spatialIntro .platTextLink { margin-top:18px; }
-.spatialTransition { min-height:90svh;position:relative;display:flex;align-items:center;padding:100px clamp(24px,5vw,84px); }
+.spatialTransition { min-height:56svh;position:relative;display:flex;align-items:center;padding:110px clamp(24px,5vw,84px) 70px; }
 .spatialTransition>div { max-width:400px;text-shadow:0 3px 24px #000; }
 .spatialTransition>div>p:last-child { color:#a7bdc4;font-size:14px; }
 .spatialSceneNav { position:fixed;z-index:31;left:24px;bottom:24px;display:flex;align-items:center;border:1px solid #b7cdd02b;border-radius:99px;background:#081118ed;padding:0 6px; }
@@ -126,7 +126,7 @@ html:has(.spatialPage) { scroll-behavior:smooth; scrollbar-gutter:stable; }
 .spatialPanelLaunch:hover { color:#b7dedb; }
 .spatialGalleryFoot { display:flex; align-items:center; justify-content:space-between; gap:20px; padding-right:100px; }
 .spatialGalleryFoot>span { color:#8b9da5; font-size:12px; }
-.spatialMaterial { position:relative; min-height:120svh; display:grid; grid-template-columns:.85fr 1.25fr; align-items:center; gap:60px; padding:150px clamp(24px,5vw,84px) 120px; }
+.spatialMaterial { position:relative; min-height:100svh; display:grid; grid-template-columns:.85fr 1.25fr; align-items:center; gap:60px; padding:90px clamp(24px,5vw,84px) 90px; }
 .spatialMaterialCopy { max-width:440px; }
 .spatialMaterial h2 { margin:0 0 26px; font-size:clamp(48px,5.4vw,82px); line-height:1.03; font-weight:480; letter-spacing:-.055em; }
 .spatialMaterial h2>span { color:#94aeb8; }
@@ -166,14 +166,14 @@ html:has(.spatialPage) { scroll-behavior:smooth; scrollbar-gutter:stable; }
  .spatialPage .platNav>a { min-height:48px; padding:0; font-size:12px; }
  .spatialPage .platNav>a:last-child { margin-left:0; }
  .spatialHero:before { content:""; position:absolute; inset:0; z-index:1; pointer-events:none; opacity:var(--spatial-hero-ui-opacity,1); background:linear-gradient(0deg,#090d11 8%,#090d11fa 24%,#090d1140 43%,transparent 60%); }
- .spatialHeroLabel { top:130px; left:20px; right:20px; text-align:center; font-size:8px; letter-spacing:.13em; }
- .spatialHeroCopy { left:20px; right:20px; bottom:164px; text-align:center; }
- .spatialHero h1 { font-size:44px; line-height:1.04; letter-spacing:-.055em; margin-bottom:15px; }
+ .spatialHeroLabel { top:130px; left:24px; right:24px; text-align:left; font-size:8px; letter-spacing:.13em; }
+ .spatialHeroCopy { left:24px; right:24px; bottom:164px; text-align:left; }
+ .spatialHero h1 { font-size:46px; line-height:1.04; letter-spacing:-.055em; margin-bottom:15px; }
  .spatialLead { font-size:12px; }
- .spatialBrandSlot { top:150px; width:calc(100% - 40px); height:48svh; max-height:470px; margin:0; }
- .spatialHeroDock { left:20px; right:20px; bottom:20px; }
+ .spatialBrandSlot { top:144px; left:54%; width:calc(100% - 40px); height:50svh; max-height:470px; margin:0; }
+ .spatialHeroDock { left:24px; right:24px; bottom:20px; }
  .spatialHeroCount { display:none; }
- .spatialHeroDock .spatialActions { flex-direction:column; justify-content:center; gap:4px; }
+ .spatialHeroDock .spatialActions { flex-direction:column; align-items:flex-start; justify-content:center; gap:4px; }
  .spatialHeroDock .platButton { width:min(264px,100%); min-height:54px; font-size:13px; }
  .spatialHeroDock .platTextLink { min-height:48px; font-size:11px; }
  .spatialHeroLaunchPrefix { display:inline; }
@@ -241,7 +241,7 @@ html[data-reduced-motion="1"] .spatialPage *,html[data-reduced-motion="1"] .spat
  .spatialIntro { min-height:75svh;padding:110px 24px;--intro-scrim:linear-gradient(90deg,#090d11d9,transparent 100%); }
  .spatialIntro h2,.spatialTransition h2 { font-size:42px;max-width:250px; }
  .spatialIntro>p:not(.spatialEyebrow) { max-width:250px;font-size:14px; }
- .spatialTransition { min-height:90svh;padding:100px 24px; }
+ .spatialTransition { min-height:0;padding:76px 24px 28px; }
  .spatialTransition h2 { font-size:40px;max-width:220px; }
  .spatialIndexFrame { padding:16px 18px;width:calc(100% - 32px);margin-top:calc(86px + env(safe-area-inset-top,0px)); }
  .spatialIndexResults img { width:68px;height:44px; }
@@ -256,26 +256,22 @@ html[data-reduced-motion="1"] .spatialPage *,html[data-reduced-motion="1"] .spat
 @media(min-width:761px) and (min-height:521px) {
  .spatialIntro { --intro-scrim:linear-gradient(90deg,#090d11eb, #090d1199 30%,transparent 62%); }
  .spatialIntro h2 { max-width:490px; }
- .spatialTransition>div { align-self:flex-start; margin-top:16svh; }
+ .spatialTransition>div { align-self:center; }
 }
 @media(max-width:760px) {
  .spatialIntro { min-height:85svh; --intro-scrim:linear-gradient(90deg,#090d11f5,#090d11d9 30%,#090d1177 52%,transparent 83%); }
  .spatialIntro h2 { max-width:200px; font-size:36px; }
  .spatialIntro>p:not(.spatialEyebrow) { max-width:190px; font-size:13px; line-height:1.85; }
  .spatialGalleryHead:before { inset:-24px -22px -16px; background:linear-gradient(90deg,#090d11f5,#090d11cf 50%,#090d1166 85%,transparent); }
- .spatialTransition { min-height:88svh; align-items:flex-start; padding-top:140px; }
+ .spatialTransition { min-height:0; align-items:flex-start; padding:76px 24px 28px; }
  .spatialTransition h2 { max-width:210px; font-size:38px; }
- .spatialMaterial { align-content:start; gap:18px; padding-top:115px; padding-bottom:84px; }
+ .spatialMaterial { align-content:start; gap:24px; padding-top:48px; padding-bottom:70px; }
  .spatialMaterialCopy { max-width:300px; }
  .spatialMaterial .spatialEyebrow { margin-bottom:14px; }
  .spatialMaterial h2 { font-size:38px; }
  .spatialMaterialCopy>p:not(.spatialEyebrow) { font-size:13px; }
  .spatialMaterialCopy .spatialClothStatus { min-height:0; margin:0; }
  .spatialClothControl { width:100%; height:clamp(350px,48svh,470px); }
-}
-@media(max-width:760px),(max-width:1000px) and (max-height:520px) {
- .spatialMaterialCopy { position:relative; isolation:isolate; }
- .spatialMaterialCopy:before { content:""; position:absolute; z-index:-1; inset:-26px -40px -26px -26px; pointer-events:none; background:linear-gradient(90deg,#090d11,#090d11f5 86%,#090d1100); mask-image:linear-gradient(transparent,#000 9%,#000 91%,transparent); }
 }
 @media(max-height:520px) and (max-width:1000px) {
  .spatialHeroCopy { top:120px;bottom:auto;left:24px;right:auto;text-align:left; }
