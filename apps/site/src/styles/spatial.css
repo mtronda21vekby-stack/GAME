@@ -165,7 +165,7 @@ html:has(.spatialPage) { scroll-behavior:smooth; scrollbar-gutter:stable; }
  .spatialPage .platNav { width:100%; justify-content:space-between; gap:8px; }
  .spatialPage .platNav>a { min-height:48px; padding:0; font-size:12px; }
  .spatialPage .platNav>a:last-child { margin-left:0; }
- .spatialHero:before { content:""; position:absolute; inset:0; z-index:1; pointer-events:none; opacity:var(--spatial-hero-ui-opacity,1); background:linear-gradient(0deg,#090d11 8%,#090d11fa 24%,#090d1140 43%,transparent 60%); }
+ .spatialHero:before { content:""; position:absolute; inset:0; z-index:1; pointer-events:none; opacity:var(--spatial-hero-ui-opacity,1); background:linear-gradient(0deg,#090d11 8%,#090d11fa 24%,#090d1140 43%,transparent 60%); mask-image:linear-gradient(#000 calc(100% - 120px),transparent); }
  .spatialHeroLabel { top:130px; left:24px; right:24px; text-align:left; font-size:8px; letter-spacing:.13em; }
  .spatialHeroCopy { left:24px; right:24px; bottom:164px; text-align:left; }
  .spatialHero h1 { font-size:46px; line-height:1.04; letter-spacing:-.055em; margin-bottom:15px; }
