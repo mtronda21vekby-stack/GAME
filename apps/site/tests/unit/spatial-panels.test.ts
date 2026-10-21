@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
-import { Group, Matrix4, Mesh, MeshBasicMaterial, PerspectiveCamera, Vector3 } from "three";
+import { Group, Matrix4, Mesh, MeshBasicMaterial, PerspectiveCamera, Vector3, type PlaneGeometry } from "three";
 import { renderToStaticMarkup } from "react-dom/server";
 import { CameraRig } from "../../src/experience/camera/CameraRig";
 import { INITIAL_SCROLL_SNAPSHOT } from "../../src/experience/types";
@@ -23,11 +23,22 @@ describe("Live spatial interface panels", () => {
       const height=852,camera=new PerspectiveCamera(36,width/height,.1,100);
       camera.position.set(0,0,20.6);camera.lookAt(0,0,0);camera.updateMatrixWorld();
       gallery.layout(width,height,width<=760,false);
+      const plane=(gallery as unknown as {surfaces:{texture:unknown;backing:Mesh<PlaneGeometry,MeshBasicMaterial>}[]}).surfaces[0];
+      plane.texture={ready:true,texture:plane.backing.material.map};
       gallery.update(camera,1000,1000,false,true);const resting=surface.style.transform;
+      const anchor=new Vector3().setFromMatrixPosition(plane.backing.matrix).project(camera);
       expect(resting).toMatch(/^matrix3d/);
       for(const lag of [80,300,-80,-300,500,-500,0]){
         gallery.update(camera,1000+lag,1000,false,true);
         expect(surface.style.transform).toBe(resting);
+      }
+      for(const [x,y] of [[.6,0],[.6,-4],[-.8,-4]]){
+        camera.position.set(x,y,20.6);camera.lookAt(x,y,0);camera.updateMatrixWorld();
+        gallery.update(camera,1000,1000,false,true);const cached=surface.style.transform;
+        const backingAnchor=new Vector3().setFromMatrixPosition(plane.backing.matrix).project(camera);
+        expect(backingAnchor.x).toBeCloseTo(anchor.x,6);expect(backingAnchor.y).toBeCloseTo(anchor.y,6);
+        gallery.invalidate();gallery.update(camera,1000,1000,false,true);
+        expect(cached).toBe(surface.style.transform);
       }
     }finally{gallery.dispose();vi.unstubAllGlobals();}
   });

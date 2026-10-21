@@ -78,7 +78,7 @@ export class SpatialGalleryStage {
     // Keep their planes in document flow so reverse scroll cannot push them
     // through the collection heading or its filters.
     const clock=nativeScroll;
-    const key=[Math.round(clock*64),nativeScroll,camera.position.z,camera.fov,this.hoverId,this.hoverX,this.hoverY].join(":");
+    const key=[nativeScroll,camera.position.x,camera.position.y,camera.position.z,camera.quaternion.x,camera.quaternion.y,camera.quaternion.z,camera.quaternion.w,camera.fov,this.hoverId,this.hoverX,this.hoverY].join(":");
     if(key===this.previous)return;this.previous=key;
     const worldUnit=2*camera.position.z*Math.tan(camera.fov*Math.PI/360)/this.height;
     for(const surface of this.surfaces){
