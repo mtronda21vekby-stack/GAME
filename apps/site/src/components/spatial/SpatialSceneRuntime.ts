@@ -392,7 +392,7 @@ export class SpatialSceneRuntime {
       let centerY=THREE.MathUtils.lerp(slotY,outroY,closingTravel);
       if(nativeOutro){
         const copy=this.options.stage.querySelector(".spatialAboutText")?.getBoundingClientRect();
-        if(copy)centerY=THREE.MathUtils.lerp(centerY,Math.max(centerY,copy.bottom+28+height*.55),THREE.MathUtils.smoothstep(closingTravel,.35,.6));
+        if(copy)centerY=THREE.MathUtils.lerp(centerY,Math.max(centerY,copy.bottom+28+height*.55),THREE.MathUtils.smoothstep(closingTravel,.15,.35));
       }
       const position=panelScreenPosition(this.camera,centerX,centerY,this.viewportWidth,this.viewportHeight,4.4);
       const unit=panelFrontWidth(this.camera,this.viewportWidth,1,position),worldWidth=width/unit;
