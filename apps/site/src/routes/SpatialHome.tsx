@@ -183,6 +183,7 @@ export default function SpatialHome() {
             </section>
             <section className="spatialAbout" aria-labelledby="spatial-about-title">
               <div className="spatialAboutCopy"><p className="spatialEyebrow">05 / ПРОДОЛЖЕНИЕ</p><h2 id="spatial-about-title">Какой мир —<br/><span>следующий?</span></h2></div><div className="spatialAboutText"><p>Быстрый бой или тихая долина.<br/>Выбери, куда вернуться.</p><a className="platButton spatialReturnLink" href="#spatial-worlds">К коллекции <span aria-hidden="true">↑</span></a><div className="spatialActions"><a className="platTextLink" href="/about">О проекте <span aria-hidden="true">↗</span></a><a className="platTextLink" href="/support">Нужна помощь? <span aria-hidden="true">↗</span></a><a className="platTextLink" href="/nexus-lab">Сцена короны <span aria-hidden="true">↗</span></a></div></div>
+              <div className="spatialOutroClothSlot" aria-hidden="true"/>
             </section>
           </div>
         </section>

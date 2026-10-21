@@ -59,10 +59,10 @@ const folds=`
 const weave=`
   varying vec2 vClothUv;
   uniform sampler2D uClothMark;
-  // Rounded apertures between crossing steel ribbons. Screen derivatives fade
-  // microstructure before it becomes a subpixel grid on narrow phone screens.
+  // Fine crossing steel ribbons. Filter the apertures and the brushed grain
+  // separately so a receding fold becomes satin instead of a flickering grid.
   vec4 clothWeave(vec2 uv) {
-    vec2 grid=uv*vec2(44.,62.),cell=fract(grid)-.5;
+    vec2 grid=uv*vec2(80.,112.),cell=fract(grid)-.5;
     float footprint=max(fwidth(grid.x),fwidth(grid.y));
     float detail=1.-smoothstep(.65,1.35,footprint);
     float aperture=length(max(abs(cell)-vec2(.13,.18),vec2(0.)))-.075;
@@ -76,7 +76,9 @@ const weave=`
     return vec4(mix(1.,coverage,detail),ribbon*detail,edge*detail,detail);
   }
   vec3 clothWeaveNormal(vec3 n,vec2 uv,float detail) {
-    float ridge=(cos(uv.x*276.46015)*.65+cos(uv.y*389.55749)*.35)*.0018*detail;
+    float brushDetail=1.-smoothstep(.45,1.1,fwidth(uv.x*240.));
+    float ridge=(cos(uv.x*502.65482)*.65+cos(uv.y*703.71675)*.35)*.0011*detail;
+    ridge+=cos(uv.x*1507.9645+sin(uv.y*18.)*.3)*.00016*brushDetail;
     vec3 dx=dFdx(-vViewPosition),dy=dFdy(-vViewPosition);
     vec3 a=cross(dy,n),b=cross(n,dx);
     float determinant=dot(dx,a);
@@ -87,7 +89,7 @@ const weave=`
 
 /** One draped metallic weave. Its authored folds stay visible in reduced motion;
  * hover indentation and tap ripples are bounded analytic fields, not a cloth solver. */
-export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshStandardMaterial> {
+export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysicalMaterial> {
   readonly time={value:0};
   readonly motion={value:1};
   readonly entrance={value:1};
@@ -101,8 +103,10 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshStand
   private readonly hoverTarget=new THREE.Vector3(.5,.5,0);
   private nextHit=0;
   constructor(compact:boolean) {
-    super(new THREE.PlaneGeometry(1,1,compact?20:32,compact?26:48),new THREE.MeshStandardMaterial({
-      color:0x7d8e97,metalness:1,roughness:.34,side:THREE.DoubleSide,envMapIntensity:1.05,transparent:true,depthWrite:false,
+    super(new THREE.PlaneGeometry(1,1,compact?20:32,compact?26:48),new THREE.MeshPhysicalMaterial({
+      color:0x657881,metalness:1,roughness:.34,side:THREE.DoubleSide,envMapIntensity:1.08,transparent:true,depthWrite:false,
+      clearcoat:.18,clearcoatRoughness:.23,anisotropy:compact?.38:.52,anisotropyRotation:Math.PI*.5,
+      iridescence:compact?.12:.2,iridescenceIOR:1.3,iridescenceThicknessRange:[180,300],
     }));
     this.name="INTERACTIVE_METAL_CLOTH";this.frustumCulled=false;this.visible=false;
     this.material.onBeforeCompile=shader=>{
@@ -121,21 +125,45 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshStand
       shader.fragmentShader=shader.fragmentShader.replace("#include <common>","#include <common>\n"+weave)
         .replace("#include <color_fragment>",`#include <color_fragment>
           vec4 cloth=clothWeave(vClothUv);
-          if(cloth.x<.35)discard;
-          diffuseColor.rgb*=mix(.74,1.08,cloth.y)*(1.-cloth.z*.18);
-          diffuseColor.rgb*=mix(vec3(1.),vec3(.88,.98,1.),cloth.z*.24);`)
+          if(cloth.x<.26)discard;
+          diffuseColor.a*=smoothstep(.26,.62,cloth.x);
+          float satin=.5+.5*sin(vClothUv.y*19.+sin(vClothUv.x*11.)*1.8);
+          diffuseColor.rgb*=mix(.82,1.02,cloth.y)*(1.-cloth.z*.13)*mix(.94,1.,satin);
+          diffuseColor.rgb*=mix(vec3(1.),vec3(.9,.98,1.),cloth.z*.2);`)
         .replace("#include <roughnessmap_fragment>",`#include <roughnessmap_fragment>
           float mark=texture2D(uClothMark,vClothUv).a;
-          roughnessFactor=mix(clamp(roughnessFactor+cloth.z*.12-cloth.y*.065,.19,.55),.6,mark);
-          diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.68,.78,.8),mark*.85);`)
+          roughnessFactor=mix(clamp(roughnessFactor+cloth.z*.1-cloth.y*.075+satin*.035,.25,.56),.6,mark);
+          diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.42,.51,.54),mark*.85);`)
         .replace("#include <normal_fragment_maps>",`#include <normal_fragment_maps>
-          normal=clothWeaveNormal(normal,vClothUv,cloth.w);`);
+          normal=clothWeaveNormal(normal,vClothUv,cloth.w);`)
+        .replace("#include <clearcoat_normal_fragment_maps>",`#include <clearcoat_normal_fragment_maps>
+          #ifdef USE_CLEARCOAT
+            clearcoatNormal=normalize(mix(nonPerturbedNormal,normal,.28));
+          #endif`)
+        .replace("#include <lights_physical_fragment>",`#include <lights_physical_fragment>
+          #ifdef USE_CLEARCOAT
+            material.clearcoat*=mix(1.,.35,mark);
+            material.clearcoatRoughness=clamp(material.clearcoatRoughness+cloth.z*.08-cloth.y*.035,.22,.48);
+          #endif
+          #ifdef USE_ANISOTROPY
+            material.anisotropy*=mix(.8,1.,cloth.y);
+            material.alphaT=mix(pow2(material.roughness),1.,pow2(material.anisotropy));
+          #endif
+          #ifdef USE_IRIDESCENCE
+            // A thin finish catches only the turned ribbons. Most of the sheet
+            // remains neutral gunmetal; no screen copy or transmission pass.
+            float grazing=1.-abs(dot(normal,normalize(vViewPosition)));
+            material.iridescence*=smoothstep(.03,.45,grazing)*mix(.25,1.,satin)*(1.-mark*.8);
+            material.iridescenceThickness=mix(180.,300.,satin);
+          #endif`);
     };
-    this.material.customProgramCacheKey=()=>"blackcrown-metal-cloth-grab-brand-v4";
+    this.material.customProgramCacheKey=()=>"blackcrown-satin-ribbon-cloth-v6";
   }
   setQuality(compact:boolean,reduced:boolean) {
     const columns=compact?20:32,rows=compact?26:48;
     if(this.geometry.parameters.widthSegments!==columns){this.geometry.dispose();this.geometry=new THREE.PlaneGeometry(1,1,columns,rows);}
+    this.material.anisotropy=compact?.38:.52;
+    this.material.iridescence=compact?.12:.2;
     this.motion.value=reduced?0:1;
     if(reduced){this.hover.value.z=this.hoverTarget.z=0;for(const hit of this.hits.value)hit.w=0;this.dragTarget.set(0,0);this.dragX.snap(0);this.dragY.snap(0);this.drag.value.z=this.drag.value.w=0;}
   }

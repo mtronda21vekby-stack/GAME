@@ -357,7 +357,8 @@ export class SpatialSceneRuntime {
     this.edgeLight.color.set(0x92c5d5).lerp(this.accent,.22*galleryPresence);
     this.atmosphereOrigin.set(0,this.reduced?0:this.camera.position.y*lab,0);
     this.atmosphere.setChoreography(choreography.arrival,lab);
-    this.atmosphere.update(t,p,this.detail,this.pointer,this.atmosphereOrigin,this.rendererHost!.renderer.getPixelRatio(),this.accent,lab);
+    const atmosphereDpr=Math.min(this.bloom?1.25:Infinity,this.rendererHost!.renderer.getPixelRatio());
+    this.atmosphere.update(t,p,this.detail,this.pointer,this.atmosphereOrigin,atmosphereDpr,this.accent,lab);
     this.accentLight.position.set(2,this.camera.position.y+2,4);
     const sheet=this.clothSlot?.getBoundingClientRect();
     const transition=this.options.stage.querySelector(".spatialTransition")?.getBoundingClientRect();
@@ -365,23 +366,40 @@ export class SpatialSceneRuntime {
     const outro=this.options.stage.querySelector(".spatialAbout")?.getBoundingClientRect();
     const outroPresence=!!outro&&outro.top<this.viewportHeight&&outro.bottom>0;
     const farewell=outro?1-THREE.MathUtils.smoothstep(outro.top,this.viewportHeight*.12,this.viewportHeight*.95):0;
+    const closingTravel=this.compact?THREE.MathUtils.smoothstep(farewell,.5,1):farewell;
+    const closingFold=this.compact?Math.sin(Math.PI*THREE.MathUtils.smoothstep(farewell,.18,1)):0;
+    this.options.stage.style.setProperty("--spatial-cloth-hint-opacity",String(1-THREE.MathUtils.smoothstep(farewell,.15,.4)));
     const catalogueCleared=!!transition&&transition.top<=0;
     this.cloth.visible=!!sheet&&catalogueCleared&&((sheet.bottom>0&&sheet.top<this.viewportHeight)||interlude||outroPresence)&&!this.detailOpen;
     const interludeReveal=transition?THREE.MathUtils.smoothstep(-transition.top,0,this.viewportHeight*.24):0;
-    this.cloth.material.opacity=(interlude?interludeReveal:1)*(1-farewell*.24);
+    this.cloth.material.opacity=(interlude?interludeReveal:1)*(1-farewell*(this.compact?.12:.24));
     // A visible folded volume arrives only after the last game has cleared.
     // Its opening is continuous and reversible; it never spends a chapter edge-on.
-    this.cloth.setEntrance(this.reduced?1:THREE.MathUtils.lerp(Math.max(interlude?.46+interludeReveal*.2:0,lab),.66,farewell));
+    this.cloth.setEntrance(this.reduced?1:THREE.MathUtils.lerp(Math.max(interlude?.46+interludeReveal*.2:0,lab),this.compact?.96:.66,farewell)*(1-closingFold*.35));
     if(sheet&&this.cloth.visible){
       // The sheet enters below the copy in its real native slot, never behind it.
       const slotX=sheet.left+sheet.width/2,slotY=sheet.top+sheet.height/2;
-      const centerX=THREE.MathUtils.lerp(slotX,this.viewportWidth*(this.compact?.96:.79),farewell),centerY=THREE.MathUtils.lerp(slotY,this.viewportHeight*(this.compact?.73:.54),farewell);
+      const outroSlot=this.compact?this.options.stage.querySelector(".spatialOutroClothSlot")?.getBoundingClientRect():undefined;
+      const nativeOutro=outroSlot&&outroSlot.width>0?outroSlot:undefined;
+      const outroX=nativeOutro?nativeOutro.left+nativeOutro.width/2:this.viewportWidth*.79;
+      const outroY=nativeOutro?nativeOutro.top+nativeOutro.height/2:this.viewportHeight*.54;
+      // The same sheet travels around the copy, then settles in a full native
+      // closing frame. It never remains as an accidentally cropped side strip.
+      const returnArc=nativeOutro?(.4*THREE.MathUtils.smoothstep(farewell,0,.5)+.8*Math.sin(Math.PI*closingTravel))*(1-closingTravel):0;
+      const centerX=THREE.MathUtils.lerp(slotX,outroX,farewell)+returnArc*this.viewportWidth;
+      const width=THREE.MathUtils.lerp(sheet.width,nativeOutro?.width??this.viewportWidth*.39,closingTravel);
+      const height=THREE.MathUtils.lerp(sheet.height,nativeOutro?.height??this.viewportHeight*.86,closingTravel);
+      let centerY=THREE.MathUtils.lerp(slotY,outroY,closingTravel);
+      if(nativeOutro){
+        const copy=this.options.stage.querySelector(".spatialAboutText")?.getBoundingClientRect();
+        if(copy)centerY=THREE.MathUtils.lerp(centerY,Math.max(centerY,copy.bottom+28+height*.55),THREE.MathUtils.smoothstep(closingTravel,.35,.6));
+      }
       const position=panelScreenPosition(this.camera,centerX,centerY,this.viewportWidth,this.viewportHeight,4.4);
-      const unit=panelFrontWidth(this.camera,this.viewportWidth,1,position),width=THREE.MathUtils.lerp(sheet.width,this.viewportWidth*(this.compact?.62:.39),farewell),height=THREE.MathUtils.lerp(sheet.height,this.viewportHeight*(this.compact?.56:.86),farewell),worldWidth=width/unit;
+      const unit=panelFrontWidth(this.camera,this.viewportWidth,1,position),worldWidth=width/unit;
       this.cloth.position.copy(position);this.cloth.position.y+=height/unit*.015;
       // Keep the authored loose hem inside the interactive slot at both sizes.
-      this.cloth.scale.set(worldWidth*.94,height/unit*.88,worldWidth*.66);this.cloth.update(this.reduced?0:t);
-      this.cloth.rotation.set(-.06,THREE.MathUtils.lerp(THREE.MathUtils.lerp(-.42,this.compact?-.035:-.14,this.reduced?1:lab),-.48,farewell),THREE.MathUtils.lerp(-.035,-.1,farewell));
+      this.cloth.scale.set(worldWidth*THREE.MathUtils.lerp(.94,nativeOutro?.9:.94,farewell)*(1-closingFold*.65),height/unit*.88,worldWidth*.66);this.cloth.update(this.reduced?0:t);
+      this.cloth.rotation.set(-.06,THREE.MathUtils.lerp(THREE.MathUtils.lerp(-.42,this.compact?-.035:-.14,this.reduced?1:lab),nativeOutro?-.16:-.48,farewell),THREE.MathUtils.lerp(-.035,nativeOutro?.025:-.1,farewell));
       this.lightAim.set(this.cloth.position.x-3,this.cloth.position.y+3,this.cloth.position.z+5.5);
       this.anatomyLight.position.lerp(this.lightAim,lab);
       this.anatomyLight.target.position.lerp(this.cloth.position,lab);
@@ -396,6 +414,7 @@ export class SpatialSceneRuntime {
     window.removeEventListener("pointerdown",this.onGrabStart);window.removeEventListener("pointerup",this.onGrabEnd);window.removeEventListener("pointercancel",this.onGrabEnd);
     delete this.options.stage.dataset.brandReady;delete this.options.stage.dataset.shaderWarmup;delete this.options.stage.dataset.heroUiHidden;
     this.options.stage.style.removeProperty("--spatial-hero-ui-opacity");this.gallery.dispose();this.atmosphere.dispose();this.cloth.dispose();this.bloom?.dispose();
+    this.options.stage.style.removeProperty("--spatial-cloth-hint-opacity");
     disposeModel(this.scene);this.scene.clear();this.scene.environment=null;this.environment?.dispose();this.rendererHost?.dispose();
   }
 }

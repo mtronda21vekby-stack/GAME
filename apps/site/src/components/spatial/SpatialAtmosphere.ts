@@ -46,7 +46,10 @@ const dustVertex = `
     vec3 worldTint=uAccent/max(.001,dot(uAccent,luminanceWeights))*tintEnergy;
     vTint = mix(aTint,worldTint,.3*(1.-vSpark*.7));
     float focusFade=mix(1.,.23,vDefocus);
-    vAlpha = uOpacity*distanceFade*focusFade*(.45+.55*smoothstep(.1,.7,screenX))*mix(streamFade,1.,uArrival)*(1.-lens*.92);
+    vec2 headDelta=vec2(p.x/(uAxisHeight*.17),(p.y-uHeadY)/(uAxisHeight*.15));
+    float foreground=smoothstep(.4,3.4,p.z);
+    float subjectClear=1.-(1.-smoothstep(.7,1.45,length(headDelta)))*foreground*.88*(1.-uDeparture);
+    vAlpha = uOpacity*distanceFade*focusFade*(.45+.55*smoothstep(.1,.7,screenX))*mix(streamFade,1.,uArrival)*(1.-lens*.92)*subjectClear;
   }
 `;
 const dustFragment = `
@@ -83,13 +86,14 @@ const hazeFragment = `
   }
   void main() {
     vec2 drift=vec2(uTime*.012,-uTime*.008);
-    float cloud=noise(vUv*vec2(2.4,3.1)+drift)*.76+noise(vUv*vec2(6.,7.)-drift*.5)*.24;
+    float cloud=noise(vUv*vec2(2.4,3.1)+drift)*.66+noise(vUv*vec2(6.,7.)-drift*.5)*.34;
     float vertical=smoothstep(0.,.16,vUv.y)*(1.-smoothstep(.73,1.,vUv.y));
     float edge=pow(max(0.,sin(vUv.x*3.141593)),1.8)*vertical;
     float sweep=vUv.x-.47+(vUv.y-.5)*.25;
     float beam=(exp(-pow(sweep*5.2,2.))*.68+exp(-pow((sweep-.2)*12.,2.))*.24)*vertical;
-    float pocket=.35+.65*exp(-dot((vUv-vec2(.35,.58))*vec2(1.7,1.),(vUv-vec2(.35,.58))*vec2(1.7,1.)));
-    float alpha=mix(edge*pocket,beam,uShaft)*(.32+.68*cloud)*uOpacity;
+    vec2 pocketDelta=(vUv-vec2(.57,.58))*vec2(3.1,1.7);
+    float pocket=.12+.88*exp(-dot(pocketDelta,pocketDelta));
+    float alpha=mix(edge*pocket,beam,uShaft)*(.18+.82*cloud)*uOpacity;
     vec3 tint=mix(uTint*vec3(.78,.7,1.12),uTint,smoothstep(.2,.75,vUv.x));
     gl_FragColor=vec4(tint,alpha);
     #include <tonemapping_fragment>
