@@ -272,6 +272,10 @@ html[data-reduced-motion="1"] .spatialPage *,html[data-reduced-motion="1"] .spat
  .spatialMaterialCopy .spatialClothStatus { min-height:0; margin:0; }
  .spatialClothControl { width:100%; height:clamp(350px,48svh,470px); }
 }
+@media(max-width:760px),(max-width:1000px) and (max-height:520px) {
+ .spatialMaterialCopy { position:relative; isolation:isolate; }
+ .spatialMaterialCopy:before { content:""; position:absolute; z-index:-1; inset:-26px -40px -26px -26px; pointer-events:none; background:linear-gradient(90deg,#090d11,#090d11f5 86%,#090d1100); mask-image:linear-gradient(transparent,#000 9%,#000 91%,transparent); }
+}
 @media(max-height:520px) and (max-width:1000px) {
  .spatialHeroCopy { top:120px;bottom:auto;left:24px;right:auto;text-align:left; }
  .spatialHero h1 { font-size:36px;line-height:1.04;margin-bottom:12px; }
