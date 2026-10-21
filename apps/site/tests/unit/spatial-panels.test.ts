@@ -13,6 +13,24 @@ import { platformGames } from "../../src/lib/platformGames";
 import { SpatialGalleryStage } from "../../src/components/spatial/SpatialGalleryStage";
 
 describe("Live spatial interface panels", () => {
+  it.each([393,430,1440])("keeps the native panel slot fixed while the sculpture camera settles at %ipx",width=>{
+    vi.stubGlobal("window",{scrollX:0,scrollY:1000});
+    const style=()=>({transform:"",setProperty(){},removeProperty(){}});
+    const surface={offsetWidth:264,offsetHeight:260,style:style()};
+    const article={dataset:{gameId:"ballcrown"},style:style(),getBoundingClientRect:()=>({left:22,top:500}),querySelector:(selector:string)=>selector===".spatialPanelSurface"?surface:selector===".spatialPanelMedia"?{offsetTop:32,offsetHeight:165}:null};
+    const gallery=new SpatialGalleryStage({querySelectorAll:()=>[article]} as unknown as HTMLElement);
+    try{
+      const height=852,camera=new PerspectiveCamera(36,width/height,.1,100);
+      camera.position.set(0,0,20.6);camera.lookAt(0,0,0);camera.updateMatrixWorld();
+      gallery.layout(width,height,width<=760,false);
+      gallery.update(camera,1000,1000,false,true);const resting=surface.style.transform;
+      expect(resting).toMatch(/^matrix3d/);
+      for(const lag of [80,300,-80,-300,500,-500,0]){
+        gallery.update(camera,1000+lag,1000,false,true);
+        expect(surface.style.transform).toBe(resting);
+      }
+    }finally{gallery.dispose();vi.unstubAllGlobals();}
+  });
   it("keeps mobile covers in front and restores world occlusion on cached desktop meshes",()=>{
     vi.stubGlobal("window",{scrollX:0,scrollY:0});
     try {

@@ -72,9 +72,12 @@ export class SpatialGalleryStage {
     panel?.style.setProperty("--panel-light-x",String((this.hoverX+1)*50)+"%");this.invalidate();
   }
 
-  update(camera:PerspectiveCamera,renderedScroll:number,nativeScroll:number,reduced:boolean,ready:boolean){
+  update(camera:PerspectiveCamera,_renderedScroll:number,nativeScroll:number,reduced:boolean,ready:boolean){
     if(reduced||!ready)return;
-    const clock=Math.abs(renderedScroll-nativeScroll)<.35?nativeScroll:renderedScroll;
+    // The camera may settle behind a gesture; native copy and controls cannot.
+    // Keep their planes in document flow so reverse scroll cannot push them
+    // through the collection heading or its filters.
+    const clock=nativeScroll;
     const key=[Math.round(clock*64),nativeScroll,camera.position.z,camera.fov,this.hoverId,this.hoverX,this.hoverY].join(":");
     if(key===this.previous)return;this.previous=key;
     const worldUnit=2*camera.position.z*Math.tan(camera.fov*Math.PI/360)/this.height;
