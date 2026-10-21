@@ -7,10 +7,11 @@ export const SPATIAL_ATMOSPHERE_QUALITY = {
 
 const dustVertex = `
   uniform float uTime, uDpr, uOpacity, uTravel, uAxisHeight, uArrival, uDeparture, uHeadY, uDetail;
+  uniform vec3 uAccent;
   attribute float aSeed;
   attribute vec3 aTint;
   varying vec3 vTint;
-  varying float vAlpha, vSpark;
+  varying float vAlpha, vSpark, vDefocus;
   void main() {
     vec3 p = position;
     p.y = (mod(p.y+uTime*(.025+aSeed*.055)+18.,36.)-18.)*uAxisHeight/26.;
@@ -35,20 +36,26 @@ const dustVertex = `
     gl_Position.xy+=normalize(lensDelta+vec2(.0001))*.075*lens*gl_Position.w;
     float screenX = gl_Position.x/gl_Position.w*.5+.5;
     float distanceFade = smoothstep(2.,7.,-mv.z)*(1.-smoothstep(25.,42.,-mv.z));
-    vSpark = step(.982,aSeed);
-    gl_PointSize = clamp((12.+aSeed*35.+vSpark*22.)*uDpr/max(1.,-mv.z),1.,10.*uDpr);
+    vSpark = step(.988,aSeed);
+    vDefocus = 1.-smoothstep(11.,19.,-mv.z);
+    gl_PointSize = clamp((11.+aSeed*31.+vSpark*20.)*(1.+vDefocus*2.8)*uDpr/max(1.,-mv.z),1.,10.*uDpr);
     gl_PointSize=mix(gl_PointSize,(3.+aSeed*9.)*uDpr,uDetail);
-    vTint = aTint;
-    vAlpha = uOpacity*distanceFade*(.22+.78*smoothstep(.12,.6,screenX))*mix(streamFade,1.,uArrival)*(1.-lens*.92);
+    // Recolour the existing grains without making brighter worlds emit more light.
+    vec3 luminanceWeights=vec3(.2126,.7152,.0722);
+    float tintEnergy=dot(aTint,luminanceWeights);
+    vec3 worldTint=uAccent/max(.001,dot(uAccent,luminanceWeights))*tintEnergy;
+    vTint = mix(aTint,worldTint,.3*(1.-vSpark*.7));
+    float focusFade=mix(1.,.23,vDefocus);
+    vAlpha = uOpacity*distanceFade*focusFade*(.45+.55*smoothstep(.1,.7,screenX))*mix(streamFade,1.,uArrival)*(1.-lens*.92);
   }
 `;
 const dustFragment = `
   varying vec3 vTint;
-  varying float vAlpha, vSpark;
+  varying float vAlpha, vSpark, vDefocus;
   void main() {
     vec2 q = gl_PointCoord-.5;
     q.y *= mix(1.,.28,vSpark);
-    float light = pow(1.-smoothstep(0.,.25,dot(q,q)),2.);
+    float light = pow(1.-smoothstep(0.,.25,dot(q,q)),mix(2.,1.2,vDefocus));
     if(light<.015) discard;
     gl_FragColor = vec4(vTint,light*vAlpha);
     #include <tonemapping_fragment>
@@ -76,17 +83,27 @@ const hazeFragment = `
   }
   void main() {
     vec2 drift=vec2(uTime*.012,-uTime*.008);
-    float cloud=noise(vUv*vec2(4.,3.)+drift)*.7+noise(vUv*vec2(9.,6.)-drift*.5)*.3;
-    float edge=pow(max(0.,sin(vUv.x*3.141593)),1.6)*smoothstep(0.,.18,vUv.y)*(1.-smoothstep(.65,1.,vUv.y));
-    float beam=exp(-pow((vUv.x-.5)*4.5,2.))*smoothstep(0.,.15,vUv.y)*(1.-smoothstep(.7,1.,vUv.y));
-    float alpha=mix(edge,beam,uShaft)*smoothstep(.15,.9,cloud)*uOpacity;
-    gl_FragColor=vec4(uTint,alpha);
+    float cloud=noise(vUv*vec2(2.4,3.1)+drift)*.76+noise(vUv*vec2(6.,7.)-drift*.5)*.24;
+    float vertical=smoothstep(0.,.16,vUv.y)*(1.-smoothstep(.73,1.,vUv.y));
+    float edge=pow(max(0.,sin(vUv.x*3.141593)),1.8)*vertical;
+    float sweep=vUv.x-.47+(vUv.y-.5)*.25;
+    float beam=(exp(-pow(sweep*5.2,2.))*.68+exp(-pow((sweep-.2)*12.,2.))*.24)*vertical;
+    float pocket=.35+.65*exp(-dot((vUv-vec2(.35,.58))*vec2(1.7,1.),(vUv-vec2(.35,.58))*vec2(1.7,1.)));
+    float alpha=mix(edge*pocket,beam,uShaft)*(.32+.68*cloud)*uOpacity;
+    vec3 tint=mix(uTint*vec3(.78,.7,1.12),uTint,smoothstep(.2,.75,vUv.x));
+    gl_FragColor=vec4(tint,alpha);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
   }
 `;
 
 const random = (i: number) => { const n=Math.sin(i*127.1+311.7)*43758.5453; return n-Math.floor(n); };
+const luminance = (color:THREE.Color) => color.r*.2126+color.g*.7152+color.b*.0722;
+function tintField(target:THREE.Color,base:number,accent:THREE.Color,accentLuminance:number,scratch:THREE.Color,mix:number,strength=1) {
+  target.set(base).multiplyScalar(strength);
+  scratch.copy(accent).multiplyScalar(luminance(target)/accentLuminance);
+  target.lerp(scratch,mix);
+}
 
 /** Real 3D geometry and GPU vertex-animated dust. Haze/shafts approximate scattering;
  * they are depth-tested shader planes, not a volumetric raymarch or fluid simulation. */
@@ -97,6 +114,7 @@ export class SpatialAtmosphere extends THREE.Group {
   readonly facets:THREE.Mesh<THREE.InstancedBufferGeometry,THREE.ShaderMaterial>;
   private readonly haze: THREE.Mesh<THREE.PlaneGeometry,THREE.ShaderMaterial>[] = [];
   private readonly shafts: THREE.Mesh<THREE.PlaneGeometry,THREE.ShaderMaterial>[] = [];
+  private readonly worldTint = new THREE.Color();
   private compact: boolean;
   private reduced = false;
 
@@ -104,18 +122,19 @@ export class SpatialAtmosphere extends THREE.Group {
     super(); this.name="BLACKCROWN_ATMOSPHERE"; this.compact=compact;
     const positions:number[]=[], seeds:number[]=[], colors:number[]=[];
     for(let i=0;i<SPATIAL_ATMOSPHERE_QUALITY.desktop.particles;i++) {
-      const radius=.85+Math.pow(random(i*4),1.4)*2.7,angle=random(i*4+2)*Math.PI*2;
+      const seed=random(i*4+3);
+      const radius=seed>.9?3.8+random(i*4)*2.6:.85+Math.pow(random(i*4),1.4)*2.7,angle=random(i*4+2)*Math.PI*2;
       positions.push(Math.cos(angle)*radius,(random(i*4+1)-.5)*36,Math.sin(angle)*radius);
-      const seed=random(i*4+3); seeds.push(seed);
-      const color=new THREE.Color(i%37===0?0xb7aed4:i%4===0?0xc4dce0:0x88b4c1);
-      color.multiplyScalar(seed>.982?2.8:.55); colors.push(color.r,color.g,color.b);
+      seeds.push(seed);
+      const color=new THREE.Color(i%11===0?0xa6a0cb:i%4===0?0xb4ced3:0x7eacb9);
+      color.multiplyScalar(seed>.988?2.1:.68); colors.push(color.r,color.g,color.b);
     }
     const geometry=new THREE.BufferGeometry();
     geometry.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));
     geometry.setAttribute("aSeed",new THREE.Float32BufferAttribute(seeds,1));
     geometry.setAttribute("aTint",new THREE.Float32BufferAttribute(colors,3));
     this.dust=new THREE.Points(geometry,new THREE.ShaderMaterial({
-      uniforms:{uTime:this.time,uDpr:{value:1},uOpacity:{value:.6},uTravel:{value:0},uAxisHeight:{value:26},uArrival:{value:1},uDeparture:{value:0},uHeadY:{value:9},uDetail:{value:0}},
+      uniforms:{uTime:this.time,uDpr:{value:1},uOpacity:{value:.6},uTravel:{value:0},uAxisHeight:{value:26},uArrival:{value:1},uDeparture:{value:0},uHeadY:{value:9},uDetail:{value:0},uAccent:{value:new THREE.Color(0x9edfe6)}},
       vertexShader:dustVertex,fragmentShader:dustFragment,transparent:true,
       blending:THREE.AdditiveBlending,depthWrite:false,depthTest:true,
     }));
@@ -133,11 +152,11 @@ export class SpatialAtmosphere extends THREE.Group {
     this.facets=new THREE.Mesh(facetGeometry,new THREE.ShaderMaterial({uniforms:this.dust.material.uniforms,vertexShader:facetVertex,fragmentShader:`varying vec3 vTint,vFacetNormal;varying float vAlpha,vSpark;void main(){float light=.35+.65*max(0.,dot(normalize(vFacetNormal),normalize(vec3(-.4,.8,1.))));gl_FragColor=vec4(vTint*light*(1.+vSpark),vAlpha*.8);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}`,transparent:true,depthWrite:false,side:THREE.DoubleSide}));
     this.facets.name="GPU_METAL_GRAINS";this.facets.frustumCulled=false;this.add(this.facets);
     [-10,-3,3].forEach((z,i)=>{
-      const mesh=this.makeHaze(false);mesh.position.set(i-1,-1+i*.6,z);mesh.scale.set(22,15,1);mesh.rotation.z=-.12+i*.1;
+      const mesh=this.makeHaze(false);mesh.position.set(i-1,-1+i*.6,z);mesh.scale.set(23,15,1);mesh.rotation.z=-.17+i*.14;
       this.haze.push(mesh);this.add(mesh);
     });
     [[2.4,1,-6,-.28],[.2,1,1.6,-.4]].forEach(([x,y,z,tilt])=>{
-      const mesh=this.makeHaze(true);mesh.position.set(x,y,z);mesh.scale.set(4,19,1);mesh.rotation.z=tilt;
+      const mesh=this.makeHaze(true);mesh.position.set(x,y,z);mesh.scale.set(6.4,19,1);mesh.rotation.z=tilt;
       this.shafts.push(mesh);this.add(mesh);
     });
     this.setQuality(compact,false);this.setAxisHeight(compact?15.8:26);
@@ -145,7 +164,7 @@ export class SpatialAtmosphere extends THREE.Group {
 
   private makeHaze(shaft:boolean) {
     return new THREE.Mesh(new THREE.PlaneGeometry(1,1,1,8),new THREE.ShaderMaterial({
-      uniforms:{uTime:this.time,uOpacity:{value:0},uShaft:{value:shaft?1:0},uTint:{value:new THREE.Color(shaft?0x9dd6e1:0x436d7a).multiplyScalar(shaft?1.7:1)}},
+      uniforms:{uTime:this.time,uOpacity:{value:0},uShaft:{value:shaft?1:0},uTint:{value:new THREE.Color(shaft?0x8dc5d3:0x587c90).multiplyScalar(shaft?1.55:1)}},
       vertexShader:hazeVertex,fragmentShader:hazeFragment,transparent:true,depthWrite:false,depthTest:true,
       side:THREE.DoubleSide,blending:shaft?THREE.AdditiveBlending:THREE.NormalBlending,
     }));
@@ -178,14 +197,19 @@ export class SpatialAtmosphere extends THREE.Group {
     const opacity=(1-detail*.15)*(1-lab*.32);this.visible=opacity>.005;
     this.dust.material.uniforms.uDetail.value=this.reduced?0:detail;
     this.dust.material.uniforms.uDpr.value=dpr;
-    this.dust.material.uniforms.uOpacity.value=opacity*(this.compact?.32:.43);
+    this.dust.material.uniforms.uOpacity.value=opacity*(this.compact?.35:.43);
     this.dust.material.uniforms.uTravel.value=journey*2.5;
+    (this.dust.material.uniforms.uAccent.value as THREE.Color).copy(accent);
+    const accentLuminance=Math.max(.001,luminance(accent));
     this.haze.forEach((mesh,i)=>{
-      mesh.material.uniforms.uOpacity.value=opacity*(.11-journey*.055)*(1-i*.12);
-      (mesh.material.uniforms.uTint.value as THREE.Color).set(0x436d7a).lerp(accent,.1);
+      mesh.material.uniforms.uOpacity.value=opacity*(.2-journey*.06)*(1-i*.16);
+      tintField(mesh.material.uniforms.uTint.value as THREE.Color,i%2?0x665f82:0x587c90,accent,accentLuminance,this.worldTint,.38);
       mesh.position.x=(i-1)*1.1+pointer.x*(.15+i*.2);
     });
-    this.shafts.forEach((mesh,i)=>{mesh.material.uniforms.uOpacity.value=opacity*(.15-journey*.05)*(1-i*.2);});
+    this.shafts.forEach((mesh,i)=>{
+      mesh.material.uniforms.uOpacity.value=opacity*(.17-journey*.035)*(1-i*.24);
+      tintField(mesh.material.uniforms.uTint.value as THREE.Color,0x8dc5d3,accent,accentLuminance,this.worldTint,.4,1.55);
+    });
   }
 
   dispose() {

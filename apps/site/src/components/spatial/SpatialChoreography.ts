@@ -12,3 +12,14 @@ export function spatialChoreography(progress:number,stops?:SpatialJourneyStops){
   const exit=stops?.exit??.76,lab=stops?.lab??.9;
   return {arrival:smooth(p/spatialArrivalEnd(stops)),departure:smooth((p-exit)/Math.max(.001,lab-exit))};
 }
+
+/** A world's light grows into the next one along the measured collection path. */
+export function spatialWorldBlend(progress:number,stops:SpatialJourneyStops|undefined,worlds:readonly number[]) {
+  if(!worlds.length)return {from:0,to:0,mix:0};
+  const projects=stops?.projects??[];
+  for(let i=0;i<Math.min(projects.length,worlds.length)-1;i++){
+    if(progress<=projects[i+1])return {from:worlds[i],to:worlds[i+1],mix:smooth((progress-projects[i])/Math.max(.001,projects[i+1]-projects[i]))};
+  }
+  const last=worlds[Math.min(worlds.length,projects.length||1)-1];
+  return {from:last,to:last,mix:0};
+}

@@ -10,14 +10,17 @@ export function createHeroStudio(renderer:WebGLRenderer,compact:boolean) {
   };
   for(let y=0;y<height;y++)for(let x=0;x<width;x++){
     const u=(x+.5)/width,v=(y+.5)/height,i=(y*width+x)*4;
-    const key=glow(u,v,.87,.65,.037,.19)*9;
-    const cyan=glow(u,v,.55,.57,.012,.25)*6.5;
-    const violet=glow(u,v,.95,.58,.016,.22)*3.6;
-    const ceiling=glow(u,v,.76,.88,.22,.065)*.7;
-    const bounce=glow(u,v,.75,.56,.14,.22)*.22;
-    pixels[i]=.015+key*.94+cyan*.36+violet*.65+ceiling*.82+bounce*.8;
-    pixels[i+1]=.02+key*.97+cyan*.78+violet*.68+ceiling*.91+bounce*.9;
-    pixels[i+2]=.027+key+cyan+violet+ceiling+bounce;
+    // Broad softboxes describe the brow and jaw; the narrow strips stay as rims.
+    // A low opposite reflection separates black metal from the black background.
+    const key=glow(u,v,.86,.64,.062,.21)*7.6;
+    const cyan=glow(u,v,.55,.57,.019,.26)*5.6;
+    const violet=glow(u,v,.97,.56,.031,.22)*2.5;
+    const ceiling=glow(u,v,.76,.86,.22,.09)*.8;
+    const bounce=glow(u,v,.73,.55,.18,.26)*.65;
+    const counter=glow(u,v,.18,.51,.11,.24)*.42;
+    pixels[i]=.018+key*.94+cyan*.34+violet*.73+ceiling*.82+bounce*.72+counter*.6;
+    pixels[i+1]=.024+key*.97+cyan*.76+violet*.57+ceiling*.91+bounce*.86+counter*.58;
+    pixels[i+2]=.033+key+cyan+violet+ceiling+bounce+counter;
     pixels[i+3]=1;
   }
   const texture=new DataTexture(pixels,width,height,RGBAFormat,FloatType);

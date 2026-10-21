@@ -10,6 +10,7 @@ type AxisViewport = {
 };
 
 export type SpatialJourneyStops = {
+  about?:number;
   intro:number;
   projects:readonly number[];
   exit:number;
@@ -38,19 +39,27 @@ export function spatialAxisJourney({compact,width,height,slot,stops}:AxisViewpor
     {progress:1,position:[0,-axisHeight*.5-halfHeight*1.16,17.8],target:[0,-axisHeight*.5-halfHeight*1.16,0],fov},
   ];
   if(stops){
-    // The path follows actual document chapters, including filtered collections.
-    // It recentres once, then descends straight down: no lateral slalom or idle turn.
+    // The opening gives the copy its own negative space, then recentres on the
+    // spinal axis before the projects. Every pose is owned by the same scroll clock.
     frames.splice(1);
     frames.push({progress:spatialArrivalEnd(stops),position:[headX,headY,18.8],target:[headX,headY,0],fov});
-    const append=(progress:number,y:number,z=18.8)=>{
+    const append=(progress:number,y:number,z=18.8,x=0)=>{
       const previous=frames[frames.length-1];
       if(progress<=previous.progress+.004||progress>=.995)return;
       const descent=Math.min(previous.position[1],y);
-      frames.push({progress,position:[0,descent,z],target:[0,descent,0],fov});
+      frames.push({progress,position:[x,descent,z],target:[x,descent,0],fov});
     };
+    if(stops.about!==undefined){
+      const copyOffset=-halfHeight*width/height*(compact?.66:.21);
+      append(stops.about,axisHeight*(compact?.245:.34),18.8,copyOffset);
+    }
     // The jaw clears the collection heading before the first project arrives.
-    append(stops.intro,axisHeight*.045);
-    stops.projects.forEach((progress,index)=>append(progress,axisHeight*(-.035-.345*index/Math.max(1,stops.projects.length-1))));
+    append(stops.intro,axisHeight*.045,20.8);
+    // A single long push into the collection makes its near/far planes legible.
+    stops.projects.forEach((progress,index)=>{
+      const travel=index/Math.max(1,stops.projects.length-1);
+      append(progress,axisHeight*(-.035-.345*travel),21-travel*2.2);
+    });
     append(stops.exit,-axisHeight*.49,20.4);
     // Let the tip leave above the viewport before the sheet becomes the main subject.
     const belowTip=-axisHeight*.5-halfHeight*1.16;

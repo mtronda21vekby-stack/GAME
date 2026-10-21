@@ -14,7 +14,7 @@ import { SpatialBloom } from "./SpatialBloom";
 import { finishHeroMaterials } from "./SpatialHeroMaterial";
 import { createHeroStudio } from "./SpatialHeroStudio";
 import { SpatialGalleryStage } from "./SpatialGalleryStage";
-import { spatialChoreography, spatialInterludeVisible } from "./SpatialChoreography";
+import { spatialChoreography, spatialInterludeVisible, spatialWorldBlend } from "./SpatialChoreography";
 import { spatialAxisJourney, spatialAxisTurn, type SpatialJourneyStops } from "./SpatialAxis";
 import { SpatialCloth } from "./SpatialCloth";
 import { panelFrontWidth, panelScreenPosition } from "./panelProjection";
@@ -35,6 +35,8 @@ export class SpatialSceneRuntime {
   private readonly detailMotion = new SurfaceMotion([0]);
   private readonly accent = new THREE.Color(WORLD_ACCENTS[0]);
   private readonly desiredAccent = new THREE.Color(WORLD_ACCENTS[0]);
+  private readonly paletteTarget = new THREE.Color();
+  private worldIndices:readonly number[]=platformGames.map((_,index)=>index);
   private readonly atmosphereOrigin = new THREE.Vector3();
   private readonly accentLight = new THREE.PointLight(WORLD_ACCENTS[0],5,22,2);
   private readonly faceLight = new THREE.DirectionalLight(0xe0e8e8,1);
@@ -145,6 +147,7 @@ export class SpatialSceneRuntime {
   setWorld(index:number,visibleGames:readonly number[]=platformGames.map((_,i)=>i)) {
     if(this.disposed)return;
     const selected=visibleGames.includes(index)?index:visibleGames[0]??0;
+    this.worldIndices=visibleGames;
     this.desiredAccent.set(WORLD_ACCENTS[selected]??WORLD_ACCENTS[0]);this.requestFrame();
   }
   setDetailOpen(open:boolean){
@@ -209,6 +212,7 @@ export class SpatialSceneRuntime {
     const hero=this.options.stage.querySelector(".spatialHero")?.getBoundingClientRect();
     if(hero)this.heroHeight=hero.height;
     const heading=this.options.stage.querySelector(".spatialGalleryHead")?.getBoundingClientRect();
+    const about=this.options.stage.querySelector(".spatialIntro")?.getBoundingClientRect();
     const panels=[...this.options.stage.querySelectorAll<HTMLElement>(".spatialGamePanel")].map(element=>element.getBoundingClientRect());
     const material=this.options.stage.querySelector(".spatialMaterial")?.getBoundingClientRect();
     const transition=this.options.stage.querySelector(".spatialTransition")?.getBoundingClientRect();
@@ -216,6 +220,7 @@ export class SpatialSceneRuntime {
     const span=Math.max(1,this.stageHeight-this.viewportHeight);
     const at=(y:number)=>Math.max(0,Math.min(.98,(y+window.scrollY-this.stageTop)/span));
     if(hero&&heading&&panels.length&&material)this.journeyStops={
+      about:about?at(about.top+about.height*.5-this.viewportHeight*.5):undefined,
       intro:at(heading.top-this.viewportHeight*.35),
       projects:panels.map(panel=>at(panel.top+panel.height*.5-this.viewportHeight*.5)),
       exit:at((transition??material).top-this.viewportHeight*.65),
@@ -274,7 +279,7 @@ export class SpatialSceneRuntime {
     this.compact=compact;this.reduced=prefersStaticPlatform(this.motionQuery);this.desiredPointer.x=this.desiredPointer.y=0;
     this.atmosphere.setQuality(compact,this.reduced);this.rendererHost?.setPreset(compact?COMPACT_PRESET:DESKTOP_PRESET);
     this.cloth.setQuality(compact,this.reduced);
-    this.faceLight.intensity=compact?.92:.65;this.edgeLight.intensity=compact?2.65:2.4;
+    this.faceLight.intensity=compact?1.05:.82;this.edgeLight.intensity=compact?2.65:2.4;
     this.cloth.setHover(.5,.5,0);
     if(changed&&this.rendererHost){
       const previous=this.environment;
@@ -298,6 +303,12 @@ export class SpatialSceneRuntime {
     this.detail=this.detailMotion.value[0];
     this.pointer.x+=((this.reduced||this.detailOpen?0:this.paused?this.pointer.x:this.desiredPointer.x)-this.pointer.x)*blend;
     this.pointer.y+=((this.reduced||this.detailOpen?0:this.paused?this.pointer.y:this.desiredPointer.y)-this.pointer.y)*blend;
+    if(!this.detailOpen){
+      const palette=spatialWorldBlend(this.progress,this.journeyStops,this.worldIndices);
+      this.desiredAccent.set(WORLD_ACCENTS[palette.from]??WORLD_ACCENTS[0]);
+      this.paletteTarget.set(WORLD_ACCENTS[palette.to]??WORLD_ACCENTS[0]);
+      this.desiredAccent.lerp(this.paletteTarget,palette.mix);
+    }
     this.accent.lerp(this.desiredAccent,blend);this.accentLight.color.copy(this.accent);
     const snapshot={...INITIAL_SCROLL_SNAPSHOT,progress:this.progress,viewportWidth:this.viewportWidth,viewportHeight:this.viewportHeight,reducedMotion:this.reduced};
     this.cameraRig!.update(snapshot,{x:0,y:0},0);
@@ -323,7 +334,7 @@ export class SpatialSceneRuntime {
     const choreography=spatialChoreography(p,this.journeyStops),lab=choreography.departure;
     this.bloom?.setLabPresence(lab);
     this.keyLight.intensity=3.05-lab*.85;
-    this.faceLight.intensity=(this.compact?.92:.65)*(1-lab*.35);
+    this.faceLight.intensity=(this.compact?1.05:.82)*(1-lab*.35);
     this.edgeLight.intensity=(this.compact?2.65:2.4)*(1-lab*.25);
     this.anatomyLight.intensity=(this.compact?55:40)*(.65+choreography.arrival*.35)*(1-lab)+(this.compact?95:75)*lab;
     this.anatomyLight.position.set(-this.axisHeight*.1,this.axisHeight*.285,5.5);
@@ -333,7 +344,9 @@ export class SpatialSceneRuntime {
     const spineX=this.axisHeight*.02167*Math.sin(spineT*Math.PI*2)*Math.sin(spineT*Math.PI)**2;
     this.spineLight.position.set(spineX+3.5,this.camera.position.y+1.4,4.6);
     this.spineLight.target.position.set(spineX,this.camera.position.y-1,0);
-    this.spineLight.intensity=(this.compact?85:70)*galleryPresence*(1-lab);
+    this.spineLight.intensity=(this.compact?65:58)*galleryPresence*(1-lab);
+    this.spineLight.color.set(0x91b9c9).lerp(this.accent,.55);
+    this.edgeLight.color.set(0x92c5d5).lerp(this.accent,.22*galleryPresence);
     this.atmosphereOrigin.set(0,this.reduced?0:this.camera.position.y*lab,0);
     this.atmosphere.setChoreography(choreography.arrival,lab);
     this.atmosphere.update(t,p,this.detail,this.pointer,this.atmosphereOrigin,this.rendererHost!.renderer.getPixelRatio(),this.accent,lab);
@@ -341,17 +354,25 @@ export class SpatialSceneRuntime {
     const sheet=this.clothSlot?.getBoundingClientRect();
     const transition=this.options.stage.querySelector(".spatialTransition")?.getBoundingClientRect();
     const interlude=spatialInterludeVisible(transition);
-    this.cloth.visible=!!sheet&&((sheet.bottom>0&&sheet.top<this.viewportHeight)||interlude)&&!this.detailOpen;
-    this.cloth.setEntrance(this.reduced?1:Math.max(interlude?.3:0,lab));
+    const outro=this.options.stage.querySelector(".spatialAbout")?.getBoundingClientRect();
+    const outroPresence=!!outro&&outro.top<this.viewportHeight&&outro.bottom>0;
+    const farewell=outro?1-THREE.MathUtils.smoothstep(outro.top,this.viewportHeight*.12,this.viewportHeight*.95):0;
+    this.cloth.visible=!!sheet&&((sheet.bottom>0&&sheet.top<this.viewportHeight)||interlude||outroPresence)&&!this.detailOpen;
+    const interludeReveal=transition?THREE.MathUtils.smoothstep(-transition.top,0,this.viewportHeight*.24):0;
+    this.cloth.material.opacity=(interlude?interludeReveal:1)*(1-farewell*.24);
+    // A visible folded volume arrives only after the last game has cleared.
+    // Its opening is continuous and reversible; it never spends a chapter edge-on.
+    this.cloth.setEntrance(this.reduced?1:THREE.MathUtils.lerp(Math.max(interlude?.46+interludeReveal*.2:0,lab),.66,farewell));
     if(sheet&&this.cloth.visible){
       const visibleBlend=THREE.MathUtils.smoothstep(lab,.38,.95);
-      const centerX=THREE.MathUtils.lerp(this.viewportWidth*(this.compact?.65:.62),sheet.left+sheet.width/2,visibleBlend),centerY=THREE.MathUtils.lerp(this.viewportHeight*.48,sheet.top+sheet.height/2,visibleBlend);
+      const slotX=THREE.MathUtils.lerp(this.viewportWidth*(this.compact?.72:.7),sheet.left+sheet.width/2,visibleBlend),slotY=THREE.MathUtils.lerp(this.viewportHeight*(this.compact?.68:.52),sheet.top+sheet.height/2,visibleBlend);
+      const centerX=THREE.MathUtils.lerp(slotX,this.viewportWidth*(this.compact?.96:.79),farewell),centerY=THREE.MathUtils.lerp(slotY,this.viewportHeight*(this.compact?.73:.54),farewell);
       const position=panelScreenPosition(this.camera,centerX,centerY,this.viewportWidth,this.viewportHeight,4.4);
-      const unit=panelFrontWidth(this.camera,this.viewportWidth,1,position),width=THREE.MathUtils.lerp(this.viewportWidth*(this.compact?.7:.48),sheet.width,visibleBlend),height=THREE.MathUtils.lerp(this.viewportHeight*.67,sheet.height,visibleBlend),worldWidth=width/unit;
+      const unit=panelFrontWidth(this.camera,this.viewportWidth,1,position),width=THREE.MathUtils.lerp(THREE.MathUtils.lerp(this.viewportWidth*(this.compact?1.14:.65),sheet.width,visibleBlend),this.viewportWidth*(this.compact?.62:.39),farewell),height=THREE.MathUtils.lerp(THREE.MathUtils.lerp(this.viewportHeight*(this.compact?.62:.8),sheet.height,visibleBlend),this.viewportHeight*(this.compact?.56:.86),farewell),worldWidth=width/unit;
       this.cloth.position.copy(position);this.cloth.position.y+=height/unit*.015;
       // Keep the authored loose hem inside the interactive slot at both sizes.
       this.cloth.scale.set(worldWidth*.94,height/unit*.88,worldWidth*.66);this.cloth.update(this.reduced?0:t);
-      this.cloth.rotation.set(-.06,THREE.MathUtils.lerp(-.42,this.compact?-.035:-.14,this.reduced?1:lab),-.035);
+      this.cloth.rotation.set(-.06,THREE.MathUtils.lerp(THREE.MathUtils.lerp(-.42,this.compact?-.035:-.14,this.reduced?1:lab),-.48,farewell),THREE.MathUtils.lerp(-.035,-.1,farewell));
       this.lightAim.set(this.cloth.position.x-3,this.cloth.position.y+3,this.cloth.position.z+5.5);
       this.anatomyLight.position.lerp(this.lightAim,lab);
       this.anatomyLight.target.position.lerp(this.cloth.position,lab);

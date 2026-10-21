@@ -9,8 +9,8 @@ export function finishHeroMaterials(root:Object3D) {
       if(!(material instanceof MeshStandardMaterial)||visited.has(material))continue;
       visited.add(material);
       const skull=material.name.includes("SKULL"),spine=material.name.includes("SPINE");
-      material.envMapIntensity=skull?1.1:spine?1.15:1.35;
-      material.color.multiplyScalar(skull?.62:spine?.68:.83);
+      material.envMapIntensity=skull?1.16:spine?1.08:1.28;
+      material.color.multiplyScalar(skull?.72:spine?.68:.83);
       material.roughness*=skull?1.18:spine?.98:.92;
       material.onBeforeCompile=shader=>{
         shader.fragmentShader=shader.fragmentShader.replace("#include <roughnessmap_fragment>",`#include <roughnessmap_fragment>
@@ -19,7 +19,7 @@ export function finishHeroMaterials(root:Object3D) {
             roughnessFactor=mix(roughnessFactor,.88,clamp((1.-vColor.r)*1.2,0.,1.));
           #endif`);
       };
-      material.customProgramCacheKey=()=>"blackcrown-sculpt-satin-v3-"+(skull?"skull":spine?"spine":"crown");
+      material.customProgramCacheKey=()=>"blackcrown-sculpt-satin-v4-"+(skull?"skull":spine?"spine":"crown");
       material.needsUpdate=true;
     }
   });

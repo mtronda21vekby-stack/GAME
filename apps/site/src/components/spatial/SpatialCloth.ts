@@ -37,6 +37,12 @@ const folds=`
     z+=(breath+response*loose)*uClothMotion;
     float x=p.x-.5+sin(free*3.1+.2)*.065*free;
     float y=p.y-.5-sin(p.x*3.141593)*sin(p.x*3.141593)*free*.075;
+    // The unsupported hem curls toward the lens, keeping an open, sculptural
+    // silhouette rather than a uniformly flat hanging rectangle.
+    float hem=smoothstep(.62,1.,free);
+    z+=hem*hem*(.18+sin(p.x*4.8+.8)*.065);
+    y+=hem*hem*(.08+sin(p.x*3.141593)*.035);
+    x-=pow(p.x,5.)*free*.035;
     x+=sin(p.y*4.+uClothTime*.18)*free*.008*uClothMotion;
     float opening=smoothstep(0.,1.,uClothEntrance);
     x*=mix(.08,1.,opening);
@@ -96,7 +102,7 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshStand
   private nextHit=0;
   constructor(compact:boolean) {
     super(new THREE.PlaneGeometry(1,1,compact?20:32,compact?26:48),new THREE.MeshStandardMaterial({
-      color:0x7d8e97,metalness:1,roughness:.34,side:THREE.DoubleSide,envMapIntensity:1.05,
+      color:0x7d8e97,metalness:1,roughness:.34,side:THREE.DoubleSide,envMapIntensity:1.05,transparent:true,depthWrite:false,
     }));
     this.name="INTERACTIVE_METAL_CLOTH";this.frustumCulled=false;this.visible=false;
     this.material.onBeforeCompile=shader=>{
