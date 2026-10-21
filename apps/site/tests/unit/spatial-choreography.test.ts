@@ -75,13 +75,13 @@ describe("Scroll owned entrance and exit",()=>{
     for(let i=0;i<=1000;i++){
       rig.update({...snapshot,progress:i/1000},{x:0,y:0},0);
       expect(camera.position.z).toBeGreaterThanOrEqual(17.8+(compact?1.8:0)-1e-6);
-      expect(camera.position.z).toBeLessThanOrEqual(26.8+(compact?1.8:0)+1e-6);
+      expect(camera.position.z).toBeLessThanOrEqual((compact?22.2:26.8)+(compact?1.8:0)+1e-6);
       expect(camera.position.y).toBeLessThanOrEqual(previous+1e-6);previous=camera.position.y;
       expect(Math.abs(camera.quaternion.x)+Math.abs(camera.quaternion.y)+Math.abs(camera.quaternion.z)).toBeLessThan(1e-8);
       poses.push(camera.position.toArray());
     }
     for(let i=1000;i>=0;i--){rig.update({...snapshot,progress:i/1000},{x:0,y:0},0);expect(camera.position.toArray()).toEqual(poses[i]);}
-    expect(poses[0][2]-poses[Math.round(spatialArrivalEnd(stops)*1000)][2]).toBeCloseTo(8);
+    expect(poses[0][2]-poses[Math.round(spatialArrivalEnd(stops)*1000)][2]).toBeCloseTo(compact?3.4:8);
     const exit=poses.slice(700,901).map(p=>p[2]);
     expect(Math.max(...exit)).toBeLessThanOrEqual(20.4+(compact?1.8:0)+1e-6);
   });
