@@ -40,7 +40,8 @@ html:has(.spatialPage) { scroll-behavior:smooth; scrollbar-gutter:stable; }
 .spatialLoad svg { transform:rotate(-90deg); }
 .spatialLoad circle { fill:none;stroke:#8cbcc122;stroke-width:1.5; }
 .spatialLoad circle+circle { stroke:#bdd2d4;transition:stroke-dashoffset .15s linear; }
-.spatialIntro { min-height:75svh; padding:120px clamp(24px,5vw,84px); display:flex; flex-direction:column; justify-content:center; align-items:flex-start; background:linear-gradient(90deg,#090d11d9,transparent 65%); }
+.spatialIntro { position:relative; isolation:isolate; min-height:75svh; padding:120px clamp(24px,5vw,84px); display:flex; flex-direction:column; justify-content:center; align-items:flex-start; --intro-scrim:linear-gradient(90deg,#090d11d9,transparent 65%); }
+.spatialIntro:before { content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; background:var(--intro-scrim); mask-image:linear-gradient(transparent,#000 120px,#000 calc(100% - 120px),transparent); }
 .spatialIntro h2,.spatialTransition h2 { max-width:480px; margin:0 0 24px; font-size:clamp(48px,5.5vw,80px); font-weight:350;line-height:1.03;letter-spacing:-.055em; }
 .spatialIntro h2>span,.spatialTransition h2>span { color:#a0b6bd; }
 .spatialIntro>p:not(.spatialEyebrow) { color:#b0c0c6; max-width:430px; font-size:15px;line-height:1.8;text-shadow:0 2px 16px #000; }
@@ -237,7 +238,7 @@ html[data-reduced-motion="1"] .spatialPage *,html[data-reduced-motion="1"] .spat
  .spatialSceneNav { top:13px;right:76px;left:auto;bottom:auto;border-radius:50%;padding:0;width:48px;height:48px; }
  .spatialSceneNav button { width:48px;padding:0; }
  .spatialSceneNav .spatialNavLabel,.spatialSceneNav .spatialNavChapter,.spatialSceneNav>a { display:none; }
- .spatialIntro { min-height:75svh;padding:110px 24px;background:linear-gradient(90deg,#090d11d9,transparent 100%); }
+ .spatialIntro { min-height:75svh;padding:110px 24px;--intro-scrim:linear-gradient(90deg,#090d11d9,transparent 100%); }
  .spatialIntro h2,.spatialTransition h2 { font-size:42px;max-width:250px; }
  .spatialIntro>p:not(.spatialEyebrow) { max-width:250px;font-size:14px; }
  .spatialTransition { min-height:90svh;padding:100px 24px; }
@@ -253,12 +254,12 @@ html[data-reduced-motion="1"] .spatialPage *,html[data-reduced-motion="1"] .spat
 .spatialGamePanel[data-media-depth=ready] .spatialPanelWindow { background:transparent; }
 .spatialGamePanel[data-media-depth=ready] .spatialPanelBody { background:linear-gradient(135deg,#16262cd9,#0a141ceb);border-radius:0 0 8px 8px; }
 @media(min-width:761px) and (min-height:521px) {
- .spatialIntro { background:linear-gradient(90deg,#090d11eb, #090d1199 30%,transparent 62%); }
+ .spatialIntro { --intro-scrim:linear-gradient(90deg,#090d11eb, #090d1199 30%,transparent 62%); }
  .spatialIntro h2 { max-width:490px; }
  .spatialTransition>div { align-self:flex-start; margin-top:16svh; }
 }
 @media(max-width:760px) {
- .spatialIntro { min-height:85svh; background:linear-gradient(90deg,#090d11f5,#090d11d9 30%,#090d1177 52%,transparent 83%); }
+ .spatialIntro { min-height:85svh; --intro-scrim:linear-gradient(90deg,#090d11f5,#090d11d9 30%,#090d1177 52%,transparent 83%); }
  .spatialIntro h2 { max-width:200px; font-size:36px; }
  .spatialIntro>p:not(.spatialEyebrow) { max-width:190px; font-size:13px; line-height:1.85; }
  .spatialGalleryHead:before { inset:-24px -22px -16px; background:linear-gradient(90deg,#090d11f5,#090d11cf 50%,#090d1166 85%,transparent); }
