@@ -200,8 +200,8 @@ export class SpatialSceneRuntime {
       }
       for(const entry of materials)sides.set(entry,entry.side);
     });
-      cloth.setOptics(sampler,1,1,1);cloth.setDepthOptics(sampler,this.camera.near,this.camera.far);
-      this.atmosphere.setBackgroundDepthCapture(true);
+      cloth.setOptics(sampler,1,1,1);cloth.setDepthOptics(this.compact?null:sampler,this.camera.near,this.camera.far);
+      this.atmosphere.setBackgroundDepthCapture(!this.compact);
       this.rendererHost!.renderer.render(this.scene,this.camera);
     }finally{
       try{this.atmosphere.setBackgroundDepthCapture(saved.depthMode);}finally{
@@ -228,7 +228,7 @@ export class SpatialSceneRuntime {
         this.atmosphere.setBackgroundCapture(this.clothBackgroundDepth(),this.refraction!.size.x/Math.max(1,this.viewportWidth));
       },
       afterCapture:()=>this.atmosphere.setBackgroundCapture(null),
-      depthObjects:()=>[this.atmosphere],
+      depthObjects:()=>this.compact?[]:[this.atmosphere],
       beforeDepthCapture:()=>this.atmosphere.setBackgroundDepthCapture(true),
       afterDepthCapture:()=>this.atmosphere.setBackgroundDepthCapture(false),
     });

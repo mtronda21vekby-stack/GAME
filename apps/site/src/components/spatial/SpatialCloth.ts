@@ -84,9 +84,6 @@ const weave=`
   varying vec2 vClothUv;
   uniform sampler2D uClothMark;
   uniform sampler2D uClothBackground;
-  uniform sampler2D uClothDepth;
-  uniform vec2 uClothDepthRange;
-  uniform float uClothDepthReady;
   uniform vec2 uClothRenderSize,uClothBackgroundSize,uClothCssSize;
   uniform mat4 uClothProjection;
   uniform vec4 uClothExitPlane;
@@ -143,6 +140,9 @@ const weave=`
 
 /** r170 packing helpers are included immediately before these functions. */
 const depthOptics=`
+  uniform sampler2D uClothDepth;
+  uniform vec2 uClothDepthRange;
+  uniform float uClothDepthReady;
   bool clothDepthCross(vec3 origin,vec3 ray,float travel,out vec2 sampleUv) {
     vec3 candidate=origin+ray*travel;
     vec4 clip=uClothProjection*vec4(candidate,1.);
@@ -233,6 +233,9 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
       if(length>1e-8)plane.multiplyScalar(1/length);
     };
     this.material.onBeforeCompile=shader=>{
+      // Compact keeps same-frame colour and the measured backing-plane ray.
+      // Omit packed-depth code entirely instead of compiling an inactive loop.
+      const useDepth=!this.compact;
       shader.uniforms.uClothTime=this.time;shader.uniforms.uClothMotion=this.motion;shader.uniforms.uClothEntrance=this.entrance;
       shader.uniforms.uClothHits=this.hits;shader.uniforms.uClothHover=this.hover;
       shader.uniforms.uClothDrag=this.drag;shader.uniforms.uClothMark=this.mark;
@@ -242,8 +245,10 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
       shader.uniforms.uClothBend=this.bendStrength;
       shader.uniforms.uClothCssSize=this.cssSize;shader.uniforms.uClothProjection=this.opticalProjection;
       shader.uniforms.uClothExitPlane=this.opticalExitPlane;
-      shader.uniforms.uClothDepth=this.depthBackground;shader.uniforms.uClothDepthRange=this.depthRange;
-      shader.uniforms.uClothDepthReady=this.depthReady;
+      if(useDepth){
+        shader.uniforms.uClothDepth=this.depthBackground;shader.uniforms.uClothDepthRange=this.depthRange;
+        shader.uniforms.uClothDepthReady=this.depthReady;
+      }
       shader.vertexShader=shader.vertexShader.replace("#include <common>","#include <common>\n"+folds)
         .replace("#include <beginnormal_vertex>",`#include <beginnormal_vertex>
           float e=.002;
@@ -254,7 +259,7 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
         .replace("#include <begin_vertex>",`#include <begin_vertex>
           vClothUv=uv;transformed=clothPoint;`);
       shader.fragmentShader=shader.fragmentShader.replace("#include <common>","#include <common>\n"+weave)
-        .replace("#include <packing>","#include <packing>\n"+depthOptics)
+        .replace("#include <packing>","#include <packing>\n"+(useDepth?depthOptics:""))
         .replace("#include <color_fragment>",`#include <color_fragment>
           vec4 cloth=clothWeave(vClothUv);
           float mark=texture2D(uClothMark,vClothUv).a;
@@ -308,11 +313,11 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
             float bentDenominator=dot(uClothExitPlane.xyz,opticalRay);
             float straightDenominator=dot(uClothExitPlane.xyz,-eye);
             vec2 projectedDisplacement=vec2(0.);
-            float backingTravel=8.;
+            ${useDepth?"float backingTravel=8.;":""}
             if(uClothSculpture>.001&&bentDenominator<-.08&&straightDenominator<-.08&&planeDistance>0.) {
               float bentTravel=-planeDistance/bentDenominator;
               float straightTravel=-planeDistance/straightDenominator;
-              backingTravel=max(bentTravel,straightTravel);
+              ${useDepth?"backingTravel=max(bentTravel,straightTravel);":""}
               if(bentTravel>0.&&straightTravel>0.) {
                 vec4 bentClip=uClothProjection*vec4(point+opticalRay*bentTravel,1.);
                 vec4 straightClip=uClothProjection*vec4(point-eye*straightTravel,1.);
@@ -320,13 +325,13 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
                   projectedDisplacement=(bentClip.xy/bentClip.w-straightClip.xy/straightClip.w)*.5;
               }
             }
-            if(uClothDepthReady>.5&&uClothSculpture>.001) {
+            ${useDepth?`if(uClothDepthReady>.5&&uClothSculpture>.001) {
               float farTravel=max(0.,(uClothDepthRange.y+point.z)/max(-opticalRay.z,.1));
               float traceLimit=min(farTravel,min(32.,max(8.,backingTravel+12.)));
               vec2 depthUv=vec2(0.);
               if(traceLimit>.1&&clothTraceDepth(point,opticalRay,traceLimit,depthUv))
                 projectedDisplacement=depthUv-screenUv;
-            }
+            }`:""}
             vec2 displacement=mix(originalDisplacement,projectedDisplacement,clamp(uClothSculpture,0.,1.));
             // This cap is in CSS pixels even when the composer uses another DPR.
             float cssTravel=length(displacement*max(uClothCssSize,vec2(1.)));
@@ -346,7 +351,7 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
           }
           #include <opaque_fragment>`);
     };
-    this.material.customProgramCacheKey=()=>"blackcrown-faceted-depth-tension-surface-v8";
+    this.material.customProgramCacheKey=()=>`blackcrown-faceted-depth-tension-surface-v8-${this.compact?"plane":"depth"}`;
     this.applyProfileMaterial();
   }
   get profile(){return this.currentProfile;}
@@ -354,7 +359,7 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
   setSculpture(amount:number){this.sculpture.value=THREE.MathUtils.clamp(Number.isFinite(amount)?amount:0,0,1);}
   setOpticalBackgroundDepth(worldZ:number|null){this.opticalBackgroundDepth=worldZ!==null&&Number.isFinite(worldZ)?worldZ:null;}
   setDepthOptics(texture:THREE.Texture|null,near:number,far:number) {
-    const valid=!!texture&&Number.isFinite(near)&&Number.isFinite(far)&&near>0&&far>near;
+    const valid=!this.compact&&!!texture&&Number.isFinite(near)&&Number.isFinite(far)&&near>0&&far>near;
     this.depthBackground.value=valid?texture:null;this.depthReady.value=valid?1:0;
     if(valid)this.depthRange.value.set(near,far);
   }
@@ -375,9 +380,16 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
     this.material.iridescence=0;
   }
   setQuality(compact:boolean,reduced:boolean) {
+    const changed=this.compact!==compact;
     const columns=compact?20:32,rows=compact?26:48;
     if(this.geometry.parameters.widthSegments!==columns){this.geometry.dispose();this.geometry=new THREE.PlaneGeometry(1,1,columns,rows);}
     this.compact=compact;this.applyProfileMaterial();
+    if(changed){
+      // The previous program can still reference these shared uniform wrappers.
+      // Clear borrowed textures immediately, before the next capture or draw.
+      this.depthBackground.value=null;this.depthReady.value=0;
+      this.material.needsUpdate=true;
+    }
     this.motion.value=reduced?0:1;
     if(reduced){this.hover.value.z=this.hoverTarget.z=0;for(const hit of this.hits.value)hit.w=0;this.dragTarget.set(0,0);this.dragX.snap(0);this.dragY.snap(0);this.drag.value.z=this.drag.value.w=0;}
   }

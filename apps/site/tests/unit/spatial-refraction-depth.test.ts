@@ -26,8 +26,9 @@ function fixture() {
   }),afterDepthCapture=vi.fn(()=>{
     mode.depth=false;layer.material.depthWrite=false;layer.material.blending=NormalBlending;events.push("depth-after");
   });
+  const depthSelection={enabled:true};
   const capture=new SpatialRefraction(mock as unknown as WebGLRenderer,scene,camera,{
-    exclude:()=>[cloth],compact:true,depthObjects:()=>[atmosphere],beforeDepthCapture,afterDepthCapture,
+    exclude:()=>[cloth],compact:true,depthObjects:()=>depthSelection.enabled?[atmosphere]:[],beforeDepthCapture,afterDepthCapture,
     beforeCapture:()=>events.push("color-before"),afterCapture:()=>events.push("color-after"),
   });capture.resize(393,852,1.25,true);
   const expected={viewport:state.viewport.clone(),scissor:state.scissor.clone(),clearColor:state.clearColor.clone(),clearAlpha:state.clearAlpha};
@@ -38,15 +39,15 @@ function fixture() {
     for(const object of [atmosphere,layer,dust,cloth,brand,brandMesh,gallery,card,line,sprite])expect(object.visible).toBe(true);
     expect(hidden.visible).toBe(false);expect(mode.depth).toBe(false);expect(layer.material.depthWrite).toBe(false);expect(layer.material.blending).toBe(NormalBlending);
   };
-  return {capture,scene,camera,background,atmosphere,layer,dust,cloth,brandMesh,card,line,sprite,hidden,mock,state,gl,previous,mode,events,beforeDepthCapture,afterDepthCapture,restored};
+  return {capture,scene,camera,background,atmosphere,layer,dust,cloth,brandMesh,card,line,sprite,hidden,mock,state,gl,previous,mode,events,beforeDepthCapture,afterDepthCapture,restored,depthSelection};
 }
 
 describe("Significant atmospheric depth capture",()=>{
-  it.each(["success","throw","lost","disposed"])("rolls back real runtime material/visibility/uniform references after optical preparation %s",outcome=>{
-    const scene=new Scene(),cloth=new SpatialCloth(true),atmosphere=new SpatialAtmosphere(true),other=new Mesh(),camera=new PerspectiveCamera(),sampler=new Texture(),oldColor=new Texture(),oldDepth=new Texture();
+  it.each([true,false].flatMap(compact=>["success","throw","lost","disposed"].map(outcome=>[compact,outcome] as const)))("rolls back real runtime preparation compact=%s outcome=%s",(compact,outcome)=>{
+    const scene=new Scene(),cloth=new SpatialCloth(compact),atmosphere=new SpatialAtmosphere(compact),other=new Mesh(),camera=new PerspectiveCamera(),sampler=new Texture(),oldColor=new Texture(),oldDepth=new Texture();
     scene.add(cloth,atmosphere,other);cloth.visible=false;atmosphere.visible=false;
     const qualityVisibility=new Map();atmosphere.traverse(object=>{if(object!==atmosphere)qualityVisibility.set(object,object.visible);});
-    const hiddenQuality=[...qualityVisibility].filter(([,visible])=>!visible).map(([object])=>object);expect(hiddenQuality).toHaveLength(3);
+    const hiddenQuality=[...qualityVisibility].filter(([,visible])=>!visible).map(([object])=>object);expect(hiddenQuality).toHaveLength(compact?3:1);
     cloth.setOptics(oldColor,301,503,.3);cloth.setDepthOptics(oldDepth,.4,90);cloth.backgroundSize.value.set(7,9);cloth.cssSize.value.set(19,31);
     const uniforms=()=>({color:cloth.background.value,depth:cloth.depthBackground.value,refraction:cloth.refraction.value,ready:cloth.depthReady.value,render:cloth.renderSize.value.toArray(),background:cloth.backgroundSize.value.toArray(),range:cloth.depthRange.value.toArray(),css:cloth.cssSize.value.toArray(),projection:cloth.opticalProjection.value.toArray(),plane:cloth.opticalExitPlane.value.toArray()});
     const objects:object[]=[],materials=new Map();scene.traverse(object=>{objects.push({object,visible:object.visible,frustumCulled:object.frustumCulled});const material=(object as Mesh).material;if(material&&!Array.isArray(material))materials.set(material,{side:material.side,depthWrite:material.depthWrite,blending:material.blending});});
@@ -55,14 +56,14 @@ describe("Significant atmospheric depth capture",()=>{
       for(const [object,visible]of qualityVisibility)expect(object.visible).toBe(visible);
       const drawable:object[]=[];atmosphere.traverseVisible(object=>{if((object as Mesh).material)drawable.push(object);});
       for(const hidden of hiddenQuality)expect(drawable).not.toContain(hidden);
-      expect(cloth.background.value).toBe(sampler);expect(cloth.depthBackground.value).toBe(sampler);expect(cloth.refraction.value).toBe(1);expect(cloth.depthReady.value).toBe(1);
-      expect(atmosphere.backgroundDepthCapture.value).toBe(1);atmosphere.traverse(object=>{const material=(object as Mesh).material;if(material&&!Array.isArray(material)){expect(material.depthWrite).toBe(true);expect(material.blending).toBe(NoBlending);}});
+      expect(cloth.background.value).toBe(sampler);expect(cloth.depthBackground.value).toBe(compact?null:sampler);expect(cloth.refraction.value).toBe(1);expect(cloth.depthReady.value).toBe(compact?0:1);
+      expect(atmosphere.backgroundDepthCapture.value).toBe(compact?0:1);atmosphere.traverse(object=>{const material=(object as Mesh).material;if(material&&!Array.isArray(material)){expect(material.depthWrite).toBe(!compact);expect(material.blending).toBe(compact?materials.get(material).blending:NoBlending);}});
       cloth.material.side=FrontSide;cloth.cssSize.value.set(3,5);cloth.opticalProjection.value.identity();cloth.opticalExitPlane.value.set(9,8,7,6);
       if(outcome==="lost"){runtime.contextLost=true;runtime.releaseOptics();}
       if(outcome==="disposed"){runtime.disposed=true;runtime.releaseOptics();}
       if(outcome==="throw")throw new Error("injected actual-draw failure");
     });
-    const runtime=Object.assign(Object.create(SpatialSceneRuntime.prototype),{scene,cloth,atmosphere,camera,rendererHost:{renderer:{render,getContext:()=>({isContextLost:()=>runtime.contextLost===true})}}});
+    const runtime=Object.assign(Object.create(SpatialSceneRuntime.prototype),{scene,cloth,atmosphere,camera,compact,rendererHost:{renderer:{render,getContext:()=>({isContextLost:()=>runtime.contextLost===true})}}});
     if(outcome==="throw")expect(()=>runtime.drawOpticsPreparation(sampler)).toThrow("injected actual-draw failure");else runtime.drawOpticsPreparation(sampler);
     expect(render).toHaveBeenCalledTimes(1);
     if(outcome==="lost"||outcome==="disposed"){
@@ -72,6 +73,17 @@ describe("Significant atmospheric depth capture",()=>{
     for(const saved of objects as {object:Mesh;visible:boolean;frustumCulled:boolean}[]){expect(saved.object.visible).toBe(saved.visible);expect(saved.object.frustumCulled).toBe(saved.frustumCulled);}
     for(const [material,saved]of materials){expect(material.side).toBe(saved.side);expect(material.depthWrite).toBe(saved.depthWrite);expect(material.blending).toBe(saved.blending);}
     cloth.dispose();atmosphere.dispose();sampler.dispose();oldColor.dispose();oldDepth.dispose();other.geometry.dispose();(other.material as MeshBasicMaterial).dispose();
+  });
+
+  it("releases selected depth on a quality change without losing color, then re-enables depth without stale texture reuse",()=>{
+    const f=fixture();f.capture.setEnabled(true);expect(f.capture.render()).toBe(true);
+    const color=f.capture.texture,depth=f.capture.depthTexture,target=f.mock.setRenderTarget.mock.calls.map(([t])=>t).find(t=>t?.texture===depth)!;
+    const dispose=vi.spyOn(target,"dispose").mockImplementation(()=>{expect(f.state.target).not.toBe(target);});
+    f.depthSelection.enabled=false;const captures=f.capture.snapshot().depthCaptures,draws=f.mock.render.mock.calls.length;
+    for(let i=0;i<2;i++){expect(f.capture.render()).toBe(true);expect(f.capture.texture).toBe(color);expect(f.capture.depthTexture).toBeNull();f.restored();}
+    expect(dispose).toHaveBeenCalledTimes(1);expect(f.mock.render).toHaveBeenCalledTimes(draws+2);expect(f.capture.snapshot()).toMatchObject({allocated:true,failed:false,depthAllocated:false,depthPixels:0,depthColorBytes:0,depthCaptures:captures,depthFailed:false});
+    f.depthSelection.enabled=true;expect(f.capture.render()).toBe(true);expect(f.capture.texture).toBe(color);expect(f.capture.depthTexture).not.toBeNull();expect(f.capture.depthTexture).not.toBe(depth);
+    expect(f.capture.snapshot()).toMatchObject({depthAllocated:true,depthCaptures:captures+1,depthFailed:false});f.restored();f.capture.dispose();f.previous.dispose();
   });
 
   it("keeps the hero allocation free and captures only atmospheric fragments in a separate bounded data target",()=>{

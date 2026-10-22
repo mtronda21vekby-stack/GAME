@@ -180,7 +180,7 @@ export class SpatialRefraction {
     const masked:{object:Object3D;mask:number}[]=[];
     try {
       const roots=new Set(this.options.depthObjects!());
-      if(!roots.size)return;
+      if(!roots.size){this.releaseDepth();return;}
       const ancestors=new Set<Object3D>();
       for(const root of roots)for(let parent=root.parent;parent&&parent!==this.scene;parent=parent.parent)ancestors.add(parent);
       this.scene.traverse(object=>{

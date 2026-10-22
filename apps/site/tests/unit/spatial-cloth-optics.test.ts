@@ -246,7 +246,7 @@ describe("Sculptural LAB profiles and live background optics",()=>{
   });
 
   it("validates depth metadata without owning or disposing the external depth texture",()=>{
-    const cloth=new SpatialCloth(true),depth=background(),color=background(),depthDisposed=vi.spyOn(depth,"dispose"),colorDisposed=vi.spyOn(color,"dispose");
+    const cloth=new SpatialCloth(false),depth=background(),color=background(),depthDisposed=vi.spyOn(depth,"dispose"),colorDisposed=vi.spyOn(color,"dispose");
     cloth.setOptics(color,491,1065,.8);cloth.setDepthOptics(depth,.1,100);
     expect(cloth.depthBackground.value).toBe(depth);expect(cloth.depthRange.value.toArray()).toEqual([.1,100]);expect(cloth.depthReady.value).toBe(1);
     const shader=assembledShader(cloth);expect(shader.uniforms).toMatchObject({uClothDepth:cloth.depthBackground,uClothDepthRange:cloth.depthRange,uClothDepthReady:cloth.depthReady});
@@ -261,7 +261,7 @@ describe("Sculptural LAB profiles and live background optics",()=>{
   });
 
   it("bounds depth tracing to eight packed-depth reads and one color read with a plane fallback",()=>{
-    const cloth=new SpatialCloth(true),fragment=assembledShader(cloth).fragmentShader;
+    const cloth=new SpatialCloth(false),fragment=assembledShader(cloth).fragmentShader;
     const packing=fragment.indexOf("#include <packing>"),cross=fragment.indexOf("bool clothDepthCross("),trace=fragment.indexOf("bool clothTraceDepth("),plane=fragment.indexOf("projectedDisplacement=(bentClip.xy"),depth=fragment.indexOf("if(uClothDepthReady>.5&&uClothSculpture>.001)");
     expect(packing).toBeGreaterThan(-1);expect(cross).toBeGreaterThan(packing);expect(trace).toBeGreaterThan(cross);expect(depth).toBeGreaterThan(plane);
     const coarse=Number(fragment.match(/for\(int i=0;i<(\d+);i\+\+\)/)?.[1]),refine=Number(fragment.match(/for\(int refine=0;refine<(\d+);refine\+\+\)/)?.[1]);
@@ -272,5 +272,38 @@ describe("Sculptural LAB profiles and live background optics",()=>{
     expect(fragment).toContain("if(windowDepth>=.9999)return false");expect(fragment).toContain("sceneDepth>-origin.z+.06&&-candidate.z>=sceneDepth");
     expect(fragment).toContain("if(traceLimit>.1&&clothTraceDepth(point,opticalRay,traceLimit,depthUv))\n                projectedDisplacement=depthUv-screenUv");
     expect(cloth.depthReady.value).toBe(0);expect(fragment).toContain("float traceLimit=min(farTravel,min(32.");cloth.dispose();
+  });
+
+  it("assembles a mobile plane-only shader and retains desktop depth tracing",()=>{
+    for(const compact of [true,false]){
+      const cloth=new SpatialCloth(compact),texture=background();cloth.setDepthOptics(texture,.1,100);
+      const shader=assembledShader(cloth),fragment=shader.fragmentShader;
+      expect(fragment.match(/texture2D\(uClothBackground,/g)).toHaveLength(1);
+      expect(fragment).toContain("uClothProjection*vec4(point+opticalRay*bentTravel,1.)");
+      expect(cloth.material.customProgramCacheKey()).toBe(`blackcrown-faceted-depth-tension-surface-v8-${compact?"plane":"depth"}`);
+      if(compact){
+        expect(Object.keys(shader.uniforms).filter(name=>name.startsWith("uClothDepth"))).toEqual([]);
+        expect(fragment).not.toMatch(/uClothDepth|clothDepthCross|clothTraceDepth|windowDepth|farTravel|traceLimit/);
+        expect(cloth.depthBackground.value).toBeNull();expect(cloth.depthReady.value).toBe(0);
+      }else{
+        expect(shader.uniforms).toMatchObject({uClothDepth:cloth.depthBackground,uClothDepthRange:cloth.depthRange,uClothDepthReady:cloth.depthReady});
+        expect(fragment).toContain("bool clothTraceDepth(");expect(fragment).toContain("texture2D(uClothDepth,sampleUv)");expect(cloth.depthReady.value).toBe(1);
+      }
+      cloth.dispose();texture.dispose();
+    }
+  });
+
+  it("invalidates the shader only on a compact-quality flip and clears borrowed depth without disposing it",()=>{
+    const cloth=new SpatialCloth(false),depth=background(),color=background(),depthDisposed=vi.spyOn(depth,"dispose");
+    cloth.setOptics(color,491,1065,.8);cloth.setDepthOptics(depth,.1,100);const version=cloth.material.version,desktopKey=cloth.material.customProgramCacheKey();
+    cloth.setQuality(false,false);cloth.setQuality(false,true);expect(cloth.material.version).toBe(version);expect(cloth.depthBackground.value).toBe(depth);
+    cloth.setQuality(true,false);expect(cloth.material.version).toBe(version+1);expect(cloth.material.customProgramCacheKey()).not.toBe(desktopKey);
+    expect(cloth.depthBackground.value).toBeNull();expect(cloth.depthReady.value).toBe(0);expect(depthDisposed).not.toHaveBeenCalled();
+    expect(cloth.background.value).toBe(color);expect(cloth.refraction.value).toBe(.8);expect(assembledShader(cloth).fragmentShader).not.toContain("clothTraceDepth");
+    cloth.setDepthOptics(depth,.2,80);cloth.setQuality(true,true);cloth.setQuality(true,false);
+    expect(cloth.depthBackground.value).toBeNull();expect(cloth.depthReady.value).toBe(0);expect(cloth.material.version).toBe(version+1);
+    cloth.setQuality(false,false);expect(cloth.material.version).toBe(version+2);expect(cloth.material.customProgramCacheKey()).toBe(desktopKey);expect(cloth.depthReady.value).toBe(0);
+    expect(assembledShader(cloth).fragmentShader).toContain("clothTraceDepth");cloth.setDepthOptics(depth,.2,80);expect(cloth.depthBackground.value).toBe(depth);
+    cloth.dispose();expect(depthDisposed).not.toHaveBeenCalled();depth.dispose();color.dispose();
   });
 });
