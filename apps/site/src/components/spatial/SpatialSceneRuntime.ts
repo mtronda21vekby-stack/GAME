@@ -183,13 +183,15 @@ export class SpatialSceneRuntime {
     this.refraction=new SpatialRefraction(this.rendererHost.renderer,this.scene,this.camera,{
       exclude:()=>[this.cloth],compact:this.compact,
       beforeCapture:()=>{
-        const m=this.cloth.matrixWorld.elements;
-        // Conservative bounds include both sculptural profiles and bounded hits.
-        const back=m[14]-(Math.abs(m[2])*.9+Math.abs(m[6])*.9+Math.abs(m[10])*1.2)-.05;
-        this.atmosphere.setBackgroundCapture(back,this.refraction!.size.x/Math.max(1,this.viewportWidth));
+        this.atmosphere.setBackgroundCapture(this.clothBackgroundDepth(),this.refraction!.size.x/Math.max(1,this.viewportWidth));
       },
       afterCapture:()=>this.atmosphere.setBackgroundCapture(null),
     });
+  }
+  private clothBackgroundDepth(){
+    const m=this.cloth.matrixWorld.elements;
+    // Conservative bounds include the authored folds and bounded input response.
+    return m[14]-(Math.abs(m[2])*.9+Math.abs(m[6])*.9+Math.abs(m[10])*1.2)-.05;
   }
   private applyBudget(){
     if(!this.rendererHost)return;
@@ -449,6 +451,8 @@ export class SpatialSceneRuntime {
     this.camera.updateMatrixWorld();
     this.updateObjects();
     this.scene.updateMatrixWorld();
+    if(this.cloth.visible)this.cloth.setOpticalBackgroundDepth(this.atmosphere.setLabDepth(this.clothBackgroundDepth(),this.camera.position.z,this.camera.position.y));
+    else this.cloth.setOpticalBackgroundDepth(null);
     if(!this.detailOpen)this.gallery.update(this.camera,this.paused?window.scrollY:this.stageTop+this.progress*(this.stageHeight-this.viewportHeight),window.scrollY,this.reduced,this.brandReady);
     this.gallery.focus(this.detail);
     const opticsTarget=!this.reduced&&!this.constrained&&!this.detailOpen&&this.budget.snapshot().level===0&&!this.refraction?.snapshot().failed?1:0;

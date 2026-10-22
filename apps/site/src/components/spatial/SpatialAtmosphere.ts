@@ -106,7 +106,7 @@ const hazeFragment = `
     float sweep=vUv.x-.47+(vUv.y-.5)*.25;
     // Narrow the existing pair of shaft gradients in LAB, so their live edges
     // are recognisable when a fold refracts them. This is the same light plane.
-    float beam=(exp(-pow(sweep*mix(5.2,18.,uLab),2.))*mix(.68,.28,uLab)+exp(-pow((sweep-mix(.2,.14,uLab))*mix(12.,40.,uLab),2.))*mix(.24,.82,uLab))*vertical;
+    float beam=(exp(-pow(sweep*mix(5.2,14.,uLab),2.))*mix(.68,.28,uLab)+exp(-pow((sweep-mix(.2,.14,uLab))*mix(12.,26.,uLab),2.))*mix(.24,.82,uLab))*vertical;
     vec2 pocketDelta=(vUv-vec2(.57,.58))*vec2(3.1,1.7);
     float pocket=.12+.88*exp(-dot(pocketDelta,pocketDelta));
     float alpha=mix(edge*pocket,beam,uShaft)*(.18+.82*cloud)*uOpacity;
@@ -140,6 +140,7 @@ export class SpatialAtmosphere extends THREE.Group {
   private compact: boolean;
   private reduced = false;
   private captureDpr:number|null=null;
+  private backgroundPointerX=0;
 
   constructor(compact: boolean) {
     super(); this.name="BLACKCROWN_ATMOSPHERE"; this.compact=compact;
@@ -216,6 +217,28 @@ export class SpatialAtmosphere extends THREE.Group {
     this.backgroundClip.value.set(maxWorldZ!==null&&Number.isFinite(maxWorldZ)?1:0,maxWorldZ!==null&&Number.isFinite(maxWorldZ)?maxWorldZ:0);
   }
 
+  /** Recompose the existing light field just behind the measured whole sheet.
+   * Scale and translate about the camera to preserve the projected footprint.
+   * Call after update() and the cloth world-matrix update; return the same backing
+   * plane used by the material's projected optical path. No new geometry. */
+  setLabDepth(cutoff:number,cameraZ:number,cameraY?:number):number {
+    const lab=this.lab.value;
+    if(!Number.isFinite(cutoff)||!Number.isFinite(cameraZ)||lab<=0)return this.position.z+this.shafts[0].position.z;
+    const axisHeight=this.dust.material.uniforms.uAxisHeight.value as number;
+    const localCameraX=-this.position.x;
+    const localCameraY=(Number.isFinite(cameraY)?cameraY!:this.position.y/Math.max(lab,.001))-this.position.y;
+    const reflow=(mesh:THREE.Mesh,baseZ:number,targetZ:number,x:number,y:number,width:number,height:number)=>{
+      const baseWorldZ=this.position.z+baseZ;
+      const worldZ=THREE.MathUtils.lerp(baseWorldZ,targetZ,lab);
+      const ratio=THREE.MathUtils.clamp((cameraZ-worldZ)/Math.max(1,cameraZ-baseWorldZ),.15,2);
+      mesh.position.set(localCameraX+(x-localCameraX)*ratio,localCameraY+(y-localCameraY)*ratio,worldZ-this.position.z);
+      mesh.scale.set(width*ratio,height*ratio,1);
+    };
+    this.haze.forEach((mesh,i)=>reflow(mesh,[-10,-3,3][i]-lab*8,cutoff-6+i*2,(i-1)*1.1+this.backgroundPointerX*(.15+i*.2),axisHeight*(.22-i*.18),23,axisHeight*1.5*(1+lab*.3)));
+    this.shafts.forEach((mesh,i)=>reflow(mesh,(i?1.6:-6)-lab*8,cutoff-2.5-i,THREE.MathUtils.lerp(i?.2:2.4,i?2.2:-1.35,lab),0,6.4*(1+lab*.5),axisHeight*1.7*(1+lab*.35)));
+    return this.position.z+this.shafts[0].position.z;
+  }
+
   setAxisHeight(height:number) {
     this.dust.material.uniforms.uAxisHeight.value=height;
     this.dust.material.uniforms.uHeadY.value=height*.35;
@@ -230,6 +253,7 @@ export class SpatialAtmosphere extends THREE.Group {
   update(time:number,progress:number,detail:number,pointer:{x:number;y:number},anchor:THREE.Vector3,dpr:number,accent:THREE.Color,lab=0) {
     this.time.value=this.reduced?0:time;this.position.copy(anchor);
     lab=THREE.MathUtils.clamp(Number.isFinite(lab)?lab:0,0,1);this.lab.value=lab;
+    this.backgroundPointerX=pointer.x;
     const journey=THREE.MathUtils.smoothstep(progress,.08,.85);
     const opacity=(1-detail*.15)*(1-lab*.24);this.visible=opacity>.005;
     this.dust.material.uniforms.uDetail.value=this.reduced?0:detail;
@@ -242,13 +266,16 @@ export class SpatialAtmosphere extends THREE.Group {
       mesh.material.uniforms.uOpacity.value=opacity*(.2-journey*.06)*(1-i*.16)*(1+lab*.3);
       tintField(mesh.material.uniforms.uTint.value as THREE.Color,i%2?0x665f82:0x587c90,accent,accentLuminance,this.worldTint,.38);
       mesh.position.x=(i-1)*1.1+pointer.x*(.15+i*.2);
+      mesh.position.y=(this.dust.material.uniforms.uAxisHeight.value as number)*(.22-i*.18);
       mesh.position.z=[-10,-3,3][i]-lab*8;
+      mesh.scale.x=23;
       mesh.scale.y=(this.dust.material.uniforms.uAxisHeight.value as number)*1.5*(1+lab*.3);
     });
     this.shafts.forEach((mesh,i)=>{
-      mesh.material.uniforms.uOpacity.value=opacity*(.17-journey*.035)*(1-i*.24)*(1+lab*3.2);
+      mesh.material.uniforms.uOpacity.value=opacity*(.17-journey*.035)*(1-i*.24)*(1+lab*2.);
       tintField(mesh.material.uniforms.uTint.value as THREE.Color,0x8dc5d3,accent,accentLuminance,this.worldTint,.4,1.55);
       mesh.position.x=THREE.MathUtils.lerp(i?.2:2.4,i?2.2:-1.35,lab);
+      mesh.position.y=0;
       mesh.position.z=(i?1.6:-6)-lab*8;
       mesh.scale.x=6.4*(1+lab*.5);
       mesh.scale.y=(this.dust.material.uniforms.uAxisHeight.value as number)*1.7*(1+lab*.35);

@@ -51,7 +51,9 @@ describe("LAB background depth and reverse continuity",()=>{
     const atmosphere=new SpatialAtmosphere(compact),haze=planes(atmosphere,false),shafts=planes(atmosphere,true);
     update(atmosphere,0);const hero=transforms(atmosphere);
     expect(haze.map(layer=>layer.position.z)).toEqual([-10,-3,3]);expect(shafts.map(layer=>[layer.position.x,layer.position.z,layer.scale.x])).toEqual([[2.4,-6,6.4],[.2,1.6,6.4]]);
-    for(const [index,lab] of [.1,.4,.8,1,.7,.25,0].entries())update(atmosphere,lab,index*.2);
+    for(const [index,lab] of [.1,.4,.8,1,.7,.25,0].entries()){
+      update(atmosphere,lab,index*.2);atmosphere.setLabDepth(-10,17.8,0);
+    }
     expect(transforms(atmosphere)).toEqual(hero);expect(atmosphere.lab.value).toBe(0);
     for(const layer of layers(atmosphere))expect(layer.material.uniforms.uLab).toBe(atmosphere.lab);
     atmosphere.dispose();
@@ -72,9 +74,10 @@ describe("LAB background depth and reverse continuity",()=>{
 
   it("retains the deep LAB background in reduced motion while shader time stays static",()=>{
     const atmosphere=new SpatialAtmosphere(true);atmosphere.setQuality(true,true);
-    update(atmosphere,1,3);const held=transforms(atmosphere);update(atmosphere,1,9);
+    update(atmosphere,1,3);atmosphere.setLabDepth(-10,17.8,0);const held=transforms(atmosphere);
+    update(atmosphere,1,9);atmosphere.setLabDepth(-10,17.8,0);
     expect(atmosphere.time.value).toBe(0);expect(atmosphere.motion.value).toBe(0);expect(atmosphere.lab.value).toBe(1);
-    expect(transforms(atmosphere)).toEqual(held);expect(planes(atmosphere,false)[0].position.z).toBe(-18);expect(planes(atmosphere,true)[0].position.z).toBe(-14);
+    expect(transforms(atmosphere)).toEqual(held);expect(planes(atmosphere,false)[0].position.z).toBe(-16);expect(planes(atmosphere,true)[0].position.z).toBe(-12.5);
     for(const layer of layers(atmosphere))expect(layer.material.uniforms.uLab).toBe(atmosphere.lab);
     atmosphere.dispose();
   });
@@ -90,7 +93,7 @@ describe("LAB background depth and reverse continuity",()=>{
     atmosphere.dispose();
   });
 
-  it("redistributes the existing LAB shaft into narrower edges with a bounded analytical light integral",()=>{
+  it("resolves the existing LAB shaft edges while keeping their analytical integral near the 692 baseline",()=>{
     const atmosphere=new SpatialAtmosphere(true),shaft=planes(atmosphere,true)[0],beam=shaft.material.fragmentShader.split("\n").find(line=>line.includes("float beam="))!;
     const mixPairs=Array.from(beam.matchAll(/mix\(([-.\d]+),([-.\d]+),uLab\)/g),match=>[Number(match[1]),Number(match[2])]);
     expect(mixPairs).toHaveLength(5);
@@ -98,17 +101,40 @@ describe("LAB background depth and reverse continuity",()=>{
     expect([primaryWidth[0],primaryWeight[0],secondaryOffset[0],secondaryWidth[0],secondaryWeight[0]]).toEqual([5.2,.68,.2,12,.24]);
     const fwhm=(inverseWidth:number,pixelWidth:number)=>2*Math.sqrt(Math.log(2))/inverseWidth*pixelWidth;
     const secondaryPixels=fwhm(secondaryWidth[1],353);
-    expect(secondaryPixels).toBeGreaterThan(14);expect(secondaryPixels).toBeLessThan(15.5);
-    expect(fwhm(primaryWidth[1],353)).toBeLessThan(fwhm(primaryWidth[0],353)*.35);
+    expect(secondaryPixels).toBeGreaterThan(21);expect(secondaryPixels).toBeLessThan(24);
+    expect(fwhm(primaryWidth[1],353)).toBeLessThan(fwhm(primaryWidth[0],353)*.4);
     expect(secondaryWeight[1]).toBeGreaterThan(primaryWeight[1]);
     update(atmosphere,0);const heroOpacity=shaft.material.uniforms.uOpacity.value as number;
     update(atmosphere,1);const labOpacity=shaft.material.uniforms.uOpacity.value as number;
-    expect(labOpacity/(heroOpacity*.76)).toBeCloseTo(4.2,12);
-    // Integral of a*exp(-(k*x)^2) is a*sqrt(pi)/k. Compare the authored
-    // iteration2 pair (8.8/19, .68/.24, gain3.4), holding common fog factors.
+    expect(labOpacity/(heroOpacity*.76)).toBeCloseTo(3,12);
+    // Integral of a*exp(-(k*x)^2) is a*sqrt(pi)/k. Compare the committed
+    // 692 pair (18/40, .28/.82, gain4.2), holding common fog factors.
     const current=Math.sqrt(Math.PI)*(primaryWeight[1]/primaryWidth[1]+secondaryWeight[1]/secondaryWidth[1])*labOpacity;
-    const previous=Math.sqrt(Math.PI)*(.68/8.8+.24/19)*heroOpacity*.76*3.4;
-    expect(current).toBeLessThan(previous*.55);
+    const previous=Math.sqrt(Math.PI)*(.28/18+.82/40)*heroOpacity*.76*4.2;
+    expect(current/previous).toBeGreaterThan(.95);expect(current/previous).toBeLessThan(1.05);
+    atmosphere.dispose();
+  });
+
+  it.each([[393,852,true],[1440,900,false]])("reflows existing LAB planes behind the measured cut while preserving projected footprints at %ix%i",(width,height,compact)=>{
+    const atmosphere=new SpatialAtmosphere(compact),camera=new PerspectiveCamera(compact?36:38,width/height,.1,100);
+    camera.position.set(0,-8,17.8);camera.lookAt(0,-8,0);camera.updateMatrixWorld(true);
+    update(atmosphere,1);atmosphere.position.set(1.2,-8,.4);atmosphere.updateMatrixWorld(true);
+    const objects=layers(atmosphere),geometries=objects.map(layer=>layer.geometry),buffers=geometries.map(geometry=>geometry.attributes.position.array),haze=planes(atmosphere,false),shafts=planes(atmosphere,true);
+    const active=[...haze.filter(layer=>layer.visible),shafts[0]];
+    const project=(layer:Layer)=>worldVertices(layer,0).map(point=>point.project(camera)).map(point=>new Vector3((point.x+1)*width/2,(1-point.y)*height/2,0));
+    const before=active.map(project),plane=atmosphere.setLabDepth(-10,17.8,-8);atmosphere.updateMatrixWorld(true);
+    expect(plane).toBeCloseTo(-12.5,12);expect(plane).toBeCloseTo(atmosphere.position.z+shafts[0].position.z,12);
+    haze.forEach((layer,index)=>expect(atmosphere.position.z+layer.position.z).toBeCloseTo(-16+index*2,12));
+    shafts.forEach((layer,index)=>expect(atmosphere.position.z+layer.position.z).toBeCloseTo(-12.5-index,12));
+    active.forEach((layer,index)=>{
+      const after=project(layer),error=Math.max(...after.map((point,vertex)=>point.distanceTo(before[index][vertex])));
+      expect(error).toBeLessThan(2.5);expect(Math.max(...worldVertices(layer,0).map(point=>point.z))).toBeLessThan(-10);
+    });
+    const once=transforms(atmosphere);expect(atmosphere.setLabDepth(-10,17.8,-8)).toBeCloseTo(plane,12);expect(transforms(atmosphere)).toEqual(once);
+    atmosphere.setLabDepth(-12,17.8,-8);atmosphere.setLabDepth(-10,17.8,-8);expect(transforms(atmosphere)).toEqual(once);
+    expect(atmosphere.setLabDepth(NaN,17.8,-8)).toBeCloseTo(plane,12);expect(transforms(atmosphere)).toEqual(once);
+    expect(layers(atmosphere)).toHaveLength(objects.length);
+    layers(atmosphere).forEach((layer,index)=>{expect(layer).toBe(objects[index]);expect(layer.geometry).toBe(geometries[index]);expect(layer.geometry.attributes.position.array).toBe(buffers[index]);});
     atmosphere.dispose();
   });
 });

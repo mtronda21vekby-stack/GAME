@@ -75,8 +75,10 @@ const weave=`
   varying vec2 vClothUv;
   uniform sampler2D uClothMark;
   uniform sampler2D uClothBackground;
-  uniform vec2 uClothRenderSize,uClothBackgroundSize;
-  uniform float uClothRefraction,uClothProfile,uClothBend;
+  uniform vec2 uClothRenderSize,uClothBackgroundSize,uClothCssSize;
+  uniform mat4 uClothProjection;
+  uniform vec4 uClothExitPlane;
+  uniform float uClothRefraction,uClothProfile,uClothBend,uClothSculpture;
   // Fine crossing steel ribbons. Filter the apertures and the brushed grain
   // separately so a receding fold becomes satin instead of a flickering grid.
   vec4 clothWeave(vec2 uv) {
@@ -122,11 +124,16 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
   readonly background={value:null as THREE.Texture|null};
   readonly renderSize={value:new THREE.Vector2(1,1)};
   readonly backgroundSize={value:new THREE.Vector2(1,1)};
+  readonly cssSize={value:new THREE.Vector2(1,1)};
+  readonly opticalProjection={value:new THREE.Matrix4()};
+  readonly opticalExitPlane={value:new THREE.Vector4(0,0,1,0)};
   readonly refraction={value:0};
   /** Diagnostic control: zero isolates straight transmission at identical light. */
   readonly bendStrength={value:1};
   private currentProfile:SpatialClothProfile="molten";
   private compact:boolean;
+  private opticalBackgroundDepth:number|null=null;
+  private readonly planeTransform=new THREE.Matrix4();
   private readonly dragX=new DampedScalar(0,580);
   private readonly dragY=new DampedScalar(0,580);
   private readonly dragTarget=new THREE.Vector2();
@@ -140,6 +147,18 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
     }));
     this.compact=compact;
     this.name="INTERACTIVE_METAL_CLOTH";this.frustumCulled=false;this.visible=false;
+    this.onBeforeRender=(renderer,_scene,camera)=>{
+      renderer.getSize(this.cssSize.value);
+      this.opticalProjection.value.copy(camera.projectionMatrix);
+      const m=this.matrixWorld.elements;
+      const cutoff=m[14]-(Math.abs(m[2])*.9+Math.abs(m[6])*.9+Math.abs(m[10])*1.2)-.05;
+      const depth=this.opticalBackgroundDepth??cutoff-2.5;
+      // A world Z plane becomes a full view-space plane under camera pitch/roll.
+      const plane=this.opticalExitPlane.value.set(0,0,1,-depth);
+      plane.applyMatrix4(this.planeTransform.copy(camera.matrixWorld).transpose());
+      const length=Math.hypot(plane.x,plane.y,plane.z);
+      if(length>1e-8)plane.multiplyScalar(1/length);
+    };
     this.material.onBeforeCompile=shader=>{
       shader.uniforms.uClothTime=this.time;shader.uniforms.uClothMotion=this.motion;shader.uniforms.uClothEntrance=this.entrance;
       shader.uniforms.uClothHits=this.hits;shader.uniforms.uClothHover=this.hover;
@@ -148,6 +167,8 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
       shader.uniforms.uClothBackground=this.background;shader.uniforms.uClothRenderSize=this.renderSize;
       shader.uniforms.uClothBackgroundSize=this.backgroundSize;shader.uniforms.uClothRefraction=this.refraction;
       shader.uniforms.uClothBend=this.bendStrength;
+      shader.uniforms.uClothCssSize=this.cssSize;shader.uniforms.uClothProjection=this.opticalProjection;
+      shader.uniforms.uClothExitPlane=this.opticalExitPlane;
       shader.vertexShader=shader.vertexShader.replace("#include <common>","#include <common>\n"+folds)
         .replace("#include <beginnormal_vertex>",`#include <beginnormal_vertex>
           float e=.002;
@@ -197,8 +218,30 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
             float opticalIor=mix(1.42,1.24,uClothProfile);
             vec3 ray=refract(-eye,normal,1./opticalIor);
             vec2 bend=ray.xy/max(abs(ray.z),.25)+eye.xy/max(abs(eye.z),.25);
-            vec2 displacement=clamp(bend,vec2(-.85),vec2(.85))*mix(.075,.1,uClothProfile)*clamp(uClothBend,0.,1.);
-            displacement.x*=uClothRenderSize.y/max(1.,uClothRenderSize.x);
+            vec2 originalDisplacement=clamp(bend,vec2(-.85),vec2(.85))*mix(.075,.1,uClothProfile);
+            originalDisplacement.x*=uClothRenderSize.y/max(1.,uClothRenderSize.x);
+            // Trace the smooth, actually deformed fold to the measured backing
+            // plane. Weave grain affects reflection, not the optical ray path.
+            vec3 opticalRay=refract(-eye,normalize(nonPerturbedNormal),1./opticalIor);
+            vec3 point=-vViewPosition;
+            float planeDistance=dot(uClothExitPlane,vec4(point,1.));
+            float bentDenominator=dot(uClothExitPlane.xyz,opticalRay);
+            float straightDenominator=dot(uClothExitPlane.xyz,-eye);
+            vec2 projectedDisplacement=vec2(0.);
+            if(uClothSculpture>.001&&bentDenominator<-.08&&straightDenominator<-.08&&planeDistance>0.) {
+              float bentTravel=-planeDistance/bentDenominator;
+              float straightTravel=-planeDistance/straightDenominator;
+              if(bentTravel>0.&&straightTravel>0.) {
+                vec4 bentClip=uClothProjection*vec4(point+opticalRay*bentTravel,1.);
+                vec4 straightClip=uClothProjection*vec4(point-eye*straightTravel,1.);
+                if(bentClip.w>.001&&straightClip.w>.001)
+                  projectedDisplacement=(bentClip.xy/bentClip.w-straightClip.xy/straightClip.w)*.5;
+              }
+            }
+            vec2 displacement=mix(originalDisplacement,projectedDisplacement,clamp(uClothSculpture,0.,1.));
+            // This cap is in CSS pixels even when the composer uses another DPR.
+            float cssTravel=length(displacement*max(uClothCssSize,vec2(1.)));
+            displacement*=min(1.,24./max(cssTravel,.001))*clamp(uClothBend,0.,1.);
             vec2 texel=1./max(uClothBackgroundSize,vec2(1.));
             float screenEdge=smoothstep(0.,.035,min(min(screenUv.x,screenUv.y),min(1.-screenUv.x,1.-screenUv.y)));
             vec2 sampleUv=clamp(screenUv+displacement*screenEdge,texel,vec2(1.)-texel);
@@ -214,12 +257,13 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
           }
           #include <opaque_fragment>`);
     };
-    this.material.customProgramCacheKey=()=>"blackcrown-sculptural-refraction-cloth-v3";
+    this.material.customProgramCacheKey=()=>"blackcrown-projected-optical-path-cloth-v4";
     this.applyProfileMaterial();
   }
   get profile(){return this.currentProfile;}
   setProfile(profile:SpatialClothProfile){this.currentProfile=profile;this.profileMix.value=profile==="membrane"?1:0;this.applyProfileMaterial();}
   setSculpture(amount:number){this.sculpture.value=THREE.MathUtils.clamp(Number.isFinite(amount)?amount:0,0,1);}
+  setOpticalBackgroundDepth(worldZ:number|null){this.opticalBackgroundDepth=worldZ!==null&&Number.isFinite(worldZ)?worldZ:null;}
   setOptics(texture:THREE.Texture|null,width:number,height:number,strength:number) {
     this.background.value=texture;
     this.renderSize.value.set(Math.max(1,Number.isFinite(width)?width:1),Math.max(1,Number.isFinite(height)?height:1));
