@@ -127,15 +127,13 @@ const hazeFragment = `
     float fieldPresence=.22+.78*uLab;
     cloud=mix(cloud,clamp(density,0.,1.),fieldPresence);
     float sweep=vUv.x-.47+(vUv.y-.5)*.25;
-    sweep+=uLab*(sin(vUv.y*6.2+uTime*.08)*.045+sin(vUv.y*11.4-uTime*.04)*.012);
+    sweep+=uLab*(sin(vUv.y*6.2+uTime*.08)*.10+sin(vUv.y*11.4-uTime*.04)*.012);
     float beam=(exp(-pow(sweep*mix(5.2,14.,uLab),2.))*mix(.68,.28,uLab)+exp(-pow((sweep-mix(.2,.14,uLab))*mix(12.,26.,uLab),2.))*mix(.24,.82,uLab))*vertical;
     vec2 pocketDelta=(vUv-vec2(.57,.58))*vec2(3.1,1.7);
     float pocket=.12+.88*exp(-dot(pocketDelta,pocketDelta));
-    // The existing banks have broad, curved illuminated rims. They are part of
-    // the moving world-space medium, not a screen-space optical test pattern.
-    // Their silhouettes give the sheet recognisable content at several depths.
-    float bankRim=1.-smoothstep(.025,.085,abs(bank-.57));
-    float medium=.12+cloud*.38+bankRim*.82;
+    // Broad banks retain quiet negative space. Outlined noise contours read as
+    // decorative loops; density and the curved shaft carry the depth instead.
+    float medium=.08+smoothstep(.32,.68,bank)*.85;
     float fieldEdge=edge*pocket*mix(.24+.76*cloud,mix(.12+cloud*.88,medium,uLab),fieldPresence);
     float alpha=mix(fieldEdge,beam*(.2+.8*cloud),uShaft)*uOpacity;
     if(uBackgroundDepthCapture>.5) {
@@ -143,8 +141,8 @@ const hazeFragment = `
       gl_FragColor=packDepthToRGBA(gl_FragCoord.z);return;
     }
     vec3 tint=mix(uTint*vec3(.78,.7,1.12),uTint,smoothstep(.2,.75,vUv.x));
-    vec3 warm=uTint*vec3(1.65,1.12,.68);
-    tint=mix(tint,warm,max(ridge*.3,bankRim*uLab*.65)*fieldPresence*(1.-uShaft*.65));
+    vec3 warm=uTint*vec3(1.38,.94,.64);
+    tint=mix(tint,warm,ridge*fieldPresence*mix(.3,.5,uLab)*(1.-uShaft*.65));
     gl_FragColor=vec4(tint,alpha);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
@@ -320,7 +318,7 @@ export class SpatialAtmosphere extends THREE.Group {
     (this.dust.material.uniforms.uAccent.value as THREE.Color).copy(accent);
     const accentLuminance=Math.max(.001,luminance(accent));
     this.haze.forEach((mesh,i)=>{
-      mesh.material.uniforms.uOpacity.value=opacity*(.2-journey*.06)*(1-i*.16)*(1+lab*1.1);
+      mesh.material.uniforms.uOpacity.value=opacity*(.2-journey*.06)*(1-i*.16)*(1+lab*1.6);
       tintField(mesh.material.uniforms.uTint.value as THREE.Color,i%2?0x665f82:0x587c90,accent,accentLuminance,this.worldTint,.38);
       mesh.rotation.x=lab*.006;mesh.rotation.y=lab*(i%2?-.04:.04);
       mesh.position.x=(i-1)*1.1+pointer.x*(.15+i*.2);
