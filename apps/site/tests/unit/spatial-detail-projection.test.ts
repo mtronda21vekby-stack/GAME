@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { Matrix4, PerspectiveCamera, Vector3 } from "three";
 import { DETAIL_REST, detailPlaneStyle, detailProjectQuad, detailQuadPose, detailRectQuad, detailSettledPose, detailSurfaceQuad, type MediaQuad, type MediaRect } from "../../src/components/spatial/detailTransition";
 import { panelCSSMatrix, panelStyle } from "../../src/components/spatial/panelProjection";
@@ -43,6 +43,41 @@ function panelFixture(width:number,height:number) {
   const raw=panelCSSMatrix(camera,world,width,height,264,260,ORBIT_CARD_WIDTH),normalized=matrixValues(panelStyle(raw)),local={left:0,top:32,width:264,height:165},anchor={left:22,top:140};
   const quad=detailProjectQuad(normalized,local,anchor)!;expect(quad).not.toBeNull();
   return {raw,normalized,local,anchor,quad};
+}
+
+function returnTrackingFixture() {
+  const source=readFileSync(new URL("../../src/components/spatial/GameDetail.tsx",import.meta.url),"utf8");
+  const body=(name:string)=>{const match=source.match(new RegExp(`function ${name}\\([^\\n]*\\) \{([\\s\\S]*?)\\n  \}`));if(!match)throw new Error(`Missing actual ${name}`);return match[1];};
+  const inline=(name:string)=>{const match=source.match(new RegExp(`function ${name}\\(\\) ?\{([^\\n]*)\}`));if(!match)throw new Error(`Missing actual ${name}`);return match[1];};
+  let transform=`matrix3d(${new Matrix4().elements.join(",")})`;
+  const styleWrites=vi.fn(),layoutReads=vi.fn(()=>{throw new Error("Per-frame layout read");});
+  const style={get transform(){return transform;},set transform(value:string){styleWrites(value);transform=value;},setProperty:styleWrites,removeProperty:styleWrites};
+  const element={isConnected:true,style,getBoundingClientRect:layoutReads};
+  const local={left:0,top:0,width:262,height:160},anchor={left:24,top:500},box=nativeBox(393);
+  class DOMMatrixReadOnly {
+    values:number[];
+    constructor(value?:string){if(value&&!value.startsWith("matrix3d("))throw new Error("Invalid matrix");this.values=value?matrixValues(value):new Matrix4().elements.slice();}
+    toFloat64Array(){return new Float64Array(this.values);}
+  }
+  const projection={element,local,anchor,scrollX:0,scrollY:1290,viewportWidth:393,viewportHeight:852,gameId:"ballcrown"};
+  const destination=detailQuadPose(detailRectQuad({...local,...anchor}),box,1,0)!;
+  const surface=new SurfaceMotion(DETAIL_REST),move=vi.spyOn(surface,"moveTo"),queue:{id:number;callback:(now:number)=>void}[]=[],tags:string[]=[];
+  let nextId=0;
+  const env={returnProjection:{current:projection as typeof projection|null},mediaBox:{current:box},paintedGame:{current:{id:"ballcrown"}},innerWidth:393,innerHeight:852,scrollX:0,scrollY:1290,DOMMatrixReadOnly,detailProjectQuad,detailQuadPose,detailSurfaceQuad,returnDestination:{current:destination as number[]|null},returnDeadline:{current:1040},connectedHandoff:{current:true},surface,spatialCaseIndex,window:{location:{hash:""}},phase:{current:"closing"},epoch:{current:0},frame:{current:0},paintSurface:vi.fn(),setArrived:vi.fn(),setClosingVisual:vi.fn(),clearSource:vi.fn(),
+    frameLoop:{request:(callback:(now:number)=>void,tag:string)=>{const id=++nextId;queue.push({id,callback});tags.push(tag);return id;},cancel:(id:number)=>{const index=queue.findIndex(item=>item.id===id);if(index>=0)queue.splice(index,1);}},
+    liveReturnPose:()=>null as number[]|null,trackReturn:(_now:number)=>{},clearReturnTracking:()=>{},finishGhost:()=>{},restoreSourceThenFinish:()=>{},schedule:(_token=0)=>{}};
+  // Execute the actual integration methods, with only browser objects replaced.
+  const execute=(code:string,extra:Record<string,unknown>={})=>{const bindings={...env,...extra};return new Function(...Object.keys(bindings),code)(...Object.values(bindings));};
+  env.liveReturnPose=()=>execute(body("liveReturnPose")) as number[]|null;
+  env.trackReturn=now=>execute(body("trackReturn"),{now});
+  env.clearReturnTracking=()=>execute(inline("clearReturnTracking"));
+  env.finishGhost=()=>execute(body("finishGhost"));
+  env.restoreSourceThenFinish=()=>execute(body("restoreSourceThenFinish"));
+  env.schedule=(token=env.epoch.current)=>execute(body("schedule"),{token});
+  const cancel=()=>execute(inline("cancelFrame"));
+  const matrix=(offset=0)=>{const value=new Matrix4();value.elements[0]=280/262*(1+.0001*262);value.elements[1]=.025;value.elements[3]=.0001;value.elements[5]=1.03;value.elements[12]=offset;transform=`matrix3d(${value.elements.join(",")})`;};
+  surface.moveTo(destination,1040,0);move.mockClear();
+  return {env,surface,move,queue,tags,matrix,cancel,layoutReads,styleWrites,setTransform:(value:string)=>{transform=value;}};
 }
 
 describe("Projective detail media continuity",()=>{
@@ -166,6 +201,40 @@ describe("Projective detail media continuity",()=>{
     expect(body).toContain(`href="${game.href}"`);expect(body).toContain('id="spatial-detail-title"');expect(body).toContain('<button');
   });
 
+  it("tracks the live 262→280px source and camera drift without jumping or restarting unchanged motion",()=>{
+    const f=returnTrackingFixture(),{env,surface}=f,box=env.mediaBox.current;
+    expect(detailSurfaceQuad(box,env.liveReturnPose()!)[1].x-detailSurfaceQuad(box,env.liveReturnPose()!)[0].x).toBeCloseTo(262,8);
+    surface.sample(300);const painted=detailSurfaceQuad(box,surface.value),velocity=[...surface.velocity];f.matrix();env.trackReturn(300);
+    expectQuad(detailSurfaceQuad(box,surface.value),painted);expect(surface.velocity).toEqual(velocity);expect(env.returnDeadline.current).toBe(1040);expect(f.move).toHaveBeenCalledTimes(1);
+    const fresh=detailSurfaceQuad(box,env.returnDestination.current!);expect(Math.max(...fresh.map(p=>p.x))-Math.min(...fresh.map(p=>p.x))).toBeCloseTo(280,8);
+    env.trackReturn(300);f.matrix(.3);env.trackReturn(300);expect(f.move).toHaveBeenCalledTimes(1);
+    f.matrix(1.1);env.trackReturn(300);expect(f.move).toHaveBeenCalledTimes(2);expectQuad(detailSurfaceQuad(box,surface.value),painted);
+    env.scrollY+=23;const scrolled=detailSurfaceQuad(box,env.liveReturnPose()!);expect(scrolled[0].y).toBeCloseTo(fresh[0].y-23,8);
+    env.window.location.hash="#game/ballcrown";env.trackReturn(400);expect(f.move).toHaveBeenCalledTimes(2);
+    expect(f.layoutReads).not.toHaveBeenCalled();expect(f.styleWrites).not.toHaveBeenCalled();
+  });
+
+  it("lands on the latest exact quad at its fixed deadline and drains the release frame",()=>{
+    const f=returnTrackingFixture(),{env,surface}=f;f.matrix();env.schedule();
+    let now=0;while(f.queue.length&&now<1040){f.queue.shift()!.callback(now);now+=16;}
+    // A sub-threshold final source change still becomes the exact endpoint.
+    f.matrix(.4);const latest=detailSurfaceQuad(env.mediaBox.current,env.liveReturnPose()!);
+    f.queue.shift()!.callback(1040);expect(surface.active).toBe(false);expectQuad(detailSurfaceQuad(env.mediaBox.current,surface.value),latest);
+    expect(env.returnDeadline.current).toBe(1040);expect(f.queue).toHaveLength(1);expect(f.tags.at(-1)).toBe("case-return-release");
+    f.queue.shift()!.callback(1056);expect(f.queue).toHaveLength(0);expect(env.phase.current).toBe("closed");expect(env.frame.current).toBe(0);
+    expect(env.returnProjection.current).toBeNull();expect(env.returnDestination.current).toBeNull();expect(env.returnDeadline.current).toBe(0);
+    expect(f.layoutReads).not.toHaveBeenCalled();expect(f.styleWrites).not.toHaveBeenCalled();
+  });
+
+  it("fades a disconnected source by the original deadline and cancellation clears tracking and its queue",()=>{
+    const f=returnTrackingFixture(),{env,surface}=f;surface.sample(300);const before=[...surface.value];env.returnProjection.current!.element.isConnected=false;
+    expect(env.liveReturnPose()).toBeNull();env.trackReturn(300);expect(env.returnProjection.current).toBeNull();expect(env.connectedHandoff.current).toBe(false);expect(env.returnDestination.current![4]).toBe(0);
+    expect(surface.value).toEqual(before);expect(f.move).toHaveBeenLastCalledWith(env.returnDestination.current,740,300);expect(env.returnDeadline.current).toBe(1040);
+    surface.sample(1040);env.trackReturn(1040);expect(surface.active).toBe(false);expect(surface.value[4]).toBe(0);
+    env.schedule();expect(f.queue).toHaveLength(1);f.cancel();expect(f.queue).toHaveLength(0);expect(env.frame.current).toBe(0);expect(env.epoch.current).toBe(1);
+    expect(env.returnProjection.current).toBeNull();expect(env.returnDestination.current).toBeNull();expect(env.returnDeadline.current).toBe(0);
+  });
+
   it("preserves a closing plane through Forward's 1290→1779 scroll restoration until its case reopens",()=>{
     const integration=readFileSync(new URL("../../src/components/spatial/GameDetail.tsx",import.meta.url),"utf8"),scrollBody=integration.match(/const scroll=\(\)=>\{([\s\S]*?)\n    \};/)?.[1];
     expect(scrollBody).toBeDefined();
@@ -185,12 +254,12 @@ describe("Projective detail media continuity",()=>{
     // the source and drains its final return frame without a persistent loop.
     const functionBody=(pattern:RegExp)=>{const value=integration.match(pattern)?.[1];expect(value).toBeDefined();return value!;};
     const scheduleBody=functionBody(/function schedule\(token=epoch\.current\) \{([\s\S]*?)\n  \}/),releaseBody=functionBody(/function restoreSourceThenFinish\(\) \{([\s\S]*?)\n  \}/);
-    const scheduleFunction=new Function("token","epoch","frame","frameLoop","surface","paintSurface","phase","restoreSourceThenFinish","setArrived","schedule",scheduleBody),releaseFunction=new Function("epoch","clearSource","frame","frameLoop","phase","finishGhost",releaseBody);
+    const scheduleFunction=new Function("token","epoch","frame","frameLoop","surface","paintSurface","phase","restoreSourceThenFinish","setArrived","schedule","trackReturn",scheduleBody),releaseFunction=new Function("epoch","clearSource","frame","frameLoop","phase","finishGhost",releaseBody);
     const queue:((now:number)=>void)[]=[],tags:string[]=[],epoch={current:0},frame={current:0},closing=new SurfaceMotion(detailSettledPose(quad));let finished=0;
     const frameLoop={request:(callback:(now:number)=>void,tag:string)=>{queue.push(callback);tags.push(tag);return tags.length;}};
     sourceHeld=true;phase.current="closing";closing.moveTo(source,1040,0);closing.sample(300);
     const release=()=>releaseFunction(epoch,()=>{sourceHeld=false;},frame,frameLoop,phase,()=>{phase.current="closed";finished++;});
-    const schedule=(token=epoch.current)=>scheduleFunction(token,epoch,frame,frameLoop,closing,()=>{},phase,release,()=>{},schedule);
+    const schedule=(token=epoch.current)=>scheduleFunction(token,epoch,frame,frameLoop,closing,()=>{},phase,release,()=>{},schedule,()=>{});
     settled=0;scroll(phase,closeScroll,1779,{location:{hash:`#game/${platformGames[1].id}`}},spatialCaseIndex,settle);expect(settled).toBe(0);schedule();
     let ticks=0;while(queue.length&&ticks<200){queue.shift()!(300+ticks*16);ticks++;}
     expect(ticks).toBeLessThan(200);expect(queue).toHaveLength(0);expect(finished).toBe(1);expect(phase.current).toBe("closed");expect(sourceHeld).toBe(false);expect(frame.current).toBe(0);expect(tags.at(-1)).toBe("case-return-release");

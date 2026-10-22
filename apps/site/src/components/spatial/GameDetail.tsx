@@ -11,6 +11,7 @@ import "./spatialDetail.css";
 
 export type { PanelOrigin } from "./detailTransition";
 type Props = { open: boolean; origin?: PanelOrigin | null; game: PlatformGame; canCycle: boolean; paused: boolean; onTogglePause: () => void; onClosing?: () => void; onClose: () => void; onRequestClose:()=>void;onSearch:()=>void;onPrevious: () => void; onNext: () => void };
+type ReturnProjection = { element:HTMLElement; local:MediaRect; anchor:{left:number;top:number}; scrollX:number;scrollY:number; viewportWidth:number;viewportHeight:number;gameId:string };
 const useClientLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 // Crop/reveal and four projective corners share one interruptible clock.
 const rest = DETAIL_REST;
@@ -35,6 +36,7 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
   const frame = useRef(0), focusFrame = useRef(0), closeScroll = useRef(0), epoch=useRef(0), focusEpoch=useRef(0);
   const mediaBox=useRef<MediaRect>();
   const endpoint=useRef([...rest]);
+  const returnProjection=useRef<ReturnProjection|null>(null),returnDestination=useRef<number[]|null>(null),returnDeadline=useRef(0);
   const restorePage = useRef<(() => void) | null>(null);
   const restoreFocus = useRef<(() => void) | null>(null);
   const source=useRef<{element:HTMLElement;previous:string|undefined}|null>(null);
@@ -61,7 +63,8 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
   function clearSource() {
     if(source.current){const {element,previous}=source.current;if(previous===undefined)delete element.dataset.caseHandoff;else element.dataset.caseHandoff=previous;source.current=null;window.dispatchEvent(new Event("spatialcasehandoff"));}
   }
-  function cancelFrame() { ++epoch.current;frameLoop.cancel(frame.current);frame.current=0; }
+  function clearReturnTracking(){returnProjection.current=null;returnDestination.current=null;returnDeadline.current=0;}
+  function cancelFrame() { ++epoch.current;frameLoop.cancel(frame.current);frame.current=0;clearReturnTracking(); }
   function baseRect() {
     const media = mediaRef.current;if(!media)return;
     const transform=media.style.transform;media.style.transform="none";
@@ -74,7 +77,8 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
     const box=baseRect()??mediaBox.current;
     return box?detailSurfaceQuad(box,surface.value):null;
   }
-  function sourceOrigin():PanelOrigin|null {
+  function sourceOrigin(trackReturn=false):PanelOrigin|null {
+    if(trackReturn)returnProjection.current=null;
     if(origin?.gameId!==game.id||Math.abs(origin.viewportWidth-innerWidth)>1||Math.abs(origin.viewportHeight-innerHeight)>1)return null;
     const panel=document.querySelector<HTMLElement>(`.spatialGamePanel[data-game-id="${origin.gameId}"] .spatialPanelMedia`);
     const box=panel?.getBoundingClientRect();
@@ -89,14 +93,19 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
         // no change is made to the gallery's authored matrix or its unit W.
         plane.style.setProperty("transform","none","important");
         const native=plane.getBoundingClientRect(),media=panel.getBoundingClientRect();
-        quad=detailProjectQuad(Array.from(matrix.toFloat64Array()),{left:media.left-native.left,top:media.top-native.top,width:media.width,height:media.height},native)??quad;
+        const local={left:media.left-native.left,top:media.top-native.top,width:media.width,height:media.height};
+        const projected=detailProjectQuad(Array.from(matrix.toFloat64Array()),local,native);
+        if(projected){
+          quad=projected;
+          if(trackReturn)returnProjection.current={element:plane,local,anchor:{left:native.left,top:native.top},scrollX,scrollY,viewportWidth:innerWidth,viewportHeight:innerHeight,gameId:game.id};
+        }
       }catch{/* Axis-aligned media remains a safe fallback for an unavailable matrix. */}
       finally{if(value)plane.style.setProperty("transform",value,priority);else plane.style.removeProperty("transform");}
     }
     return {...origin,left:box.left,top:box.top,width:box.width,height:box.height,quad};
   }
   function originPose(fresh=false) {
-    const target=sourceOrigin()??(fresh?null:origin);
+    const target=sourceOrigin(fresh)??(fresh?null:origin);
     const pose=detailOriginPose(target,game.id,innerWidth,innerHeight,mediaBox.current);
     const connected=!!target&&!!mediaBox.current?.width&&!!mediaBox.current.height&&target.gameId===game.id&&Math.abs(target.viewportWidth-innerWidth)<=1&&Math.abs(target.viewportHeight-innerHeight)<=1;
     connectedHandoff.current=connected;
@@ -107,6 +116,35 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
       pose[4]=1;
     }
     return [...pose,0,...endpoint.current.slice(6)];
+  }
+  function liveReturnPose() {
+    const projection=returnProjection.current,box=mediaBox.current;
+    if(!projection||!box||!projection.element.isConnected||projection.gameId!==paintedGame.current.id||Math.abs(projection.viewportWidth-innerWidth)>1||Math.abs(projection.viewportHeight-innerHeight)>1)return null;
+    try{
+      // Gallery writes this inline projection before the existing handoff tick.
+      // The native slot is cached: no style mutation or geometry read per frame.
+      const transform=projection.element.style.transform,matrix=new DOMMatrixReadOnly(!transform||transform==="none"?undefined:transform);
+      const anchor={left:projection.anchor.left+projection.scrollX-scrollX,top:projection.anchor.top+projection.scrollY-scrollY};
+      const quad=detailProjectQuad(Array.from(matrix.toFloat64Array()),projection.local,anchor);
+      return quad?detailQuadPose(quad,box,1,0):null;
+    }catch{return null;}
+  }
+  function trackReturn(now:number) {
+    if(!returnDestination.current||!returnDeadline.current||spatialCaseIndex(window.location.hash)!==undefined)return;
+    const live=returnProjection.current?liveReturnPose():null;
+    if(returnProjection.current&&!live){
+      returnProjection.current=null;connectedHandoff.current=false;
+      returnDestination.current=[...returnDestination.current];returnDestination.current[4]=0;
+      surface.moveTo(returnDestination.current,Math.max(1,returnDeadline.current-now),now);
+    }
+    if(now>=returnDeadline.current){surface.rebase(live??returnDestination.current);return;}
+    if(live&&mediaBox.current){
+      const previous=detailSurfaceQuad(mediaBox.current,returnDestination.current),next=detailSurfaceQuad(mediaBox.current,live);
+      const difference=Math.max(...next.map((point,index)=>Math.hypot(point.x-previous[index].x,point.y-previous[index].y)));
+      // Avoid repeatedly restarting an unchanged quintic. Its fixed deadline
+      // and retained velocity survive each meaningful moving-source correction.
+      if(difference>.75){returnDestination.current=live;surface.moveTo(live,returnDeadline.current-now,now);}
+    }
   }
   function paintSurface() {
     const media=mediaRef.current,box=mediaBox.current,dialog=dialogRef.current;if(!media||!box?.width||!box.height||!dialog)return;
@@ -128,7 +166,7 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
     if(title){title.style.transform=`scale(${1/sx},${1/sy})`;title.style.left=`${16/sx}px`;title.style.bottom=`${14/sy}px`;}
   }
   function finishGhost() {
-    phase.current="closed";setClosingVisual(false);setArrived(false);clearSource();
+    phase.current="closed";setClosingVisual(false);setArrived(false);clearSource();clearReturnTracking();
   }
   useClientLayoutEffect(()=>{
     if(closingVisual||phase.current!=="closed")return;
@@ -156,7 +194,7 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
   function schedule(token=epoch.current) {
     frame.current=frameLoop.request(now=>{
       if(token!==epoch.current)return;frame.current=0;
-      surface.sample(now);paintSurface();
+      surface.sample(now);if(phase.current==="closing")trackReturn(now);paintSurface();
       if(surface.active)schedule(token);
       else if(phase.current==="closing")restoreSourceThenFinish();
       else{phase.current="open";setArrived(true);}
@@ -200,6 +238,7 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
     if(!connectedHandoff.current)destination[4]=0;
     onClosing?.();onClose();
     if(staticMotion()){surface.rebase(destination);paintSurface();restoreSourceThenFinish();return;}
+    returnDestination.current=destination;returnDeadline.current=now+SPATIAL_TIMING.close;
     surface.moveTo(destination,SPATIAL_TIMING.close,now);schedule();
   }
   useClientLayoutEffect(()=>{
