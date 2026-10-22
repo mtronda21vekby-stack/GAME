@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { LinearFilter, LinearSRGBColorSpace, PerspectiveCamera, RGBAFormat, Scene, UnsignedByteType, Vector4, WebGLRenderTarget, type WebGLRenderer } from "three";
+import { Color, LinearFilter, LinearSRGBColorSpace, PerspectiveCamera, RGBAFormat, Scene, UnsignedByteType, Vector4, WebGLRenderTarget, type WebGLRenderer } from "three";
 
 const preparation=vi.hoisted(()=>({prepare:vi.fn()}));
 vi.mock("../../src/experience/core/ShaderPreparation",()=>({prepareSceneShaders:preparation.prepare}));
@@ -7,12 +7,13 @@ import { SpatialRefraction } from "../../src/components/spatial/SpatialRefractio
 
 function fixture() {
   const previous=new WebGLRenderTarget(17,23);previous.viewport.set(2,3,11,13);previous.scissor.set(1,2,7,9);previous.scissorTest=true;
-  const state={target:previous as WebGLRenderTarget|null,contextLost:false,viewport:new Vector4(5,7,311,577),scissor:new Vector4(11,13,149,271),scissorTest:true,currentViewport:previous.viewport.clone(),currentScissor:previous.scissor.clone(),currentScissorTest:true};
+  const state={target:previous as WebGLRenderTarget|null,contextLost:false,viewport:new Vector4(5,7,311,577),scissor:new Vector4(11,13,149,271),scissorTest:true,currentViewport:previous.viewport.clone(),currentScissor:previous.scissor.clone(),currentScissorTest:true,clearColor:new Color(0x123456),clearAlpha:.37};
   const gl={FRAMEBUFFER:36160,FRAMEBUFFER_COMPLETE:36053,checkFramebufferStatus:()=>36053,isContextLost:()=>state.contextLost};
   const mock={
     autoClear:false,domElement:new EventTarget(),getContext:()=>gl,getRenderTarget:()=>state.target,
     setRenderTarget:vi.fn((target:WebGLRenderTarget|null)=>{state.target=target;state.currentViewport.copy(target?.viewport??state.viewport);state.currentScissor.copy(target?.scissor??state.scissor);state.currentScissorTest=target?.scissorTest??state.scissorTest;}),
     getViewport:(value:Vector4)=>value.copy(state.viewport),getScissor:(value:Vector4)=>value.copy(state.scissor),getScissorTest:()=>state.scissorTest,
+    getClearColor:(value:Color)=>value.copy(state.clearColor),getClearAlpha:()=>state.clearAlpha,setClearColor:(value:Color|number,alpha=1)=>{state.clearColor.set(value);state.clearAlpha=alpha;},
     setViewport:vi.fn((value:Vector4)=>{state.viewport.copy(value);state.currentViewport.copy(value);}),
     setScissor:vi.fn((value:Vector4)=>{state.scissor.copy(value);state.currentScissor.copy(value);}),
     setScissorTest:vi.fn((value:boolean)=>{state.scissorTest=state.currentScissorTest=value;}),clear:vi.fn(),render:vi.fn(),
@@ -52,6 +53,41 @@ describe("Owned refraction shader preparation",()=>{
     expect(f.mock.clear).not.toHaveBeenCalled();expect(f.mock.render).not.toHaveBeenCalled();expect(f.exclude).not.toHaveBeenCalled();expect(f.beforeCapture).not.toHaveBeenCalled();expect(f.afterCapture).not.toHaveBeenCalled();
     requests[0].resolve(true);expect(await promise).toBe(true);expect(requests[0].dispose).toHaveBeenCalledTimes(1);
     expect(f.capture.snapshot()).toEqual(before);f.capture.dispose();f.previous.dispose();
+  });
+
+  it.each(["success","throw","abort","dispose"])("restores all state and owns one separate sampler after a warm draw %s",async outcome=>{
+    const f=fixture(),requests=deferredPreparation(f),external=new AbortController(),background=new Color(0x224466);f.scene.background=background;
+    const before={snapshot:f.capture.snapshot(),viewport:f.state.viewport.clone(),scissor:f.state.scissor.clone(),color:f.state.clearColor.clone(),alpha:f.state.clearAlpha};
+    let samplerDisposal:ReturnType<typeof vi.spyOn>|undefined;
+    const draw=vi.fn(sampler=>{
+      const scratch=f.state.target!;expect(scratch).toBe(requests[0].target);expect(sampler).not.toBe(scratch.texture);
+      expect(Array.from(sampler.image.data)).toEqual([255,255,255,255]);expect(f.scene.background).toBeNull();expect(f.mock.autoClear).toBe(false);expect(f.state.scissorTest).toBe(false);
+      samplerDisposal=vi.spyOn(sampler,"dispose").mockImplementation(()=>{expect(f.state.target).toBe(f.previous);});
+      if(outcome==="abort")external.abort();if(outcome==="dispose")f.capture.dispose();
+      expect(samplerDisposal).not.toHaveBeenCalled();expect(requests[0].dispose).not.toHaveBeenCalled();
+      if(outcome==="throw")throw new Error("injected warm draw failure");
+    });
+    const pending=f.capture.warmup(external.signal,draw);expect(draw).not.toHaveBeenCalled();expect(f.state.target).toBe(f.previous);
+    requests[0].resolve(true);expect(await pending).toBe(outcome==="success");expect(draw).toHaveBeenCalledTimes(1);
+    expect(samplerDisposal).toHaveBeenCalledTimes(1);expect(requests[0].dispose).toHaveBeenCalledTimes(1);
+    expect(f.scene.background).toBe(background);expect(f.state.target).toBe(f.previous);expect(f.state.viewport.equals(before.viewport)).toBe(true);expect(f.state.scissor.equals(before.scissor)).toBe(true);expect(f.state.scissorTest).toBe(true);expect(f.mock.autoClear).toBe(false);
+    expect(f.state.currentViewport.equals(f.previous.viewport)).toBe(true);expect(f.state.currentScissor.equals(f.previous.scissor)).toBe(true);expect(f.state.clearColor.equals(before.color)).toBe(true);expect(f.state.clearAlpha).toBe(before.alpha);
+    expect(f.capture.snapshot()).toEqual(before.snapshot);expect(f.capture.texture).toBeNull();expect(f.capture.depthTexture).toBeNull();f.capture.dispose();f.previous.dispose();
+  });
+
+  it("never invokes a draw after readiness was cancelled",async()=>{
+    const f=fixture(),requests=deferredPreparation(f,true),external=new AbortController(),draw=vi.fn(),pending=f.capture.warmup(external.signal,draw);
+    external.abort();requests[0].resolve(true);expect(await pending).toBe(false);expect(draw).not.toHaveBeenCalled();expect(f.mock.clear).not.toHaveBeenCalled();expect(requests[0].dispose).toHaveBeenCalledTimes(1);f.capture.dispose();f.previous.dispose();
+  });
+
+  it("restores the original attachment before releasing resources even if another state restore throws",async()=>{
+    const f=fixture(),requests=deferredPreparation(f),external=new AbortController();let disposed:ReturnType<typeof vi.spyOn>|undefined;
+    const pending=f.capture.warmup(external.signal,sampler=>{
+      disposed=vi.spyOn(sampler,"dispose").mockImplementation(()=>{expect(f.state.target).toBe(f.previous);});
+      f.mock.setViewport.mockImplementation(()=>{throw new Error("injected viewport restore failure");});
+    });requests[0].resolve(true);
+    expect(await pending).toBe(false);expect(f.state.target).toBe(f.previous);expect(disposed).toHaveBeenCalledTimes(1);expect(requests[0].dispose).toHaveBeenCalledTimes(1);
+    expect(f.capture.snapshot()).toMatchObject({failed:false,allocated:false,depthAllocated:false,captures:0,depthCaptures:0});f.capture.dispose();f.previous.dispose();
   });
 
   it.each(["already aborted","disposed","failed","lost context"])("does not allocate or submit preparation when %s",async condition=>{

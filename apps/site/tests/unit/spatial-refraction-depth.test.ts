@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { Color, Group, Line, Mesh, MeshBasicMaterial, NearestFilter, NoBlending, NoColorSpace, NormalBlending, PerspectiveCamera, Points, RGBAFormat, Scene, Sprite, UnsignedByteType, Vector4, WebGLRenderTarget, type WebGLRenderer } from "three";
+import { Color, FrontSide, Group, Line, Mesh, MeshBasicMaterial, NearestFilter, NoBlending, NoColorSpace, NormalBlending, PerspectiveCamera, Points, RGBAFormat, Scene, Sprite, Texture, UnsignedByteType, Vector4, WebGLRenderTarget, type WebGLRenderer } from "three";
 import { SpatialRefraction } from "../../src/components/spatial/SpatialRefraction";
+import { SpatialSceneRuntime } from "../../src/components/spatial/SpatialSceneRuntime";
+import { SpatialAtmosphere } from "../../src/components/spatial/SpatialAtmosphere";
+import { SpatialCloth } from "../../src/components/spatial/SpatialCloth";
 
 function fixture() {
   const previous=new WebGLRenderTarget(17,23);previous.viewport.set(2,3,11,13);previous.scissor.set(1,2,7,9);previous.scissorTest=true;
@@ -39,6 +42,33 @@ function fixture() {
 }
 
 describe("Significant atmospheric depth capture",()=>{
+  it.each(["success","throw","lost","disposed"])("rolls back real runtime material/visibility/uniform references after optical preparation %s",outcome=>{
+    const scene=new Scene(),cloth=new SpatialCloth(true),atmosphere=new SpatialAtmosphere(true),other=new Mesh(),camera=new PerspectiveCamera(),sampler=new Texture(),oldColor=new Texture(),oldDepth=new Texture();
+    scene.add(cloth,atmosphere,other);cloth.visible=false;atmosphere.visible=false;
+    cloth.setOptics(oldColor,301,503,.3);cloth.setDepthOptics(oldDepth,.4,90);cloth.backgroundSize.value.set(7,9);cloth.cssSize.value.set(19,31);
+    const uniforms=()=>({color:cloth.background.value,depth:cloth.depthBackground.value,refraction:cloth.refraction.value,ready:cloth.depthReady.value,render:cloth.renderSize.value.toArray(),background:cloth.backgroundSize.value.toArray(),range:cloth.depthRange.value.toArray(),css:cloth.cssSize.value.toArray(),projection:cloth.opticalProjection.value.toArray(),plane:cloth.opticalExitPlane.value.toArray()});
+    const objects:object[]=[],materials=new Map();scene.traverse(object=>{objects.push({object,visible:object.visible,frustumCulled:object.frustumCulled});const material=(object as Mesh).material;if(material&&!Array.isArray(material))materials.set(material,{side:material.side,depthWrite:material.depthWrite,blending:material.blending});});
+    const before=uniforms(),dispose=vi.spyOn(sampler,"dispose"),render=vi.fn(()=>{
+      expect(cloth.visible&&atmosphere.visible).toBe(true);expect(other.visible).toBe(false);expect(cloth.frustumCulled).toBe(false);
+      expect(cloth.background.value).toBe(sampler);expect(cloth.depthBackground.value).toBe(sampler);expect(cloth.refraction.value).toBe(1);expect(cloth.depthReady.value).toBe(1);
+      expect(atmosphere.backgroundDepthCapture.value).toBe(1);atmosphere.traverse(object=>{const material=(object as Mesh).material;if(material&&!Array.isArray(material)){expect(material.depthWrite).toBe(true);expect(material.blending).toBe(NoBlending);}});
+      cloth.material.side=FrontSide;cloth.cssSize.value.set(3,5);cloth.opticalProjection.value.identity();cloth.opticalExitPlane.value.set(9,8,7,6);
+      if(outcome==="lost"){runtime.contextLost=true;runtime.releaseOptics();}
+      if(outcome==="disposed"){runtime.disposed=true;runtime.releaseOptics();}
+      if(outcome==="throw")throw new Error("injected actual-draw failure");
+    });
+    const runtime=Object.assign(Object.create(SpatialSceneRuntime.prototype),{scene,cloth,atmosphere,camera,rendererHost:{renderer:{render,getContext:()=>({isContextLost:()=>runtime.contextLost===true})}}});
+    if(outcome==="throw")expect(()=>runtime.drawOpticsPreparation(sampler)).toThrow("injected actual-draw failure");else runtime.drawOpticsPreparation(sampler);
+    expect(render).toHaveBeenCalledTimes(1);
+    if(outcome==="lost"||outcome==="disposed"){
+      expect(cloth.background.value).toBeNull();expect(cloth.depthBackground.value).toBeNull();expect(cloth.refraction.value).toBe(0);expect(cloth.depthReady.value).toBe(0);
+    }else expect(uniforms()).toEqual(before);
+    expect(atmosphere.backgroundDepthCapture.value).toBe(0);expect(dispose).not.toHaveBeenCalled();
+    for(const saved of objects as {object:Mesh;visible:boolean;frustumCulled:boolean}[]){expect(saved.object.visible).toBe(saved.visible);expect(saved.object.frustumCulled).toBe(saved.frustumCulled);}
+    for(const [material,saved]of materials){expect(material.side).toBe(saved.side);expect(material.depthWrite).toBe(saved.depthWrite);expect(material.blending).toBe(saved.blending);}
+    cloth.dispose();atmosphere.dispose();sampler.dispose();oldColor.dispose();oldDepth.dispose();other.geometry.dispose();(other.material as MeshBasicMaterial).dispose();
+  });
+
   it("keeps the hero allocation free and captures only atmospheric fragments in a separate bounded data target",()=>{
     const f=fixture();expect(f.capture.render()).toBe(false);expect(f.capture.depthTexture).toBeNull();
     expect(f.capture.snapshot()).toMatchObject({allocated:false,depthAllocated:false,depthPixels:0,depthCaptures:0});expect(f.mock.render).not.toHaveBeenCalled();

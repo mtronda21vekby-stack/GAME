@@ -1,4 +1,4 @@
-import { Color, LinearFilter, LinearSRGBColorSpace, NearestFilter, NoColorSpace, RGBAFormat, UnsignedByteType, Vector2, Vector4, WebGLRenderTarget, type Camera, type Object3D, type Scene, type Texture, type WebGLRenderer } from "three";
+import { Color, DataTexture, LinearFilter, LinearSRGBColorSpace, NearestFilter, NoColorSpace, RGBAFormat, UnsignedByteType, Vector2, Vector4, WebGLRenderTarget, type Camera, type Object3D, type Scene, type Texture, type WebGLRenderer } from "three";
 import { prepareSceneShaders } from "../../experience/core/ShaderPreparation";
 
 export const SPATIAL_REFRACTION_PIXELS = { mobile:250_000, desktop:500_000 } as const;
@@ -18,7 +18,7 @@ type RefractionOptions = {
   exclude:()=>readonly Object3D[]; compact?:boolean; beforeCapture?:()=>void; afterCapture?:()=>void;
   depthObjects?:()=>readonly Object3D[]; beforeDepthCapture?:()=>void; afterDepthCapture?:()=>void;
 };
-type WarmupPreparation = { controller:AbortController; target:WebGLRenderTarget; bound:boolean; released:boolean };
+type WarmupPreparation = { controller:AbortController; target:WebGLRenderTarget; sampler?:DataTexture; bound:boolean; released:boolean };
 
 /** Live background color and optional significant-surface packed depth, driven
  * only by the existing scene tick. The original atmospheric vertex/fragment
@@ -45,10 +45,10 @@ export class SpatialRefraction {
   get texture():Texture|null{return this.target?.texture??null;}
   get depthTexture():Texture|null{return this.depthTargetReady&&!this.depthFailed?this.depthTarget?.texture??null:null;}
 
-  /** Prepare the actual capture-format shader variants without drawing a frame
-   * or retaining an offscreen allocation in the hero. Binding is synchronous:
-   * readiness polling must never leave this scratch target on the renderer. */
-  async warmup(signal:AbortSignal):Promise<boolean> {
+  /** Prepare the capture format, then optionally submit one synchronous draw.
+   * The transient white sampler is separate from the attachment: no feedback.
+   * Readiness polling never leaves a scratch target or changed scene state. */
+  async warmup(signal:AbortSignal,draw?:(sampler:Texture)=>void):Promise<boolean> {
     if(this.disposed||this.failed||signal.aborted)return false;
     let preparation:WarmupPreparation|undefined;
     const cancel=()=>{
@@ -81,7 +81,31 @@ export class SpatialRefraction {
         }
       }
       const complete=await ready;
-      return complete&&!this.disposed&&!this.failed&&!signal.aborted&&!preparation.controller.signal.aborted&&!context.isContextLost()&&renderer.getContext()===context;
+      const available=()=>!this.disposed&&!this.failed&&!signal.aborted&&!preparation!.controller.signal.aborted&&!context.isContextLost()&&renderer.getContext()===context;
+      if(!complete||!available())return false;
+      if(draw){
+        const attachment=renderer.getRenderTarget(),autoClear=renderer.autoClear,scissorTest=renderer.getScissorTest(),clearAlpha=renderer.getClearAlpha(),background=this.scene.background;
+        const viewport=renderer.getViewport(new Vector4()),scissor=renderer.getScissor(new Vector4()),clearColor=renderer.getClearColor(new Color());
+        preparation.bound=true;
+        try{
+          if(!available())return false;
+          const sampler=preparation.sampler=new DataTexture(new Uint8Array([255,255,255,255]),1,1,RGBAFormat,UnsignedByteType);
+          sampler.minFilter=NearestFilter;sampler.magFilter=NearestFilter;sampler.colorSpace=NoColorSpace;sampler.generateMipmaps=false;sampler.needsUpdate=true;
+          renderer.setRenderTarget(preparation.target);renderer.setScissorTest(false);renderer.autoClear=false;
+          this.scene.background=null;renderer.setClearColor(0xffffff,1);renderer.clear();
+          if(!available())return false;
+          draw(sampler);
+        }finally{
+          try{
+            this.scene.background=background;renderer.autoClear=autoClear;renderer.setClearColor(clearColor,clearAlpha);
+            renderer.setScissorTest(scissorTest);renderer.setScissor(scissor);renderer.setViewport(viewport);
+          }finally{
+            try{renderer.setRenderTarget(attachment);}
+            finally{preparation.bound=false;if(preparation.controller.signal.aborted)this.releaseWarmup(preparation);}
+          }
+        }
+      }
+      return available();
     } catch {
       // Abort, readiness timeout and unsupported allocation are optional-effect
       // preparation failures, not permanent capture failures.
@@ -211,7 +235,7 @@ export class SpatialRefraction {
   }
   private releaseWarmup(preparation:WarmupPreparation){
     if(preparation.bound||preparation.released)return;
-    preparation.released=true;preparation.target.dispose();
+    preparation.released=true;try{preparation.sampler?.dispose();}finally{preparation.target.dispose();}
   }
   private cancelWarmups(){for(const preparation of this.warmups){preparation.controller.abort();this.releaseWarmup(preparation);}}
   private releaseDepth(){this.depthTarget?.dispose();this.depthTarget=undefined;this.depthTargetReady=false;}

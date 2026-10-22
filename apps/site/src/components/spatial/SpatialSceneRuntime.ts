@@ -173,8 +173,43 @@ export class SpatialSceneRuntime {
     if(controller.signal.aborted||this.disposed||this.contextLost&&!this.restoring)return false;
     // The live background uses a linear output variant even on the direct
     // mobile path. Prepare it before scroll, without retaining a hero target.
-    const opticsReady=this.reduced||this.constrained||!this.refraction?true:await this.refraction.warmup(controller.signal);
+    const opticsReady=this.reduced||this.constrained||!this.refraction?true:await this.refraction.warmup(controller.signal,sampler=>this.drawOpticsPreparation(sampler));
     return sceneReady&&opticsReady;
+  }
+
+  /** One offscreen first-use submission during the existing loading owner.
+   * No live capture, camera changes or persistent hero allocation. */
+  private drawOpticsPreparation(sampler:THREE.Texture){
+    const cloth=this.cloth,capture=this.refraction;
+    const saved={background:cloth.background.value,renderSize:cloth.renderSize.value.clone(),backgroundSize:cloth.backgroundSize.value.clone(),refraction:cloth.refraction.value,
+      depth:cloth.depthBackground.value,depthRange:cloth.depthRange.value.clone(),depthReady:cloth.depthReady.value,
+      cssSize:cloth.cssSize.value.clone(),projection:cloth.opticalProjection.value.clone(),plane:cloth.opticalExitPlane.value.clone(),depthMode:this.atmosphere.backgroundDepthCapture.value>.5};
+    const objects:{object:THREE.Object3D;visible:boolean;frustumCulled:boolean}[]=[],sides=new Map<THREE.Material,THREE.Side>();
+    try{
+    this.scene.traverse(object=>{
+      const drawable=object as THREE.Mesh;
+      const materials=Array.isArray(drawable.material)?drawable.material:drawable.material?[drawable.material]:[];
+      let allowed=false;for(let parent:THREE.Object3D|null=object;parent;parent=parent.parent)if(parent===cloth||parent===this.atmosphere){allowed=true;break;}
+      if(allowed||materials.length){objects.push({object,visible:object.visible,frustumCulled:object.frustumCulled});object.visible=allowed;object.frustumCulled=false;}
+      for(const entry of materials)sides.set(entry,entry.side);
+    });
+      cloth.setOptics(sampler,1,1,1);cloth.setDepthOptics(sampler,this.camera.near,this.camera.far);
+      this.atmosphere.setBackgroundDepthCapture(true);
+      this.rendererHost!.renderer.render(this.scene,this.camera);
+    }finally{
+      try{this.atmosphere.setBackgroundDepthCapture(saved.depthMode);}finally{
+      for(const [entry,side]of sides)if(entry.side!==side){entry.side=side;entry.needsUpdate=true;}
+      objects.forEach(({object,visible,frustumCulled})=>{object.visible=visible;object.frustumCulled=frustumCulled;});
+      cloth.background.value=saved.background;cloth.renderSize.value.copy(saved.renderSize);cloth.backgroundSize.value.copy(saved.backgroundSize);cloth.refraction.value=saved.refraction;
+      cloth.depthBackground.value=saved.depth;cloth.depthRange.value.copy(saved.depthRange);cloth.depthReady.value=saved.depthReady;
+      cloth.cssSize.value.copy(saved.cssSize);cloth.opticalProjection.value.copy(saved.projection);cloth.opticalExitPlane.value.copy(saved.plane);
+      // A synchronous lost/dispose callback may already have cleared these
+      // references. Cleanup must not resurrect its released capture textures.
+      if(this.disposed||this.contextLost||capture!==this.refraction||this.rendererHost!.renderer.getContext().isContextLost()){
+        cloth.setOptics(null,1,1,0);cloth.setDepthOptics(null,this.camera.near,this.camera.far);
+      }
+      }
+    }
   }
 
   private createRefraction(){
