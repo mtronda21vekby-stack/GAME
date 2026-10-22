@@ -190,7 +190,14 @@ export class SpatialSceneRuntime {
       const drawable=object as THREE.Mesh;
       const materials=Array.isArray(drawable.material)?drawable.material:drawable.material?[drawable.material]:[];
       let allowed=false;for(let parent:THREE.Object3D|null=object;parent;parent=parent.parent)if(parent===cloth||parent===this.atmosphere){allowed=true;break;}
-      if(allowed||materials.length){objects.push({object,visible:object.visible,frustumCulled:object.frustumCulled});object.visible=allowed;object.frustumCulled=false;}
+      if(allowed||materials.length){
+        objects.push({object,visible:object.visible,frustumCulled:object.frustumCulled});
+        // Reveal only the optical roots. Quality-hidden atmosphere children
+        // must not upload/render just because the root is prepared offscreen.
+        if(object===cloth||object===this.atmosphere)object.visible=true;
+        else if(!allowed)object.visible=false;
+        object.frustumCulled=false;
+      }
       for(const entry of materials)sides.set(entry,entry.side);
     });
       cloth.setOptics(sampler,1,1,1);cloth.setDepthOptics(sampler,this.camera.near,this.camera.far);

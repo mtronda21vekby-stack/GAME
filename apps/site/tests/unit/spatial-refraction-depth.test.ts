@@ -45,11 +45,16 @@ describe("Significant atmospheric depth capture",()=>{
   it.each(["success","throw","lost","disposed"])("rolls back real runtime material/visibility/uniform references after optical preparation %s",outcome=>{
     const scene=new Scene(),cloth=new SpatialCloth(true),atmosphere=new SpatialAtmosphere(true),other=new Mesh(),camera=new PerspectiveCamera(),sampler=new Texture(),oldColor=new Texture(),oldDepth=new Texture();
     scene.add(cloth,atmosphere,other);cloth.visible=false;atmosphere.visible=false;
+    const qualityVisibility=new Map();atmosphere.traverse(object=>{if(object!==atmosphere)qualityVisibility.set(object,object.visible);});
+    const hiddenQuality=[...qualityVisibility].filter(([,visible])=>!visible).map(([object])=>object);expect(hiddenQuality).toHaveLength(3);
     cloth.setOptics(oldColor,301,503,.3);cloth.setDepthOptics(oldDepth,.4,90);cloth.backgroundSize.value.set(7,9);cloth.cssSize.value.set(19,31);
     const uniforms=()=>({color:cloth.background.value,depth:cloth.depthBackground.value,refraction:cloth.refraction.value,ready:cloth.depthReady.value,render:cloth.renderSize.value.toArray(),background:cloth.backgroundSize.value.toArray(),range:cloth.depthRange.value.toArray(),css:cloth.cssSize.value.toArray(),projection:cloth.opticalProjection.value.toArray(),plane:cloth.opticalExitPlane.value.toArray()});
     const objects:object[]=[],materials=new Map();scene.traverse(object=>{objects.push({object,visible:object.visible,frustumCulled:object.frustumCulled});const material=(object as Mesh).material;if(material&&!Array.isArray(material))materials.set(material,{side:material.side,depthWrite:material.depthWrite,blending:material.blending});});
     const before=uniforms(),dispose=vi.spyOn(sampler,"dispose"),render=vi.fn(()=>{
       expect(cloth.visible&&atmosphere.visible).toBe(true);expect(other.visible).toBe(false);expect(cloth.frustumCulled).toBe(false);
+      for(const [object,visible]of qualityVisibility)expect(object.visible).toBe(visible);
+      const drawable:object[]=[];atmosphere.traverseVisible(object=>{if((object as Mesh).material)drawable.push(object);});
+      for(const hidden of hiddenQuality)expect(drawable).not.toContain(hidden);
       expect(cloth.background.value).toBe(sampler);expect(cloth.depthBackground.value).toBe(sampler);expect(cloth.refraction.value).toBe(1);expect(cloth.depthReady.value).toBe(1);
       expect(atmosphere.backgroundDepthCapture.value).toBe(1);atmosphere.traverse(object=>{const material=(object as Mesh).material;if(material&&!Array.isArray(material)){expect(material.depthWrite).toBe(true);expect(material.blending).toBe(NoBlending);}});
       cloth.material.side=FrontSide;cloth.cssSize.value.set(3,5);cloth.opticalProjection.value.identity();cloth.opticalExitPlane.value.set(9,8,7,6);
