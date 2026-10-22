@@ -181,4 +181,48 @@ describe("cancellable shader preparation", () => {
     expect(await pending).toBe(false);
     expect(vi.getTimerCount()).toBe(0);
   });
+
+  it("prepares HDR then default-framebuffer SRGB and restores the prior target during both waits", async () => {
+    const f = fixture(), previous = {}, hdr = {}, direct = readyProgram();
+    let current: object | null = previous;
+    const renderer = Object.assign(f.renderer, { getRenderTarget: () => current, setRenderTarget: vi.fn((target: object | null) => { current = target; }) });
+    f.renderer.compile.mockImplementation(() => {
+      if (current === hdr) f.properties.get.mockReturnValue({ currentProgram: f.program, programs: new Map([["hdr", f.program]]) });
+      else {
+        expect(current).toBeNull();
+        f.properties.get.mockReturnValue({ currentProgram: direct, programs: new Map([["hdr", f.program], ["srgb", direct]]) });
+      }
+      return new Set([f.material]);
+    });
+    const bloom = Object.create(SpatialBloom.prototype) as SpatialBloom;
+    Object.assign(bloom, { renderer, scene: f.scene, camera: f.camera, composer: { readBuffer: hdr } });
+    const pending = bloom.warmup(f.controller.signal);
+    expect(current).toBe(previous);expect(f.renderer.compile).toHaveBeenCalledTimes(1);
+    f.program.isReady.mockReturnValue(true);advance(10);await Promise.resolve();
+    expect(f.renderer.compile).toHaveBeenCalledTimes(2);expect(current).toBe(previous);
+    expect(direct.getUniforms).not.toHaveBeenCalled();
+    direct.isReady.mockReturnValue(true);advance(10);
+    expect(await pending).toBe(true);
+    expect(direct.getUniforms).toHaveBeenCalledTimes(1);expect(direct.getAttributes).toHaveBeenCalledTimes(1);
+    expect(renderer.setRenderTarget.mock.calls.map(([target]) => target)).toEqual([hdr, previous, null, previous]);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("does not touch the renderer or start SRGB work after abort between output variants", async () => {
+    const f = fixture(), previous = {}, hdr = {};
+    let current: object | null = previous;
+    const renderer = Object.assign(f.renderer, { getRenderTarget: vi.fn(() => current), setRenderTarget: vi.fn((target: object | null) => { current = target; }) });
+    f.program.isReady.mockReturnValue(true);
+    const bloom = Object.create(SpatialBloom.prototype) as SpatialBloom;
+    Object.assign(bloom, { renderer, scene: f.scene, camera: f.camera, composer: { readBuffer: hdr } });
+    const pending = bloom.warmup(f.controller.signal);
+    // HDR is synchronously ready, but its await continuation has not started the
+    // second output. Aborting here models model/context teardown at that boundary.
+    f.controller.abort();f.renderer.getContext.mockClear();renderer.getRenderTarget.mockClear();
+    expect(await pending).toBe(false);
+    expect(f.renderer.getContext).not.toHaveBeenCalled();expect(renderer.getRenderTarget).not.toHaveBeenCalled();
+    expect(f.renderer.compile).toHaveBeenCalledTimes(1);
+    expect(renderer.setRenderTarget.mock.calls.map(([target]) => target)).toEqual([hdr, previous]);
+    expect(current).toBe(previous);expect(vi.getTimerCount()).toBe(0);
+  });
 });

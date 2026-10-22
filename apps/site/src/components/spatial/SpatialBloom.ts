@@ -21,11 +21,26 @@ export class SpatialBloom {
   render(){this.composer.render();}
   getTargetSize(out:Vector2){return out.set(this.composer.readBuffer.width,this.composer.readBuffer.height);}
   setLabPresence(amount:number){this.bloom.strength=.24*(1-Math.max(0,Math.min(1,amount))*.75);}
-  /** Warm the same HDR shader variants as RenderPass, including currently hidden meshes. */
-  warmup(signal:AbortSignal){
-    const previous=this.renderer.getRenderTarget();
-    try{this.renderer.setRenderTarget(this.composer.readBuffer);return prepareSceneShaders(this.renderer,this.scene,this.camera,signal);}
-    finally{this.renderer.setRenderTarget(previous);}
+  /** Prepare HDR and the direct SRGB fallback before a quality downgrade can
+   * select it. Each binding is restored before asynchronous readiness polling. */
+  async warmup(signal:AbortSignal):Promise<boolean>{
+    if(signal.aborted)return false;
+    const context=this.renderer.getContext();
+    const available=()=>!signal.aborted&&!context.isContextLost()&&this.renderer.getContext()===context;
+    if(!available())return false;
+    const prepare=(target:WebGLRenderTarget|null)=>{
+      if(!available())return Promise.resolve(false);
+      const previous=this.renderer.getRenderTarget();
+      try{
+        this.renderer.setRenderTarget(target);
+        if(!available())return Promise.resolve(false);
+        return prepareSceneShaders(this.renderer,this.scene,this.camera,signal);
+      }finally{this.renderer.setRenderTarget(previous);}
+    };
+    const hdrReady=await prepare(this.composer.readBuffer);
+    if(!available())return false;
+    const directReady=await prepare(null);
+    return available()&&hdrReady&&directReady;
   }
   dispose(){this.bloom.dispose();this.output.dispose();this.composer.dispose();}
 }
