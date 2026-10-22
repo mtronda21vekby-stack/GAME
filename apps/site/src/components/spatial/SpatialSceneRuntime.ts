@@ -178,7 +178,7 @@ export class SpatialSceneRuntime {
   }
 
   private createRefraction(){
-    this.cloth.setOptics(null,1,1,0);this.refraction?.dispose();
+    this.cloth.setOptics(null,1,1,0);this.cloth.setDepthOptics(null,this.camera.near,this.camera.far);this.refraction?.dispose();
     if(!this.rendererHost)return;
     this.refraction=new SpatialRefraction(this.rendererHost.renderer,this.scene,this.camera,{
       exclude:()=>[this.cloth],compact:this.compact,
@@ -186,6 +186,9 @@ export class SpatialSceneRuntime {
         this.atmosphere.setBackgroundCapture(this.clothBackgroundDepth(),this.refraction!.size.x/Math.max(1,this.viewportWidth));
       },
       afterCapture:()=>this.atmosphere.setBackgroundCapture(null),
+      depthObjects:()=>[this.atmosphere],
+      beforeDepthCapture:()=>this.atmosphere.setBackgroundDepthCapture(true),
+      afterDepthCapture:()=>this.atmosphere.setBackgroundDepthCapture(false),
     });
   }
   private clothBackgroundDepth(){
@@ -213,7 +216,7 @@ export class SpatialSceneRuntime {
     if(held&&this.heldAt===null){this.heldAt=now;this.detailMotion.sample(now);}
     else if(!held&&this.heldAt!==null){this.detailMotion.delay(now-this.heldAt);this.heldAt=null;}
   }
-  private releaseOptics(){this.cloth.setOptics(null,1,1,0);this.refraction?.setEnabled(false);}
+  private releaseOptics(){this.cloth.setOptics(null,1,1,0);this.cloth.setDepthOptics(null,this.camera.near,this.camera.far);this.refraction?.setEnabled(false);}
   private onContextState=(state:"ready"|"lost")=>{
     if(this.disposed)return;
     if(state==="lost"){
@@ -221,7 +224,7 @@ export class SpatialSceneRuntime {
       this.shaderAbort?.abort();
       this.updateMotionHold();
       this.stop();this.cancelGrab();this.budget.suspend(true,frameLoop.now());
-      this.cloth.setOptics(null,1,1,0);this.refraction?.dispose();this.refraction=undefined;this.opticsWeight=0;
+      this.cloth.setOptics(null,1,1,0);this.cloth.setDepthOptics(null,this.camera.near,this.camera.far);this.refraction?.dispose();this.refraction=undefined;this.opticsWeight=0;
       this.options.stage.dataset.contextState="lost";this.options.onStatus("fallback");
     }else if(this.contextLost&&!this.restoring){void this.restoreContext();}
   };
@@ -257,7 +260,7 @@ export class SpatialSceneRuntime {
   diagnostics(){
     const renderer=this.rendererHost?.renderer,optics=this.refraction?.snapshot();
     return {frames:{...this.metrics},clock:frameLoop.snapshot(),quality:this.budget.snapshot(),context:{lost:this.contextLost,restoring:this.restoring,revision:this.contextRevision},
-      resources:{memory:renderer?{...renderer.info.memory}:null,programs:renderer?.info.programs?.length??0,brandMeshes:this.brand.children.length,bloom:!!this.bloom,optics:optics?{...optics,estimatedBytes:optics.colorBytes+optics.pixels*4}:null},
+      resources:{memory:renderer?{...renderer.info.memory}:null,programs:renderer?.info.programs?.length??0,brandMeshes:this.brand.children.length,bloom:!!this.bloom,optics:optics?{...optics,estimatedBytes:optics.colorBytes+optics.pixels*4+optics.depthColorBytes+optics.depthPixels*4}:null},
       opticsWeight:this.opticsWeight,profile:this.cloth.profile,brandReady:this.brandReady};
   }
 
@@ -479,8 +482,12 @@ export class SpatialSceneRuntime {
       capture.resize(this.viewportWidth,this.viewportHeight,this.renderSize.x/Math.max(1,this.viewportWidth),this.compact);
       const hold=active||(!this.reduced&&!this.constrained&&this.budget.snapshot().level===0&&now-this.opticsLastSeen<1000);
       this.cloth.setOptics(null,this.renderSize.x,this.renderSize.y,0);
+      this.cloth.setDepthOptics(null,this.camera.near,this.camera.far);
       capture.setEnabled(hold);
-      if(active&&capture.render())this.cloth.setOptics(capture.texture,this.renderSize.x,this.renderSize.y,this.opticsWeight*(.5+.5*this.cloth.sculpture.value));
+      if(active&&capture.render()){
+        this.cloth.setOptics(capture.texture,this.renderSize.x,this.renderSize.y,this.opticsWeight*(.5+.5*this.cloth.sculpture.value));
+        this.cloth.setDepthOptics(capture.depthTexture,this.camera.near,this.camera.far);
+      }
     }
     if(this.bloom)this.bloom.render();else renderer.render(this.scene,this.camera);
     this.metrics.drawCalls=renderer.info.render.calls;this.metrics.triangles=renderer.info.render.triangles;this.metrics.points=renderer.info.render.points;
@@ -572,7 +579,7 @@ export class SpatialSceneRuntime {
     window.removeEventListener("spatialcasehandoff",this.onCaseHandoff);
     delete this.options.stage.dataset.brandReady;delete this.options.stage.dataset.shaderWarmup;delete this.options.stage.dataset.heroUiHidden;
     delete this.options.stage.dataset.runtimeQuality;delete this.options.stage.dataset.contextState;
-    this.cloth.setOptics(null,1,1,0);this.refraction?.dispose();
+    this.cloth.setOptics(null,1,1,0);this.cloth.setDepthOptics(null,this.camera.near,this.camera.far);this.refraction?.dispose();
     this.options.stage.style.removeProperty("--spatial-hero-ui-opacity");this.gallery.dispose();this.atmosphere.dispose();this.cloth.dispose();this.bloom?.dispose();
     this.options.stage.style.removeProperty("--spatial-cloth-hint-opacity");
     disposeModel(this.scene);this.scene.clear();this.scene.environment=null;this.environment?.dispose();this.rendererHost?.dispose();

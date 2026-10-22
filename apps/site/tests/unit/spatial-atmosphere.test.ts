@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
-import { Color, Group, Mesh, Vector3 } from "three";
+import { AdditiveBlending, Color, Group, Mesh, NoBlending, ShaderMaterial, Vector3 } from "three";
 import { SpatialAtmosphere } from "../../src/components/spatial/SpatialAtmosphere";
 import { createOrbitCard } from "../../src/components/spatial/SpatialObjects";
 import { SpatialCloth } from "../../src/components/spatial/SpatialCloth";
@@ -15,6 +15,39 @@ function asset(name:string) {
 }
 
 describe("Spatial atmosphere and authored hero budgets",()=>{
+  it.each([true,false])("restores every original material state after packed-depth capture, compact=%s",compact=>{
+    const atmosphere=new SpatialAtmosphere(compact),materials:ShaderMaterial[]=[];
+    atmosphere.traverse(object=>{const material=(object as Mesh).material;if(material instanceof ShaderMaterial)materials.push(material);});
+    // Restore values owned by a caller, rather than hard-coding defaults.
+    materials[0].depthWrite=true;materials[1].blending=AdditiveBlending;
+    const original=materials.map(material=>({depthWrite:material.depthWrite,blending:material.blending}));
+    const buffers=materials.map(material=>material.uniforms);
+    atmosphere.setBackgroundCapture(-1,1);
+    atmosphere.setBackgroundDepthCapture(true);atmosphere.setBackgroundDepthCapture(true);
+    for(const material of materials){
+      expect(material.depthWrite).toBe(true);expect(material.blending).toBe(NoBlending);
+      expect(material.uniforms.uBackgroundDepthCapture).toBe(atmosphere.backgroundDepthCapture);
+      expect(material.fragmentShader).toContain("packDepthToRGBA(gl_FragCoord.z)");
+    }
+    // The outer colour-capture cleanup is also a cancellation boundary.
+    atmosphere.setBackgroundCapture(null);
+    expect(atmosphere.backgroundDepthCapture.value).toBe(0);
+    expect(materials.map(material=>({depthWrite:material.depthWrite,blending:material.blending}))).toEqual(original);
+    expect(materials.map(material=>material.uniforms)).toEqual(buffers);
+    atmosphere.dispose();
+  });
+
+  it("releases packed-depth state before disposing the atmospheric materials",()=>{
+    const atmosphere=new SpatialAtmosphere(true),material=atmosphere.dust.material;
+    const original={depthWrite:material.depthWrite,blending:material.blending};
+    atmosphere.setBackgroundDepthCapture(true);
+    const dispose=vi.spyOn(material,"dispose").mockImplementation(()=>{
+      expect(atmosphere.backgroundDepthCapture.value).toBe(0);
+      expect({depthWrite:material.depthWrite,blending:material.blending}).toEqual(original);
+    });
+    atmosphere.dispose();expect(dispose).toHaveBeenCalledTimes(1);
+  });
+
   it("preserves the desktop source and leaves the complete mobile scene below 30k triangles",()=>{
     const source=asset("blackcrown-skull-desktop.glb"),sourceMobile=asset("blackcrown-skull-mobile.glb");
     expect(createHash("sha256").update(source.bytes).digest("hex")).toBe("7c1d400b5c8a91c3e3383c7d34fa07757e43a9bcdcbde3c3031c0a110e4c53a4");

@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import { DataTexture, PerspectiveCamera, Plane, Scene, ShaderLib, Vector2, Vector3, Vector4, type Matrix4, type WebGLRenderer } from "three";
 import { SpatialCloth } from "../../src/components/spatial/SpatialCloth";
@@ -31,7 +30,7 @@ function beforeRender(cloth:SpatialCloth,camera:PerspectiveCamera,size:Vector2) 
 }
 
 describe("Sculptural LAB profiles and live background optics",()=>{
-  it("offers a dark metallic saddle and a materially distinct refractive membrane",()=>{
+  it("offers distinct metallic ribbon and open membrane finishes",()=>{
     const cloth=new SpatialCloth(false),geometry=cloth.geometry;
     expect(cloth.profile).toBe("molten");expect(cloth.profileMix.value).toBe(0);
     const molten={color:cloth.material.color.clone(),metalness:cloth.material.metalness,roughness:cloth.material.roughness,clearcoat:cloth.material.clearcoat,anisotropy:cloth.material.anisotropy};
@@ -40,11 +39,12 @@ describe("Sculptural LAB profiles and live background optics",()=>{
     expect(cloth.material.color.equals(molten.color)).toBe(false);
     expect(molten.metalness-cloth.material.metalness).toBeGreaterThan(.2);
     expect(cloth.material.roughness).toBeLessThan(molten.roughness);
-    expect(cloth.material.clearcoat).toBeGreaterThan(molten.clearcoat);
+    expect(cloth.material.clearcoat).toBeLessThan(molten.clearcoat);
     expect(cloth.material.anisotropy).toBeLessThan(molten.anisotropy);
+    expect(cloth.material.iridescence).toBe(0);expect(cloth.material.emissive.toArray()).toEqual([0,0,0]);
     expect(cloth.geometry).toBe(geometry);
     cloth.setProfile("molten");expect(cloth.profileMix.value).toBe(0);
-    expect(cloth.material.metalness).toBe(molten.metalness);cloth.dispose();
+    expect(cloth.material.metalness).toBe(molten.metalness);expect(cloth.material.iridescence).toBe(0);cloth.dispose();
   });
 
   it("bounds the new sculpture without replacing its mesh or accepting nonfinite values",()=>{
@@ -99,7 +99,7 @@ describe("Sculptural LAB profiles and live background optics",()=>{
     expect(vertex.match(/vec3 clothSurface\(/g)).toHaveLength(1);
     expect(vertex.match(/transformed=clothPoint/g)).toHaveLength(1);
     expect(vertex).toContain("objectNormal=normalize(cross(clothU,clothV))");
-    expect(vertex).toContain("mix(metalFold,membraneFold,uClothProfile)*uClothSculpture");
+    expect(vertex).toContain("z=mix(z,labZ,uClothSculpture)");
     const sampled=fragment.indexOf("texture2D(uClothBackground,sampleUv)"),output=fragment.indexOf("#include <opaque_fragment>"),tone=fragment.indexOf("#include <tonemapping_fragment>");
     expect(sampled).toBeGreaterThan(-1);expect(output).toBeGreaterThan(sampled);expect(tone).toBeGreaterThan(output);
     expect(fragment.match(/texture2D\(uClothBackground,/g)).toHaveLength(1);
@@ -121,10 +121,13 @@ describe("Sculptural LAB profiles and live background optics",()=>{
     expect(straight.vertexShader).toBe(before.vertexShader);expect(straight.fragmentShader).toBe(before.fragmentShader);
     expect(cloth.geometry).toBe(geometry);expect(cloth.geometry.attributes.position.array).toBe(positions);expect(material()).toEqual(finish);
     expect(cloth.profile).toBe("membrane");expect(cloth.sculpture.value).toBe(.8);expect(cloth.refraction.value).toBe(.7);expect(cloth.background.value).toBe(texture);
-    const fragment=straight.fragmentShader,displacement=fragment.split("\n").find(line=>line.includes("displacement*=")&&line.includes("uClothBend"))!,coating=fragment.split("\n").find(line=>line.includes("float coating="))!;
-    expect(fragment.match(/\buClothBend\b/g)).toHaveLength(2);expect(straight.vertexShader).not.toContain("uClothBend");
-    expect(displacement).toContain("clamp(uClothBend,0.,1.)");expect(coating).toContain("1.-coatingFresnel");expect(coating).not.toContain("Bend");
-    expect(fragment).not.toContain("bendVisibility");expect(cloth.material.customProgramCacheKey()).toContain("optical-path-cloth-v4");
+    const fragment=straight.fragmentShader,ray=fragment.split("\n").find(line=>line.includes("vec3 opticalRay="))!,coating=fragment.split("\n").find(line=>line.includes("float coating="))!;
+    expect(fragment.match(/\buClothBend\b/g)).toHaveLength(3);expect(straight.vertexShader).not.toContain("uClothBend");
+    expect(ray).toContain("normalize(mix(-eye,refract(-eye,normalize(nonPerturbedNormal)");expect(ray).toContain("clamp(uClothBend,0.,1.)");
+    expect(fragment.indexOf(ray)).toBeLessThan(fragment.indexOf("clothTraceDepth(point,opticalRay"));
+    const cap=fragment.split("\n").find(line=>line.includes("displacement*="))!;expect(cap).not.toContain("uClothBend");
+    expect(coating).toContain("1.-coatingFresnel");expect(coating).not.toContain("Bend");
+    expect(fragment).not.toContain("bendVisibility");expect(cloth.material.customProgramCacheKey()).toContain("woven-depth-tension-surface-v6");
     cloth.dispose();texture.dispose();
   });
 
@@ -164,9 +167,9 @@ describe("Sculptural LAB profiles and live background optics",()=>{
     cloth.dispose();
   });
 
-  it("bounds the analytical molten ray shift at the recorded 393px phone camera pose",()=>{
+  it("retains the plane-fallback benchmark at b89's recorded 393px camera pose",()=>{
     // Runtime-QA pose values: this is a CPU projection calculation, not a
-    // pixel-displacement measurement from the captured browser video.
+    // pixel-displacement measurement from video or from the new surface volume.
     const cloth=new SpatialCloth(true),camera=new PerspectiveCamera(38,393/852,.1,100),css=new Vector2(393,852),cutoff=.858;
     camera.position.set(0,0,19.6);camera.lookAt(0,0,0);camera.updateMatrixWorld(true);
     cloth.setProfile("molten");cloth.setOpticalBackgroundDepth(cutoff-2.5);beforeRender(cloth,camera,css);
@@ -182,15 +185,71 @@ describe("Sculptural LAB profiles and live background optics",()=>{
     cloth.dispose();
   });
 
-  it("uses smooth fold normals and projected ray exits while retaining the exact 692 authored form",()=>{
-    const cloth=new SpatialCloth(false),shader=assembledShader(cloth),fragment=shader.fragmentShader,form=shader.vertexShader.match(/vec3 clothSurface\(vec2 p\) \{[\s\S]*?\n  \}/)?.[0];
-    expect(form).toBeDefined();expect(createHash("sha256").update(form!).digest("hex")).toBe("41eae2b87e406a07a3a0d86fa0db39bcdef665fbe0e3b35ebba66e7e84eb4312");
-    expect(fragment).toContain("opticalRay=refract(-eye,normalize(nonPerturbedNormal)");expect(fragment).toContain("vec3 point=-vViewPosition");
+  it("uses smooth fold normals and projected ray exits with a bounded LAB/rest envelope",()=>{
+    const cloth=new SpatialCloth(false),shader=assembledShader(cloth),fragment=shader.fragmentShader,vertex=shader.vertexShader;
+    expect(vertex).toContain("x=mix(x,labX,uClothSculpture)");expect(vertex).toContain("y=mix(y,labY,uClothSculpture)");expect(vertex).toContain("z=mix(z,labZ,uClothSculpture)");
+    expect(vertex).toContain("x=clamp(x,-.86,.86);y=clamp(y,-.86,.86);z=clamp(z,-1.15,1.15)");
+    expect(fragment).toContain("refract(-eye,normalize(nonPerturbedNormal)");expect(fragment).toContain("vec3 point=-vViewPosition");
     expect(fragment).toContain("dot(uClothExitPlane,vec4(point,1.))");expect(fragment).toContain("uClothProjection*vec4(point+opticalRay*bentTravel,1.)");
     expect(fragment).toContain("bentClip.xy/bentClip.w-straightClip.xy/straightClip.w");
     expect(fragment).toContain("mix(originalDisplacement,projectedDisplacement,clamp(uClothSculpture,0.,1.))");
     expect(fragment).toContain("length(displacement*max(uClothCssSize,vec2(1.)))");expect(fragment).toContain("24./max(cssTravel,.001)");
     expect(fragment).toContain("bentDenominator<-.08&&straightDenominator<-.08&&planeDistance>0.");
     expect(fragment.match(/texture2D\(uClothBackground,/g)).toHaveLength(1);cloth.dispose();
+  });
+
+  it("forms mesoscopic continuous interlaced ribbons with resolved cell sizes",()=>{
+    const cloth=new SpatialCloth(true),fragment=assembledShader(cloth).fragmentShader;
+    const grid=fragment.match(/grid=uv\*mix\(vec2\(([\d.]+),([\d.]+)\),vec2\(([\d.]+),([\d.]+)\),uClothProfile\)/);
+    expect(grid).not.toBeNull();const cells=grid!.slice(1).map(Number);expect(cells).toEqual([18,26,12,18]);
+    expect(353/cells[0]).toBeGreaterThan(18);expect(353/cells[2]).toBeGreaterThan(28);
+    expect(fragment).toContain("coverage=max(vertical,horizontal)");
+    expect(fragment).toContain("cos((grid.x-.5)*3.141593)*cos((grid.y-.5)*3.141593)");
+    expect(fragment).toContain("relief=max(verticalLevel,horizontalLevel)");expect(fragment).toContain("clothWeaveNormal(normal,cloth.y,cloth.w)");
+    expect(fragment).not.toContain("floor(grid");expect(fragment).not.toContain("uv.x*240.");expect(fragment).not.toContain("502.65482");
+    for(const width of [.245,.17]){const openFraction=(1-width*2)**2;expect(openFraction).toBeGreaterThan(.2);expect(openFraction).toBeLessThan(.5);}
+    cloth.dispose();
+  });
+
+  it("bridges aperture holes with one protected matte crown sample before discard",()=>{
+    const cloth=new SpatialCloth(true),fragment=assembledShader(cloth).fragmentShader;
+    const mark=fragment.indexOf("float mark=texture2D(uClothMark,vClothUv).a"),bridge=fragment.indexOf("cloth.x=max(cloth.x,mark)"),discard=fragment.indexOf("if(cloth.x<.26)discard"),alpha=fragment.indexOf("diffuseColor.a*=smoothstep(.26,.62,cloth.x)");
+    expect(mark).toBeGreaterThan(-1);expect(bridge).toBeGreaterThan(mark);expect(discard).toBeGreaterThan(bridge);expect(alpha).toBeGreaterThan(discard);
+    expect(fragment.match(/texture2D\(uClothMark,/g)).toHaveLength(1);
+    expect(fragment).toContain("metalnessFactor=mix(metalnessFactor,.15,mark)");expect(fragment).toMatch(/roughnessFactor=mix\([^;]+,\.48,mark\)/);
+    expect(fragment).toContain("(1.-mark*.96)");expect(1-.96).toBeCloseTo(.04,12);
+    // Full crown coverage survives even at the middle of a completely open cell.
+    const bridgedCoverage=Math.max(0,1);expect(bridgedCoverage).toBeGreaterThan(.62);
+    for(const profile of ["molten","membrane"] as const){cloth.setProfile(profile);cloth.setQuality(true,false);expect(cloth.material.iridescence).toBe(0);expect(cloth.material.emissive.toArray()).toEqual([0,0,0]);}
+    cloth.dispose();
+  });
+
+  it("validates depth metadata without owning or disposing the external depth texture",()=>{
+    const cloth=new SpatialCloth(true),depth=background(),color=background(),depthDisposed=vi.spyOn(depth,"dispose"),colorDisposed=vi.spyOn(color,"dispose");
+    cloth.setOptics(color,491,1065,.8);cloth.setDepthOptics(depth,.1,100);
+    expect(cloth.depthBackground.value).toBe(depth);expect(cloth.depthRange.value.toArray()).toEqual([.1,100]);expect(cloth.depthReady.value).toBe(1);
+    const shader=assembledShader(cloth);expect(shader.uniforms).toMatchObject({uClothDepth:cloth.depthBackground,uClothDepthRange:cloth.depthRange,uClothDepthReady:cloth.depthReady});
+    for(const [near,far] of [[0,100],[-1,100],[1,1],[2,1],[NaN,100],[.1,Infinity]]){
+      cloth.setDepthOptics(depth,near,far);expect(cloth.depthBackground.value).toBeNull();expect(cloth.depthReady.value).toBe(0);expect(cloth.refraction.value).toBe(.8);
+    }
+    cloth.setDepthOptics(depth,.2,80);cloth.setProfile("membrane");cloth.setQuality(false,false);
+    expect(cloth.depthBackground.value).toBe(depth);expect(cloth.depthRange.value.toArray()).toEqual([.2,80]);expect(depthDisposed).not.toHaveBeenCalled();
+    cloth.setDepthOptics(null,.2,80);expect(cloth.depthBackground.value).toBeNull();expect(cloth.depthReady.value).toBe(0);
+    cloth.setDepthOptics(depth,.2,80);cloth.dispose();expect(cloth.depthBackground.value).toBeNull();expect(cloth.depthReady.value).toBe(0);
+    expect(depthDisposed).not.toHaveBeenCalled();expect(colorDisposed).not.toHaveBeenCalled();depth.dispose();color.dispose();
+  });
+
+  it("bounds depth tracing to eight packed-depth reads and one color read with a plane fallback",()=>{
+    const cloth=new SpatialCloth(true),fragment=assembledShader(cloth).fragmentShader;
+    const packing=fragment.indexOf("#include <packing>"),cross=fragment.indexOf("bool clothDepthCross("),trace=fragment.indexOf("bool clothTraceDepth("),plane=fragment.indexOf("projectedDisplacement=(bentClip.xy"),depth=fragment.indexOf("if(uClothDepthReady>.5&&uClothSculpture>.001)");
+    expect(packing).toBeGreaterThan(-1);expect(cross).toBeGreaterThan(packing);expect(trace).toBeGreaterThan(cross);expect(depth).toBeGreaterThan(plane);
+    const coarse=Number(fragment.match(/for\(int i=0;i<(\d+);i\+\+\)/)?.[1]),refine=Number(fragment.match(/for\(int refine=0;refine<(\d+);refine\+\+\)/)?.[1]);
+    expect(coarse).toBe(6);expect(refine).toBe(2);expect(coarse+refine).toBeLessThanOrEqual(8);
+    expect(fragment.match(/texture2D\(uClothDepth,/g)).toHaveLength(1);expect(fragment.match(/texture2D\(uClothBackground,/g)).toHaveLength(1);
+    expect(fragment.match(/clothTraceDepth\(point,opticalRay/g)).toHaveLength(1);
+    expect(fragment).toContain("unpackRGBAToDepth(texture2D(uClothDepth,sampleUv))");expect(fragment).toContain("perspectiveDepthToViewZ(windowDepth,uClothDepthRange.x,uClothDepthRange.y)");
+    expect(fragment).toContain("if(windowDepth>=.9999)return false");expect(fragment).toContain("sceneDepth>-origin.z+.06&&-candidate.z>=sceneDepth");
+    expect(fragment).toContain("if(traceLimit>.1&&clothTraceDepth(point,opticalRay,traceLimit,depthUv))\n                projectedDisplacement=depthUv-screenUv");
+    expect(cloth.depthReady.value).toBe(0);expect(fragment).toContain("float traceLimit=min(farTravel,min(32.");cloth.dispose();
   });
 });

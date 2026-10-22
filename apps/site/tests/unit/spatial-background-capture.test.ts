@@ -87,10 +87,14 @@ describe("Capture-only atmospheric foreground rejection",()=>{
     const atmosphere=new SpatialAtmosphere(false),objects=renderables(atmosphere);
     for(const object of objects){
       const vertex=object.material.vertexShader,fragment=object.material.fragmentShader;
-      expect(vertex.match(/vWorldZ\s*=\s*\(modelMatrix\*vec4\(p,1\.\)\)\.z/g)).toHaveLength(1);
+      const inline=vertex.match(/vWorldZ\s*=\s*\(modelMatrix\*vec4\(p,1\.\)\)\.z/g)??[];
+      const shared=vertex.match(/vec4 world=modelMatrix\*vec4\(p,1\.\);\s*vWorldZ=world\.z/g)??[];
+      // Haze also uses the exact same transformed position for its continuous
+      // field. Accept that shared value, not an unrelated/stale world variable.
+      expect(inline.length+shared.length).toBe(1);
       expect(fragment).toContain("uniform vec2 uBackgroundClip");
       expect(fragment).toContain("if(uBackgroundClip.x>.5&&vWorldZ>uBackgroundClip.y)discard");
-      const worldZ=vertex.indexOf("vWorldZ=(modelMatrix*vec4(p,1.)).z");
+      const worldZ=vertex.indexOf(inline[0]??shared[0]);
       if(object===atmosphere.dust||object===atmosphere.facets){
         expect(worldZ).toBeGreaterThan(vertex.indexOf("p.z+=uDeparture*3."));
         if(object===atmosphere.facets)expect(worldZ).toBeGreaterThan(vertex.indexOf("p+=facet"));

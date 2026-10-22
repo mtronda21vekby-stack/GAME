@@ -44,19 +44,28 @@ const folds=`
     y+=hem*hem*(.08+sin(p.x*3.141593)*.035);
     x-=pow(p.x,5.)*free*.035;
     x+=sin(p.y*4.+uClothTime*.18)*free*.008*uClothMotion;
-    // Two different volumes: focused black-metal saddle and a broad travelling
-    // membrane. Sculpture0 recovers the original bounded outro rest shape.
+    // A suspended tension wave carries a broad bulge and an offset trough
+    // through the LAB. The second profile reverses that volume into an open
+    // lattice bowl. Neither depends on the old fixed diagonal crease field.
     float clock=uClothTime*uClothMotion;
-    float metalFold=sin(p.x*7.4+free*3.2-clock*.42)*.22*loose;
-    metalFold+=sin(p.x*3.7-free*5.2+clock*.23)*.11*free;
-    metalFold+=(p.x-.5)*(p.y-.5)*.48;
-    float membraneFold=sin(p.x*4.8+free*3.5-clock*.34)*.34*loose;
-    membraneFold+=sin(p.x*8.3-free*2.5+clock*.19)*.115*free;
-    z+=mix(metalFold,membraneFold,uClothProfile)*uClothSculpture;
-    float waist=pow(sin(p.y*3.141593),2.);
-    x*=1.-uClothSculpture*waist*mix(.11,.24,uClothProfile);
-    x+=uClothSculpture*sin(free*4.6+clock*.2)*free*mix(.035,.085,uClothProfile);
-    y+=uClothSculpture*sin(p.x*6.283185-clock*.26)*free*mix(.025,.055,uClothProfile);
+    vec2 center=vec2(.46+sin(clock*.25)*.10,.48+sin(clock*.36)*.15);
+    vec2 domeDelta=(p-center)*vec2(2.8,2.3);
+    vec2 troughDelta=(p-center-vec2(.28,-.12))*vec2(3.5,2.8);
+    float dome=exp(-dot(domeDelta,domeDelta));
+    float trough=exp(-dot(troughDelta,troughDelta));
+    float suspension=smoothstep(0.,.22,free);
+    float tension=sin((p.y-center.y)*5.8-clock*.32+sin(p.x*3.141593)*.7)*loose;
+    float rollingHem=hem*hem*(.18+sin(clock*.38+p.x*3.8)*.12);
+    float metalFold=(dome*.52-trough*.32)*suspension+tension*.16+rollingHem;
+    float membraneFold=(-dome*.36+trough*.52)*suspension-tension*.21+rollingHem*.85;
+    float labZ=mix(metalFold,membraneFold,uClothProfile);
+    labZ+=(breath*.65+response*loose*1.7)*uClothMotion;
+    float waist=exp(-pow((p.y-center.y)*3.2,2.));
+    float labX=(p.x-.5)*(1.-waist*mix(.10,.18,uClothProfile));
+    labX+=sin(free*3.1+.2)*.045*free+sin(free*3.8-clock*.25)*.045*free;
+    float labY=p.y-.5-pow(sin(p.x*3.141593),2.)*free*.045;
+    labY+=hem*hem*(.10+sin(clock*.31+p.x*3.2)*.055);
+    x=mix(x,labX,uClothSculpture);y=mix(y,labY,uClothSculpture);z=mix(z,labZ,uClothSculpture);
     float opening=smoothstep(0.,1.,uClothEntrance);
     x*=mix(.08,1.,opening);
     z+=sin((p.x-.5)*6.283185)*.16*(1.-opening);
@@ -64,7 +73,7 @@ const folds=`
     vec2 grabDelta=(p-uClothDrag.xy)*vec2(.86,1.);
     float grab=exp(-dot(grabDelta,grabDelta)*12.)*loose*uClothMotion;
     x+=uClothDrag.z*grab;y+=uClothDrag.w*grab;
-    z-=length(uClothDrag.zw)*.5*grab*mix(1.,1.38,uClothProfile*uClothSculpture);
+    z-=length(uClothDrag.zw)*.5*grab*mix(1.,mix(1.7,2.1,uClothProfile),uClothSculpture);
     // A conservative capture cutoff can now enclose every profile and gesture.
     x=clamp(x,-.86,.86);y=clamp(y,-.86,.86);z=clamp(z,-1.15,1.15);
     return vec3(x,y,z);
@@ -75,35 +84,76 @@ const weave=`
   varying vec2 vClothUv;
   uniform sampler2D uClothMark;
   uniform sampler2D uClothBackground;
+  uniform sampler2D uClothDepth;
+  uniform vec2 uClothDepthRange;
+  uniform float uClothDepthReady;
   uniform vec2 uClothRenderSize,uClothBackgroundSize,uClothCssSize;
   uniform mat4 uClothProjection;
   uniform vec4 uClothExitPlane;
   uniform float uClothRefraction,uClothProfile,uClothBend,uClothSculpture;
-  // Fine crossing steel ribbons. Filter the apertures and the brushed grain
-  // separately so a receding fold becomes satin instead of a flickering grid.
+  // Mesoscopic ribbons alternate over and under at every crossing. This is a
+  // woven surface with readable cells, rather than a fine perforated film.
   vec4 clothWeave(vec2 uv) {
-    vec2 grid=uv*mix(vec2(76.,108.),vec2(52.,78.),uClothProfile),cell=fract(grid)-.5;
+    vec2 grid=uv*mix(vec2(18.,26.),vec2(12.,18.),uClothProfile),cell=fract(grid)-.5;
     float footprint=max(fwidth(grid.x),fwidth(grid.y));
     float detail=1.-smoothstep(.65,1.35,footprint);
-    float aperture=length(max(abs(cell)-vec2(.13,.18),vec2(0.)))-.075;
-    float aa=max(fwidth(aperture),.018);
-    float coverage=smoothstep(-aa,aa,aperture);
-    float ribX=pow(.5+.5*cos(grid.x*6.283185),5.);
-    float ribY=pow(.5+.5*cos(grid.y*6.283185),5.);
-    float crossing=mod(floor(grid.x)+floor(grid.y),2.);
-    float ribbon=mix(ribX*.72+ribY*.28,ribX*.28+ribY*.72,crossing);
-    float edge=1.-smoothstep(.025,.13,aperture);
-    return vec4(mix(1.,coverage,detail),ribbon*detail,edge*detail,detail);
+    float width=mix(.245,.17,uClothProfile),aa=max(footprint*.7,.012);
+    float vertical=1.-smoothstep(width-aa,width+aa,abs(cell.x));
+    float horizontal=1.-smoothstep(width-aa,width+aa,abs(cell.y));
+    float coverage=max(vertical,horizontal);
+    float crossing=.5+.5*cos((grid.x-.5)*3.141593)*cos((grid.y-.5)*3.141593);
+    float verticalCrown=max(0.,1.-pow(cell.x/width,2.));
+    float horizontalCrown=max(0.,1.-pow(cell.y/width,2.));
+    float verticalLevel=vertical*(.28+verticalCrown*.72)*mix(.42,1.,crossing);
+    float horizontalLevel=horizontal*(.28+horizontalCrown*.72)*mix(1.,.42,crossing);
+    float relief=max(verticalLevel,horizontalLevel);
+    float edge=max((1.-verticalCrown)*vertical,(1.-horizontalCrown)*horizontal);
+    float fill=1.-pow(1.-width*2.,2.);
+    return vec4(mix(fill,coverage,detail),relief*detail,edge*detail,detail);
   }
-  vec3 clothWeaveNormal(vec3 n,vec2 uv,float detail) {
-    float brushDetail=1.-smoothstep(.45,1.1,fwidth(uv.x*240.));
-    float ridge=(cos(uv.x*502.65482)*.65+cos(uv.y*703.71675)*.35)*.0011*detail;
-    ridge+=cos(uv.x*1507.9645+sin(uv.y*18.)*.3)*.00016*brushDetail;
+  vec3 clothWeaveNormal(vec3 n,float relief,float detail) {
+    float ridge=relief*mix(.018,.023,uClothProfile)*detail;
     vec3 dx=dFdx(-vViewPosition),dy=dFdy(-vViewPosition);
     vec3 a=cross(dy,n),b=cross(n,dx);
     float determinant=dot(dx,a);
     vec3 gradient=dFdx(ridge)*a+dFdy(ridge)*b;
     return normalize(abs(determinant)*n-sign(determinant)*gradient);
+  }
+`;
+
+/** r170 packing helpers are included immediately before these functions. */
+const depthOptics=`
+  bool clothDepthCross(vec3 origin,vec3 ray,float travel,out vec2 sampleUv) {
+    vec3 candidate=origin+ray*travel;
+    vec4 clip=uClothProjection*vec4(candidate,1.);
+    if(clip.w<=.001)return false;
+    sampleUv=clip.xy/clip.w*.5+.5;
+    if(any(lessThan(sampleUv,vec2(0.)))||any(greaterThan(sampleUv,vec2(1.))))return false;
+    float windowDepth=unpackRGBAToDepth(texture2D(uClothDepth,sampleUv));
+    if(windowDepth>=.9999)return false;
+    float sceneDepth=-perspectiveDepthToViewZ(windowDepth,uClothDepthRange.x,uClothDepthRange.y);
+    return sceneDepth>-origin.z+.06&&-candidate.z>=sceneDepth;
+  }
+  bool clothTraceDepth(vec3 origin,vec3 ray,float limit,out vec2 hitUv) {
+    float previous=0.;
+    for(int i=0;i<6;i++) {
+      float fraction=float(i+1)/6.;
+      float travel=limit*fraction*fraction;
+      vec2 candidateUv=vec2(0.);
+      if(clothDepthCross(origin,ray,travel,candidateUv)) {
+        float low=previous,high=travel;
+        hitUv=candidateUv;
+        for(int refine=0;refine<2;refine++) {
+          float middle=(low+high)*.5;
+          vec2 refinedUv=vec2(0.);
+          if(clothDepthCross(origin,ray,middle,refinedUv)){high=middle;hitUv=refinedUv;}
+          else low=middle;
+        }
+        return true;
+      }
+      previous=travel;
+    }
+    return false;
   }
 `;
 
@@ -128,6 +178,9 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
   readonly opticalProjection={value:new THREE.Matrix4()};
   readonly opticalExitPlane={value:new THREE.Vector4(0,0,1,0)};
   readonly refraction={value:0};
+  readonly depthBackground={value:null as THREE.Texture|null};
+  readonly depthRange={value:new THREE.Vector2(.1,100)};
+  readonly depthReady={value:0};
   /** Diagnostic control: zero isolates straight transmission at identical light. */
   readonly bendStrength={value:1};
   private currentProfile:SpatialClothProfile="molten";
@@ -169,6 +222,8 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
       shader.uniforms.uClothBend=this.bendStrength;
       shader.uniforms.uClothCssSize=this.cssSize;shader.uniforms.uClothProjection=this.opticalProjection;
       shader.uniforms.uClothExitPlane=this.opticalExitPlane;
+      shader.uniforms.uClothDepth=this.depthBackground;shader.uniforms.uClothDepthRange=this.depthRange;
+      shader.uniforms.uClothDepthReady=this.depthReady;
       shader.vertexShader=shader.vertexShader.replace("#include <common>","#include <common>\n"+folds)
         .replace("#include <beginnormal_vertex>",`#include <beginnormal_vertex>
           float e=.002;
@@ -179,19 +234,24 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
         .replace("#include <begin_vertex>",`#include <begin_vertex>
           vClothUv=uv;transformed=clothPoint;`);
       shader.fragmentShader=shader.fragmentShader.replace("#include <common>","#include <common>\n"+weave)
+        .replace("#include <packing>","#include <packing>\n"+depthOptics)
         .replace("#include <color_fragment>",`#include <color_fragment>
           vec4 cloth=clothWeave(vClothUv);
+          float mark=texture2D(uClothMark,vClothUv).a;
+          // Printed metal paint bridges the weave: crown strokes never vanish
+          // into apertures or become a transparent optical mask.
+          cloth.x=max(cloth.x,mark);
           if(cloth.x<.26)discard;
           diffuseColor.a*=smoothstep(.26,.62,cloth.x);
           float satin=.5+.5*sin(vClothUv.y*19.+sin(vClothUv.x*11.)*1.8);
-          diffuseColor.rgb*=mix(.82,1.02,cloth.y)*(1.-cloth.z*.13)*mix(.94,1.,satin);
-          diffuseColor.rgb*=mix(vec3(1.),vec3(.9,.98,1.),cloth.z*.2);`)
+          diffuseColor.rgb*=mix(.67,1.05,cloth.y)*(1.-cloth.z*.10);
+          diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.48,.57,.59),mark*.94);`)
         .replace("#include <roughnessmap_fragment>",`#include <roughnessmap_fragment>
-          float mark=texture2D(uClothMark,vClothUv).a;
-          roughnessFactor=mix(clamp(roughnessFactor+cloth.z*.065-cloth.y*.035+satin*.025,.12,.42),.5,mark);
-          diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.42,.51,.54),mark*.85);`)
+          roughnessFactor=mix(clamp(roughnessFactor+(1.-cloth.y)*.08+cloth.z*.035,.20,.48),.48,mark);`)
+        .replace("#include <metalnessmap_fragment>",`#include <metalnessmap_fragment>
+          metalnessFactor=mix(metalnessFactor,.15,mark);`)
         .replace("#include <normal_fragment_maps>",`#include <normal_fragment_maps>
-          normal=clothWeaveNormal(normal,vClothUv,cloth.w);`)
+          normal=clothWeaveNormal(normal,cloth.y,cloth.w);`)
         .replace("#include <clearcoat_normal_fragment_maps>",`#include <clearcoat_normal_fragment_maps>
           #ifdef USE_CLEARCOAT
             clearcoatNormal=normalize(mix(nonPerturbedNormal,normal,.28));
@@ -218,19 +278,21 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
             float opticalIor=mix(1.42,1.24,uClothProfile);
             vec3 ray=refract(-eye,normal,1./opticalIor);
             vec2 bend=ray.xy/max(abs(ray.z),.25)+eye.xy/max(abs(eye.z),.25);
-            vec2 originalDisplacement=clamp(bend,vec2(-.85),vec2(.85))*mix(.075,.1,uClothProfile);
+            vec2 originalDisplacement=clamp(bend,vec2(-.85),vec2(.85))*mix(.075,.1,uClothProfile)*clamp(uClothBend,0.,1.);
             originalDisplacement.x*=uClothRenderSize.y/max(1.,uClothRenderSize.x);
             // Trace the smooth, actually deformed fold to the measured backing
             // plane. Weave grain affects reflection, not the optical ray path.
-            vec3 opticalRay=refract(-eye,normalize(nonPerturbedNormal),1./opticalIor);
+            vec3 opticalRay=normalize(mix(-eye,refract(-eye,normalize(nonPerturbedNormal),1./opticalIor),clamp(uClothBend,0.,1.)));
             vec3 point=-vViewPosition;
             float planeDistance=dot(uClothExitPlane,vec4(point,1.));
             float bentDenominator=dot(uClothExitPlane.xyz,opticalRay);
             float straightDenominator=dot(uClothExitPlane.xyz,-eye);
             vec2 projectedDisplacement=vec2(0.);
+            float backingTravel=8.;
             if(uClothSculpture>.001&&bentDenominator<-.08&&straightDenominator<-.08&&planeDistance>0.) {
               float bentTravel=-planeDistance/bentDenominator;
               float straightTravel=-planeDistance/straightDenominator;
+              backingTravel=max(bentTravel,straightTravel);
               if(bentTravel>0.&&straightTravel>0.) {
                 vec4 bentClip=uClothProjection*vec4(point+opticalRay*bentTravel,1.);
                 vec4 straightClip=uClothProjection*vec4(point-eye*straightTravel,1.);
@@ -238,10 +300,17 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
                   projectedDisplacement=(bentClip.xy/bentClip.w-straightClip.xy/straightClip.w)*.5;
               }
             }
+            if(uClothDepthReady>.5&&uClothSculpture>.001) {
+              float farTravel=max(0.,(uClothDepthRange.y+point.z)/max(-opticalRay.z,.1));
+              float traceLimit=min(farTravel,min(32.,max(8.,backingTravel+12.)));
+              vec2 depthUv=vec2(0.);
+              if(traceLimit>.1&&clothTraceDepth(point,opticalRay,traceLimit,depthUv))
+                projectedDisplacement=depthUv-screenUv;
+            }
             vec2 displacement=mix(originalDisplacement,projectedDisplacement,clamp(uClothSculpture,0.,1.));
             // This cap is in CSS pixels even when the composer uses another DPR.
             float cssTravel=length(displacement*max(uClothCssSize,vec2(1.)));
-            displacement*=min(1.,24./max(cssTravel,.001))*clamp(uClothBend,0.,1.);
+            displacement*=min(1.,24./max(cssTravel,.001));
             vec2 texel=1./max(uClothBackgroundSize,vec2(1.));
             float screenEdge=smoothstep(0.,.035,min(min(screenUv.x,screenUv.y),min(1.-screenUv.x,1.-screenUv.y)));
             vec2 sampleUv=clamp(screenUv+displacement*screenEdge,texel,vec2(1.)-texel);
@@ -257,13 +326,18 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
           }
           #include <opaque_fragment>`);
     };
-    this.material.customProgramCacheKey=()=>"blackcrown-projected-optical-path-cloth-v4";
+    this.material.customProgramCacheKey=()=>"blackcrown-woven-depth-tension-surface-v6";
     this.applyProfileMaterial();
   }
   get profile(){return this.currentProfile;}
   setProfile(profile:SpatialClothProfile){this.currentProfile=profile;this.profileMix.value=profile==="membrane"?1:0;this.applyProfileMaterial();}
   setSculpture(amount:number){this.sculpture.value=THREE.MathUtils.clamp(Number.isFinite(amount)?amount:0,0,1);}
   setOpticalBackgroundDepth(worldZ:number|null){this.opticalBackgroundDepth=worldZ!==null&&Number.isFinite(worldZ)?worldZ:null;}
+  setDepthOptics(texture:THREE.Texture|null,near:number,far:number) {
+    const valid=!!texture&&Number.isFinite(near)&&Number.isFinite(far)&&near>0&&far>near;
+    this.depthBackground.value=valid?texture:null;this.depthReady.value=valid?1:0;
+    if(valid)this.depthRange.value.set(near,far);
+  }
   setOptics(texture:THREE.Texture|null,width:number,height:number,strength:number) {
     this.background.value=texture;
     this.renderSize.value.set(Math.max(1,Number.isFinite(width)?width:1),Math.max(1,Number.isFinite(height)?height:1));
@@ -273,12 +347,12 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
   }
   private applyProfileMaterial(){
     const membrane=this.currentProfile==="membrane";
-    this.material.color.set(membrane?0x284650:0x17282e);
-    this.material.metalness=membrane?.36:.92;this.material.roughness=membrane?.14:.18;
-    this.material.envMapIntensity=membrane?1.18:1.4;
-    this.material.clearcoat=membrane?.82:.48;this.material.clearcoatRoughness=membrane?.08:.1;
-    this.material.anisotropy=(membrane?.22:.64)*(this.compact?.85:1);
-    this.material.iridescence=(membrane?.26:.11)*(this.compact?.8:1);
+    this.material.color.set(membrane?0x35444a:0x30454a);
+    this.material.metalness=membrane?.64:.90;this.material.roughness=membrane?.22:.26;
+    this.material.envMapIntensity=membrane?1.15:1.25;
+    this.material.clearcoat=membrane?.12:.22;this.material.clearcoatRoughness=membrane?.22:.19;
+    this.material.anisotropy=(membrane?.24:.42)*(this.compact?.85:1);
+    this.material.iridescence=0;
   }
   setQuality(compact:boolean,reduced:boolean) {
     const columns=compact?20:32,rows=compact?26:48;
@@ -317,5 +391,5 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
     this.drag.value.z=this.dragX.update(this.dragTarget.x,delta*1000);this.drag.value.w=this.dragY.update(this.dragTarget.y,delta*1000);
     if(this.motion.value)this.hover.value.lerp(this.hoverTarget,-Math.expm1(-Math.min(delta,.1)/.095));
   }
-  dispose(){this.background.value=null;this.refraction.value=0;this.mark.value.dispose();this.geometry.dispose();this.material.dispose();this.removeFromParent();}
+  dispose(){this.background.value=null;this.depthBackground.value=null;this.depthReady.value=0;this.refraction.value=0;this.mark.value.dispose();this.geometry.dispose();this.material.dispose();this.removeFromParent();}
 }

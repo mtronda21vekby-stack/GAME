@@ -59,16 +59,22 @@ const dustVertex = `
   }
 `;
 const dustFragment = `
+  #include <packing>
   varying vec3 vTint;
   varying float vAlpha, vSpark, vDefocus;
   varying float vWorldZ;
   uniform vec2 uBackgroundClip;
+  uniform float uBackgroundDepthCapture;
   void main() {
     if(uBackgroundClip.x>.5&&vWorldZ>uBackgroundClip.y)discard;
     vec2 q = gl_PointCoord-.5;
     q.y *= mix(1.,.28,vSpark);
     float light = pow(1.-smoothstep(0.,.25,dot(q,q)),mix(2.,1.2,vDefocus));
     if(light<.015) discard;
+    if(uBackgroundDepthCapture>.5) {
+      if(light*vAlpha<.012)discard;
+      gl_FragColor=packDepthToRGBA(gl_FragCoord.z);return;
+    }
     gl_FragColor = vec4(vTint,light*vAlpha);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
@@ -78,20 +84,25 @@ const hazeVertex = `
   uniform float uTime;
   varying vec2 vUv;
   varying float vWorldZ;
+  varying vec3 vFieldPosition;
   void main() {
     vUv = uv;
     vec3 p = position;
     p.z += sin(p.y*.35+uTime*.09)*.12;
-    vWorldZ=(modelMatrix*vec4(p,1.)).z;
+    vec4 world=modelMatrix*vec4(p,1.);
+    vWorldZ=world.z;vFieldPosition=world.xyz;
     gl_Position = projectionMatrix*modelViewMatrix*vec4(p,1.);
   }
 `;
 const hazeFragment = `
+  #include <packing>
   uniform float uTime, uOpacity, uShaft, uLab;
   uniform vec3 uTint;
   varying vec2 vUv;
   varying float vWorldZ;
+  varying vec3 vFieldPosition;
   uniform vec2 uBackgroundClip;
+  uniform float uBackgroundDepthCapture;
   float hash(vec2 p) { return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
   float noise(vec2 p) {
     vec2 i=floor(p), f=fract(p); f=f*f*(3.-2.*f);
@@ -103,14 +114,32 @@ const hazeFragment = `
     float cloud=noise(vUv*vec2(2.4,3.1)+drift)*.66+noise(vUv*vec2(6.,7.)-drift*.5)*.34;
     float vertical=smoothstep(0.,.16,vUv.y)*(1.-smoothstep(.73,1.,vUv.y));
     float edge=pow(max(0.,sin(vUv.x*3.141593)),1.8)*vertical;
+    // One continuous field, sampled on the existing planes at their actual
+    // world positions. Its broad banks persist through the journey; the LAB
+    // reveals their medium structure instead of introducing another prop.
+    vec2 field=vFieldPosition.xy*vec2(.48,.34)+vFieldPosition.z*vec2(.13,-.09);
+    field+=vec2(uTime*.015,-uTime*.01);
+    float turn=noise(field*.72+vec2(.8,2.1));
+    vec2 flow=field+vec2(turn*.85,sin(field.x*.9+turn)*.42);
+    float bank=noise(flow)*.64+noise(flow*2.1-vec2(1.7,.4))*.36;
+    float ridge=smoothstep(.53,.76,bank+.14*sin(flow.y*2.4+flow.x*.7));
+    float density=.1+smoothstep(.26,.7,bank)*.58+ridge*.46;
+    float fieldPresence=.22+.78*uLab;
+    cloud=mix(cloud,clamp(density,0.,1.),fieldPresence);
     float sweep=vUv.x-.47+(vUv.y-.5)*.25;
-    // Narrow the existing pair of shaft gradients in LAB, so their live edges
-    // are recognisable when a fold refracts them. This is the same light plane.
+    sweep+=uLab*(sin(vUv.y*6.2+uTime*.08)*.045+sin(vUv.y*11.4-uTime*.04)*.012);
     float beam=(exp(-pow(sweep*mix(5.2,14.,uLab),2.))*mix(.68,.28,uLab)+exp(-pow((sweep-mix(.2,.14,uLab))*mix(12.,26.,uLab),2.))*mix(.24,.82,uLab))*vertical;
     vec2 pocketDelta=(vUv-vec2(.57,.58))*vec2(3.1,1.7);
     float pocket=.12+.88*exp(-dot(pocketDelta,pocketDelta));
-    float alpha=mix(edge*pocket,beam,uShaft)*(.18+.82*cloud)*uOpacity;
+    float fieldEdge=edge*pocket*mix(.24+.76*cloud,.12+cloud*.88,fieldPresence);
+    float alpha=mix(fieldEdge,beam*(.2+.8*cloud),uShaft)*uOpacity;
+    if(uBackgroundDepthCapture>.5) {
+      if(alpha<.018)discard;
+      gl_FragColor=packDepthToRGBA(gl_FragCoord.z);return;
+    }
     vec3 tint=mix(uTint*vec3(.78,.7,1.12),uTint,smoothstep(.2,.75,vUv.x));
+    vec3 warm=uTint*vec3(1.38,.94,.64);
+    tint=mix(tint,warm,ridge*fieldPresence*.3*(1.-uShaft*.65));
     gl_FragColor=vec4(tint,alpha);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
@@ -132,6 +161,7 @@ export class SpatialAtmosphere extends THREE.Group {
   readonly motion = { value: 1 };
   readonly backgroundClip = { value:new THREE.Vector2(0,0) };
   readonly lab = { value:0 };
+  readonly backgroundDepthCapture={value:0};
   readonly dust: THREE.Points<THREE.BufferGeometry, THREE.ShaderMaterial>;
   readonly facets:THREE.Mesh<THREE.InstancedBufferGeometry,THREE.ShaderMaterial>;
   private readonly haze: THREE.Mesh<THREE.PlaneGeometry,THREE.ShaderMaterial>[] = [];
@@ -141,6 +171,7 @@ export class SpatialAtmosphere extends THREE.Group {
   private reduced = false;
   private captureDpr:number|null=null;
   private backgroundPointerX=0;
+  private readonly depthStates:{material:THREE.Material;depthWrite:boolean;blending:THREE.Blending}[]=[];
 
   constructor(compact: boolean) {
     super(); this.name="BLACKCROWN_ATMOSPHERE"; this.compact=compact;
@@ -158,7 +189,7 @@ export class SpatialAtmosphere extends THREE.Group {
     geometry.setAttribute("aSeed",new THREE.Float32BufferAttribute(seeds,1));
     geometry.setAttribute("aTint",new THREE.Float32BufferAttribute(colors,3));
     this.dust=new THREE.Points(geometry,new THREE.ShaderMaterial({
-      uniforms:{uTime:this.time,uDpr:{value:1},uOpacity:{value:.6},uTravel:{value:0},uAxisHeight:{value:26},uArrival:{value:1},uDeparture:{value:0},uHeadY:{value:9},uDetail:{value:0},uAccent:{value:new THREE.Color(0x9edfe6)},uBackgroundClip:this.backgroundClip,uLab:this.lab},
+      uniforms:{uTime:this.time,uDpr:{value:1},uOpacity:{value:.6},uTravel:{value:0},uAxisHeight:{value:26},uArrival:{value:1},uDeparture:{value:0},uHeadY:{value:9},uDetail:{value:0},uAccent:{value:new THREE.Color(0x9edfe6)},uBackgroundClip:this.backgroundClip,uLab:this.lab,uBackgroundDepthCapture:this.backgroundDepthCapture},
       vertexShader:dustVertex,fragmentShader:dustFragment,transparent:true,
       blending:THREE.AdditiveBlending,depthWrite:false,depthTest:true,
     }));
@@ -173,7 +204,7 @@ export class SpatialAtmosphere extends THREE.Group {
     const facetVertex=dustVertex.replace("attribute float aSeed;","attribute vec3 aAnchor; attribute float aSeed; varying vec3 vFacetNormal;")
       .replace("vec3 p = position;","vec3 p = aAnchor;").replace("length(position.xz)","length(aAnchor.xz)")
       .replace("vec4 mv = modelViewMatrix*vec4(p,1.);","float turn=aSeed*6.283185+uTime*.045;mat2 r=mat2(cos(turn),-sin(turn),sin(turn),cos(turn));vec3 facet=position*(.55+aSeed);facet.xz=r*facet.xz;p+=facet;vec3 n=normal;n.xz=r*n.xz;vFacetNormal=normalize(normalMatrix*n);vec4 mv=modelViewMatrix*vec4(p,1.);");
-    this.facets=new THREE.Mesh(facetGeometry,new THREE.ShaderMaterial({uniforms:this.dust.material.uniforms,vertexShader:facetVertex,fragmentShader:`varying vec3 vTint,vFacetNormal;varying float vAlpha,vSpark,vWorldZ;uniform vec2 uBackgroundClip;void main(){if(uBackgroundClip.x>.5&&vWorldZ>uBackgroundClip.y)discard;float light=.35+.65*max(0.,dot(normalize(vFacetNormal),normalize(vec3(-.4,.8,1.))));gl_FragColor=vec4(vTint*light*(1.+vSpark),vAlpha*.8);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}`,transparent:true,depthWrite:false,side:THREE.DoubleSide}));
+    this.facets=new THREE.Mesh(facetGeometry,new THREE.ShaderMaterial({uniforms:this.dust.material.uniforms,vertexShader:facetVertex,fragmentShader:`#include <packing>\nvarying vec3 vTint,vFacetNormal;varying float vAlpha,vSpark,vWorldZ;uniform vec2 uBackgroundClip;uniform float uBackgroundDepthCapture;void main(){if(uBackgroundClip.x>.5&&vWorldZ>uBackgroundClip.y)discard;if(uBackgroundDepthCapture>.5){if(vAlpha*.8<.012)discard;gl_FragColor=packDepthToRGBA(gl_FragCoord.z);return;}float light=.35+.65*max(0.,dot(normalize(vFacetNormal),normalize(vec3(-.4,.8,1.))));gl_FragColor=vec4(vTint*light*(1.+vSpark),vAlpha*.8);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}`,transparent:true,depthWrite:false,side:THREE.DoubleSide}));
     this.facets.name="GPU_METAL_GRAINS";this.facets.frustumCulled=false;this.add(this.facets);
     [-10,-3,3].forEach((z,i)=>{
       const mesh=this.makeHaze(false);mesh.position.set(i-1,-1+i*.6,z);mesh.scale.set(23,15,1);mesh.rotation.z=-.17+i*.14;
@@ -183,12 +214,17 @@ export class SpatialAtmosphere extends THREE.Group {
       const mesh=this.makeHaze(true);mesh.position.set(x,y,z);mesh.scale.set(6.4,19,1);mesh.rotation.z=tilt;
       this.shafts.push(mesh);this.add(mesh);
     });
+    this.traverse(object=>{
+      const material=(object as THREE.Mesh).material;
+      if(material instanceof THREE.Material&&!this.depthStates.some(state=>state.material===material))
+        this.depthStates.push({material,depthWrite:material.depthWrite,blending:material.blending});
+    });
     this.setQuality(compact,false);this.setAxisHeight(compact?15.8:26);
   }
 
   private makeHaze(shaft:boolean) {
     return new THREE.Mesh(new THREE.PlaneGeometry(1,1,1,8),new THREE.ShaderMaterial({
-      uniforms:{uTime:this.time,uOpacity:{value:0},uShaft:{value:shaft?1:0},uTint:{value:new THREE.Color(shaft?0x8dc5d3:0x587c90).multiplyScalar(shaft?1.55:1)},uBackgroundClip:this.backgroundClip,uLab:this.lab},
+      uniforms:{uTime:this.time,uOpacity:{value:0},uShaft:{value:shaft?1:0},uTint:{value:new THREE.Color(shaft?0x8dc5d3:0x587c90).multiplyScalar(shaft?1.55:1)},uBackgroundClip:this.backgroundClip,uLab:this.lab,uBackgroundDepthCapture:this.backgroundDepthCapture},
       vertexShader:hazeVertex,fragmentShader:hazeFragment,transparent:true,depthWrite:false,depthTest:true,
       side:THREE.DoubleSide,blending:shaft?THREE.AdditiveBlending:THREE.NormalBlending,
     }));
@@ -208,6 +244,7 @@ export class SpatialAtmosphere extends THREE.Group {
    * entire deformed sheet. Null restores the unchanged final atmosphere draw. */
   setBackgroundCapture(maxWorldZ:number|null,dpr?:number) {
     const capturing=maxWorldZ!==null&&Number.isFinite(maxWorldZ);
+    if(!capturing)this.setBackgroundDepthCapture(false);
     if(capturing&&dpr!==undefined&&Number.isFinite(dpr)&&dpr>0){
       if(this.captureDpr===null)this.captureDpr=this.dust.material.uniforms.uDpr.value as number;
       this.dust.material.uniforms.uDpr.value=dpr;
@@ -215,6 +252,21 @@ export class SpatialAtmosphere extends THREE.Group {
       this.dust.material.uniforms.uDpr.value=this.captureDpr;this.captureDpr=null;
     }
     this.backgroundClip.value.set(maxWorldZ!==null&&Number.isFinite(maxWorldZ)?1:0,maxWorldZ!==null&&Number.isFinite(maxWorldZ)?maxWorldZ:0);
+  }
+
+  /** The same animated masks write nearest significant background depth.
+   * Uniform-only mode keeps the shader variants shared with the colour pass. */
+  setBackgroundDepthCapture(enabled:boolean) {
+    if((this.backgroundDepthCapture.value>.5)===enabled)return;
+    this.backgroundDepthCapture.value=enabled?1:0;
+    for(const state of this.depthStates){
+      if(enabled){
+        state.depthWrite=state.material.depthWrite;state.blending=state.material.blending;
+        state.material.depthWrite=true;state.material.blending=THREE.NoBlending;
+      }else{
+        state.material.depthWrite=state.depthWrite;state.material.blending=state.blending;
+      }
+    }
   }
 
   /** Recompose the existing light field just behind the measured whole sheet.
@@ -263,8 +315,9 @@ export class SpatialAtmosphere extends THREE.Group {
     (this.dust.material.uniforms.uAccent.value as THREE.Color).copy(accent);
     const accentLuminance=Math.max(.001,luminance(accent));
     this.haze.forEach((mesh,i)=>{
-      mesh.material.uniforms.uOpacity.value=opacity*(.2-journey*.06)*(1-i*.16)*(1+lab*.3);
+      mesh.material.uniforms.uOpacity.value=opacity*(.2-journey*.06)*(1-i*.16)*(1+lab*1.1);
       tintField(mesh.material.uniforms.uTint.value as THREE.Color,i%2?0x665f82:0x587c90,accent,accentLuminance,this.worldTint,.38);
+      mesh.rotation.x=lab*.006;mesh.rotation.y=lab*(i%2?-.04:.04);
       mesh.position.x=(i-1)*1.1+pointer.x*(.15+i*.2);
       mesh.position.y=(this.dust.material.uniforms.uAxisHeight.value as number)*(.22-i*.18);
       mesh.position.z=[-10,-3,3][i]-lab*8;
@@ -274,6 +327,7 @@ export class SpatialAtmosphere extends THREE.Group {
     this.shafts.forEach((mesh,i)=>{
       mesh.material.uniforms.uOpacity.value=opacity*(.17-journey*.035)*(1-i*.24)*(1+lab*2.);
       tintField(mesh.material.uniforms.uTint.value as THREE.Color,0x8dc5d3,accent,accentLuminance,this.worldTint,.4,1.55);
+      mesh.rotation.x=lab*.015;mesh.rotation.y=lab*(i? .09:-.09);
       mesh.position.x=THREE.MathUtils.lerp(i?.2:2.4,i?2.2:-1.35,lab);
       mesh.position.y=0;
       mesh.position.z=(i?1.6:-6)-lab*8;
@@ -283,6 +337,7 @@ export class SpatialAtmosphere extends THREE.Group {
   }
 
   dispose() {
+    this.setBackgroundDepthCapture(false);
     const geometries=new Set<THREE.BufferGeometry>(),materials=new Set<THREE.Material>();
     this.traverse(object=>{
       const mesh=object as THREE.Mesh;

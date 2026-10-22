@@ -84,6 +84,19 @@ describe("Owned refraction shader preparation",()=>{
     f.capture.dispose();f.previous.dispose();
   });
 
+  it("cancels pending preparation when an active LAB capture is disabled",async()=>{
+    const f=fixture(),requests=deferredPreparation(f),external=new AbortController();
+    f.capture.setEnabled(true);const pending=f.capture.warmup(external.signal);f.capture.setEnabled(false);
+    expect(requests[0].signal.aborted).toBe(true);expect(await pending).toBe(false);expect(requests[0].dispose).toHaveBeenCalledTimes(1);
+    expect(f.state.target).toBe(f.previous);expect(f.capture.snapshot()).toMatchObject({allocated:false,depthAllocated:false});f.capture.dispose();f.previous.dispose();
+  });
+
+  it("allows one-shot hero preparation while live capture remains disabled",async()=>{
+    const f=fixture(),requests=deferredPreparation(f),external=new AbortController(),pending=f.capture.warmup(external.signal);
+    f.capture.setEnabled(false);expect(requests[0].signal.aborted).toBe(false);requests[0].resolve(true);expect(await pending).toBe(true);
+    expect(f.capture.snapshot()).toMatchObject({enabled:false,allocated:false,depthAllocated:false,depthCaptures:0});f.capture.dispose();f.previous.dispose();
+  });
+
   it("supersedes older valid work without allowing its external abort/finally to affect the new owner",async()=>{
     const f=fixture(),requests=deferredPreparation(f),oldExternal=new AbortController(),newExternal=new AbortController();
     const first=f.capture.warmup(oldExternal.signal),second=f.capture.warmup(newExternal.signal);
