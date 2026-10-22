@@ -4,6 +4,7 @@ import { CameraRig } from "../../experience/camera/CameraRig";
 import { RendererHost } from "../../experience/core/RendererHost";
 import { frameLoop } from "../../experience/core/FrameLoop";
 import { RuntimeBudget } from "../../experience/quality/QualityManager";
+import { prepareSceneShaders } from "../../experience/core/ShaderPreparation";
 import { QUALITY_PRESETS } from "../../experience/quality/qualityPresets";
 import { INITIAL_SCROLL_SNAPSHOT } from "../../experience/types";
 import { platformGames } from "../../lib/platformGames";
@@ -51,6 +52,7 @@ export class SpatialSceneRuntime {
   private readonly gallery:SpatialGalleryStage;
   private axisHeight=1;
   private brandAbort?:AbortController;
+  private shaderAbort?:AbortController;
   private readonly atmosphere:SpatialAtmosphere;
   private readonly cloth:SpatialCloth;
   private bloom?:SpatialBloom;
@@ -93,7 +95,8 @@ export class SpatialSceneRuntime {
     this.cloth=new SpatialCloth(this.compact);this.cloth.setQuality(this.compact,this.reduced);
     this.scene.add(this.brand,this.atmosphere,this.cloth);
     try {
-      this.rendererHost=new RendererHost({container:options.host,preset:this.compact?COMPACT_PRESET:DESKTOP_PRESET,powerPreference:this.compact?"low-power":"high-performance",onContextState:this.onContextState});
+      const preset=this.compact?COMPACT_PRESET:DESKTOP_PRESET;
+      this.rendererHost=new RendererHost({container:options.host,preset:{...preset,dprCap:Math.min(this.constrained?1:Infinity,preset.dprCap)},powerPreference:this.compact?"low-power":"high-performance",onContextState:this.onContextState});
       this.rendererHost.renderer.domElement.className="spatialSceneCanvas";
       this.rendererHost.renderer.info.autoReset=false;
       this.rendererHost.setExposure(1.02);
@@ -119,6 +122,7 @@ export class SpatialSceneRuntime {
   }
 
   private async loadBrand() {
+    this.shaderAbort?.abort();
     this.brandAbort?.abort();
     const controller=this.brandAbort=new AbortController();
     const url=this.compact?SPATIAL_BRAND_MODEL.mobileUrl:SPATIAL_BRAND_MODEL.url;
@@ -138,13 +142,14 @@ export class SpatialSceneRuntime {
       if(SPATIAL_BRAND_MODEL.finish==="blackcrown-metal")finishMetal(gltf.scene);
       finishHeroMaterials(gltf.scene);
       const adapted=adaptSpatialBrand(gltf.scene,SPATIAL_BRAND_MODEL.fitSpan);
+      this.shaderAbort?.abort();
       const previous=[...this.brand.children];this.brand.clear();this.brand.add(adapted.group);
       this.brandRevision++;
       previous.forEach(disposeModel);
       if(this.contextLost||this.restoring)return; // Recovery prepares the latest attached CPU model.
       // The cloth is initially outside the viewport. Compile it before scroll can reveal it.
       let warmed=true;
-      try{await (this.bloom?this.bloom.warmup():this.rendererHost!.renderer.compileAsync(this.scene,this.camera));}
+      try{warmed=await this.prepareShaders();}
       catch{warmed=false;}
       if(this.disposed||this.brandAbort!==controller||this.contextLost||this.restoring)return;
       this.options.stage.dataset.shaderWarmup=warmed?"ready":"fallback";
@@ -156,10 +161,15 @@ export class SpatialSceneRuntime {
   }
 
   private configureBloom() {
-    if(this.compact||this.constrained||this.budget.snapshot().level>=3){this.bloom?.dispose();this.bloom=undefined;return;}
+    if(this.compact||this.constrained||this.budget.snapshot().level>=3){if(this.bloom)this.shaderAbort?.abort();this.bloom?.dispose();this.bloom=undefined;return;}
     if(!this.bloom&&this.rendererHost){
       try{this.bloom=new SpatialBloom(this.rendererHost.renderer,this.scene,this.camera);}catch{/* Keep the 3D scene usable if HDR targets are unavailable. */}
     }
+  }
+
+  private prepareShaders(){
+    this.shaderAbort?.abort();const controller=this.shaderAbort=new AbortController();
+    return this.bloom?this.bloom.warmup(controller.signal):prepareSceneShaders(this.rendererHost!.renderer,this.scene,this.camera,controller.signal);
   }
 
   private createRefraction(){
@@ -201,6 +211,7 @@ export class SpatialSceneRuntime {
     if(this.disposed)return;
     if(state==="lost"){
       this.contextRevision++;this.contextLost=true;this.restoring=false;
+      this.shaderAbort?.abort();
       this.updateMotionHold();
       this.stop();this.cancelGrab();this.budget.suspend(true,frameLoop.now());
       this.cloth.setOptics(null,1,1,0);this.refraction?.dispose();this.refraction=undefined;this.opticsWeight=0;
@@ -214,7 +225,7 @@ export class SpatialSceneRuntime {
       const previous=this.environment;
       this.environment=createHeroStudio(this.rendererHost.renderer,this.compact);this.scene.environment=this.environment.texture;previous?.dispose();
       this.bloom?.dispose();this.bloom=undefined;this.configureBloom();this.createRefraction();this.resize();
-      let studioCompact=this.compact;
+      let studioCompact=this.compact,warmed=false;
       // One in-flight recovery. A model attached during warmup invalidates only
       // that preparation, never publishes an unprepared replacement as ready.
       while(true){
@@ -222,7 +233,7 @@ export class SpatialSceneRuntime {
           const old=this.environment;this.environment=createHeroStudio(this.rendererHost.renderer,this.compact);this.scene.environment=this.environment.texture;old?.dispose();studioCompact=this.compact;
         }
         const model=this.brandRevision,compact=this.compact,restoredBloom=this.bloom as SpatialBloom|undefined;
-        await (restoredBloom?restoredBloom.warmup():this.rendererHost.renderer.compileAsync(this.scene,this.camera));
+        warmed=await this.prepareShaders();
         if(this.disposed||revision!==this.contextRevision)return;
         if(model===this.brandRevision&&compact===this.compact&&restoredBloom===this.bloom)break;
       }
@@ -230,7 +241,7 @@ export class SpatialSceneRuntime {
       this.updateMotionHold();
       if(this.brand.children.length){if(!this.brandReady)this.brandArrival=this.elapsed;this.brandReady=true;this.options.stage.dataset.brandReady="1";}
       this.resize();
-      this.options.stage.dataset.contextState="ready";this.options.stage.dataset.shaderWarmup="ready";
+      this.options.stage.dataset.contextState="ready";this.options.stage.dataset.shaderWarmup=warmed?"ready":"fallback";
       this.budget.suspend(this.budgetInactive(),frameLoop.now());this.options.onStatus("ready");this.requestFrame();
     }catch{if(!this.disposed&&revision===this.contextRevision)this.fail();}
   }
@@ -378,6 +389,7 @@ export class SpatialSceneRuntime {
   };
   private onGrabEnd=(event:PointerEvent)=>{if(this.grab?.id!==event.pointerId)return;if(this.grab.active)this.grabFinished=frameLoop.now();this.cancelGrab();this.requestFrame();};
   private onPreferenceChange=()=>{
+    this.shaderAbort?.abort();
     const compact=this.compactQuery.matches,changed=compact!==this.compact;
     this.cancelGrab();
     this.compact=compact;this.reduced=prefersStaticPlatform(this.motionQuery);this.desiredPointer.x=this.desiredPointer.y=0;
@@ -532,7 +544,8 @@ export class SpatialSceneRuntime {
       const unit=panelFrontWidth(this.camera,this.viewportWidth,1,position),worldWidth=width/unit;
       this.cloth.position.copy(position);this.cloth.position.y+=height/unit*.015;
       // Keep the authored loose hem inside the interactive slot at both sizes.
-      this.cloth.scale.set(worldWidth*THREE.MathUtils.lerp(.94,nativeOutro?.9:.94,farewell)*(1-closingFold*.65),height/unit*.88,worldWidth*.66);this.cloth.update(this.reduced?0:t);
+      // The deeper LAB folds need lateral room; the bounded farewell keeps its existing fit.
+      this.cloth.scale.set(worldWidth*THREE.MathUtils.lerp(this.compact?.84:.94,nativeOutro?.9:.94,farewell)*(1-closingFold*.65),height/unit*.88,worldWidth*.66);this.cloth.update(this.reduced?0:t);
       this.cloth.rotation.set(-.06,THREE.MathUtils.lerp(THREE.MathUtils.lerp(-.42,this.compact?-.035:-.14,this.reduced?1:lab),nativeOutro?-.16:-.48,farewell),THREE.MathUtils.lerp(-.035,nativeOutro?.025:-.1,farewell));
       this.lightAim.set(this.cloth.position.x-3,this.cloth.position.y+3,this.cloth.position.z+5.5);
       this.anatomyLight.position.lerp(this.lightAim,lab);
@@ -541,7 +554,7 @@ export class SpatialSceneRuntime {
   }
   private fail(){if(!this.disposed){this.options.onStatus("fallback");this.dispose();}}
   dispose(){
-    if(this.disposed)return;this.disposed=true;this.stop();this.brandAbort?.abort();
+    if(this.disposed)return;this.disposed=true;this.stop();this.brandAbort?.abort();this.shaderAbort?.abort();
     this.contextRevision++;this.cancelGrab();
     this.resizeObserver?.disconnect();this.intersectionObserver?.disconnect();this.preferenceObserver?.disconnect();
     this.motionQuery.removeEventListener("change",this.onPreferenceChange);this.compactQuery.removeEventListener("change",this.onPreferenceChange);

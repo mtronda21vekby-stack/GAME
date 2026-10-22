@@ -38,3 +38,15 @@ test("@off rapid Back/Forward retargets one case and reduced motion restores its
   await expect(opener).toBeFocused();
   await expect.poll(()=>page.evaluate(()=>document.body.style.overflow)).not.toBe("hidden");
 });
+
+test("@off rapid pointer Next retargets during its related-case fade",async({page})=>{
+  await installApiAdapter(page);await page.goto("/");
+  await page.getByRole("button",{name:"Об игре Ballcrown",exact:true}).click();
+  const detail=page.locator("#spatial-game-detail");
+  await expect(detail).toHaveAttribute("data-media-arrived","true");
+  const next=detail.getByRole("button",{name:"Следующая игра →",exact:true});
+  await next.click();await next.click();
+  await expect(detail).toHaveAttribute("data-game-id","quiet-valley");
+  await expect(detail).toHaveAttribute("data-media-arrived","true");
+  await expect(detail.locator("video")).toHaveCount(1);
+});

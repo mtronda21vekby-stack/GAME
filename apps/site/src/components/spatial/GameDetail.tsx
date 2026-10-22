@@ -90,19 +90,29 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
     phase.current="closed";setClosingVisual(false);setArrived(false);clearSource();
     if(dialogRef.current)delete dialogRef.current.dataset.phase;
   }
+  function restoreSourceThenFinish() {
+    const token=epoch.current;
+    // The invalidation queues the restored GPU cover before this release. Keep
+    // the outgoing poster through that render, so there is no uncovered paint.
+    clearSource();
+    frame.current=frameLoop.request(()=>{
+      if(token!==epoch.current||phase.current!=="closing")return;
+      frame.current=0;finishGhost();
+    },"case-return-release");
+  }
   function settle() {
     cancelFrame();
-    if(phase.current==="closing"){finishGhost();return;}
+    if(phase.current==="closing"){restoreSourceThenFinish();return;}
     if(phase.current!=="closed"){
       mediaBox.current=baseRect();surface.rebase(rest);paintSurface();phase.current="open";setArrived(true);
     }
   }
   function schedule(token=epoch.current) {
     frame.current=frameLoop.request(now=>{
-      frame.current=0;if(token!==epoch.current)return;
+      if(token!==epoch.current)return;frame.current=0;
       surface.sample(now);paintSurface();
       if(surface.active)schedule(token);
-      else if(phase.current==="closing")finishGhost();
+      else if(phase.current==="closing")restoreSourceThenFinish();
       else{phase.current="open";setArrived(true);}
     },"case-handoff");
   }
@@ -139,7 +149,7 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
     const destination=originPose(true);
     if(!connectedHandoff.current)destination[4]=0;
     onClosing?.();onClose();
-    if(staticMotion()){surface.rebase(destination);finishGhost();return;}
+    if(staticMotion()){surface.rebase(destination);paintSurface();restoreSourceThenFinish();return;}
     surface.moveTo(destination,SPATIAL_TIMING.close,now);schedule();
   }
   useClientLayoutEffect(()=>{
@@ -198,7 +208,7 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
         <div className="spatialDetailDescription"><p id="spatial-detail-description"><DecodedText text={visualGame.description} token={visualGame.id}/></p><dl className="spatialCaseFacts"><div><dt>Жанр</dt><dd>{visualGame.genre}</dd></div><div><dt>Доступ</dt><dd>{visualGame.status}</dd></div><div><dt>Об игре</dt><dd>{visualGame.detail}</dd></div></dl></div>
         <div className="spatialDetailLinks"><a href={visualGame.href}>{visualGame.id === "crown-front" ? "Открыть альфу" : "Играть в " + visualGame.title}<span aria-hidden="true">↗</span></a><a className="spatialCaseHelp" href="/support">Помощь с игрой <span aria-hidden="true">↗</span></a><button type="button" onClick={onRequestClose}>← К галерее</button></div>
       </div>
-      <div className="spatialDetailBottom"><button type="button" aria-label="← Предыдущая игра" disabled={!canCycle} onClick={() => { if (phase.current === "open") onPrevious(); }}>← Предыдущая</button><span aria-hidden="true">/</span><button type="button" aria-label="Следующая игра →" disabled={!canCycle} onClick={() => { if (phase.current === "open") onNext(); }}>Следующая →</button></div>
+      <div className="spatialDetailBottom"><button type="button" aria-label="← Предыдущая игра" disabled={!canCycle} onClick={() => { if (phase.current === "open" || phase.current === "opening") onPrevious(); }}>← Предыдущая</button><span aria-hidden="true">/</span><button type="button" aria-label="Следующая игра →" disabled={!canCycle} onClick={() => { if (phase.current === "open" || phase.current === "opening") onNext(); }}>Следующая →</button></div>
       <button className="spatialCaseSearch" type="button" onClick={onSearch}>Найти другой мир <span aria-hidden="true">⌕</span></button>
     </div></div>
   </dialog>;

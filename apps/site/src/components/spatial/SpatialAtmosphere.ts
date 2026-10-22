@@ -6,7 +6,7 @@ export const SPATIAL_ATMOSPHERE_QUALITY = {
 } as const;
 
 const dustVertex = `
-  uniform float uTime, uDpr, uOpacity, uTravel, uAxisHeight, uArrival, uDeparture, uHeadY, uDetail;
+  uniform float uTime, uDpr, uOpacity, uTravel, uAxisHeight, uArrival, uDeparture, uHeadY, uDetail, uLab;
   uniform vec3 uAccent;
   attribute float aSeed;
   attribute vec3 aTint;
@@ -29,6 +29,9 @@ const dustVertex = `
     p=mix(stream,p,uArrival);
     p.x=mix(p.x,p.x*.55,uDeparture);
     p.z+=uDeparture*3.;
+    // The same grains travel behind the entire LAB volume. Previously their
+    // forward travel left nearly all of them outside the background snapshot.
+    p.z-=uLab*(10.+uDeparture*3.);
     vec4 mv = modelViewMatrix*vec4(p,1.);
     vWorldZ=(modelMatrix*vec4(p,1.)).z;
     gl_Position = projectionMatrix*mv;
@@ -37,11 +40,12 @@ const dustVertex = `
     float lens=exp(-pow(length(lensDelta)/.36,4.))*uDetail;
     gl_Position.xy+=normalize(lensDelta+vec2(.0001))*.075*lens*gl_Position.w;
     float screenX = gl_Position.x/gl_Position.w*.5+.5;
-    float distanceFade = smoothstep(2.,7.,-mv.z)*(1.-smoothstep(25.,42.,-mv.z));
+    float distanceFade = smoothstep(2.,7.,-mv.z)*(1.-smoothstep(mix(25.,32.,uLab),mix(42.,55.,uLab),-mv.z));
     vSpark = step(.988,aSeed);
     vDefocus = 1.-smoothstep(11.,19.,-mv.z);
     gl_PointSize = clamp((11.+aSeed*31.+vSpark*20.)*(1.+vDefocus*2.8)*uDpr/max(1.,-mv.z),1.,10.*uDpr);
     gl_PointSize=mix(gl_PointSize,(3.+aSeed*9.)*uDpr,uDetail);
+    gl_PointSize*=mix(1.,1.65,uLab);
     // Recolour the existing grains without making brighter worlds emit more light.
     vec3 luminanceWeights=vec3(.2126,.7152,.0722);
     float tintEnergy=dot(aTint,luminanceWeights);
@@ -83,7 +87,7 @@ const hazeVertex = `
   }
 `;
 const hazeFragment = `
-  uniform float uTime, uOpacity, uShaft;
+  uniform float uTime, uOpacity, uShaft, uLab;
   uniform vec3 uTint;
   varying vec2 vUv;
   varying float vWorldZ;
@@ -100,7 +104,9 @@ const hazeFragment = `
     float vertical=smoothstep(0.,.16,vUv.y)*(1.-smoothstep(.73,1.,vUv.y));
     float edge=pow(max(0.,sin(vUv.x*3.141593)),1.8)*vertical;
     float sweep=vUv.x-.47+(vUv.y-.5)*.25;
-    float beam=(exp(-pow(sweep*5.2,2.))*.68+exp(-pow((sweep-.2)*12.,2.))*.24)*vertical;
+    // Narrow the existing pair of shaft gradients in LAB, so their live edges
+    // are recognisable when a fold refracts them. This is the same light plane.
+    float beam=(exp(-pow(sweep*mix(5.2,8.8,uLab),2.))*.68+exp(-pow((sweep-mix(.2,.14,uLab))*mix(12.,19.,uLab),2.))*.24)*vertical;
     vec2 pocketDelta=(vUv-vec2(.57,.58))*vec2(3.1,1.7);
     float pocket=.12+.88*exp(-dot(pocketDelta,pocketDelta));
     float alpha=mix(edge*pocket,beam,uShaft)*(.18+.82*cloud)*uOpacity;
@@ -125,6 +131,7 @@ export class SpatialAtmosphere extends THREE.Group {
   readonly time = { value: 0 };
   readonly motion = { value: 1 };
   readonly backgroundClip = { value:new THREE.Vector2(0,0) };
+  readonly lab = { value:0 };
   readonly dust: THREE.Points<THREE.BufferGeometry, THREE.ShaderMaterial>;
   readonly facets:THREE.Mesh<THREE.InstancedBufferGeometry,THREE.ShaderMaterial>;
   private readonly haze: THREE.Mesh<THREE.PlaneGeometry,THREE.ShaderMaterial>[] = [];
@@ -150,7 +157,7 @@ export class SpatialAtmosphere extends THREE.Group {
     geometry.setAttribute("aSeed",new THREE.Float32BufferAttribute(seeds,1));
     geometry.setAttribute("aTint",new THREE.Float32BufferAttribute(colors,3));
     this.dust=new THREE.Points(geometry,new THREE.ShaderMaterial({
-      uniforms:{uTime:this.time,uDpr:{value:1},uOpacity:{value:.6},uTravel:{value:0},uAxisHeight:{value:26},uArrival:{value:1},uDeparture:{value:0},uHeadY:{value:9},uDetail:{value:0},uAccent:{value:new THREE.Color(0x9edfe6)},uBackgroundClip:this.backgroundClip},
+      uniforms:{uTime:this.time,uDpr:{value:1},uOpacity:{value:.6},uTravel:{value:0},uAxisHeight:{value:26},uArrival:{value:1},uDeparture:{value:0},uHeadY:{value:9},uDetail:{value:0},uAccent:{value:new THREE.Color(0x9edfe6)},uBackgroundClip:this.backgroundClip,uLab:this.lab},
       vertexShader:dustVertex,fragmentShader:dustFragment,transparent:true,
       blending:THREE.AdditiveBlending,depthWrite:false,depthTest:true,
     }));
@@ -180,7 +187,7 @@ export class SpatialAtmosphere extends THREE.Group {
 
   private makeHaze(shaft:boolean) {
     return new THREE.Mesh(new THREE.PlaneGeometry(1,1,1,8),new THREE.ShaderMaterial({
-      uniforms:{uTime:this.time,uOpacity:{value:0},uShaft:{value:shaft?1:0},uTint:{value:new THREE.Color(shaft?0x8dc5d3:0x587c90).multiplyScalar(shaft?1.55:1)},uBackgroundClip:this.backgroundClip},
+      uniforms:{uTime:this.time,uOpacity:{value:0},uShaft:{value:shaft?1:0},uTint:{value:new THREE.Color(shaft?0x8dc5d3:0x587c90).multiplyScalar(shaft?1.55:1)},uBackgroundClip:this.backgroundClip,uLab:this.lab},
       vertexShader:hazeVertex,fragmentShader:hazeFragment,transparent:true,depthWrite:false,depthTest:true,
       side:THREE.DoubleSide,blending:shaft?THREE.AdditiveBlending:THREE.NormalBlending,
     }));
@@ -222,8 +229,9 @@ export class SpatialAtmosphere extends THREE.Group {
 
   update(time:number,progress:number,detail:number,pointer:{x:number;y:number},anchor:THREE.Vector3,dpr:number,accent:THREE.Color,lab=0) {
     this.time.value=this.reduced?0:time;this.position.copy(anchor);
+    lab=THREE.MathUtils.clamp(Number.isFinite(lab)?lab:0,0,1);this.lab.value=lab;
     const journey=THREE.MathUtils.smoothstep(progress,.08,.85);
-    const opacity=(1-detail*.15)*(1-lab*.32);this.visible=opacity>.005;
+    const opacity=(1-detail*.15)*(1-lab*.24);this.visible=opacity>.005;
     this.dust.material.uniforms.uDetail.value=this.reduced?0:detail;
     this.dust.material.uniforms.uDpr.value=dpr;
     this.dust.material.uniforms.uOpacity.value=opacity*(this.compact?.35:.43);
@@ -231,13 +239,19 @@ export class SpatialAtmosphere extends THREE.Group {
     (this.dust.material.uniforms.uAccent.value as THREE.Color).copy(accent);
     const accentLuminance=Math.max(.001,luminance(accent));
     this.haze.forEach((mesh,i)=>{
-      mesh.material.uniforms.uOpacity.value=opacity*(.2-journey*.06)*(1-i*.16);
+      mesh.material.uniforms.uOpacity.value=opacity*(.2-journey*.06)*(1-i*.16)*(1+lab*.3);
       tintField(mesh.material.uniforms.uTint.value as THREE.Color,i%2?0x665f82:0x587c90,accent,accentLuminance,this.worldTint,.38);
       mesh.position.x=(i-1)*1.1+pointer.x*(.15+i*.2);
+      mesh.position.z=[-10,-3,3][i]-lab*8;
+      mesh.scale.y=(this.dust.material.uniforms.uAxisHeight.value as number)*1.5*(1+lab*.3);
     });
     this.shafts.forEach((mesh,i)=>{
-      mesh.material.uniforms.uOpacity.value=opacity*(.17-journey*.035)*(1-i*.24);
+      mesh.material.uniforms.uOpacity.value=opacity*(.17-journey*.035)*(1-i*.24)*(1+lab*2.4);
       tintField(mesh.material.uniforms.uTint.value as THREE.Color,0x8dc5d3,accent,accentLuminance,this.worldTint,.4,1.55);
+      mesh.position.x=THREE.MathUtils.lerp(i?.2:2.4,i?2.2:-1.35,lab);
+      mesh.position.z=(i?1.6:-6)-lab*8;
+      mesh.scale.x=6.4*(1+lab*.5);
+      mesh.scale.y=(this.dust.material.uniforms.uAxisHeight.value as number)*1.7*(1+lab*.35);
     });
   }
 

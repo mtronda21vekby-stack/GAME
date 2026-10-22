@@ -12,11 +12,14 @@ export function spatialCaseIndex(hash:string){
 
 /** One case history entry. Related-case buttons replace it; Back closes and Forward reopens. */
 export function writeSpatialCase(history:Pick<History,"state"|"pushState"|"replaceState">&Partial<Pick<History,"scrollRestoration">>,location:Pick<Location,"pathname"|"search">,index:number,view:SpatialReturn,replace=false){
-  const game=platformGames[index];if(!game)return;
-  const state={...(record(history.state)?history.state:{}),[KEY]:{version:1,pushed:true,origin:{...view}}};
-  const url=location.pathname+location.search+"#game/"+game.id;
-  if(replace)history.replaceState(state,"",url);else history.pushState(state,"",url);
-  if(history.scrollRestoration!==undefined)history.scrollRestoration="manual";
+  const game=platformGames[index];if(!game)return false;
+  try{
+    const state={...(record(history.state)?history.state:{}),[KEY]:{version:1,pushed:true,origin:{...view}}};
+    const url=location.pathname+location.search+"#game/"+game.id;
+    if(replace)history.replaceState(state,"",url);else history.pushState(state,"",url);
+  }catch{return false;} // Browser history quotas must not block the visible case.
+  try{if(history.scrollRestoration!==undefined)history.scrollRestoration="manual";}catch{/* Entry already exists. */}
+  return true;
 }
 
 export function hasSpatialCaseEntry(state:unknown){return record(state)&&record(state[KEY])&&state[KEY].version===1&&state[KEY].pushed===true;}
@@ -27,5 +30,7 @@ export function spatialCaseOrigin(state:unknown):SpatialReturn|undefined{
 }
 
 export function clearSpatialCase(history:Pick<History,"state"|"replaceState">,location:Pick<Location,"pathname"|"search">){
-  const state={...(record(history.state)?history.state:{})};delete state[KEY];history.replaceState(state,"",location.pathname+location.search);
+  try{
+    const state={...(record(history.state)?history.state:{})};delete state[KEY];history.replaceState(state,"",location.pathname+location.search);return true;
+  }catch{return false;}
 }

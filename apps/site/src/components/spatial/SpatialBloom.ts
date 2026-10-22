@@ -3,6 +3,7 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
+import { prepareSceneShaders } from "../../experience/core/ShaderPreparation";
 
 /** Desktop HDR bloom. Native HTML cards remain above this canvas and stay crisp. */
 export class SpatialBloom {
@@ -21,9 +22,9 @@ export class SpatialBloom {
   getTargetSize(out:Vector2){return out.set(this.composer.readBuffer.width,this.composer.readBuffer.height);}
   setLabPresence(amount:number){this.bloom.strength=.24*(1-Math.max(0,Math.min(1,amount))*.75);}
   /** Warm the same HDR shader variants as RenderPass, including currently hidden meshes. */
-  warmup(){
+  warmup(signal:AbortSignal){
     const previous=this.renderer.getRenderTarget();
-    try{this.renderer.setRenderTarget(this.composer.readBuffer);return this.renderer.compileAsync(this.scene,this.camera);}
+    try{this.renderer.setRenderTarget(this.composer.readBuffer);return prepareSceneShaders(this.renderer,this.scene,this.camera,signal);}
     finally{this.renderer.setRenderTarget(previous);}
   }
   dispose(){this.bloom.dispose();this.output.dispose();this.composer.dispose();}

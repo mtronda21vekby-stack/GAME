@@ -20,4 +20,12 @@ describe("Case history ownership",()=>{
     expect(spatialCaseOrigin({blackcrownCase:{origin:{worldIndex:1,category:"Все игры",scrollY:Infinity}}})).toBeUndefined();
     expect(spatialCaseOrigin({blackcrownCase:{origin:{worldIndex:99,category:"Все игры",scrollY:1}}})).toBeUndefined();
   });
+  it("keeps browser history denial from interrupting case open, replace or close",()=>{
+    const history={state:{router:{key:4}},pushState(){throw new DOMException("History quota","SecurityError");},replaceState(){throw new DOMException("History quota","SecurityError");}};
+    const location={pathname:"/",search:""},origin={worldIndex:0,category:"Все игры",scrollY:2150};
+    expect(writeSpatialCase(history,location,0,origin)).toBe(false);
+    expect(writeSpatialCase(history,location,1,origin,true)).toBe(false);
+    expect(clearSpatialCase(history,location)).toBe(false);
+    expect(history.state).toEqual({router:{key:4}});
+  });
 });

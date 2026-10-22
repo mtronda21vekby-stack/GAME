@@ -200,16 +200,17 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
             vec2 sampleUv=clamp(screenUv+displacement*screenEdge,texel,vec2(1.)-texel);
             vec3 transmitted=texture2D(uClothBackground,sampleUv).rgb;
             float facing=abs(dot(normal,eye));
-            float coating=uClothRefraction*mix(.46,.7,uClothProfile)*mix(.4,1.,facing)*(1.-mark*.92)*screenEdge;
+            float bendVisibility=smoothstep(.025,.35,length(bend));
+            float coating=uClothRefraction*mix(.46,.7,uClothProfile)*mix(.55,1.,bendVisibility)*(1.-mark*.92)*screenEdge;
             // Same-frame scene colour is displaced by the deformed normal.
             // Keep reflected bands instead of turning the metal into clear glass.
             vec3 reflection=outgoingLight;
-            outgoingLight=mix(outgoingLight,transmitted*vec3(.88,.97,1.),coating);
-            outgoingLight+=reflection*pow(1.-facing,2.)*coating*.35;
+            outgoingLight=reflection*(1.-coating*.16)+transmitted*vec3(.88,.97,1.)*coating*1.2;
+            outgoingLight+=reflection*pow(1.-facing,2.)*coating*.2;
           }
           #include <opaque_fragment>`);
     };
-    this.material.customProgramCacheKey=()=>"blackcrown-sculptural-refraction-cloth-v1";
+    this.material.customProgramCacheKey=()=>"blackcrown-sculptural-refraction-cloth-v2";
     this.applyProfileMaterial();
   }
   get profile(){return this.currentProfile;}
