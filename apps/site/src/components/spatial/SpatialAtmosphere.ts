@@ -106,7 +106,7 @@ const hazeFragment = `
     float sweep=vUv.x-.47+(vUv.y-.5)*.25;
     // Narrow the existing pair of shaft gradients in LAB, so their live edges
     // are recognisable when a fold refracts them. This is the same light plane.
-    float beam=(exp(-pow(sweep*mix(5.2,8.8,uLab),2.))*.68+exp(-pow((sweep-mix(.2,.14,uLab))*mix(12.,19.,uLab),2.))*.24)*vertical;
+    float beam=(exp(-pow(sweep*mix(5.2,18.,uLab),2.))*mix(.68,.28,uLab)+exp(-pow((sweep-mix(.2,.14,uLab))*mix(12.,40.,uLab),2.))*mix(.24,.82,uLab))*vertical;
     vec2 pocketDelta=(vUv-vec2(.57,.58))*vec2(3.1,1.7);
     float pocket=.12+.88*exp(-dot(pocketDelta,pocketDelta));
     float alpha=mix(edge*pocket,beam,uShaft)*(.18+.82*cloud)*uOpacity;
@@ -246,7 +246,7 @@ export class SpatialAtmosphere extends THREE.Group {
       mesh.scale.y=(this.dust.material.uniforms.uAxisHeight.value as number)*1.5*(1+lab*.3);
     });
     this.shafts.forEach((mesh,i)=>{
-      mesh.material.uniforms.uOpacity.value=opacity*(.17-journey*.035)*(1-i*.24)*(1+lab*2.4);
+      mesh.material.uniforms.uOpacity.value=opacity*(.17-journey*.035)*(1-i*.24)*(1+lab*3.2);
       tintField(mesh.material.uniforms.uTint.value as THREE.Color,0x8dc5d3,accent,accentLuminance,this.worldTint,.4,1.55);
       mesh.position.x=THREE.MathUtils.lerp(i?.2:2.4,i?2.2:-1.35,lab);
       mesh.position.z=(i?1.6:-6)-lab*8;

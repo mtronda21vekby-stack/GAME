@@ -545,7 +545,7 @@ export class SpatialSceneRuntime {
       this.cloth.position.copy(position);this.cloth.position.y+=height/unit*.015;
       // Keep the authored loose hem inside the interactive slot at both sizes.
       // The deeper LAB folds need lateral room; the bounded farewell keeps its existing fit.
-      this.cloth.scale.set(worldWidth*THREE.MathUtils.lerp(this.compact?.84:.94,nativeOutro?.9:.94,farewell)*(1-closingFold*.65),height/unit*.88,worldWidth*.66);this.cloth.update(this.reduced?0:t);
+      this.cloth.scale.set(worldWidth*THREE.MathUtils.lerp(this.compact?.74:.94,nativeOutro?.9:.94,farewell)*(1-closingFold*.65),height/unit*.88,worldWidth*.66);this.cloth.update(this.reduced?0:t);
       this.cloth.rotation.set(-.06,THREE.MathUtils.lerp(THREE.MathUtils.lerp(-.42,this.compact?-.035:-.14,this.reduced?1:lab),nativeOutro?-.16:-.48,farewell),THREE.MathUtils.lerp(-.035,nativeOutro?.025:-.1,farewell));
       this.lightAim.set(this.cloth.position.x-3,this.cloth.position.y+3,this.cloth.position.z+5.5);
       this.anatomyLight.position.lerp(this.lightAim,lab);

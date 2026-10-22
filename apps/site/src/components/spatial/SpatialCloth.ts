@@ -76,7 +76,7 @@ const weave=`
   uniform sampler2D uClothMark;
   uniform sampler2D uClothBackground;
   uniform vec2 uClothRenderSize,uClothBackgroundSize;
-  uniform float uClothRefraction,uClothProfile;
+  uniform float uClothRefraction,uClothProfile,uClothBend;
   // Fine crossing steel ribbons. Filter the apertures and the brushed grain
   // separately so a receding fold becomes satin instead of a flickering grid.
   vec4 clothWeave(vec2 uv) {
@@ -123,6 +123,8 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
   readonly renderSize={value:new THREE.Vector2(1,1)};
   readonly backgroundSize={value:new THREE.Vector2(1,1)};
   readonly refraction={value:0};
+  /** Diagnostic control: zero isolates straight transmission at identical light. */
+  readonly bendStrength={value:1};
   private currentProfile:SpatialClothProfile="molten";
   private compact:boolean;
   private readonly dragX=new DampedScalar(0,580);
@@ -145,6 +147,7 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
       shader.uniforms.uClothSculpture=this.sculpture;shader.uniforms.uClothProfile=this.profileMix;
       shader.uniforms.uClothBackground=this.background;shader.uniforms.uClothRenderSize=this.renderSize;
       shader.uniforms.uClothBackgroundSize=this.backgroundSize;shader.uniforms.uClothRefraction=this.refraction;
+      shader.uniforms.uClothBend=this.bendStrength;
       shader.vertexShader=shader.vertexShader.replace("#include <common>","#include <common>\n"+folds)
         .replace("#include <beginnormal_vertex>",`#include <beginnormal_vertex>
           float e=.002;
@@ -191,26 +194,27 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
           if(uClothRefraction>.001) {
             vec2 screenUv=gl_FragCoord.xy/max(uClothRenderSize,vec2(1.));
             vec3 eye=normalize(vViewPosition);
-            vec3 ray=refract(-eye,normal,1./mix(1.42,1.24,uClothProfile));
+            float opticalIor=mix(1.42,1.24,uClothProfile);
+            vec3 ray=refract(-eye,normal,1./opticalIor);
             vec2 bend=ray.xy/max(abs(ray.z),.25)+eye.xy/max(abs(eye.z),.25);
-            vec2 displacement=clamp(bend,vec2(-.85),vec2(.85))*mix(.055,.085,uClothProfile);
+            vec2 displacement=clamp(bend,vec2(-.85),vec2(.85))*mix(.075,.1,uClothProfile)*clamp(uClothBend,0.,1.);
             displacement.x*=uClothRenderSize.y/max(1.,uClothRenderSize.x);
             vec2 texel=1./max(uClothBackgroundSize,vec2(1.));
             float screenEdge=smoothstep(0.,.035,min(min(screenUv.x,screenUv.y),min(1.-screenUv.x,1.-screenUv.y)));
             vec2 sampleUv=clamp(screenUv+displacement*screenEdge,texel,vec2(1.)-texel);
             vec3 transmitted=texture2D(uClothBackground,sampleUv).rgb;
             float facing=abs(dot(normal,eye));
-            float bendVisibility=smoothstep(.025,.35,length(bend));
-            float coating=uClothRefraction*mix(.46,.7,uClothProfile)*mix(.55,1.,bendVisibility)*(1.-mark*.92)*screenEdge;
+            float coatingF0=pow((opticalIor-1.)/(opticalIor+1.),2.);
+            float coatingFresnel=coatingF0+(1.-coatingF0)*pow(1.-facing,5.);
+            float coating=uClothRefraction*mix(.6,.78,uClothProfile)*(1.-coatingFresnel)*(1.-mark*.96)*screenEdge;
             // Same-frame scene colour is displaced by the deformed normal.
-            // Keep reflected bands instead of turning the metal into clear glass.
+            // The finish transmits at the front and retains grazing reflection.
             vec3 reflection=outgoingLight;
-            outgoingLight=reflection*(1.-coating*.16)+transmitted*vec3(.88,.97,1.)*coating*1.2;
-            outgoingLight+=reflection*pow(1.-facing,2.)*coating*.2;
+            outgoingLight=mix(reflection,transmitted*vec3(.88,.97,1.),coating);
           }
           #include <opaque_fragment>`);
     };
-    this.material.customProgramCacheKey=()=>"blackcrown-sculptural-refraction-cloth-v2";
+    this.material.customProgramCacheKey=()=>"blackcrown-sculptural-refraction-cloth-v3";
     this.applyProfileMaterial();
   }
   get profile(){return this.currentProfile;}
