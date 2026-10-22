@@ -9,6 +9,7 @@ import { SurfaceMotion } from "../../src/components/spatial/spatialMotion";
 import { ORBIT_CARD_WIDTH } from "../../src/components/spatial/spatialState";
 import { GameDetail } from "../../src/components/spatial/GameDetail";
 import { platformGames } from "../../src/lib/platformGames";
+import { spatialCaseIndex } from "../../src/components/spatial/spatialHistory";
 
 function matrixValues(style:string) {return style.slice(9,-1).split(",").map(Number);}
 function expectQuad(actual:MediaQuad,expected:MediaQuad,precision=7) {
@@ -163,5 +164,35 @@ describe("Projective detail media continuity",()=>{
     expect(html.indexOf('class="spatialDetailMedia"')).toBeLessThan(start);expect(body).not.toContain('class="spatialDetailMedia"');
     for(const className of ["spatialDetailCopy","spatialDetailInformation","spatialDetailLinks","spatialDetailBottom","spatialCaseSearch"])expect(body).toContain(`class="${className}"`);
     expect(body).toContain(`href="${game.href}"`);expect(body).toContain('id="spatial-detail-title"');expect(body).toContain('<button');
+  });
+
+  it("preserves a closing plane through Forward's 1290→1779 scroll restoration until its case reopens",()=>{
+    const integration=readFileSync(new URL("../../src/components/spatial/GameDetail.tsx",import.meta.url),"utf8"),scrollBody=integration.match(/const scroll=\(\)=>\{([\s\S]*?)\n    \};/)?.[1];
+    expect(scrollBody).toBeDefined();
+    const scroll=new Function("phase","closeScroll","scrollY","window","spatialCaseIndex","settle",scrollBody!);
+    const phase={current:"closing"},closeScroll={current:1290};let settled=0,sourceHeld=true;
+    const settle=()=>{settled++;sourceHeld=false;};
+    scroll(phase,closeScroll,1779,{location:{hash:"#game/ballcrown"}},spatialCaseIndex,settle);
+    expect(settled).toBe(0);expect(phase.current).toBe("closing");expect(sourceHeld).toBe(true);
+    const native=nativeBox(393),quad=panelFixture(393,852).quad,source=detailQuadPose(quad,native,1,0)!,motion=new SurfaceMotion(detailSettledPose(quad));
+    motion.moveTo(source,1040,0);motion.sample(300);const painted=detailSurfaceQuad({...native,top:native.top-200},motion.value);
+    motion.rebase(detailQuadPose(painted,native,motion.value[4],motion.value[5])!,true);motion.moveTo(detailSettledPose(quad),1280,300);motion.sample(300);
+    expectQuad(detailSurfaceQuad(native,motion.value),painted);expectHomography(native,motion.value);
+    for(const hash of ["","#game/__missing__","#game/%E0%A4%A"]){settled=0;scroll(phase,closeScroll,1779,{location:{hash}},spatialCaseIndex,settle);expect(settled).toBe(1);}
+    for(const game of platformGames){settled=0;scroll(phase,closeScroll,1779,{location:{hash:`#game/${game.id}`}},spatialCaseIndex,settle);expect(settled).toBe(0);}
+    // A different valid hash suppresses only premature scroll cancellation.
+    // If no reopen command follows, the actual normal finish still releases
+    // the source and drains its final return frame without a persistent loop.
+    const functionBody=(pattern:RegExp)=>{const value=integration.match(pattern)?.[1];expect(value).toBeDefined();return value!;};
+    const scheduleBody=functionBody(/function schedule\(token=epoch\.current\) \{([\s\S]*?)\n  \}/),releaseBody=functionBody(/function restoreSourceThenFinish\(\) \{([\s\S]*?)\n  \}/);
+    const scheduleFunction=new Function("token","epoch","frame","frameLoop","surface","paintSurface","phase","restoreSourceThenFinish","setArrived","schedule",scheduleBody),releaseFunction=new Function("epoch","clearSource","frame","frameLoop","phase","finishGhost",releaseBody);
+    const queue:((now:number)=>void)[]=[],tags:string[]=[],epoch={current:0},frame={current:0},closing=new SurfaceMotion(detailSettledPose(quad));let finished=0;
+    const frameLoop={request:(callback:(now:number)=>void,tag:string)=>{queue.push(callback);tags.push(tag);return tags.length;}};
+    sourceHeld=true;phase.current="closing";closing.moveTo(source,1040,0);closing.sample(300);
+    const release=()=>releaseFunction(epoch,()=>{sourceHeld=false;},frame,frameLoop,phase,()=>{phase.current="closed";finished++;});
+    const schedule=(token=epoch.current)=>scheduleFunction(token,epoch,frame,frameLoop,closing,()=>{},phase,release,()=>{},schedule);
+    settled=0;scroll(phase,closeScroll,1779,{location:{hash:`#game/${platformGames[1].id}`}},spatialCaseIndex,settle);expect(settled).toBe(0);schedule();
+    let ticks=0;while(queue.length&&ticks<200){queue.shift()!(300+ticks*16);ticks++;}
+    expect(ticks).toBeLessThan(200);expect(queue).toHaveLength(0);expect(finished).toBe(1);expect(phase.current).toBe("closed");expect(sourceHeld).toBe(false);expect(frame.current).toBe(0);expect(tags.at(-1)).toBe("case-return-release");
   });
 });

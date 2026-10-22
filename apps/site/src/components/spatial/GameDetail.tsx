@@ -6,6 +6,7 @@ import { SurfaceMotion, SPATIAL_TIMING } from "./spatialMotion";
 import { frameLoop } from "../../experience/core/FrameLoop";
 import { CaseMedia } from "./CaseMedia";
 import { DecodedText } from "./DecodedText";
+import { spatialCaseIndex } from "./spatialHistory";
 import "./spatialDetail.css";
 
 export type { PanelOrigin } from "./detailTransition";
@@ -233,7 +234,12 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
     const query=window.matchMedia("(prefers-reduced-motion: reduce)");
     const preference=()=>{if(staticMotion())settle();};
     const resize=()=>{if(phase.current!=="closed")settle();};
-    const scroll=()=>{if(phase.current==="closing"&&Math.abs(scrollY-closeScroll.current)>2)settle();};
+    const scroll=()=>{
+      // Forward restores the history scroll before its next-frame open command.
+      // Keep the outgoing quad alive through that pending case navigation;
+      // ordinary page scrolling after Close still cancels the return flight.
+      if(phase.current==="closing"&&Math.abs(scrollY-closeScroll.current)>2&&spatialCaseIndex(window.location.hash)===undefined)settle();
+    };
     const observer=new MutationObserver(preference);observer.observe(document.documentElement,{attributes:true,attributeFilter:["data-reduced-motion"]});
     query.addEventListener("change",preference);window.addEventListener("resize",resize);window.addEventListener("scroll",scroll,{passive:true});
     return()=>{
