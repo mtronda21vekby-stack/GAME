@@ -19,8 +19,9 @@ function percentile(sorted: number[], amount: number) {
 export class FrameSampler {
   private readonly warmupMs: number;
   private readonly sampleMs: number;
-  private startedAt = 0;
+  private startedAt: number | null = null;
   private samples: number[] = [];
+  private nextSample = 0;
 
   constructor(warmupMs = 600, sampleMs = 3_000) {
     this.warmupMs = warmupMs;
@@ -28,13 +29,18 @@ export class FrameSampler {
   }
 
   add(frameTime: number, now: number) {
-    if (!this.startedAt) this.startedAt = now;
+    if (!Number.isFinite(frameTime) || frameTime <= 0 || !Number.isFinite(now)) return;
+    if (this.startedAt === null) this.startedAt = now;
     if (now - this.startedAt < this.warmupMs) return;
     if (this.samples.length < 480) this.samples.push(frameTime);
+    else {
+      this.samples[this.nextSample] = frameTime;
+      this.nextSample = (this.nextSample + 1) % 480;
+    }
   }
 
   snapshot(now = performance.now()): FrameSample {
-    if (!this.startedAt || !this.samples.length) return { ...EMPTY_SAMPLE };
+    if (this.startedAt === null || !this.samples.length || !Number.isFinite(now)) return { ...EMPTY_SAMPLE };
     const sorted = [...this.samples].sort((a, b) => a - b);
     const duration = Math.max(0, now - this.startedAt - this.warmupMs);
     return {
@@ -50,7 +56,8 @@ export class FrameSampler {
   }
 
   reset(now = performance.now()) {
-    this.startedAt = now;
+    this.startedAt = Number.isFinite(now) ? now : null;
     this.samples = [];
+    this.nextSample = 0;
   }
 }

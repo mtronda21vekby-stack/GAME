@@ -18,6 +18,7 @@ export class SpatialBloom {
     this.composer.setPixelRatio(Math.min(1.25,dpr));this.composer.setSize(width,height);
   }
   render(){this.composer.render();}
+  getTargetSize(out:Vector2){return out.set(this.composer.readBuffer.width,this.composer.readBuffer.height);}
   setLabPresence(amount:number){this.bloom.strength=.24*(1-Math.max(0,Math.min(1,amount))*.75);}
   /** Warm the same HDR shader variants as RenderPass, including currently hidden meshes. */
   warmup(){

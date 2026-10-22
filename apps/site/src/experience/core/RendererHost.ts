@@ -15,6 +15,7 @@ export class RendererHost {
   private dprCap: number;
   private width = 0;
   private height = 0;
+  private pixelRatio = 0;
 
   constructor({ container, preset, onContextState, powerPreference = "high-performance" }: RendererHostOptions) {
     this.container = container;
@@ -61,10 +62,12 @@ export class RendererHost {
   resize(width: number, height: number, force = false) {
     const safeWidth = Math.max(1, Math.round(width));
     const safeHeight = Math.max(1, Math.round(height));
-    if (!force && safeWidth === this.width && safeHeight === this.height) return;
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, this.dprCap);
+    if (!force && safeWidth === this.width && safeHeight === this.height && pixelRatio === this.pixelRatio) return;
     this.width = safeWidth;
     this.height = safeHeight;
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.dprCap));
+    if (force || pixelRatio !== this.pixelRatio) this.renderer.setPixelRatio(pixelRatio);
+    this.pixelRatio = pixelRatio;
     this.renderer.setSize(safeWidth, safeHeight, false);
   }
 

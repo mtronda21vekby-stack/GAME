@@ -8,7 +8,7 @@ const planes:Record<string,{z:number;yaw:number;pitch:number;order:number}>={
   "crown-front":{z:-3.3,yaw:-.105,pitch:.014,order:2},
 };
 type MediaTexture={texture?:CanvasTexture;ready:boolean};
-type Surface={article:HTMLElement;element:HTMLElement;left:number;top:number;width:number;height:number;mediaTop:number;mediaHeight:number;z:number;yaw:number;pitch:number;style:string;backing?:Mesh<PlaneGeometry,MeshBasicMaterial>;texture?:MediaTexture};
+type Surface={article:HTMLElement;element:HTMLElement;left:number;top:number;width:number;height:number;mediaTop:number;mediaHeight:number;z:number;yaw:number;pitch:number;style:string;screenVisible?:boolean;backing?:Mesh<PlaneGeometry,MeshBasicMaterial>;texture?:MediaTexture};
 
 /** Native flow owns scroll/semantics. The real scene camera projects each live HTML plane. */
 export class SpatialGalleryStage {
@@ -100,7 +100,7 @@ export class SpatialGalleryStage {
         surface.backing.material.map=surface.texture.texture!;
         const unit=worldUnit,offset=(surface.height*.5-surface.mediaTop-surface.mediaHeight*.5)*unit;
         this.local.makeTranslation(0,offset,0);this.size.makeScale(surface.width*unit,surface.mediaHeight*unit,1);
-        surface.backing.matrix.copy(this.world).multiply(this.local).multiply(this.size);surface.backing.matrixWorldNeedsUpdate=true;surface.backing.visible=y+surface.height>0&&y-surface.height<this.height;
+        surface.backing.matrix.copy(this.world).multiply(this.local).multiply(this.size);surface.backing.matrixWorldNeedsUpdate=true;surface.screenVisible=y+surface.height>0&&y-surface.height<this.height;surface.backing.visible=surface.screenVisible;
         surface.article.dataset.mediaDepth="ready";
       }
       const matrix=panelCSSMatrix(camera,this.world,this.width,this.height,surface.width,surface.height,surface.width*worldUnit);
@@ -119,6 +119,6 @@ export class SpatialGalleryStage {
     }
     this.surfaces=[];this.invalidate();
   }
-  focus(amount:number){for(const surface of this.surfaces)if(surface.backing)surface.backing.material.opacity=1-amount*.83;}
+  focus(amount:number){for(const surface of this.surfaces)if(surface.backing){surface.backing.material.opacity=1-amount*.83;surface.backing.visible=Boolean(surface.screenVisible)&&surface.article.dataset.caseHandoff!=="true";}}
   dispose(){this.disposed=true;this.clear();this.media.forEach(r=>r.texture?.dispose());this.media.clear();this.backings.forEach(m=>m.material.dispose());this.backings.clear();this.placeholder.dispose();this.plane.dispose();this.backingGroup.removeFromParent();}
 }

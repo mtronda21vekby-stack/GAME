@@ -97,3 +97,22 @@ html[data-reduced-motion="1"] .spatialCaseOptics>i { animation:none!important; }
 .spatialDetailFrame { width:min(820px,calc(100% - 128px)); }
 @media(max-width:760px) { .spatialDetailFrame { width:min(304px,calc(100% - 56px)); } }
 @media(max-width:380px) { .spatialDetailFrame { width:calc(100% - 48px); } }
+
+/* The crop, plate, and copy arrive on the same shared-surface timeline. */
+.spatialDetail { --detail-reveal:1; --detail-copy:1; --detail-source-title:0; --detail-tools:1; background:rgb(5 10 15 / calc(.15 * var(--detail-reveal))); }
+.spatialDetail::backdrop { background:#04080c18; }
+.spatialDetailFrame { background:transparent; border-color:transparent; box-shadow:0 36px 110px rgb(0 0 0 / calc(.5 * var(--detail-reveal))); }
+.spatialDetailFrame:before { content:""; position:absolute; inset:-1px; border:1px solid #c1d3d038; border-radius:inherit; background:linear-gradient(135deg,#17252bed,#0a1219f0); opacity:var(--detail-reveal); pointer-events:none; }
+.spatialDetailInner { position:relative; }
+.spatialDetailTop { background:rgb(16 27 34 / calc(.93 * var(--detail-reveal))); border-bottom-color:rgb(192 209 208 / calc(.09 * var(--detail-reveal))); }
+.spatialDetailTop>span,.spatialDetailCopy,.spatialDetailInformation,.spatialDetailBottom,.spatialDetail .spatialCaseSearch { opacity:var(--detail-copy); }
+.spatialDetailTools,.spatialCaseNav { opacity:var(--detail-tools); }
+.spatialCaseOptics { opacity:calc(.38 * var(--detail-reveal)); }
+.spatialDetailMedia { overflow:hidden; border-color:transparent; box-shadow:none; }
+.spatialDetailMedia>img { inset:auto; top:50%; left:50%; max-width:none; transform:translate(-50%,-50%); object-fit:fill; border-radius:0; }
+.spatialDetail[data-media-arrived=false] .spatialMediaControl { visibility:hidden; }
+.spatialHandoffTitle { position:absolute; z-index:3; left:16px; right:12px; bottom:14px; transform-origin:left bottom; opacity:var(--detail-source-title); pointer-events:none; }
+.spatialHandoffTitle:before { content:""; position:absolute; z-index:-1; inset:-80px -40px -30px; background:linear-gradient(0deg,#050b11f2,transparent); }
+.spatialHandoffTitle>span { display:block; margin-bottom:8px; color:#a8b8b9; font:8px/1.4 ui-monospace,monospace; letter-spacing:.1em; text-transform:uppercase; }
+.spatialHandoffTitle>strong { display:block; color:#e9ece6; font-size:30px; line-height:1.05; letter-spacing:-.045em; font-weight:400; }
+.spatialGamePanel[data-case-handoff=true] .spatialPanelMedia { visibility:hidden; }

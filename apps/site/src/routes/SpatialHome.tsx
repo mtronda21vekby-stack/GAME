@@ -27,18 +27,20 @@ export default function SpatialHome() {
   const [detailOpen, setDetailOpen] = React.useState(false);
   const [detailFocus, setDetailFocus] = React.useState(false);
   const closingRequested=React.useRef(false);
+  const detailCommand=React.useRef<{open:boolean;index:number|null}>({open:false,index:detailIndex});
+  const navigationEpoch=React.useRef(0),pendingPopFrame=React.useRef(0);
   const searchAfterClose=React.useRef(false);
   const [navigatorSignal,setNavigatorSignal]=React.useState(0);
   const panelOrigin = React.useRef<PanelOrigin | null>(null);
   const [sceneStatus, setSceneStatus] = React.useState<"loading" | "ready" | "fallback">("loading");
   const [load,setLoad]=React.useState({complete:0,total:0,phase:"download"});
   const onProgress = React.useCallback((complete:number,total:number,phase="download") => setLoad({complete,total,phase}), []);
-  const closeDetail = React.useCallback(() => { sceneRef.current?.setDetailOpen(false); setDetailFocus(false); setDetailOpen(false);setDetailIndex(null);if(searchAfterClose.current){searchAfterClose.current=false;setNavigatorSignal(value=>value+1);} }, []);
+  const closeDetail = React.useCallback(() => { detailCommand.current={open:false,index:null};sceneRef.current?.setDetailOpen(false); setDetailFocus(false); setDetailOpen(false);setDetailIndex(null);if(searchAfterClose.current){searchAfterClose.current=false;setNavigatorSignal(value=>value+1);} }, []);
   const startClosingDetail = React.useCallback(() => setDetailFocus(false), []);
   const visibleGames = React.useMemo(() => platformGames.flatMap((item, index) => category === "Все игры" || item.genre === category ? [index] : []), [category]);
   const game = platformGames[worldIndex],detailGame=platformGames[detailIndex??worldIndex];
   const detailIndexRef=React.useRef(detailIndex);detailIndexRef.current=detailIndex;
-  const step = (direction: number) => {const next=nextWorldIndex(detailIndexRef.current??worldIndex,direction,visibleGames);setDetailIndex(next);writeSpatialCase(window.history,window.location,next,spatialCaseOrigin(window.history.state)??{...view.current,scrollY:pageScroll.current},true);};
+  const step = (direction: number) => {if(closingRequested.current)return;const next=nextWorldIndex(detailIndexRef.current??worldIndex,direction,visibleGames);detailIndexRef.current=next;detailCommand.current.index=next;setDetailIndex(next);writeSpatialCase(window.history,window.location,next,spatialCaseOrigin(window.history.state)??{...view.current,scrollY:pageScroll.current},true);};
   const view = React.useRef({ worldIndex, category, detailOpen });
   view.current = { worldIndex, category, detailOpen };
   const pageScroll = React.useRef(initialView?.scrollY ?? window.scrollY);
@@ -55,6 +57,7 @@ export default function SpatialHome() {
     if (initialView) window.scrollTo({ top: initialView.scrollY, behavior: "instant" });
     const linkedCase=spatialCaseIndex(window.location.hash);
     if(linkedCase!==undefined){
+      detailCommand.current={open:true,index:linkedCase};
       if(!initialView){const panel=document.querySelector(`[data-game-id="${platformGames[linkedCase].id}"]`);if(panel)window.scrollTo({top:window.scrollY+panel.getBoundingClientRect().top-140,behavior:"instant"});}
       setDetailFocus(true);setDetailOpen(true);
     }
@@ -82,23 +85,28 @@ export default function SpatialHome() {
 
   React.useEffect(()=>{
     const pop=()=>{
+      const epoch=++navigationEpoch.current;cancelAnimationFrame(pendingPopFrame.current);
       closingRequested.current=false;
       if(window.location.pathname!==entryPath.current)return;
       window.history.scrollRestoration="manual";
       const index=spatialCaseIndex(window.location.hash);
-      if(index===undefined){const root=readSpatialReturn(window.history.state,entryPath.current);if(root){setWorldIndex(root.worldIndex);setCategory(root.category);pageScroll.current=root.scrollY;window.scrollTo({top:root.scrollY,behavior:"instant"});}setDetailOpen(false);return;}
+      if(index===undefined){detailCommand.current.open=false;const root=readSpatialReturn(window.history.state,entryPath.current);if(root){setWorldIndex(root.worldIndex);setCategory(root.category);pageScroll.current=root.scrollY;window.scrollTo({top:root.scrollY,behavior:"instant"});}setDetailOpen(false);return;}
       const origin=spatialCaseOrigin(window.history.state),hash=window.location.hash;
       if(origin){setWorldIndex(origin.worldIndex);setCategory(origin.category);window.scrollTo({top:origin.scrollY,behavior:"instant"});pageScroll.current=origin.scrollY;}
-      requestAnimationFrame(()=>{if(window.location.hash!==hash||window.location.pathname!==entryPath.current)return;const panel=document.querySelector(`.spatialGamePanel[data-game-id="${platformGames[origin?.worldIndex??index].id}"]`),top=panel?.getBoundingClientRect().top;if(top!==undefined&&(top<90||top>innerHeight*.7)){window.scrollTo({top:window.scrollY+top-Math.min(140,innerHeight*.35),behavior:"instant"});pageScroll.current=window.scrollY;}sceneRef.current?.syncScroll();openDetail(index,false);});
+      pendingPopFrame.current=requestAnimationFrame(()=>{pendingPopFrame.current=0;if(epoch!==navigationEpoch.current||window.location.hash!==hash||window.location.pathname!==entryPath.current)return;const panel=document.querySelector(`.spatialGamePanel[data-game-id="${platformGames[origin?.worldIndex??index].id}"]`),top=panel?.getBoundingClientRect().top;if(top!==undefined&&(top<90||top>innerHeight*.7)){window.scrollTo({top:window.scrollY+top-Math.min(140,innerHeight*.35),behavior:"instant"});pageScroll.current=window.scrollY;}sceneRef.current?.syncScroll();openDetail(index,false);});
     };
-    window.addEventListener("popstate",pop);return()=>window.removeEventListener("popstate",pop);
+    window.addEventListener("popstate",pop);return()=>{++navigationEpoch.current;cancelAnimationFrame(pendingPopFrame.current);window.removeEventListener("popstate",pop);};
   },[]);
 
   function openDetail(index: number,recordHistory=true) {
+    if(recordHistory&&(closingRequested.current||(detailCommand.current.open&&detailCommand.current.index===index)))return;
+    ++navigationEpoch.current;cancelAnimationFrame(pendingPopFrame.current);pendingPopFrame.current=0;
+    const replacing=detailCommand.current.open;
     closingRequested.current=false;
-    const saved=!recordHistory?spatialCaseOrigin(window.history.state):undefined;
+    const saved=!recordHistory||replacing?spatialCaseOrigin(window.history.state):undefined;
     const originIndex=saved?.worldIndex??index;
-    if(recordHistory){const root={...view.current,worldIndex:index,scrollY:window.scrollY};pageScroll.current=root.scrollY;rememberSpatialReturn(window.history,entryPath.current,root);writeSpatialCase(window.history,window.location,index,root);}
+    if(recordHistory){const root=saved??{...view.current,worldIndex:index,scrollY:window.scrollY};pageScroll.current=root.scrollY;if(!replacing)rememberSpatialReturn(window.history,entryPath.current,root);writeSpatialCase(window.history,window.location,index,root,replacing);}
+    detailCommand.current={open:true,index};detailIndexRef.current=index;
     setWorldIndex(originIndex);setDetailIndex(index);
     const panel = [...document.querySelectorAll<HTMLElement>(`.spatialGamePanel[data-game-id="${platformGames[originIndex].id}"]`)].find(element => element.getClientRects().length && getComputedStyle(element).visibility !== "hidden");
     const box = (panel?.querySelector(".spatialPanelMedia") ?? panel)?.getBoundingClientRect();

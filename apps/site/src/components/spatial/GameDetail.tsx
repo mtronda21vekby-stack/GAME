@@ -1,8 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { PlatformGame } from "../../lib/platformGames";
 import { prefersStaticPlatform } from "../platform/usePlatformParallax";
-import { detailOriginPose, type PanelOrigin } from "./detailTransition";
+import { detailOriginPose, detailPosterSize, detailReveal, type MediaRect, type PanelOrigin } from "./detailTransition";
 import { SurfaceMotion, SPATIAL_TIMING } from "./spatialMotion";
+import { frameLoop } from "../../experience/core/FrameLoop";
 import { CaseMedia } from "./CaseMedia";
 import { DecodedText } from "./DecodedText";
 import "./spatialDetail.css";
@@ -10,173 +11,185 @@ import "./spatialDetail.css";
 export type { PanelOrigin } from "./detailTransition";
 type Props = { open: boolean; origin?: PanelOrigin | null; game: PlatformGame; canCycle: boolean; paused: boolean; onTogglePause: () => void; onClosing?: () => void; onClose: () => void; onRequestClose:()=>void;onSearch:()=>void;onPrevious: () => void; onNext: () => void };
 const useClientLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
-const rest = [0,0,1,1,1];
+// Position, outer crop scale, opacity, and shared reveal progress.
+const rest = [0,0,1,1,1,1];
 
-/** Native modal while open; its outgoing surface becomes inert so a new action can interrupt it. */
+/** Native modal, with one interruptible poster/crop/reveal clock. */
 export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause, onClosing, onClose, onRequestClose,onSearch,onPrevious, onNext }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const mediaRef = useRef<HTMLElement>(null);
   const copyRef = useRef<HTMLDivElement>(null);
   const informationRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
-  const phase = useRef<"closed" | "open" | "closing">("closed");
+  const phase = useRef<"closed" | "opening" | "open" | "closing">("closed");
   const [closingVisual,setClosingVisual] = useState(false);
+  const [arrived,setArrived] = useState(false);
   const outgoingGame = useRef(game);
   const visualGame = closingVisual ? outgoingGame.current : game;
+  const paintedGame = useRef(visualGame); paintedGame.current=visualGame;
   const currentGameId = useRef(game.id); currentGameId.current = origin?.gameId??game.id;
   const previousGame = useRef(game.id);
   const swipe=useRef<{x:number;y:number}|null>(null);
   const [surface] = useState(() => new SurfaceMotion(rest));
-  const frame = useRef(0), focusFrame = useRef(0), closeScroll = useRef(0);
+  const frame = useRef(0), focusFrame = useRef(0), closeScroll = useRef(0), epoch=useRef(0), focusEpoch=useRef(0);
+  const mediaBox=useRef<MediaRect>();
   const restorePage = useRef<(() => void) | null>(null);
-  const animations = useRef<Animation[]>([]);
-  const imageAnimation = useRef<Animation | null>(null);
+  const source=useRef<{element:HTMLElement;previous:string|undefined}|null>(null);
+  const connectedHandoff=useRef(false);
   const staticMotion = () => prefersStaticPlatform(window.matchMedia("(prefers-reduced-motion: reduce)"));
-  const copySurfaces = () => [copyRef.current,informationRef.current].filter((element): element is HTMLDivElement => Boolean(element));
-  function originPose() {
-    const pose = detailOriginPose(origin,game.id,window.innerWidth,window.innerHeight,baseRect());
-    // The selected image remains visible throughout its flight into the larger stage.
-    if (origin?.gameId === game.id && Math.abs(origin.viewportWidth-window.innerWidth) <= 1 && Math.abs(origin.viewportHeight-window.innerHeight) <= 1) pose[4] = 1;
-    return pose;
+  function markSource() {
+    const element=document.querySelector<HTMLElement>(`.spatialGamePanel[data-game-id="${currentGameId.current}"]`);
+    if(source.current?.element===element)return;
+    clearSource();
+    if(element){source.current={element,previous:element.dataset.caseHandoff};element.dataset.caseHandoff="true";window.dispatchEvent(new Event("spatialcasehandoff"));}
   }
-  function cancelAnimations() { animations.current.forEach(animation => animation.cancel()); animations.current = []; }
-  function paintSurface() {
-    if (!mediaRef.current) return;
-    const [x,y,sx,sy,opacity] = surface.value;
-    mediaRef.current.style.transform = `translate3d(${x}px,${y}px,0) scale(${Math.max(.05,sx)},${Math.max(.05,sy)})`;
-    mediaRef.current.style.opacity = String(Math.max(0,Math.min(1,opacity)));
+  function clearSource() {
+    if(source.current){const {element,previous}=source.current;if(previous===undefined)delete element.dataset.caseHandoff;else element.dataset.caseHandoff=previous;source.current=null;window.dispatchEvent(new Event("spatialcasehandoff"));}
   }
+  function cancelFrame() { ++epoch.current;frameLoop.cancel(frame.current);frame.current=0; }
   function baseRect() {
-    const media = mediaRef.current;
-    if (!media) return;
-    const transform = media.style.transform;
-    media.style.transform = "none";
-    const box = media.getBoundingClientRect();
-    media.style.transform = transform;
-    return box;
+    const media = mediaRef.current;if(!media)return;
+    const transform=media.style.transform;media.style.transform="none";
+    const box=media.getBoundingClientRect();media.style.transform=transform;
+    return {left:box.left,top:box.top,width:box.width,height:box.height};
+  }
+  function sourceOrigin():PanelOrigin|null {
+    if(origin?.gameId!==game.id||Math.abs(origin.viewportWidth-innerWidth)>1||Math.abs(origin.viewportHeight-innerHeight)>1)return null;
+    const panel=document.querySelector<HTMLElement>(`.spatialGamePanel[data-game-id="${origin.gameId}"] .spatialPanelMedia`);
+    const box=panel?.getBoundingClientRect();
+    return box?.width&&box.height?{...origin,left:box.left,top:box.top,width:box.width,height:box.height}:null;
+  }
+  function originPose(fresh=false) {
+    const target=fresh?sourceOrigin():origin;
+    const pose=detailOriginPose(target,game.id,innerWidth,innerHeight,mediaBox.current);
+    const connected=!!target&&!!mediaBox.current?.width&&!!mediaBox.current.height&&target.gameId===game.id&&Math.abs(target.viewportWidth-innerWidth)<=1&&Math.abs(target.viewportHeight-innerHeight)<=1;
+    connectedHandoff.current=connected;
+    if(connected)pose[4]=1;
+    return [...pose,0];
+  }
+  function paintSurface() {
+    const media=mediaRef.current,box=mediaBox.current,dialog=dialogRef.current;if(!media||!box||!dialog)return;
+    const [x,y,rawX,rawY,opacity,arrival]=surface.value,sx=Math.max(.05,rawX),sy=Math.max(.05,rawY);
+    media.style.transform=`translate3d(${x}px,${y}px,0) scale(${sx},${sy})`;
+    media.style.opacity=String(Math.max(0,Math.min(1,opacity)));
+    const image=media.querySelector("img");
+    if(image){
+      const aspect=image.naturalWidth&&image.naturalHeight?image.naturalWidth/image.naturalHeight:16/9;
+      const fitted=detailPosterSize(box.width*sx,box.height*sy,aspect,arrival,paintedGame.current.id==="crown-front");
+      image.style.width=`${fitted.width/sx}px`;image.style.height=`${fitted.height/sy}px`;
+    }
+    const reveal=detailReveal(arrival);
+    dialog.style.setProperty("--detail-reveal",String(reveal.frame));
+    dialog.style.setProperty("--detail-copy",String(reveal.copy));
+    dialog.style.setProperty("--detail-source-title",String(connectedHandoff.current?reveal.source:0));
+    dialog.style.setProperty("--detail-tools",String(phase.current==="closing"?reveal.frame:.45+.55*reveal.frame));
+    const title=media.querySelector<HTMLElement>(".spatialHandoffTitle");
+    if(title){title.style.transform=`scale(${1/sx},${1/sy})`;title.style.left=`${16/sx}px`;title.style.bottom=`${14/sy}px`;}
   }
   function finishGhost() {
-    phase.current = "closed"; setClosingVisual(false);
-    if (dialogRef.current) delete dialogRef.current.dataset.phase;
-    cancelAnimations();
+    phase.current="closed";setClosingVisual(false);setArrived(false);clearSource();
+    if(dialogRef.current)delete dialogRef.current.dataset.phase;
   }
-  function tick(now: number) {
-    frame.current = 0; surface.sample(now); paintSurface();
-    if (surface.active) frame.current = requestAnimationFrame(tick);
-    else if (phase.current === "closing") finishGhost();
-    else if (mediaRef.current) { mediaRef.current.style.transform = "none"; mediaRef.current.style.opacity = "1"; }
+  function settle() {
+    cancelFrame();
+    if(phase.current==="closing"){finishGhost();return;}
+    if(phase.current!=="closed"){
+      mediaBox.current=baseRect();surface.rebase(rest);paintSurface();phase.current="open";setArrived(true);
+    }
+  }
+  function schedule(token=epoch.current) {
+    frame.current=frameLoop.request(now=>{
+      frame.current=0;if(token!==epoch.current)return;
+      surface.sample(now);paintSurface();
+      if(surface.active)schedule(token);
+      else if(phase.current==="closing")finishGhost();
+      else{phase.current="open";setArrived(true);}
+    },"case-handoff");
   }
   function lockPage() {
-    const overflow = document.body.style.overflow;
-    const scroll = { top:window.scrollY,left:window.scrollX };
-    const viewport={width:innerWidth,height:innerHeight};
+    const overflow=document.body.style.overflow,scroll={top:scrollY,left:scrollX},viewport={width:innerWidth,height:innerHeight};
     const sourceTop=document.querySelector(`.spatialGamePanel[data-game-id="${currentGameId.current}"]`)?.getBoundingClientRect().top??140;
-    const location = window.location.pathname+window.location.search;
-    const opener = document.activeElement as HTMLElement | null;
-    // Locking the root as well breaks Safari's sticky scene behind the modal.
-    document.body.style.overflow = "hidden";
-    restorePage.current = () => {
-      document.body.style.overflow = overflow;
-      if (window.location.pathname+window.location.search === location){
+    const location=window.location.pathname+window.location.search,opener=document.activeElement as HTMLElement|null;
+    document.body.style.overflow="hidden";
+    restorePage.current=()=>{
+      document.body.style.overflow=overflow;
+      if(window.location.pathname+window.location.search===location){
         const changed=viewport.width!==innerWidth||viewport.height!==innerHeight;
         const panel=changed?document.querySelector(`.spatialGamePanel[data-game-id="${currentGameId.current}"]`):null;
-        window.scrollTo({left:scroll.left,top:panel?window.scrollY+panel.getBoundingClientRect().top-Math.min(Math.max(100,sourceTop),innerHeight*.35):scroll.top,behavior:"instant"});
+        window.scrollTo({left:scroll.left,top:panel?scrollY+panel.getBoundingClientRect().top-Math.min(Math.max(100,sourceTop),innerHeight*.35):scroll.top,behavior:"instant"});
       }
-      focusFrame.current = requestAnimationFrame(() => {
-        const candidates = [...document.querySelectorAll<HTMLElement>(`.spatialGamePanel[data-game-id="${currentGameId.current}"] button`)];
-        const panel = candidates.find(element => element.getClientRects().length && getComputedStyle(element).visibility !== "hidden");
-        (panel ?? (opener?.isConnected ? opener : null))?.focus({ preventScroll:true });
+      const token=focusEpoch.current;
+      focusFrame.current=requestAnimationFrame(()=>{
+        if(token!==focusEpoch.current||phase.current==="open"||phase.current==="opening")return;
+        const candidates=[...document.querySelectorAll<HTMLElement>(`.spatialGamePanel[data-game-id="${currentGameId.current}"] button`)];
+        const panel=candidates.find(element=>element.getClientRects().length&&getComputedStyle(element).visibility!=="hidden");
+        (panel??(opener?.isConnected?opener:null))?.focus({preventScroll:true});
       });
     };
   }
-  function releasePage() { const release = restorePage.current; restorePage.current = null; release?.(); }
+  function releasePage(){const release=restorePage.current;restorePage.current=null;release?.();}
   function closePanel() {
-    const dialog = dialogRef.current;
-    if (phase.current !== "open" || !dialog) return;
-    const now = performance.now(); surface.sample(now); paintSurface();
-    const destination = origin?.gameId===game.id?originPose():[0,18,.98,.98,0];
-    const veil = getComputedStyle(dialog).opacity;
-    const copy = copyRef.current ? getComputedStyle(copyRef.current).opacity : "1";
-    outgoingGame.current = game; phase.current = "closing";
-    cancelAnimationFrame(frame.current); cancelAnimations();
-    const detailScroll = dialog.scrollTop;
-    dialog.close(); dialog.dataset.phase = "closing"; dialog.inert = true; dialog.setAttribute("aria-hidden","true");
-    dialog.scrollTop = detailScroll; setClosingVisual(true);
-    releasePage(); closeScroll.current = window.scrollY;
-    onClosing?.(); onClose();
-    if (staticMotion()) { surface.rebase(destination); finishGhost(); return; }
-    surface.moveTo(destination,SPATIAL_TIMING.close,now);
-    animations.current.push(dialog.animate([{ opacity:veil },{ opacity:0 }],{ duration:SPATIAL_TIMING.close,easing:"cubic-bezier(.4,0,.2,1)",fill:"forwards" }));
-    copySurfaces().forEach(element => animations.current.push(element.animate([{ opacity:copy },{ opacity:0 }],{ duration:220,fill:"forwards" })));
-    frame.current = requestAnimationFrame(tick);
+    const dialog=dialogRef.current;if((phase.current!=="open"&&phase.current!=="opening")||!dialog)return;
+    const now=frameLoop.now();surface.sample(now);paintSurface();cancelFrame();
+    outgoingGame.current=game;phase.current="closing";setArrived(false);dialog.dataset.mediaArrived="false";
+    const detailScroll=dialog.scrollTop;
+    dialog.close();dialog.dataset.phase="closing";dialog.inert=true;dialog.setAttribute("aria-hidden","true");
+    dialog.scrollTop=detailScroll;setClosingVisual(true);
+    releasePage();closeScroll.current=scrollY;mediaBox.current=baseRect();
+    const destination=originPose(true);
+    if(!connectedHandoff.current)destination[4]=0;
+    onClosing?.();onClose();
+    if(staticMotion()){surface.rebase(destination);finishGhost();return;}
+    surface.moveTo(destination,SPATIAL_TIMING.close,now);schedule();
   }
-  useClientLayoutEffect(() => {
-    const dialog = dialogRef.current, media = mediaRef.current;
-    if(!open){if(phase.current==="open")closePanel();return;}
-    if (!dialog || !media) return;
-    const now = performance.now(), reopening = phase.current === "closing";
-    surface.sample(now); paintSurface();
-    const previousBox = reopening ? media.getBoundingClientRect() : null;
-    const opacity = surface.value[4], veil = reopening ? getComputedStyle(dialog).opacity : "0";
-    const copyOpacity = reopening && copyRef.current ? getComputedStyle(copyRef.current).opacity : "0";
-    cancelAnimationFrame(frame.current); cancelAnimationFrame(focusFrame.current); cancelAnimations();
-    phase.current = "open"; setClosingVisual(false); delete dialog.dataset.phase;
-    dialog.inert = false; dialog.removeAttribute("aria-hidden");
-    lockPage(); dialog.showModal(); dialog.scrollTo({ top:0,behavior:"instant" });
-    const box = baseRect();
-    if (reopening && previousBox && box?.width && box.height) {
-      surface.rebase([previousBox.left+previousBox.width/2-box.left-box.width/2,previousBox.top+previousBox.height/2-box.top-box.height/2,previousBox.width/box.width,previousBox.height/box.height,opacity],true);
-    } else {
-      surface.rebase(originPose());
-      previousGame.current = game.id;
-    }
-    closeRef.current?.focus({ preventScroll:true });
-    if (staticMotion()) { surface.rebase(rest); paintSurface(); return; }
-    surface.moveTo(rest,SPATIAL_TIMING.open,now); paintSurface();
-    animations.current.push(dialog.animate([{ opacity:veil },{ opacity:1 }],{ duration:280,easing:"ease-in-out" }));
-    // The image keeps its long shared-surface flight, while the title and actions
-    // acknowledge the click immediately. Reopening retains the visible copy.
-    copySurfaces().forEach(element => animations.current.push(element.animate(
-      [{ opacity:reopening?copyOpacity:.65,transform:reopening ? "none" : "translateY(8px)" },{ opacity:1,transform:"none" }],
-      { duration:480,fill:"backwards",easing:"cubic-bezier(.3,0,.2,1)" },
-    )));
-    frame.current = requestAnimationFrame(tick);
+  useClientLayoutEffect(()=>{
+    const dialog=dialogRef.current,media=mediaRef.current;
+    if(!open){if(phase.current==="open"||phase.current==="opening")closePanel();return;}
+    if(!dialog||!media)return;
+    const now=frameLoop.now(),reopening=phase.current==="closing"&&outgoingGame.current.id===game.id;
+    surface.sample(now);paintSurface();
+    const previousBox=reopening?media.getBoundingClientRect():null,previous=[...surface.value];
+    cancelFrame();++focusEpoch.current;cancelAnimationFrame(focusFrame.current);
+    phase.current="opening";setClosingVisual(false);setArrived(false);delete dialog.dataset.phase;
+    dialog.inert=false;dialog.removeAttribute("aria-hidden");
+    lockPage();dialog.showModal();dialog.scrollTo({top:0,behavior:"instant"});mediaBox.current=baseRect();markSource();
+    const box=mediaBox.current;
+    if(reopening&&previousBox&&box?.width&&box.height){
+      surface.rebase([previousBox.left+previousBox.width/2-box.left-box.width/2,previousBox.top+previousBox.height/2-box.top-box.height/2,previousBox.width/box.width,previousBox.height/box.height,previous[4],previous[5]],true);
+    }else surface.rebase(originPose());
+    previousGame.current=game.id;closeRef.current?.focus({preventScroll:true});
+    if(staticMotion()){settle();return;}
+    surface.moveTo(rest,SPATIAL_TIMING.open,now);paintSurface();schedule();
   },[open]);
-  useClientLayoutEffect(() => {
-    if (!open) return;
-    dialogRef.current?.scrollTo({ top:0,behavior:"instant" });
-    if (previousGame.current !== game.id && !staticMotion()) {
-      imageAnimation.current?.cancel();
-      imageAnimation.current = mediaRef.current?.querySelector("img")?.animate([{ opacity:.25 },{ opacity:1 }],{ duration:420,easing:"ease-in-out" }) ?? null;
-    }
-    previousGame.current = game.id;
+  useClientLayoutEffect(()=>{
+    if(!open||previousGame.current===game.id)return;
+    // A related case stays in the same native modal, with the same media clock.
+    cancelFrame();dialogRef.current?.scrollTo({top:0,behavior:"instant"});setArrived(false);
+    mediaBox.current=baseRect();surface.rebase([0,0,1,1,.3,1]);phase.current="opening";
+    previousGame.current=game.id;
+    if(staticMotion()){settle();return;}
+    surface.moveTo(rest,420,frameLoop.now());paintSurface();schedule();
   },[open,game.id]);
-  useEffect(() => {
-    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const finish = () => {
-      cancelAnimationFrame(frame.current); surface.finish(); paintSurface(); cancelAnimations(); imageAnimation.current?.cancel();
-      if (phase.current === "closing") finishGhost();
-    };
-    const preference = () => { if (staticMotion()) finish(); };
-    const resize = () => { if (surface.active) finish(); };
-    const scroll = () => { if (phase.current === "closing" && Math.abs(window.scrollY-closeScroll.current) > 2) finish(); };
-    const observer = new MutationObserver(preference);
-    observer.observe(document.documentElement,{ attributes:true,attributeFilter:["data-reduced-motion"] });
-    query.addEventListener("change",preference); window.addEventListener("resize",resize); window.addEventListener("scroll",scroll,{ passive:true });
-    return () => {
-      cancelAnimationFrame(frame.current); cancelAnimationFrame(focusFrame.current); cancelAnimations(); imageAnimation.current?.cancel();
-      observer.disconnect(); query.removeEventListener("change",preference); window.removeEventListener("resize",resize); window.removeEventListener("scroll",scroll);
-      dialogRef.current?.close(); releasePage(); cancelAnimationFrame(focusFrame.current);
+  useEffect(()=>{
+    const query=window.matchMedia("(prefers-reduced-motion: reduce)");
+    const preference=()=>{if(staticMotion())settle();};
+    const resize=()=>{if(phase.current!=="closed")settle();};
+    const scroll=()=>{if(phase.current==="closing"&&Math.abs(scrollY-closeScroll.current)>2)settle();};
+    const observer=new MutationObserver(preference);observer.observe(document.documentElement,{attributes:true,attributeFilter:["data-reduced-motion"]});
+    query.addEventListener("change",preference);window.addEventListener("resize",resize);window.addEventListener("scroll",scroll,{passive:true});
+    return()=>{
+      cancelFrame();++focusEpoch.current;cancelAnimationFrame(focusFrame.current);observer.disconnect();query.removeEventListener("change",preference);window.removeEventListener("resize",resize);window.removeEventListener("scroll",scroll);
+      dialogRef.current?.close();releasePage();cancelAnimationFrame(focusFrame.current);clearSource();
     };
   },[]);
 
-  return <dialog id="spatial-game-detail" ref={dialogRef} className="spatialDetail" data-game-id={visualGame.id} data-paused={paused} data-phase={closingVisual ? "closing" : undefined} aria-hidden={closingVisual || undefined} aria-labelledby="spatial-detail-title" aria-describedby="spatial-detail-description" onCancel={event => { event.preventDefault(); onRequestClose(); }} onClick={event=>{if(event.target===dialogRef.current)onRequestClose();}} onKeyDown={event=>{if(!canCycle||event.target instanceof HTMLInputElement)return;if(event.key==="ArrowLeft"){event.preventDefault();onPrevious();}if(event.key==="ArrowRight"){event.preventDefault();onNext();}}}>
+  return <dialog id="spatial-game-detail" ref={dialogRef} className="spatialDetail" data-game-id={visualGame.id} data-paused={paused} data-media-arrived={arrived} data-phase={closingVisual ? "closing" : undefined} aria-hidden={closingVisual || undefined} aria-labelledby="spatial-detail-title" aria-describedby="spatial-detail-description" onCancel={event => { event.preventDefault(); onRequestClose(); }} onClick={event=>{if(event.target===dialogRef.current)onRequestClose();}} onKeyDown={event=>{if(!canCycle||event.target instanceof HTMLInputElement)return;if(event.key==="ArrowLeft"){event.preventDefault();onPrevious();}if(event.key==="ArrowRight"){event.preventDefault();onNext();}}}>
     <div className="spatialCaseOptics" aria-hidden="true"><i/><i/></div>
     <nav className="spatialCaseNav" aria-label="Навигация BLACKCROWN в кейсе"><button type="button" onClick={onRequestClose}>Игры</button><a href="/store">Магазин</a><a href="/about">О проекте</a><a href="/account">Профиль ↗</a></nav>
     <div className="spatialDetailFrame">
     <div className="spatialDetailTop"><span>BLACKCROWN / <DecodedText text={visualGame.genre} token={visualGame.id}/></span><div className="spatialDetailTools"><button className="spatialDetailPause" type="button" aria-pressed={paused} aria-label={paused ? "Продолжить сцену" : "Пауза сцены"} onClick={onTogglePause}>{paused ? "▷" : "Ⅱ"}</button><button ref={closeRef} type="button" onClick={onRequestClose} aria-label="Закрыть панель и вернуться к выбранной игре"><span aria-hidden="true">×</span></button></div></div>
     <div className="spatialDetailInner">
-      <figure className="spatialDetailMedia" ref={mediaRef} onPointerDown={e=>{if(e.pointerType==="touch")swipe.current={x:e.clientX,y:e.clientY};}} onPointerCancel={()=>swipe.current=null} onPointerUp={e=>{const start=swipe.current;swipe.current=null;if(!start||!canCycle)return;const dx=e.clientX-start.x,dy=e.clientY-start.y;if(Math.abs(dx)>55&&Math.abs(dy)<35){if(dx<0)onNext();else onPrevious();}}}><CaseMedia game={visualGame} open={open} paused={paused}/></figure>
+      <figure className="spatialDetailMedia" ref={mediaRef} onPointerDown={e=>{if(e.pointerType==="touch")swipe.current={x:e.clientX,y:e.clientY};}} onPointerCancel={()=>swipe.current=null} onPointerUp={e=>{const start=swipe.current;swipe.current=null;if(!start||!canCycle)return;const dx=e.clientX-start.x,dy=e.clientY-start.y;if(Math.abs(dx)>55&&Math.abs(dy)<35){if(dx<0)onNext();else onPrevious();}}}><CaseMedia game={visualGame} open={open && arrived} paused={paused} onPosterLoad={paintSurface}/><div className="spatialHandoffTitle" aria-hidden="true"><span>{visualGame.status}</span><strong>{visualGame.title}</strong></div></figure>
       <div className="spatialDetailCopy" ref={copyRef}>
         <div className="spatialDetailHeadingMeta"><p className="spatialDetailState"><DecodedText text={visualGame.status} token={visualGame.id}/></p></div>
         <h2 id="spatial-detail-title">{visualGame.title}</h2>

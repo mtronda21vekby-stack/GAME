@@ -2,6 +2,8 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { CameraRig } from "../../experience/camera/CameraRig";
 import { RendererHost } from "../../experience/core/RendererHost";
+import { frameLoop } from "../../experience/core/FrameLoop";
+import { RuntimeBudget } from "../../experience/quality/QualityManager";
 import { QUALITY_PRESETS } from "../../experience/quality/qualityPresets";
 import { INITIAL_SCROLL_SNAPSHOT } from "../../experience/types";
 import { platformGames } from "../../lib/platformGames";
@@ -17,6 +19,7 @@ import { SpatialGalleryStage } from "./SpatialGalleryStage";
 import { spatialArrivalEnd, spatialChoreography, spatialInterludeVisible, spatialWorldBlend } from "./SpatialChoreography";
 import { spatialAxisJourney, spatialAxisTurn, type SpatialJourneyStops } from "./SpatialAxis";
 import { SpatialCloth } from "./SpatialCloth";
+import { SpatialRefraction } from "./SpatialRefraction";
 import { panelFrontWidth, panelScreenPosition } from "./panelProjection";
 import { ScrollJourney, SurfaceMotion, SPATIAL_TIMING } from "./spatialMotion";
 import { WORLD_ACCENTS, spatialProgress } from "./spatialState";
@@ -51,6 +54,13 @@ export class SpatialSceneRuntime {
   private readonly atmosphere:SpatialAtmosphere;
   private readonly cloth:SpatialCloth;
   private bloom?:SpatialBloom;
+  private refraction?:SpatialRefraction;
+  private readonly budget=new RuntimeBudget();
+  private readonly renderSize=new THREE.Vector2();
+  private opticsWeight=0;private opticsLastSeen=-Infinity;
+  private contextLost=false;private contextRevision=0;private restoring=false;
+  private readonly constrained=Boolean((navigator as Navigator&{connection?:{saveData?:boolean};deviceMemory?:number}).connection?.saveData)||((navigator as Navigator&{deviceMemory?:number}).deviceMemory??8)<=2||navigator.hardwareConcurrency<=2;
+  private readonly metrics={frames:0,frameMs:0,cpuMs:0,drawCalls:0,triangles:0,points:0};
   private readonly motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
   private readonly compactQuery = window.matchMedia("(max-width:760px), (max-width:1000px) and (max-height:520px)");
   private readonly pointerQuery = window.matchMedia("(hover:hover) and (pointer:fine)");
@@ -59,7 +69,7 @@ export class SpatialSceneRuntime {
   private resizeObserver?:ResizeObserver;
   private intersectionObserver?:IntersectionObserver;
   private preferenceObserver?:MutationObserver;
-  private frame=0; private lastFrame=0; private elapsed=0; private pausedAt=0;
+  private frame=0; private lastFrame=0; private elapsed=0; private heldAt:number|null=null;
   private progress=0; private desiredProgress=0;
   private detail=0; private detailOpen=false; private detailFocus=false;
   private pointer={x:0,y:0}; private desiredPointer={x:0,y:0};
@@ -67,6 +77,7 @@ export class SpatialSceneRuntime {
   private journeyStops?:SpatialJourneyStops;
   private viewportWidth=1; private viewportHeight=1;
   private brandReady=false;
+  private brandRevision=0;
   private brandArrival=0;
   private grab?:{id:number;x:number;y:number;u:number;v:number;active:boolean;element:HTMLElement};
   private grabFinished=0;
@@ -82,12 +93,14 @@ export class SpatialSceneRuntime {
     this.cloth=new SpatialCloth(this.compact);this.cloth.setQuality(this.compact,this.reduced);
     this.scene.add(this.brand,this.atmosphere,this.cloth);
     try {
-      this.rendererHost=new RendererHost({container:options.host,preset:this.compact?COMPACT_PRESET:DESKTOP_PRESET,powerPreference:this.compact?"low-power":"high-performance",onContextState:state=>{if(state==="lost")this.fail();}});
+      this.rendererHost=new RendererHost({container:options.host,preset:this.compact?COMPACT_PRESET:DESKTOP_PRESET,powerPreference:this.compact?"low-power":"high-performance",onContextState:this.onContextState});
       this.rendererHost.renderer.domElement.className="spatialSceneCanvas";
+      this.rendererHost.renderer.info.autoReset=false;
       this.rendererHost.setExposure(1.02);
       this.scene.background=new THREE.Color(0x090d11);
       this.scene.fog=new THREE.FogExp2(0x090d11,.026);
-      this.buildLighting();this.configureBloom();this.installObservers();this.resize();
+      this.buildLighting();this.configureBloom();this.createRefraction();this.installObservers();this.resize();
+      this.budget.suspend(this.budgetInactive(),frameLoop.now());
       this.progress=this.journey.snap(this.desiredProgress);
       options.onStatus("ready"); options.onProgress(0,1);
       void this.loadBrand();
@@ -126,24 +139,108 @@ export class SpatialSceneRuntime {
       finishHeroMaterials(gltf.scene);
       const adapted=adaptSpatialBrand(gltf.scene,SPATIAL_BRAND_MODEL.fitSpan);
       const previous=[...this.brand.children];this.brand.clear();this.brand.add(adapted.group);
+      this.brandRevision++;
       previous.forEach(disposeModel);
+      if(this.contextLost||this.restoring)return; // Recovery prepares the latest attached CPU model.
       // The cloth is initially outside the viewport. Compile it before scroll can reveal it.
       let warmed=true;
       try{await (this.bloom?this.bloom.warmup():this.rendererHost!.renderer.compileAsync(this.scene,this.camera));}
       catch{warmed=false;}
-      if(this.disposed||this.brandAbort!==controller)return;
+      if(this.disposed||this.brandAbort!==controller||this.contextLost||this.restoring)return;
       this.options.stage.dataset.shaderWarmup=warmed?"ready":"fallback";
       if(!this.brandReady)this.brandArrival=this.elapsed;
       this.brandReady=true;this.options.stage.dataset.brandReady="1";this.resize();this.requestFrame();
+      this.budget.reset(frameLoop.now());
     } catch { /* A missing hero model must not disable the games or their native fallback. */ }
     finally { if(!this.disposed&&this.brandAbort===controller)this.options.onProgress(1,1,"complete"); }
   }
 
   private configureBloom() {
-    if(this.compact){this.bloom?.dispose();this.bloom=undefined;return;}
+    if(this.compact||this.constrained||this.budget.snapshot().level>=3){this.bloom?.dispose();this.bloom=undefined;return;}
     if(!this.bloom&&this.rendererHost){
       try{this.bloom=new SpatialBloom(this.rendererHost.renderer,this.scene,this.camera);}catch{/* Keep the 3D scene usable if HDR targets are unavailable. */}
     }
+  }
+
+  private createRefraction(){
+    this.cloth.setOptics(null,1,1,0);this.refraction?.dispose();
+    if(!this.rendererHost)return;
+    this.refraction=new SpatialRefraction(this.rendererHost.renderer,this.scene,this.camera,{
+      exclude:()=>[this.cloth],compact:this.compact,
+      beforeCapture:()=>{
+        const m=this.cloth.matrixWorld.elements;
+        // Conservative bounds include both sculptural profiles and bounded hits.
+        const back=m[14]-(Math.abs(m[2])*.9+Math.abs(m[6])*.9+Math.abs(m[10])*1.2)-.05;
+        this.atmosphere.setBackgroundCapture(back,this.refraction!.size.x/Math.max(1,this.viewportWidth));
+      },
+      afterCapture:()=>this.atmosphere.setBackgroundCapture(null),
+    });
+  }
+  private applyBudget(){
+    if(!this.rendererHost)return;
+    const level=this.budget.snapshot().level,preset=this.compact?COMPACT_PRESET:DESKTOP_PRESET;
+    this.rendererHost.setPreset({...preset,dprCap:Math.min(this.constrained?1:Infinity,level>=2?(this.compact?.85:1.05):preset.dprCap)});
+    this.options.stage.dataset.runtimeQuality=String(level);
+    this.configureBloom();this.resize();
+  }
+  private cancelGrab(){
+    const grab=this.grab;this.grab=undefined;
+    if(grab?.active&&grab.element.hasPointerCapture(grab.id)){
+      try{grab.element.releasePointerCapture(grab.id);}catch{/* The browser may already have cancelled it. */}
+    }
+    this.cloth.release();this.cloth.setHover(.5,.5,0);
+  }
+  private budgetInactive(){return document.hidden||!this.inView||this.paused||this.reduced||this.contextLost||this.restoring||this.detailOpen;}
+  private updateMotionHold(){
+    const held=this.paused||!this.inView||this.contextLost||this.restoring,now=frameLoop.now();
+    if(held&&this.heldAt===null){this.heldAt=now;this.detailMotion.sample(now);}
+    else if(!held&&this.heldAt!==null){this.detailMotion.delay(now-this.heldAt);this.heldAt=null;}
+  }
+  private releaseOptics(){this.cloth.setOptics(null,1,1,0);this.refraction?.setEnabled(false);}
+  private onContextState=(state:"ready"|"lost")=>{
+    if(this.disposed)return;
+    if(state==="lost"){
+      this.contextRevision++;this.contextLost=true;this.restoring=false;
+      this.updateMotionHold();
+      this.stop();this.cancelGrab();this.budget.suspend(true,frameLoop.now());
+      this.cloth.setOptics(null,1,1,0);this.refraction?.dispose();this.refraction=undefined;this.opticsWeight=0;
+      this.options.stage.dataset.contextState="lost";this.options.onStatus("fallback");
+    }else if(this.contextLost&&!this.restoring){void this.restoreContext();}
+  };
+  private async restoreContext(){
+    if(!this.rendererHost||this.disposed)return;
+    this.restoring=true;const revision=this.contextRevision;
+    try{
+      const previous=this.environment;
+      this.environment=createHeroStudio(this.rendererHost.renderer,this.compact);this.scene.environment=this.environment.texture;previous?.dispose();
+      this.bloom?.dispose();this.bloom=undefined;this.configureBloom();this.createRefraction();this.resize();
+      let studioCompact=this.compact;
+      // One in-flight recovery. A model attached during warmup invalidates only
+      // that preparation, never publishes an unprepared replacement as ready.
+      while(true){
+        if(studioCompact!==this.compact){
+          const old=this.environment;this.environment=createHeroStudio(this.rendererHost.renderer,this.compact);this.scene.environment=this.environment.texture;old?.dispose();studioCompact=this.compact;
+        }
+        const model=this.brandRevision,compact=this.compact,restoredBloom=this.bloom as SpatialBloom|undefined;
+        await (restoredBloom?restoredBloom.warmup():this.rendererHost.renderer.compileAsync(this.scene,this.camera));
+        if(this.disposed||revision!==this.contextRevision)return;
+        if(model===this.brandRevision&&compact===this.compact&&restoredBloom===this.bloom)break;
+      }
+      this.contextLost=false;this.restoring=false;
+      this.updateMotionHold();
+      if(this.brand.children.length){if(!this.brandReady)this.brandArrival=this.elapsed;this.brandReady=true;this.options.stage.dataset.brandReady="1";}
+      this.resize();
+      this.options.stage.dataset.contextState="ready";this.options.stage.dataset.shaderWarmup="ready";
+      this.budget.suspend(this.budgetInactive(),frameLoop.now());this.options.onStatus("ready");this.requestFrame();
+    }catch{if(!this.disposed&&revision===this.contextRevision)this.fail();}
+  }
+
+  /** Local, bounded diagnostics. No telemetry, storage, user identifiers or network. */
+  diagnostics(){
+    const renderer=this.rendererHost?.renderer,optics=this.refraction?.snapshot();
+    return {frames:{...this.metrics},clock:frameLoop.snapshot(),quality:this.budget.snapshot(),context:{lost:this.contextLost,restoring:this.restoring,revision:this.contextRevision},
+      resources:{memory:renderer?{...renderer.info.memory}:null,programs:renderer?.info.programs?.length??0,brandMeshes:this.brand.children.length,bloom:!!this.bloom,optics:optics?{...optics,estimatedBytes:optics.colorBytes+optics.pixels*4}:null},
+      opticsWeight:this.opticsWeight,profile:this.cloth.profile,brandReady:this.brandReady};
   }
 
   setWorld(index:number,visibleGames:readonly number[]=platformGames.map((_,i)=>i)) {
@@ -155,30 +252,32 @@ export class SpatialSceneRuntime {
   setDetailOpen(open:boolean){
     if(this.detailOpen===open)return;
     this.detailOpen=open;
-    if(open){const selected=this.options.stage.querySelector<HTMLElement>('.spatialGamePanel[data-selected="true"]')?.getBoundingClientRect();this.focusSide=selected&&selected.left+selected.width*.5<this.viewportWidth*.5?-1:1;this.cloth.release();this.grab=undefined;}
+    if(open){const selected=this.options.stage.querySelector<HTMLElement>('.spatialGamePanel[data-selected="true"]')?.getBoundingClientRect();this.focusSide=selected&&selected.left+selected.width*.5<this.viewportWidth*.5?-1:1;this.cancelGrab();}
+    if(open)this.releaseOptics();
+    this.budget.suspend(this.budgetInactive(),frameLoop.now());
     this.gallery.invalidate();
     if(!open)this.onScroll();
     this.requestFrame();
   }
   touchCloth(clientX?:number,clientY?:number) {
-    if(this.disposed||this.paused||this.reduced||this.detailOpen)return false;
+    if(this.disposed||this.contextLost||this.paused||this.reduced||this.detailOpen)return false;
     const box=this.clothSlot?.getBoundingClientRect();if(!box?.width||!box.height)return false;
     const u=clientX===undefined?.5:(clientX-box.left)/box.width,v=clientY===undefined?.5:1-(clientY-box.top)/box.height;
-    if(performance.now()-this.grabFinished>220)this.cloth.touch(u,v,this.elapsed);this.requestFrame();return true;
+    if(frameLoop.now()-this.grabFinished>220)this.cloth.touch(u,v,this.elapsed);this.requestFrame();return true;
   }
   syncScroll(){if(this.disposed)return;this.resize();this.progress=this.journey.snap(this.desiredProgress);this.requestFrame();}
   setDetailFocus(focused:boolean){
     if(this.detailFocus===focused)return;
     this.detailFocus=focused;
-    if(this.paused||this.reduced)this.detailMotion.rebase([focused?1:0]);
-    else this.detailMotion.moveTo([focused?1:0],focused?SPATIAL_TIMING.open:SPATIAL_TIMING.close,performance.now());
+    if(this.paused||this.reduced||!this.inView||this.contextLost||this.restoring)this.detailMotion.rebase([focused?1:0]);
+    else this.detailMotion.moveTo([focused?1:0],focused?SPATIAL_TIMING.open:SPATIAL_TIMING.close,frameLoop.now());
     this.requestFrame();
   }
   setPaused(paused:boolean){
     if(this.paused===paused)return;
-    if(paused&&!this.paused){this.pausedAt=performance.now();this.detailMotion.sample(this.pausedAt);}
-    if(!paused&&this.paused)this.detailMotion.delay(performance.now()-this.pausedAt);
+    if(paused)this.cancelGrab();
     this.paused=paused;
+    this.updateMotionHold();this.budget.suspend(this.budgetInactive(),frameLoop.now());
     this.gallery.invalidate();
     if(paused)this.cloth.setHover(.5,.5,0);
     this.stop();this.requestFrame();
@@ -190,14 +289,15 @@ export class SpatialSceneRuntime {
     for(const selector of [".spatialBrandSlot",".spatialClothControl",".spatialGameGrid"]){
       const element=this.options.stage.querySelector(selector);if(element)this.resizeObserver.observe(element);
     }
-    this.intersectionObserver=new IntersectionObserver(([entry])=>{this.inView=entry.isIntersecting;if(this.inView)this.requestFrame();else this.stop();});
+    this.intersectionObserver=new IntersectionObserver(([entry])=>{this.inView=entry.isIntersecting;this.updateMotionHold();this.budget.suspend(this.budgetInactive(),frameLoop.now());if(this.inView)this.requestFrame();else{this.cancelGrab();this.releaseOptics();this.stop();}});
     this.intersectionObserver.observe(this.options.stage);
     this.preferenceObserver=new MutationObserver(this.onPreferenceChange);
     this.preferenceObserver.observe(document.documentElement,{attributes:true,attributeFilter:["data-reduced-motion"]});
     this.motionQuery.addEventListener("change",this.onPreferenceChange);this.compactQuery.addEventListener("change",this.onPreferenceChange);
     window.addEventListener("scroll",this.onScroll,{passive:true});window.addEventListener("resize",this.resize,{passive:true});
     window.addEventListener("pointerdown",this.onGrabStart);window.addEventListener("pointerup",this.onGrabEnd);window.addEventListener("pointercancel",this.onGrabEnd);
-    window.addEventListener("pointermove",this.onPointer,{passive:true});document.addEventListener("visibilitychange",this.onVisibility);
+    window.addEventListener("pointermove",this.onPointer,{passive:false});document.addEventListener("visibilitychange",this.onVisibility);
+    window.addEventListener("spatialcasehandoff",this.onCaseHandoff);
   }
   private resize=()=>{
     if(this.disposed||!this.rendererHost)return;
@@ -251,13 +351,14 @@ export class SpatialSceneRuntime {
     this.requestFrame();
   };
   private onPointer=(event:PointerEvent)=>{
+    if(this.disposed||this.contextLost||this.reduced||this.paused||this.detailOpen)return;
     if(this.grab?.id===event.pointerId){
       const g=this.grab,dx=event.clientX-g.x,dy=event.clientY-g.y;
       if(!g.active&&Math.abs(dy)>8&&Math.abs(dy)>Math.abs(dx)){this.grab=undefined;return;}
       if(!g.active&&Math.abs(dx)>8&&Math.abs(dx)>Math.abs(dy)*1.2){g.active=true;g.element.setPointerCapture(event.pointerId);}
       if(g.active){event.preventDefault();const b=g.element.getBoundingClientRect();this.cloth.grab(g.u,g.v,dx/b.width*.65,-dy/b.height*.4);this.requestFrame();return;}
     }
-    if(this.reduced||this.paused||this.detailOpen||!this.pointerQuery.matches||event.pointerType!=="mouse")return;
+    if(!this.pointerQuery.matches||event.pointerType!=="mouse")return;
     const cloth=(event.target as Element).closest(".spatialClothControl");
     if(cloth){
       const box=cloth.getBoundingClientRect();
@@ -271,33 +372,41 @@ export class SpatialSceneRuntime {
     this.desiredPointer.y=(event.clientY/Math.max(1,window.innerHeight)-.5)*.65;this.requestFrame();
   };
   private onGrabStart=(event:PointerEvent)=>{
-    if(this.paused||this.reduced||this.detailOpen||event.button!==0)return;
+    if(this.contextLost||this.paused||this.reduced||this.detailOpen||event.button!==0)return;
     const element=(event.target as Element).closest<HTMLElement>(".spatialClothControl");if(!element)return;const b=element.getBoundingClientRect();
     this.grab={id:event.pointerId,x:event.clientX,y:event.clientY,u:(event.clientX-b.left)/b.width,v:1-(event.clientY-b.top)/b.height,active:false,element};
   };
-  private onGrabEnd=(event:PointerEvent)=>{if(this.grab?.id!==event.pointerId)return;if(this.grab.active)this.grabFinished=performance.now();this.grab=undefined;this.cloth.release();this.requestFrame();};
+  private onGrabEnd=(event:PointerEvent)=>{if(this.grab?.id!==event.pointerId)return;if(this.grab.active)this.grabFinished=frameLoop.now();this.cancelGrab();this.requestFrame();};
   private onPreferenceChange=()=>{
     const compact=this.compactQuery.matches,changed=compact!==this.compact;
+    this.cancelGrab();
     this.compact=compact;this.reduced=prefersStaticPlatform(this.motionQuery);this.desiredPointer.x=this.desiredPointer.y=0;
-    this.atmosphere.setQuality(compact,this.reduced);this.rendererHost?.setPreset(compact?COMPACT_PRESET:DESKTOP_PRESET);
+    this.atmosphere.setQuality(compact,this.reduced);
     this.cloth.setQuality(compact,this.reduced);
     this.faceLight.intensity=compact?1.05:.82;this.edgeLight.intensity=compact?2.65:2.4;
     this.cloth.setHover(.5,.5,0);
-    if(changed&&this.rendererHost){
+    if(changed&&this.rendererHost&&!this.contextLost){
       const previous=this.environment;
       this.environment=createHeroStudio(this.rendererHost.renderer,compact);this.scene.environment=this.environment.texture;
       previous?.dispose();
     }
-    this.configureBloom();this.resize();if(changed)void this.loadBrand();
+    this.budget.suspend(this.budgetInactive(),frameLoop.now());
+    this.applyBudget();if(changed)void this.loadBrand();
   };
-  private onVisibility=()=>{if(document.hidden)this.stop();else this.requestFrame();};
-  private stop(){cancelAnimationFrame(this.frame);this.frame=0;this.lastFrame=0;}
-  private requestFrame=()=>{if(!this.disposed&&!this.frame&&this.inView&&!document.hidden)this.frame=requestAnimationFrame(this.tick);};
+  private onCaseHandoff=()=>{this.gallery.invalidate();this.requestFrame();};
+  private onVisibility=()=>{
+    this.budget.suspend(this.budgetInactive(),frameLoop.now());
+    if(document.hidden){this.cancelGrab();this.releaseOptics();this.stop();}else this.requestFrame();
+  };
+  private stop(){frameLoop.cancel(this.frame);this.frame=0;this.lastFrame=0;}
+  private requestFrame=()=>{if(!this.disposed&&!this.contextLost&&!this.frame&&this.inView&&!document.hidden)this.frame=frameLoop.request(this.tick,"spatial-scene");};
 
   private tick=(now:number)=>{
-    this.frame=0;if(this.disposed||!this.inView||document.hidden||!this.rendererHost)return;
+    this.frame=0;if(this.disposed||this.contextLost||!this.inView||document.hidden||!this.rendererHost)return;
+    const cpuStart=performance.now();
     const delta=this.lastFrame?now-this.lastFrame:16.67;
     this.lastFrame=now;
+    const quality=this.budget.sample(delta,now);if(quality)this.applyBudget();
     const staticScene=this.reduced||this.paused,blend=staticScene?1:-Math.expm1(-Math.max(0,delta)/180);
     if(!staticScene)this.elapsed+=Math.min(delta,100)/1000;
     this.progress=this.journey.update(this.desiredProgress,delta,{paused:this.paused,detailOpen:this.detailOpen,reduced:this.reduced});
@@ -325,15 +434,36 @@ export class SpatialSceneRuntime {
     this.scene.updateMatrixWorld();
     if(!this.detailOpen)this.gallery.update(this.camera,this.paused?window.scrollY:this.stageTop+this.progress*(this.stageHeight-this.viewportHeight),window.scrollY,this.reduced,this.brandReady);
     this.gallery.focus(this.detail);
-    try{if(this.bloom)this.bloom.render();else this.rendererHost.renderer.render(this.scene,this.camera);}catch{
+    const opticsTarget=!this.reduced&&!this.constrained&&!this.detailOpen&&this.budget.snapshot().level===0&&!this.refraction?.snapshot().failed?1:0;
+    if(this.reduced||this.constrained)this.opticsWeight=0;
+    else this.opticsWeight+=(opticsTarget-this.opticsWeight)*-Math.expm1(-Math.max(0,delta)/180);
+    if(this.cloth.visible)this.opticsLastSeen=now;
+    try{this.renderFrame(now);}catch{
       if(this.bloom){
         this.bloom.dispose();this.bloom=undefined;
-        try{this.rendererHost.renderer.render(this.scene,this.camera);}catch{this.fail();return;}
+        try{this.renderFrame(now);}catch{this.fail();return;}
       }else{this.fail();return;}
     }
+    this.metrics.frames++;this.metrics.frameMs=delta;this.metrics.cpuMs=performance.now()-cpuStart;
     // No 25/32fps idle cap: the turn and camera must share the display's frame cadence.
-    if(!staticScene)this.requestFrame();else this.lastFrame=0;
+    // An opaque settled case owns its video; a hidden background does not burn GPU.
+    if(!staticScene&&(!this.detailOpen||this.detailMotion.active))this.requestFrame();else this.lastFrame=0;
   };
+  /** The one complete render boundary: capture + final scene/composer. */
+  private renderFrame(now=frameLoop.now()){
+    const renderer=this.rendererHost!.renderer;renderer.info.reset();
+    if(this.bloom)this.bloom.getTargetSize(this.renderSize);else renderer.getDrawingBufferSize(this.renderSize);
+    const capture=this.refraction,active=this.cloth.visible&&this.opticsWeight>.005&&!this.reduced;
+    if(capture){
+      capture.resize(this.viewportWidth,this.viewportHeight,this.renderSize.x/Math.max(1,this.viewportWidth),this.compact);
+      const hold=active||(!this.reduced&&!this.constrained&&this.budget.snapshot().level===0&&now-this.opticsLastSeen<1000);
+      this.cloth.setOptics(null,this.renderSize.x,this.renderSize.y,0);
+      capture.setEnabled(hold);
+      if(active&&capture.render())this.cloth.setOptics(capture.texture,this.renderSize.x,this.renderSize.y,this.opticsWeight*(.5+.5*this.cloth.sculpture.value));
+    }
+    if(this.bloom)this.bloom.render();else renderer.render(this.scene,this.camera);
+    this.metrics.drawCalls=renderer.info.render.calls;this.metrics.triangles=renderer.info.render.triangles;this.metrics.points=renderer.info.render.points;
+  }
   private updateObjects(){
     const p=this.progress,t=this.elapsed;
     this.brand.visible=this.brandReady;
@@ -366,11 +496,12 @@ export class SpatialSceneRuntime {
     const outro=this.options.stage.querySelector(".spatialAbout")?.getBoundingClientRect();
     const outroPresence=!!outro&&outro.top<this.viewportHeight&&outro.bottom>0;
     const farewell=outro?1-THREE.MathUtils.smoothstep(outro.top,this.viewportHeight*.12,this.viewportHeight*.95):0;
+    this.cloth.setSculpture(1-farewell);
     const closingTravel=this.compact?THREE.MathUtils.smoothstep(farewell,.5,1):farewell;
     const closingFold=this.compact?Math.sin(Math.PI*THREE.MathUtils.smoothstep(farewell,.18,1)):0;
     this.options.stage.style.setProperty("--spatial-cloth-hint-opacity",String(1-THREE.MathUtils.smoothstep(farewell,.15,.4)));
     const catalogueCleared=!!transition&&transition.top<=0;
-    this.cloth.visible=!!sheet&&catalogueCleared&&((sheet.bottom>0&&sheet.top<this.viewportHeight)||interlude||outroPresence)&&!this.detailOpen;
+    this.cloth.visible=this.brandReady&&!!sheet&&catalogueCleared&&((sheet.bottom>0&&sheet.top<this.viewportHeight)||interlude||outroPresence)&&!this.detailOpen;
     const interludeReveal=transition?THREE.MathUtils.smoothstep(-transition.top,0,this.viewportHeight*.24):0;
     this.cloth.material.opacity=(interlude?interludeReveal:1)*(1-farewell*(this.compact?.12:.24));
     // A visible folded volume arrives only after the last game has cleared.
@@ -411,11 +542,15 @@ export class SpatialSceneRuntime {
   private fail(){if(!this.disposed){this.options.onStatus("fallback");this.dispose();}}
   dispose(){
     if(this.disposed)return;this.disposed=true;this.stop();this.brandAbort?.abort();
+    this.contextRevision++;this.cancelGrab();
     this.resizeObserver?.disconnect();this.intersectionObserver?.disconnect();this.preferenceObserver?.disconnect();
     this.motionQuery.removeEventListener("change",this.onPreferenceChange);this.compactQuery.removeEventListener("change",this.onPreferenceChange);
     window.removeEventListener("scroll",this.onScroll);window.removeEventListener("resize",this.resize);window.removeEventListener("pointermove",this.onPointer);document.removeEventListener("visibilitychange",this.onVisibility);
     window.removeEventListener("pointerdown",this.onGrabStart);window.removeEventListener("pointerup",this.onGrabEnd);window.removeEventListener("pointercancel",this.onGrabEnd);
+    window.removeEventListener("spatialcasehandoff",this.onCaseHandoff);
     delete this.options.stage.dataset.brandReady;delete this.options.stage.dataset.shaderWarmup;delete this.options.stage.dataset.heroUiHidden;
+    delete this.options.stage.dataset.runtimeQuality;delete this.options.stage.dataset.contextState;
+    this.cloth.setOptics(null,1,1,0);this.refraction?.dispose();
     this.options.stage.style.removeProperty("--spatial-hero-ui-opacity");this.gallery.dispose();this.atmosphere.dispose();this.cloth.dispose();this.bloom?.dispose();
     this.options.stage.style.removeProperty("--spatial-cloth-hint-opacity");
     disposeModel(this.scene);this.scene.clear();this.scene.environment=null;this.environment?.dispose();this.rendererHost?.dispose();
