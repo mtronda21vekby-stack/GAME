@@ -116,3 +116,13 @@ html[data-reduced-motion="1"] .spatialCaseOptics>i { animation:none!important; }
 .spatialHandoffTitle>span { display:block; margin-bottom:8px; color:#a8b8b9; font:8px/1.4 ui-monospace,monospace; letter-spacing:.1em; text-transform:uppercase; }
 .spatialHandoffTitle>strong { display:block; color:#e9ece6; font-size:30px; line-height:1.05; letter-spacing:-.045em; font-weight:400; }
 .spatialGamePanel[data-case-handoff=true] .spatialPanelMedia { visibility:hidden; }
+
+/* Back releases native scroll immediately, but returning UI waits for the
+   outgoing case's React commit. Covers/canvas keep their existing depth path. */
+.spatialPage[data-case-chrome-held=true]>.platHeader,
+.spatialPage[data-case-chrome-held=true]>.spatialSceneNav,
+.spatialPage[data-case-chrome-held=true]>.spatialMotionToggle,
+.spatialPage[data-case-chrome-held=true]>.platSkip,
+.spatialPage[data-case-chrome-held=true] .spatialJourneyContent :is(.spatialHeroLabel,.spatialHeroCopy,.spatialHeroDock,.spatialGalleryHead,.spatialGalleryFoot,.spatialPanelHeader,.spatialPanelTitle,.spatialPanelBody,.spatialMaterialCopy,.spatialClothHint,.spatialAboutCopy,.spatialAboutText),
+.spatialPage[data-case-chrome-held=true] .spatialIntro>:is(p,h2,a),
+.spatialPage[data-case-chrome-held=true] .spatialTransition>div { visibility:hidden; }

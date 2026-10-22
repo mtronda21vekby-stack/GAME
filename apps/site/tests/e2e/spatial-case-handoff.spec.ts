@@ -50,3 +50,24 @@ test("@off rapid pointer Next retargets during its related-case fade",async({pag
   await expect(detail).toHaveAttribute("data-media-arrived","true");
   await expect(detail.locator("video")).toHaveCount(1);
 });
+
+test("@off closing case holds native chrome and copy through the outgoing ghost",async({page})=>{
+  await installApiAdapter(page);await page.goto("/");
+  const opener=page.getByRole("button",{name:"Об игре Quiet Valley",exact:true});
+  await opener.click();
+  const detail=page.locator("#spatial-game-detail"),root=page.locator(".spatialPage");
+  await expect(detail).toHaveAttribute("data-media-arrived","true");
+  await page.goBack();
+  await expect(detail).toHaveAttribute("data-phase","closing");
+  await expect(root).toHaveAttribute("data-detail-open","false");
+  await expect(root).toHaveAttribute("data-case-chrome-held","true");
+  await expect(page.locator(".platHeader")).toBeHidden();
+  await expect(page.locator('.spatialGamePanel[data-game-id="crown-front"] .spatialPanelTitle')).toBeHidden();
+  await expect(page.locator('.spatialGamePanel[data-game-id="crown-front"] .spatialPanelBody')).toBeHidden();
+  // Holding text must not hide the article/media or change the cover depth path.
+  await expect.poll(()=>page.locator('.spatialGamePanel[data-game-id="crown-front"] .spatialPanelMedia').evaluate(node=>getComputedStyle(node).visibility)).toBe("visible");
+  await expect(root).not.toHaveAttribute("data-case-chrome-held","true");
+  await expect(detail).not.toHaveAttribute("data-phase","closing");
+  await expect(page.locator(".platHeader")).toBeVisible();
+  await expect(opener).toBeFocused();
+});

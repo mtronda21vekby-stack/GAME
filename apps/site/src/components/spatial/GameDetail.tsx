@@ -34,9 +34,22 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
   const frame = useRef(0), focusFrame = useRef(0), closeScroll = useRef(0), epoch=useRef(0), focusEpoch=useRef(0);
   const mediaBox=useRef<MediaRect>();
   const restorePage = useRef<(() => void) | null>(null);
+  const restoreFocus = useRef<(() => void) | null>(null);
   const source=useRef<{element:HTMLElement;previous:string|undefined}|null>(null);
+  const chromeHold=useRef<{element:HTMLElement;previous:string|undefined}|null>(null);
   const connectedHandoff=useRef(false);
   const staticMotion = () => prefersStaticPlatform(window.matchMedia("(prefers-reduced-motion: reduce)"));
+  function holdChrome() {
+    const element=dialogRef.current?.closest<HTMLElement>(".spatialPage");
+    if(!element||chromeHold.current?.element===element)return;
+    clearChromeHold();chromeHold.current={element,previous:element.dataset.caseChromeHeld};element.dataset.caseChromeHeld="true";
+  }
+  function clearChromeHold() {
+    if(!chromeHold.current)return;
+    const {element,previous}=chromeHold.current;
+    if(previous===undefined)delete element.dataset.caseChromeHeld;else element.dataset.caseChromeHeld=previous;
+    chromeHold.current=null;
+  }
   function markSource() {
     const element=document.querySelector<HTMLElement>(`.spatialGamePanel[data-game-id="${currentGameId.current}"]`);
     if(source.current?.element===element)return;
@@ -88,8 +101,13 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
   }
   function finishGhost() {
     phase.current="closed";setClosingVisual(false);setArrived(false);clearSource();
-    if(dialogRef.current)delete dialogRef.current.dataset.phase;
   }
+  useClientLayoutEffect(()=>{
+    if(closingVisual||phase.current!=="closed")return;
+    // React has removed the outgoing dialog's closing display before native
+    // navigation and gallery copy return in this same layout commit.
+    clearChromeHold();const focus=restoreFocus.current;restoreFocus.current=null;focus?.();
+  },[closingVisual]);
   function restoreSourceThenFinish() {
     const token=epoch.current;
     // The invalidation queues the restored GPU cover before this release. Keep
@@ -129,12 +147,14 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
         window.scrollTo({left:scroll.left,top:panel?scrollY+panel.getBoundingClientRect().top-Math.min(Math.max(100,sourceTop),innerHeight*.35):scroll.top,behavior:"instant"});
       }
       const token=focusEpoch.current;
-      focusFrame.current=requestAnimationFrame(()=>{
-        if(token!==focusEpoch.current||phase.current==="open"||phase.current==="opening")return;
-        const candidates=[...document.querySelectorAll<HTMLElement>(`.spatialGamePanel[data-game-id="${currentGameId.current}"] button`)];
-        const panel=candidates.find(element=>element.getClientRects().length&&getComputedStyle(element).visibility!=="hidden");
-        (panel??(opener?.isConnected?opener:null))?.focus({preventScroll:true});
-      });
+      restoreFocus.current=()=>{
+        focusFrame.current=requestAnimationFrame(()=>{
+          if(token!==focusEpoch.current||phase.current==="open"||phase.current==="opening"||document.querySelector("dialog[open]"))return;
+          const candidates=[...document.querySelectorAll<HTMLElement>(`.spatialGamePanel[data-game-id="${currentGameId.current}"] button`)];
+          const panel=candidates.find(element=>element.getClientRects().length&&getComputedStyle(element).visibility!=="hidden");
+          (panel??(opener?.isConnected?opener:null))?.focus({preventScroll:true});
+        });
+      };
     };
   }
   function releasePage(){const release=restorePage.current;restorePage.current=null;release?.();}
@@ -159,10 +179,10 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
     const now=frameLoop.now(),reopening=phase.current==="closing"&&outgoingGame.current.id===game.id;
     surface.sample(now);paintSurface();
     const previousBox=reopening?media.getBoundingClientRect():null,previous=[...surface.value];
-    cancelFrame();++focusEpoch.current;cancelAnimationFrame(focusFrame.current);
+    cancelFrame();++focusEpoch.current;cancelAnimationFrame(focusFrame.current);restoreFocus.current=null;
     phase.current="opening";setClosingVisual(false);setArrived(false);delete dialog.dataset.phase;
     dialog.inert=false;dialog.removeAttribute("aria-hidden");
-    lockPage();dialog.showModal();dialog.scrollTo({top:0,behavior:"instant"});mediaBox.current=baseRect();markSource();
+    holdChrome();lockPage();dialog.showModal();dialog.scrollTo({top:0,behavior:"instant"});mediaBox.current=baseRect();markSource();
     const box=mediaBox.current;
     if(reopening&&previousBox&&box?.width&&box.height){
       surface.rebase([previousBox.left+previousBox.width/2-box.left-box.width/2,previousBox.top+previousBox.height/2-box.top-box.height/2,previousBox.width/box.width,previousBox.height/box.height,previous[4],previous[5]],true);
@@ -189,7 +209,7 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
     query.addEventListener("change",preference);window.addEventListener("resize",resize);window.addEventListener("scroll",scroll,{passive:true});
     return()=>{
       cancelFrame();++focusEpoch.current;cancelAnimationFrame(focusFrame.current);observer.disconnect();query.removeEventListener("change",preference);window.removeEventListener("resize",resize);window.removeEventListener("scroll",scroll);
-      dialogRef.current?.close();releasePage();cancelAnimationFrame(focusFrame.current);clearSource();
+      dialogRef.current?.close();releasePage();cancelAnimationFrame(focusFrame.current);restoreFocus.current=null;clearSource();clearChromeHold();
     };
   },[]);
 
