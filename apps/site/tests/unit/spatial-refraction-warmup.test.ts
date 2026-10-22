@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { Color, LinearFilter, LinearSRGBColorSpace, PerspectiveCamera, RGBAFormat, Scene, UnsignedByteType, Vector4, WebGLRenderTarget, type WebGLRenderer } from "three";
+import { Color, HalfFloatType, LinearFilter, LinearSRGBColorSpace, PerspectiveCamera, RGBAFormat, Scene, UnsignedByteType, Vector4, WebGLRenderTarget, type WebGLRenderer } from "three";
 
 const preparation=vi.hoisted(()=>({prepare:vi.fn()}));
 vi.mock("../../src/experience/core/ShaderPreparation",()=>({prepareSceneShaders:preparation.prepare}));
@@ -8,9 +8,9 @@ import { SpatialRefraction } from "../../src/components/spatial/SpatialRefractio
 function fixture() {
   const previous=new WebGLRenderTarget(17,23);previous.viewport.set(2,3,11,13);previous.scissor.set(1,2,7,9);previous.scissorTest=true;
   const state={target:previous as WebGLRenderTarget|null,contextLost:false,viewport:new Vector4(5,7,311,577),scissor:new Vector4(11,13,149,271),scissorTest:true,currentViewport:previous.viewport.clone(),currentScissor:previous.scissor.clone(),currentScissorTest:true,clearColor:new Color(0x123456),clearAlpha:.37};
-  const gl={FRAMEBUFFER:36160,FRAMEBUFFER_COMPLETE:36053,checkFramebufferStatus:()=>36053,isContextLost:()=>state.contextLost};
+  const gl={FRAMEBUFFER:36160,FRAMEBUFFER_COMPLETE:36053,checkFramebufferStatus:vi.fn(()=>36053),isContextLost:()=>state.contextLost};
   const mock={
-    autoClear:false,domElement:new EventTarget(),getContext:()=>gl,getRenderTarget:()=>state.target,
+    autoClear:false,domElement:new EventTarget(),getContext:()=>gl,getRenderTarget:()=>state.target,getPixelRatio:()=>1.25,
     setRenderTarget:vi.fn((target:WebGLRenderTarget|null)=>{state.target=target;state.currentViewport.copy(target?.viewport??state.viewport);state.currentScissor.copy(target?.scissor??state.scissor);state.currentScissorTest=target?.scissorTest??state.scissorTest;}),
     getViewport:(value:Vector4)=>value.copy(state.viewport),getScissor:(value:Vector4)=>value.copy(state.scissor),getScissorTest:()=>state.scissorTest,
     getClearColor:(value:Color)=>value.copy(state.clearColor),getClearAlpha:()=>state.clearAlpha,setClearColor:(value:Color|number,alpha=1)=>{state.clearColor.set(value);state.clearAlpha=alpha;},
@@ -24,12 +24,12 @@ function fixture() {
 }
 
 type Pending={signal:AbortSignal;target:WebGLRenderTarget;dispose:ReturnType<typeof vi.spyOn>;resolve:(value:boolean)=>void};
-function deferredPreparation(f:ReturnType<typeof fixture>,ignoreAbort=false) {
+function deferredPreparation(f:ReturnType<typeof fixture>,ignoreAbort=false,type:typeof UnsignedByteType|typeof HalfFloatType=UnsignedByteType) {
   const pending:Pending[]=[];
   preparation.prepare.mockImplementation((renderer:WebGLRenderer,scene:Scene,camera:PerspectiveCamera,signal:AbortSignal)=>{
     expect(renderer).toBe(f.renderer);expect(scene).toBe(f.scene);expect(camera).toBe(f.camera);
     const target=f.state.target!;expect(target).not.toBe(f.previous);expect(target.width).toBe(1);expect(target.height).toBe(1);
-    expect(target.texture.type).toBe(UnsignedByteType);expect(target.texture.format).toBe(RGBAFormat);expect(target.texture.colorSpace).toBe(LinearSRGBColorSpace);
+    expect(target.texture.type).toBe(type);expect(target.texture.format).toBe(RGBAFormat);expect(target.texture.colorSpace).toBe(LinearSRGBColorSpace);
     expect(target.texture.minFilter).toBe(LinearFilter);expect(target.texture.magFilter).toBe(LinearFilter);expect(target.texture.generateMipmaps).toBe(false);expect(target.samples).toBe(0);
     expect(target.depthBuffer).toBe(true);expect(target.stencilBuffer).toBe(false);
     let resolve!:(value:boolean)=>void;const promise=new Promise<boolean>(done=>{resolve=done;});
@@ -43,6 +43,59 @@ function deferredPreparation(f:ReturnType<typeof fixture>,ignoreAbort=false) {
 beforeEach(()=>{preparation.prepare.mockReset();});
 
 describe("Owned refraction shader preparation",()=>{
+  it("submits a real HalfFloat HDR attachment without retaining a hero target",async()=>{
+    const f=fixture(),requests=deferredPreparation(f,false,HalfFloatType),before=f.capture.snapshot(),draw=vi.fn(sampler=>{
+      expect(f.state.target).toBe(requests[0].target);expect(sampler).not.toBe(requests[0].target.texture);
+    });
+    const pending=f.capture.warmup(new AbortController().signal,draw,"hdr");
+    expect(f.state.target).toBe(f.previous);requests[0].resolve(true);expect(await pending).toBe(true);
+    expect(draw).toHaveBeenCalledTimes(1);expect(requests[0].dispose).toHaveBeenCalledTimes(1);expect(f.capture.snapshot()).toEqual(before);
+    f.capture.dispose();f.previous.dispose();
+  });
+
+  it.each(["rgba8","hdr"] as const)("rejects an incomplete %s framebuffer before any clear or draw without latching failure",async output=>{
+    const f=fixture(),requests=deferredPreparation(f,false,output==="hdr"?HalfFloatType:UnsignedByteType),draw=vi.fn(),cleanup=vi.fn(),before=f.capture.snapshot();
+    f.mock.getContext().checkFramebufferStatus.mockReturnValueOnce(36054);
+    const pending=f.capture.warmup(new AbortController().signal,draw,output,cleanup);requests[0].resolve(true);
+    expect(await pending).toBe(false);expect(draw).not.toHaveBeenCalled();expect(cleanup).not.toHaveBeenCalled();expect(f.mock.clear).not.toHaveBeenCalled();
+    expect(f.state.target).toBe(f.previous);expect(requests[0].dispose).toHaveBeenCalledTimes(1);expect(f.capture.snapshot()).toEqual(before);
+    const retry=f.capture.warmup(new AbortController().signal,draw,output);requests[1].resolve(true);expect(await retry).toBe(true);expect(draw).toHaveBeenCalledTimes(1);
+    expect(f.capture.snapshot()).toEqual(before);f.capture.dispose();f.previous.dispose();
+  });
+
+  it.each(["success","abort","throw","dispose"])("replaces submitted native pixels after state rollback even on %s",async outcome=>{
+    const f=fixture(),external=new AbortController(),background=new Color(0x224466),events:string[]=[];f.scene.background=background;
+    const before={viewport:f.state.viewport.clone(),scissor:f.state.scissor.clone(),color:f.state.clearColor.clone(),alpha:f.state.clearAlpha,snapshot:f.capture.snapshot()};
+    preparation.prepare.mockImplementation(()=>{expect(f.state.target).toBeNull();return Promise.resolve(true);});
+    let samplerDisposal:ReturnType<typeof vi.spyOn>|undefined;
+    const pending=f.capture.warmup(external.signal,sampler=>{
+      events.push("warm");expect(f.state.target).toBeNull();expect(f.state.scissorTest).toBe(true);
+      expect(f.mock.getContext().checkFramebufferStatus).not.toHaveBeenCalled();
+      expect(f.state.viewport.toArray()).toEqual([0,0,.8,.8]);expect(f.state.scissor.toArray()).toEqual([0,0,.8,.8]);
+      expect(f.state.viewport.z*f.mock.getPixelRatio()).toBe(1);expect(f.state.viewport.w*f.mock.getPixelRatio()).toBe(1);
+      expect(f.mock.clear).not.toHaveBeenCalled(); // Caller hides the native host before its first clear.
+      samplerDisposal=vi.spyOn(sampler,"dispose");
+      if(outcome==="abort")external.abort();if(outcome==="dispose")f.capture.dispose();
+      if(outcome==="throw")throw new Error("native warm failure");
+    },"canvas",()=>{
+      events.push("normal");expect(f.state.target).toBe(f.previous);expect(f.scene.background).toBe(background);
+      expect(f.state.viewport.equals(before.viewport)).toBe(true);expect(f.state.scissor.equals(before.scissor)).toBe(true);
+      expect(f.state.clearColor.equals(before.color)).toBe(true);expect(f.state.clearAlpha).toBe(before.alpha);expect(f.mock.autoClear).toBe(false);
+      expect(samplerDisposal).not.toHaveBeenCalled();
+    });
+    expect(await pending).toBe(outcome==="success");expect(events).toEqual(["warm","normal"]);expect(samplerDisposal).toHaveBeenCalledTimes(1);
+    expect(f.mock.setRenderTarget.mock.calls.every(([target])=>target===null||target===f.previous)).toBe(true);
+    expect(f.capture.snapshot()).toEqual(before.snapshot);f.capture.dispose();f.previous.dispose();
+  });
+
+  it("does not touch native pixels or run cleanup when cancellation precedes readiness",async()=>{
+    const f=fixture(),external=new AbortController(),draw=vi.fn(),cleanup=vi.fn();let finish!:(value:boolean)=>void;
+    preparation.prepare.mockImplementation(()=>new Promise<boolean>(resolve=>{finish=resolve;}));
+    const pending=f.capture.warmup(external.signal,draw,"canvas",cleanup);external.abort();finish(true);
+    expect(await pending).toBe(false);expect(draw).not.toHaveBeenCalled();expect(cleanup).not.toHaveBeenCalled();expect(f.mock.clear).not.toHaveBeenCalled();
+    expect(f.state.target).toBe(f.previous);f.capture.dispose();f.previous.dispose();
+  });
+
   it("submits against a local capture-format target and restores the renderer before awaiting readiness",async()=>{
     const f=fixture(),requests=deferredPreparation(f),external=new AbortController(),before=f.capture.snapshot();
     const promise=f.capture.warmup(external.signal);

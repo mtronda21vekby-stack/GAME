@@ -1,4 +1,4 @@
-import { Color, DataTexture, LinearFilter, LinearSRGBColorSpace, NearestFilter, NoColorSpace, RGBAFormat, UnsignedByteType, Vector2, Vector4, WebGLRenderTarget, type Camera, type Object3D, type Scene, type Texture, type WebGLRenderer } from "three";
+import { Color, DataTexture, HalfFloatType, LinearFilter, LinearSRGBColorSpace, NearestFilter, NoColorSpace, RGBAFormat, UnsignedByteType, Vector2, Vector4, WebGLRenderTarget, type Camera, type Object3D, type Scene, type Texture, type WebGLRenderer } from "three";
 import { prepareSceneShaders } from "../../experience/core/ShaderPreparation";
 
 export const SPATIAL_REFRACTION_PIXELS = { mobile:250_000, desktop:500_000 } as const;
@@ -18,7 +18,7 @@ type RefractionOptions = {
   exclude:()=>readonly Object3D[]; compact?:boolean; beforeCapture?:()=>void; afterCapture?:()=>void;
   depthObjects?:()=>readonly Object3D[]; beforeDepthCapture?:()=>void; afterDepthCapture?:()=>void;
 };
-type WarmupPreparation = { controller:AbortController; target:WebGLRenderTarget; sampler?:DataTexture; bound:boolean; released:boolean };
+type WarmupPreparation = { controller:AbortController; target:WebGLRenderTarget|null; sampler?:DataTexture; bound:boolean; released:boolean };
 
 /** Live background color and optional significant-surface packed depth, driven
  * only by the existing scene tick. The original atmospheric vertex/fragment
@@ -48,7 +48,7 @@ export class SpatialRefraction {
   /** Prepare the capture format, then optionally submit one synchronous draw.
    * The transient white sampler is separate from the attachment: no feedback.
    * Readiness polling never leaves a scratch target or changed scene state. */
-  async warmup(signal:AbortSignal,draw?:(sampler:Texture)=>void):Promise<boolean> {
+  async warmup(signal:AbortSignal,draw?:(sampler:Texture)=>void,output:"rgba8"|"hdr"|"canvas"="rgba8",afterDraw?:()=>void):Promise<boolean> {
     if(this.disposed||this.failed||signal.aborted)return false;
     let preparation:WarmupPreparation|undefined;
     const cancel=()=>{
@@ -64,7 +64,7 @@ export class SpatialRefraction {
       // A newer preparation owns readiness; old completion/abort cannot tear
       // down its scratch target or signal during context recovery.
       this.cancelWarmups();
-      preparation={controller:new AbortController(),target:this.createTarget(1,1,"BLACKCROWN_LAB_BACKGROUND_PREPARE_RGBA8"),bound:false,released:false};
+      preparation={controller:new AbortController(),target:output==="canvas"?null:this.createTarget(1,1,"BLACKCROWN_LAB_BACKGROUND_PREPARE_"+(output==="hdr"?"HDR":"RGBA8"),output==="hdr"?HalfFloatType:UnsignedByteType),bound:false,released:false};
       this.warmups.add(preparation);signal.addEventListener("abort",cancel,{once:true});
       const previous=renderer.getRenderTarget();
       let ready:Promise<boolean>;
@@ -86,14 +86,24 @@ export class SpatialRefraction {
       if(draw){
         const attachment=renderer.getRenderTarget(),autoClear=renderer.autoClear,scissorTest=renderer.getScissorTest(),clearAlpha=renderer.getClearAlpha(),background=this.scene.background;
         const viewport=renderer.getViewport(new Vector4()),scissor=renderer.getScissor(new Vector4()),clearColor=renderer.getClearColor(new Color());
+        let submitted=false;
         preparation.bound=true;
         try{
           if(!available())return false;
           const sampler=preparation.sampler=new DataTexture(new Uint8Array([255,255,255,255]),1,1,RGBAFormat,UnsignedByteType);
           sampler.minFilter=NearestFilter;sampler.magFilter=NearestFilter;sampler.colorSpace=NoColorSpace;sampler.generateMipmaps=false;sampler.needsUpdate=true;
           renderer.setRenderTarget(preparation.target);renderer.setScissorTest(false);renderer.autoClear=false;
-          this.scene.background=null;renderer.setClearColor(0xffffff,1);renderer.clear();
+          this.scene.background=null;renderer.setClearColor(0xffffff,1);
+          if(output==="canvas"){
+            const pixel=1/renderer.getPixelRatio(),rect=new Vector4(0,0,pixel,pixel);
+            renderer.setViewport(rect);renderer.setScissor(rect);renderer.setScissorTest(true);
+            // The caller hides the host before its first native clear/draw.
+          }else{
+            if(context.checkFramebufferStatus(context.FRAMEBUFFER)!==context.FRAMEBUFFER_COMPLETE)throw new Error("LAB preparation framebuffer unavailable");
+            renderer.clear();
+          }
           if(!available())return false;
+          submitted=true;
           draw(sampler);
         }finally{
           try{
@@ -101,7 +111,12 @@ export class SpatialRefraction {
             renderer.setScissorTest(scissorTest);renderer.setScissor(scissor);renderer.setViewport(viewport);
           }finally{
             try{renderer.setRenderTarget(attachment);}
-            finally{preparation.bound=false;if(preparation.controller.signal.aborted)this.releaseWarmup(preparation);}
+            finally{
+              preparation.bound=false;
+              // Native pixels must be replaced even after an AbortSignal or a
+              // draw exception. The live Runtime owns context/dispose guards.
+              try{if(submitted)afterDraw?.();}finally{if(preparation.controller.signal.aborted)this.releaseWarmup(preparation);}
+            }
           }
         }
       }
@@ -225,9 +240,9 @@ export class SpatialRefraction {
 
   snapshot(){return {enabled:this.enabled,allocated:!!this.target,width:this.size.x,height:this.size.y,pixels:this.target?this.size.x*this.size.y:0,colorBytes:this.target?this.size.x*this.size.y*4:0,captures:this.captures,failed:this.failed,
     depthAllocated:!!this.depthTarget,depthPixels:this.depthTarget?this.size.x*this.size.y:0,depthColorBytes:this.depthTarget?this.size.x*this.size.y*4:0,depthCaptures:this.depthCaptures,depthFailed:this.depthFailed};}
-  private createTarget(width:number,height:number,name:string){
+  private createTarget(width:number,height:number,name:string,type:typeof UnsignedByteType|typeof HalfFloatType=UnsignedByteType){
     const target=new WebGLRenderTarget(width,height,{
-      type:UnsignedByteType,format:RGBAFormat,minFilter:LinearFilter,magFilter:LinearFilter,
+      type,format:RGBAFormat,minFilter:LinearFilter,magFilter:LinearFilter,
       generateMipmaps:false,depthBuffer:true,stencilBuffer:false,samples:0,
       colorSpace:LinearSRGBColorSpace,
     });
@@ -235,7 +250,7 @@ export class SpatialRefraction {
   }
   private releaseWarmup(preparation:WarmupPreparation){
     if(preparation.bound||preparation.released)return;
-    preparation.released=true;try{preparation.sampler?.dispose();}finally{preparation.target.dispose();}
+    preparation.released=true;try{preparation.sampler?.dispose();}finally{preparation.target?.dispose();}
   }
   private cancelWarmups(){for(const preparation of this.warmups){preparation.controller.abort();this.releaseWarmup(preparation);}}
   private releaseDepth(){this.depthTarget?.dispose();this.depthTarget=undefined;this.depthTargetReady=false;}

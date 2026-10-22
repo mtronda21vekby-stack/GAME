@@ -171,19 +171,56 @@ export class SpatialSceneRuntime {
     this.shaderAbort?.abort();const controller=this.shaderAbort=new AbortController();
     const sceneReady=await(this.bloom?this.bloom.warmup(controller.signal):prepareSceneShaders(this.rendererHost!.renderer,this.scene,this.camera,controller.signal));
     if(controller.signal.aborted||this.disposed||this.contextLost&&!this.restoring)return false;
-    // The live background uses a linear output variant even on the direct
-    // mobile path. Prepare it before scroll, without retaining a hero target.
+    if(this.reduced||this.constrained||!this.refraction)return sceneReady;
+    const renderer=this.rendererHost!.renderer,context=renderer.getContext(),host=this.options.host;
+    let visibility:{value:string;priority:string}|undefined;
+    const nativeReady=await this.refraction.warmup(controller.signal,sampler=>{
+      visibility={value:host.style.getPropertyValue("visibility"),priority:host.style.getPropertyPriority("visibility")};
+      host.style.setProperty("visibility","hidden","important");
+      renderer.clear();this.drawOpticsPreparation(sampler,false);
+    },"canvas",()=>{
+      try{this.repaintAfterOpticsPreparation(renderer,context);}
+      finally{if(visibility?.value)host.style.setProperty("visibility",visibility.value,visibility.priority);else host.style.removeProperty("visibility");}
+    });
+    if(controller.signal.aborted||this.disposed||this.contextLost&&!this.restoring)return false;
+    const hdrReady=!this.bloom||await this.refraction.warmup(controller.signal,sampler=>this.drawOpticsPreparation(sampler,false),"hdr");
+    if(controller.signal.aborted||this.disposed||this.contextLost&&!this.restoring)return false;
+    // Real final-output states and the linear background are prepared while the
+    // loader still owns readiness; every offscreen target is transient.
     const opticsReady=this.reduced||this.constrained||!this.refraction?true:await this.refraction.warmup(controller.signal,sampler=>this.drawOpticsPreparation(sampler));
-    return sceneReady&&opticsReady;
+    return sceneReady&&nativeReady&&hdrReady&&opticsReady;
+  }
+
+  /** Cleanup, not continuation of a cancelled preparation. Replace native warm
+   * pixels with the current scene even when its old AbortSignal was cancelled. */
+  private repaintAfterOpticsPreparation(renderer:THREE.WebGLRenderer,context:ReturnType<THREE.WebGLRenderer["getContext"]>){
+    if(this.disposed||this.rendererHost?.renderer!==renderer||renderer.getContext()!==context||context.isContextLost()||this.contextLost&&!this.restoring)return;
+    const target=renderer.getRenderTarget(),autoClear=renderer.autoClear,scissorTest=renderer.getScissorTest(),clearAlpha=renderer.getClearAlpha();
+    const viewport=renderer.getViewport(new THREE.Vector4()),scissor=renderer.getScissor(new THREE.Vector4()),color=renderer.getClearColor(new THREE.Color()),size=renderer.getSize(new THREE.Vector2());
+    try{
+      renderer.setRenderTarget(null);renderer.setViewport(0,0,size.x,size.y);renderer.setScissorTest(false);renderer.autoClear=true;
+      renderer.setClearColor(this.scene.background instanceof THREE.Color?this.scene.background:color,1);
+      // A normal full clear is queued first, so a failing normal scene cannot
+      // expose a warm pixel. No live capture/tick/clock is invoked here.
+      renderer.clear();if(this.bloom)this.bloom.render();else renderer.render(this.scene,this.camera);
+    }finally{
+      try{renderer.autoClear=autoClear;renderer.setClearColor(color,clearAlpha);renderer.setScissorTest(scissorTest);renderer.setScissor(scissor);renderer.setViewport(viewport);}
+      finally{renderer.setRenderTarget(target);}
+    }
   }
 
   /** One offscreen first-use submission during the existing loading owner.
    * No live capture, camera changes or persistent hero allocation. */
-  private drawOpticsPreparation(sampler:THREE.Texture){
+  private drawOpticsPreparation(sampler:THREE.Texture,depthMode=!this.compact){
     const cloth=this.cloth,capture=this.refraction;
     const saved={background:cloth.background.value,renderSize:cloth.renderSize.value.clone(),backgroundSize:cloth.backgroundSize.value.clone(),refraction:cloth.refraction.value,
       depth:cloth.depthBackground.value,depthRange:cloth.depthRange.value.clone(),depthReady:cloth.depthReady.value,
-      cssSize:cloth.cssSize.value.clone(),projection:cloth.opticalProjection.value.clone(),plane:cloth.opticalExitPlane.value.clone(),depthMode:this.atmosphere.backgroundDepthCapture.value>.5};
+      cssSize:cloth.cssSize.value.clone(),projection:cloth.opticalProjection.value.clone(),plane:cloth.opticalExitPlane.value.clone(),depthMode:this.atmosphere.backgroundDepthCapture.value>.5,entrance:cloth.entrance.value,sculpture:cloth.sculpture.value};
+    this.scene.updateMatrixWorld(true);
+    const bounds=new THREE.Box3(new THREE.Vector3(-.9,-.9,-1.2),new THREE.Vector3(.9,.9,1.2)).applyMatrix4(cloth.matrixWorld),sphere=bounds.getBoundingSphere(new THREE.Sphere());
+    const camera=this.camera.clone(),radius=Math.max(.1,sphere.radius),distance=radius/Math.sin(camera.fov*Math.PI/360)*1.1;
+    camera.aspect=1;camera.view=null;camera.near=Math.min(camera.near,Math.max(.01,distance-radius));camera.far=Math.max(camera.far,distance+radius+1);
+    camera.position.copy(sphere.center).addScaledVector(new THREE.Vector3(0,0,1).applyQuaternion(this.camera.quaternion),distance);camera.lookAt(sphere.center);camera.updateProjectionMatrix();camera.updateMatrixWorld(true);
     const objects:{object:THREE.Object3D;visible:boolean;frustumCulled:boolean}[]=[],sides=new Map<THREE.Material,THREE.Side>();
     try{
     this.scene.traverse(object=>{
@@ -200,9 +237,9 @@ export class SpatialSceneRuntime {
       }
       for(const entry of materials)sides.set(entry,entry.side);
     });
-      cloth.setOptics(sampler,1,1,1);cloth.setDepthOptics(this.compact?null:sampler,this.camera.near,this.camera.far);
-      this.atmosphere.setBackgroundDepthCapture(!this.compact);
-      this.rendererHost!.renderer.render(this.scene,this.camera);
+      cloth.setEntrance(1);cloth.setSculpture(1);cloth.setOptics(sampler,1,1,1);cloth.setDepthOptics(this.compact?null:sampler,camera.near,camera.far);
+      this.atmosphere.setBackgroundDepthCapture(depthMode&&!this.compact);
+      this.rendererHost!.renderer.render(this.scene,camera);
     }finally{
       try{this.atmosphere.setBackgroundDepthCapture(saved.depthMode);}finally{
       for(const [entry,side]of sides)if(entry.side!==side){entry.side=side;entry.needsUpdate=true;}
@@ -210,6 +247,7 @@ export class SpatialSceneRuntime {
       cloth.background.value=saved.background;cloth.renderSize.value.copy(saved.renderSize);cloth.backgroundSize.value.copy(saved.backgroundSize);cloth.refraction.value=saved.refraction;
       cloth.depthBackground.value=saved.depth;cloth.depthRange.value.copy(saved.depthRange);cloth.depthReady.value=saved.depthReady;
       cloth.cssSize.value.copy(saved.cssSize);cloth.opticalProjection.value.copy(saved.projection);cloth.opticalExitPlane.value.copy(saved.plane);
+      cloth.entrance.value=saved.entrance;cloth.sculpture.value=saved.sculpture;
       // A synchronous lost/dispose callback may already have cleared these
       // references. Cleanup must not resurrect its released capture textures.
       if(this.disposed||this.contextLost||capture!==this.refraction||this.rendererHost!.renderer.getContext().isContextLost()){

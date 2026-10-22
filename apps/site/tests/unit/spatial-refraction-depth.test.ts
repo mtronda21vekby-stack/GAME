@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { Color, FrontSide, Group, Line, Mesh, MeshBasicMaterial, NearestFilter, NoBlending, NoColorSpace, NormalBlending, PerspectiveCamera, Points, RGBAFormat, Scene, Sprite, Texture, UnsignedByteType, Vector4, WebGLRenderTarget, type WebGLRenderer } from "three";
+import { Box3, Color, FrontSide, Group, HalfFloatType, Line, Mesh, MeshBasicMaterial, NearestFilter, NoBlending, NoColorSpace, NormalBlending, PerspectiveCamera, Points, RGBAFormat, Scene, Sprite, Texture, UnsignedByteType, Vector2, Vector3, Vector4, WebGLRenderTarget, type WebGLRenderer } from "three";
+vi.mock("../../src/experience/core/ShaderPreparation",()=>({prepareSceneShaders:vi.fn(()=>Promise.resolve(true))}));
 import { SpatialRefraction } from "../../src/components/spatial/SpatialRefraction";
 import { SpatialSceneRuntime } from "../../src/components/spatial/SpatialSceneRuntime";
 import { SpatialAtmosphere } from "../../src/components/spatial/SpatialAtmosphere";
@@ -43,6 +44,58 @@ function fixture() {
 }
 
 describe("Significant atmospheric depth capture",()=>{
+  it.each([true,false].flatMap(compact=>["success","abort","warm throw","normal throw","lost","disposed","replaced"].map(outcome=>[compact,outcome] as const)))("warms actual output attachments and replaces native paint compact=%s outcome=%s",async(compact,outcome)=>{
+    const f=fixture(),cloth=new SpatialCloth(compact),atmosphere=new SpatialAtmosphere(compact),camera=f.camera,sampler=new Texture();
+    f.scene.add(cloth,atmosphere);cloth.visible=false;atmosphere.visible=false;cloth.setEntrance(.23);cloth.setSculpture(.37);cloth.setOptics(sampler,301,503,.3);
+    camera.position.set(0,3,22);camera.lookAt(0,0,0);camera.aspect=.46;camera.updateProjectionMatrix();camera.updateMatrixWorld(true);
+    const cameraBefore={position:camera.position.toArray(),quaternion:camera.quaternion.toArray(),projection:camera.projectionMatrix.toArray(),near:camera.near,far:camera.far,aspect:camera.aspect};
+    const inline=new Map<string,{value:string;priority:string}>(compact?[]:[["visibility",{value:"collapse",priority:"important"}]]),style={
+      getPropertyValue:(key:string)=>inline.get(key)?.value??"",getPropertyPriority:(key:string)=>inline.get(key)?.priority??"",
+      setProperty:(key:string,value:string,priority="")=>{inline.set(key,{value,priority});},removeProperty:(key:string)=>{inline.delete(key);},
+    },beforeInline=[...inline],events:string[]=[];
+    let lost=false;const context={...f.gl,isContextLost:()=>lost},replacement={...context};let activeContext=context;
+    const mock=f.mock as typeof f.mock&{getPixelRatio:()=>number;getSize:(out:Vector2)=>Vector2};mock.getContext=()=>activeContext;
+    mock.getPixelRatio=()=>1.25;mock.getSize=out=>out.set(393,852);
+    const setViewport=mock.setViewport;mock.setViewport=((a:Vector4|number,b?:number,c?:number,d?:number)=>setViewport(a instanceof Vector4?a:new Vector4(a,b,c,d))) as typeof mock.setViewport;
+    const capture=new SpatialRefraction(mock as unknown as WebGLRenderer,f.scene,camera,{exclude:()=>[cloth]});
+    const before={snapshot:capture.snapshot(),viewport:f.state.viewport.clone(),scissor:f.state.scissor.clone(),color:f.state.clearColor.clone(),alpha:f.state.clearAlpha};
+    const runtime=Object.assign(Object.create(SpatialSceneRuntime.prototype),{scene:f.scene,cloth,atmosphere,camera,compact,rendererHost:{renderer:mock},refraction:capture,options:{host:{style}},bloom:compact?undefined:{warmup:()=>Promise.resolve(true),render:()=>mock.render(f.scene,camera)}});
+    mock.clear.mockImplementation(()=>{
+      if(f.state.target===null){expect(style.getPropertyValue("visibility")).toBe("hidden");expect(style.getPropertyPriority("visibility")).toBe("important");}
+      events.push(f.state.target===null&&f.state.viewport.z===393?"normal clear":"warm clear");
+    });
+    mock.render.mockImplementation((scene,renderCamera)=>{
+      expect(scene).toBe(f.scene);
+      if(renderCamera===camera){
+        events.push("normal");expect(events[events.length-2]).toBe("normal clear");expect(f.state.target).toBeNull();expect(f.state.viewport.toArray()).toEqual([0,0,393,852]);expect(f.state.scissorTest).toBe(false);
+        expect(cloth.entrance.value).toBe(.23);expect(cloth.sculpture.value).toBe(.37);expect(cloth.visible).toBe(false);
+        if(outcome==="normal throw")throw new Error("normal repaint failed after full clear");return;
+      }
+      const format=f.state.target?.texture.type??"canvas";events.push(String(format));
+      expect(cloth.entrance.value).toBe(1);expect(cloth.sculpture.value).toBe(1);expect(cloth.background.value).not.toBe(f.state.target?.texture);
+      const framed=renderCamera as PerspectiveCamera,center=new Box3(new Vector3(-.9,-.9,-1.2),new Vector3(.9,.9,1.2)).applyMatrix4(cloth.matrixWorld).getCenter(new Vector3()).project(framed);
+      expect(Math.abs(center.x)).toBeLessThan(1e-6);expect(Math.abs(center.y)).toBeLessThan(1e-6);expect(center.z).toBeGreaterThan(-1);expect(center.z).toBeLessThan(1);
+      expect(framed.aspect).toBe(1);expect(framed).not.toBe(camera);
+      if(format==="canvas"){
+        expect(f.state.viewport.toArray()).toEqual([0,0,.8,.8]);expect(f.state.scissor.toArray()).toEqual([0,0,.8,.8]);expect(f.state.scissorTest).toBe(true);expect(atmosphere.backgroundDepthCapture.value).toBe(0);
+        if(outcome!=="success")runtime.shaderAbort.abort();
+        if(outcome==="lost"){lost=true;runtime.contextLost=true;runtime.releaseOptics();}
+        if(outcome==="disposed"){runtime.disposed=true;runtime.releaseOptics();capture.dispose();}
+        if(outcome==="replaced")activeContext=replacement;
+        if(outcome==="warm throw")throw new Error("native warm draw failed");
+      }else expect(atmosphere.backgroundDepthCapture.value).toBe(format===HalfFloatType||compact?0:1);
+    });
+    expect(await runtime.prepareShaders()).toBe(outcome==="success");
+    expect(events[0]).toBe("warm clear");expect(events[1]).toBe("canvas");
+    const normalExpected=!["lost","disposed","replaced"].includes(outcome);expect(events.includes("normal")).toBe(normalExpected);
+    if(outcome==="success")expect(events.filter(e=>e!=="warm clear"&&e!=="normal clear")).toEqual(compact?["canvas","normal",String(UnsignedByteType)]:["canvas","normal",String(HalfFloatType),String(UnsignedByteType)]);
+    else expect(events.filter(e=>e!=="warm clear"&&e!=="normal clear")).toEqual(normalExpected?["canvas","normal"]:["canvas"]);
+    expect([...inline]).toEqual(beforeInline);expect(f.state.target).toBe(f.previous);expect(f.state.viewport.equals(before.viewport)).toBe(true);expect(f.state.scissor.equals(before.scissor)).toBe(true);expect(f.state.scissorTest).toBe(true);expect(mock.autoClear).toBe(true);expect(f.state.clearColor.equals(before.color)).toBe(true);expect(f.state.clearAlpha).toBe(before.alpha);
+    expect({position:camera.position.toArray(),quaternion:camera.quaternion.toArray(),projection:camera.projectionMatrix.toArray(),near:camera.near,far:camera.far,aspect:camera.aspect}).toEqual(cameraBefore);
+    expect(cloth.entrance.value).toBe(.23);expect(cloth.sculpture.value).toBe(.37);expect(capture.snapshot()).toEqual(before.snapshot);
+    capture.dispose();f.capture.dispose();f.previous.dispose();cloth.dispose();atmosphere.dispose();sampler.dispose();
+  });
+
   it.each([true,false].flatMap(compact=>["success","throw","lost","disposed"].map(outcome=>[compact,outcome] as const)))("rolls back real runtime preparation compact=%s outcome=%s",(compact,outcome)=>{
     const scene=new Scene(),cloth=new SpatialCloth(compact),atmosphere=new SpatialAtmosphere(compact),other=new Mesh(),camera=new PerspectiveCamera(),sampler=new Texture(),oldColor=new Texture(),oldDepth=new Texture();
     scene.add(cloth,atmosphere,other);cloth.visible=false;atmosphere.visible=false;
