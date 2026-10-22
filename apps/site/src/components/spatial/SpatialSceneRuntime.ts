@@ -167,9 +167,14 @@ export class SpatialSceneRuntime {
     }
   }
 
-  private prepareShaders(){
+  private async prepareShaders(){
     this.shaderAbort?.abort();const controller=this.shaderAbort=new AbortController();
-    return this.bloom?this.bloom.warmup(controller.signal):prepareSceneShaders(this.rendererHost!.renderer,this.scene,this.camera,controller.signal);
+    const sceneReady=await(this.bloom?this.bloom.warmup(controller.signal):prepareSceneShaders(this.rendererHost!.renderer,this.scene,this.camera,controller.signal));
+    if(controller.signal.aborted||this.disposed||this.contextLost&&!this.restoring)return false;
+    // The live background uses a linear output variant even on the direct
+    // mobile path. Prepare it before scroll, without retaining a hero target.
+    const opticsReady=this.reduced||this.constrained||!this.refraction?true:await this.refraction.warmup(controller.signal);
+    return sceneReady&&opticsReady;
   }
 
   private createRefraction(){

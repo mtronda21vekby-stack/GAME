@@ -11,10 +11,13 @@ beforeEach(() => {
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 function advance(milliseconds: number) { time += milliseconds; vi.advanceTimersByTime(milliseconds); }
 
+function readyProgram(ready = false) {
+  return { program: {} as object | undefined, isReady: vi.fn(() => ready), getUniforms: vi.fn(() => ({})), getAttributes: vi.fn(() => ({})) };
+}
 function fixture() {
-  const material = {}, program: { program: object | undefined; isReady: ReturnType<typeof vi.fn<() => boolean>> } = { program: {}, isReady: vi.fn(() => false) };
+  const material = {}, program = readyProgram();
   const context = { isContextLost: vi.fn(() => false) }, canvas = new EventTarget();
-  const properties = { has: vi.fn(() => true), get: vi.fn(() => ({ currentProgram: program })) };
+  const properties = { has: vi.fn(() => true), get: vi.fn(() => ({ currentProgram: program, programs: new Map([["front", program]]) })) };
   const renderer = {
     compile: vi.fn(() => new Set([material])), getContext: vi.fn(() => context), domElement: canvas, properties,
   };
@@ -61,6 +64,53 @@ describe("cancellable shader preparation", () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
+  it("waits for an unfinished back side when the current front side is already ready", async () => {
+    const f = fixture(), back = readyProgram();
+    f.program.isReady.mockReturnValue(true);
+    f.properties.get.mockReturnValue({ currentProgram: f.program, programs: new Map([["back", back], ["front", f.program]]) });
+    let resolved = false;
+    const pending = f.prepare().then(ready => { resolved = true; return ready; });
+    await Promise.resolve();
+    expect(resolved).toBe(false);
+    expect(back.isReady).toHaveBeenCalledTimes(1);
+    expect(f.program.isReady).toHaveBeenCalledTimes(1);
+    expect(f.program.getUniforms).toHaveBeenCalledTimes(1);
+    expect(back.getUniforms).not.toHaveBeenCalled();
+    // Program identities are captured before polling. A later properties lookup
+    // would race material replacement/disposal and must never be necessary.
+    f.properties.get.mockImplementation(() => { throw new Error("material replaced"); });
+    advance(10); await Promise.resolve();
+    expect(resolved).toBe(false);
+    back.isReady.mockReturnValue(true); advance(10);
+    expect(await pending).toBe(true);
+    expect(back.isReady).toHaveBeenCalledTimes(3);
+    expect(f.program.isReady).toHaveBeenCalledTimes(1);
+    expect(f.properties.get).toHaveBeenCalledTimes(1);
+    expect(back.getUniforms).toHaveBeenCalledTimes(1);
+    expect(back.getAttributes).toHaveBeenCalledTimes(1);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("reflects a ready program once and cancels before any later reflection touch", async () => {
+    const ready = fixture(); ready.program.isReady.mockReturnValue(true);
+    expect(await ready.prepare()).toBe(true);
+    expect(ready.program.getUniforms).toHaveBeenCalledTimes(1);
+    expect(ready.program.getAttributes).toHaveBeenCalledTimes(1);
+
+    const before = fixture();
+    before.program.isReady.mockImplementation(() => { before.controller.abort(); return true; });
+    expect(await before.prepare()).toBe(false);
+    expect(before.program.getUniforms).not.toHaveBeenCalled();
+    expect(before.program.getAttributes).not.toHaveBeenCalled();
+
+    const during = fixture(); during.program.isReady.mockReturnValue(true);
+    during.program.getUniforms.mockImplementation(() => { during.controller.abort(); during.program.program = undefined; return {}; });
+    expect(await during.prepare()).toBe(false);
+    expect(during.program.getUniforms).toHaveBeenCalledTimes(1);
+    expect(during.program.getAttributes).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it("checks loss and destroyed handles before any future program query", async () => {
     const lost = fixture(), pendingLost = lost.prepare();
     lost.context.isContextLost.mockReturnValue(true);
@@ -82,9 +132,10 @@ describe("cancellable shader preparation", () => {
     expect(await pendingEvent).toBe(false);
     expect(vi.getTimerCount()).toBe(0);
 
-    const f = fixture(), another = { program: {}, isReady: vi.fn(() => true) };
+    const f = fixture(), another = readyProgram(true);
     f.renderer.compile.mockReturnValue(new Set([f.material, {}]));
-    f.properties.get.mockReturnValueOnce({ currentProgram: f.program }).mockReturnValueOnce({ currentProgram: another });
+    f.properties.get.mockReturnValueOnce({ currentProgram: f.program, programs: new Map([["front", f.program]]) })
+      .mockReturnValueOnce({ currentProgram: another, programs: new Map([["front", another]]) });
     f.program.isReady.mockImplementation(() => { f.controller.abort(); return false; });
     expect(await f.prepare()).toBe(false);
     expect(another.isReady).not.toHaveBeenCalled();
@@ -99,7 +150,7 @@ describe("cancellable shader preparation", () => {
     expect(vi.getTimerCount()).toBe(0);
 
     const unsupported = fixture();
-    unsupported.properties.get.mockReturnValue({} as { currentProgram: typeof unsupported.program });
+    unsupported.properties.get.mockReturnValue({} as { currentProgram: typeof unsupported.program; programs: Map<string, typeof unsupported.program> });
     expect(await unsupported.prepare()).toBe(false);
     expect(unsupported.renderer.compile).toHaveBeenCalledTimes(1);
     expect(unsupported.program.isReady).not.toHaveBeenCalled();

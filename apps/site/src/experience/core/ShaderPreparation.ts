@@ -1,12 +1,14 @@
 import type { Camera, Material, Scene, WebGLRenderer } from "three";
 
 export type ShaderPreparationOptions = { timeoutMs?: number; pollMs?: number };
-type ReadyProgram = { program: unknown; isReady: () => boolean };
+type ReadyProgram = { program: unknown; isReady: () => boolean; getUniforms: () => unknown; getAttributes: () => unknown };
 type CapturedProgram = { owner: ReadyProgram; handle: unknown };
 
 /** The only r170-specific boundary: compile() returns materials, while readiness
- * lives on their currentProgram. Capture those objects once, never re-read mutable
- * material properties from a future timer (Three.compileAsync's teardown hazard).
+ * lives on their program objects. A transparent DoubleSide material prepares both
+ * BackSide and FrontSide; currentProgram holds only the last side. Snapshot every
+ * cached variant once, never re-read mutable material properties from a future
+ * timer (Three.compileAsync's teardown hazard).
  * If that shape changes, compile() is still submitted synchronously and false
  * reports best-effort preparation instead of claiming verified readiness. */
 function capturePrograms(renderer: WebGLRenderer, materials: Set<Material>): CapturedProgram[] | null {
@@ -15,11 +17,17 @@ function capturePrograms(renderer: WebGLRenderer, materials: Set<Material>): Cap
   if (!properties || typeof properties.get !== "function") return null;
   for (const material of materials) {
     if (typeof properties.has === "function" && !properties.has(material)) return null;
-    const value = properties.get(material) as { currentProgram?: unknown } | undefined;
-    const program = value?.currentProgram as Partial<ReadyProgram> | undefined;
-    if (!program || typeof program.isReady !== "function" || program.program == null) return null;
-    const owner = program as ReadyProgram;
-    captured.set(owner, { owner, handle: owner.program });
+    const value = properties.get(material) as { currentProgram?: unknown; programs?: unknown } | undefined;
+    if (!value?.currentProgram || !(value.programs instanceof Map) || !value.programs.size) return null;
+    const variants = new Set<unknown>(value.programs.values());
+    variants.add(value.currentProgram);
+    for (const variant of variants) {
+      const program = variant as Partial<ReadyProgram> | undefined;
+      if (!program || typeof program.isReady !== "function" || typeof program.getUniforms !== "function"
+        || typeof program.getAttributes !== "function" || program.program == null) return null;
+      const owner = program as ReadyProgram;
+      captured.set(owner, { owner, handle: owner.program });
+    }
   }
   return [...captured.values()];
 }
@@ -27,7 +35,7 @@ function capturePrograms(renderer: WebGLRenderer, materials: Set<Material>): Cap
 /** Submit on the caller's current render target, then poll without holding it.
  * Owners must abort BEFORE model/renderer disposal or context replacement. The
  * captured-handle check also makes an already destroyed program a safe fallback.
- * Polling is bounded; the synchronous public compile submission cannot be preempted.
+ * Polling is bounded; synchronous compile/reflection calls cannot be preempted.
  * False means aborted/lost/timed-out/unsupported/error, leaving native fallback
  * policy with the caller. No uncancellable Three.compileAsync timer is created. */
 export function prepareSceneShaders(
@@ -79,8 +87,17 @@ export function prepareSceneShaders(
         for (const program of pending) {
           // Abort/context checks precede every possible GL readiness query.
           if (unavailable() || program.owner.program !== program.handle || program.handle == null) { finish(false); return; }
-          if (program.owner.isReady()) pending.delete(program);
-          if (settled) return;
+          if (!program.owner.isReady()) { if (settled) return; continue; }
+          if (settled || unavailable() || program.owner.program !== program.handle) { finish(false); return; }
+          // r170 defers link validation and uniform/attribute reflection until
+          // onFirstUse. Without KHR, isReady() is immediately true; do that
+          // synchronous first-use work while the loading owner still prepares.
+          // This does not claim to warm vertex uploads or a real draw pipeline.
+          program.owner.getUniforms();
+          if (settled || unavailable() || program.owner.program !== program.handle) { finish(false); return; }
+          program.owner.getAttributes();
+          if (settled || unavailable() || program.owner.program !== program.handle) { finish(false); return; }
+          pending.delete(program);
         }
         if (unavailable()) { finish(false); return; }
         if (!pending.size) { finish(true); return; }
