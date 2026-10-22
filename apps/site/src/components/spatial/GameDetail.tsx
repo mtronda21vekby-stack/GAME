@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { PlatformGame } from "../../lib/platformGames";
 import { prefersStaticPlatform } from "../platform/usePlatformParallax";
-import { detailOriginPose, detailPosterSize, detailReveal, type MediaRect, type PanelOrigin } from "./detailTransition";
+import { DETAIL_REST, detailOriginPose, detailPlaneStyle, detailPosterSize, detailProjectQuad, detailQuadPose, detailRectQuad, detailReveal, detailSettledPose, detailSurfaceQuad, type MediaRect, type PanelOrigin } from "./detailTransition";
 import { SurfaceMotion, SPATIAL_TIMING } from "./spatialMotion";
 import { frameLoop } from "../../experience/core/FrameLoop";
 import { CaseMedia } from "./CaseMedia";
@@ -11,8 +11,8 @@ import "./spatialDetail.css";
 export type { PanelOrigin } from "./detailTransition";
 type Props = { open: boolean; origin?: PanelOrigin | null; game: PlatformGame; canCycle: boolean; paused: boolean; onTogglePause: () => void; onClosing?: () => void; onClose: () => void; onRequestClose:()=>void;onSearch:()=>void;onPrevious: () => void; onNext: () => void };
 const useClientLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
-// Position, outer crop scale, opacity, and shared reveal progress.
-const rest = [0,0,1,1,1,1];
+// Crop/reveal and four projective corners share one interruptible clock.
+const rest = DETAIL_REST;
 
 /** Native modal, with one interruptible poster/crop/reveal clock. */
 export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause, onClosing, onClose, onRequestClose,onSearch,onPrevious, onNext }: Props) {
@@ -33,6 +33,7 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
   const [surface] = useState(() => new SurfaceMotion(rest));
   const frame = useRef(0), focusFrame = useRef(0), closeScroll = useRef(0), epoch=useRef(0), focusEpoch=useRef(0);
   const mediaBox=useRef<MediaRect>();
+  const endpoint=useRef([...rest]);
   const restorePage = useRef<(() => void) | null>(null);
   const restoreFocus = useRef<(() => void) | null>(null);
   const source=useRef<{element:HTMLElement;previous:string|undefined}|null>(null);
@@ -66,24 +67,50 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
     const box=media.getBoundingClientRect();media.style.transform=transform;
     return {left:box.left,top:box.top,width:box.width,height:box.height};
   }
+  function paintedQuad() {
+    // Native dialog scrolling moves the slot without changing its transform.
+    // Capture today's anchor, not the opening-time viewport coordinates.
+    const box=baseRect()??mediaBox.current;
+    return box?detailSurfaceQuad(box,surface.value):null;
+  }
   function sourceOrigin():PanelOrigin|null {
     if(origin?.gameId!==game.id||Math.abs(origin.viewportWidth-innerWidth)>1||Math.abs(origin.viewportHeight-innerHeight)>1)return null;
     const panel=document.querySelector<HTMLElement>(`.spatialGamePanel[data-game-id="${origin.gameId}"] .spatialPanelMedia`);
     const box=panel?.getBoundingClientRect();
-    return box?.width&&box.height?{...origin,left:box.left,top:box.top,width:box.width,height:box.height}:null;
+    if(!panel||!box?.width||!box.height)return null;
+    const plane=panel.closest<HTMLElement>(".spatialPanelSurface");
+    let quad=detailRectQuad(box);
+    if(plane){
+      const transform=getComputedStyle(plane).transform,value=plane.style.getPropertyValue("transform"),priority=plane.style.getPropertyPriority("transform");
+      try{
+        const matrix=new DOMMatrixReadOnly(transform==="none"?undefined:transform);
+        // Measuring the native slot is synchronous and restored before paint;
+        // no change is made to the gallery's authored matrix or its unit W.
+        plane.style.setProperty("transform","none","important");
+        const native=plane.getBoundingClientRect(),media=panel.getBoundingClientRect();
+        quad=detailProjectQuad(Array.from(matrix.toFloat64Array()),{left:media.left-native.left,top:media.top-native.top,width:media.width,height:media.height},native)??quad;
+      }catch{/* Axis-aligned media remains a safe fallback for an unavailable matrix. */}
+      finally{if(value)plane.style.setProperty("transform",value,priority);else plane.style.removeProperty("transform");}
+    }
+    return {...origin,left:box.left,top:box.top,width:box.width,height:box.height,quad};
   }
   function originPose(fresh=false) {
-    const target=fresh?sourceOrigin():origin;
+    const target=sourceOrigin()??(fresh?null:origin);
     const pose=detailOriginPose(target,game.id,innerWidth,innerHeight,mediaBox.current);
     const connected=!!target&&!!mediaBox.current?.width&&!!mediaBox.current.height&&target.gameId===game.id&&Math.abs(target.viewportWidth-innerWidth)<=1&&Math.abs(target.viewportHeight-innerHeight)<=1;
     connectedHandoff.current=connected;
-    if(connected)pose[4]=1;
-    return [...pose,0];
+    if(!fresh)endpoint.current=detailSettledPose(connected?target?.quad:null);
+    if(connected){
+      const projected=detailQuadPose(target.quad??detailRectQuad(target),mediaBox.current!,1,0);
+      if(projected)return projected;
+      pose[4]=1;
+    }
+    return [...pose,0,...endpoint.current.slice(6)];
   }
   function paintSurface() {
-    const media=mediaRef.current,box=mediaBox.current,dialog=dialogRef.current;if(!media||!box||!dialog)return;
-    const [x,y,rawX,rawY,opacity,arrival]=surface.value,sx=Math.max(.05,rawX),sy=Math.max(.05,rawY);
-    media.style.transform=`translate3d(${x}px,${y}px,0) scale(${sx},${sy})`;
+    const media=mediaRef.current,box=mediaBox.current,dialog=dialogRef.current;if(!media||!box?.width||!box.height||!dialog)return;
+    const [,,rawX,rawY,opacity,arrival]=surface.value,sx=Math.max(.05,rawX),sy=Math.max(.05,rawY);
+    media.style.transform=detailPlaneStyle(box,surface.value);
     media.style.opacity=String(Math.max(0,Math.min(1,opacity)));
     const image=media.querySelector("img");
     if(image){
@@ -122,7 +149,7 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
     cancelFrame();
     if(phase.current==="closing"){restoreSourceThenFinish();return;}
     if(phase.current!=="closed"){
-      mediaBox.current=baseRect();surface.rebase(rest);paintSurface();phase.current="open";setArrived(true);
+      mediaBox.current=baseRect();surface.rebase(endpoint.current);paintSurface();phase.current="open";setArrived(true);
     }
   }
   function schedule(token=epoch.current) {
@@ -161,11 +188,13 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
   function closePanel() {
     const dialog=dialogRef.current;if((phase.current!=="open"&&phase.current!=="opening")||!dialog)return;
     const now=frameLoop.now();surface.sample(now);paintSurface();cancelFrame();
+    const previousQuad=paintedQuad(),previous=[...surface.value];
     outgoingGame.current=game;phase.current="closing";setArrived(false);dialog.dataset.mediaArrived="false";
     const detailScroll=dialog.scrollTop;
     dialog.close();dialog.dataset.phase="closing";dialog.inert=true;dialog.setAttribute("aria-hidden","true");
     dialog.scrollTop=detailScroll;setClosingVisual(true);
     releasePage();closeScroll.current=scrollY;mediaBox.current=baseRect();
+    if(previousQuad&&mediaBox.current){const rebased=detailQuadPose(previousQuad,mediaBox.current,previous[4],previous[5]);if(rebased)surface.rebase(rebased,true);}
     const destination=originPose(true);
     if(!connectedHandoff.current)destination[4]=0;
     onClosing?.();onClose();
@@ -178,27 +207,27 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
     if(!dialog||!media)return;
     const now=frameLoop.now(),reopening=phase.current==="closing"&&outgoingGame.current.id===game.id;
     surface.sample(now);paintSurface();
-    const previousBox=reopening?media.getBoundingClientRect():null,previous=[...surface.value];
+    const previousQuad=reopening?paintedQuad():null,previous=[...surface.value];
     cancelFrame();++focusEpoch.current;cancelAnimationFrame(focusFrame.current);restoreFocus.current=null;
     phase.current="opening";setClosingVisual(false);setArrived(false);delete dialog.dataset.phase;
     dialog.inert=false;dialog.removeAttribute("aria-hidden");
     holdChrome();lockPage();dialog.showModal();dialog.scrollTo({top:0,behavior:"instant"});mediaBox.current=baseRect();markSource();
     const box=mediaBox.current;
-    if(reopening&&previousBox&&box?.width&&box.height){
-      surface.rebase([previousBox.left+previousBox.width/2-box.left-box.width/2,previousBox.top+previousBox.height/2-box.top-box.height/2,previousBox.width/box.width,previousBox.height/box.height,previous[4],previous[5]],true);
+    if(reopening&&previousQuad&&box?.width&&box.height){
+      surface.rebase(detailQuadPose(previousQuad,box,previous[4],previous[5])??originPose(),true);
     }else surface.rebase(originPose());
     previousGame.current=game.id;closeRef.current?.focus({preventScroll:true});
     if(staticMotion()){settle();return;}
-    surface.moveTo(rest,SPATIAL_TIMING.open,now);paintSurface();schedule();
+    surface.moveTo(endpoint.current,SPATIAL_TIMING.open,now);paintSurface();schedule();
   },[open]);
   useClientLayoutEffect(()=>{
     if(!open||previousGame.current===game.id)return;
     // A related case stays in the same native modal, with the same media clock.
     cancelFrame();dialogRef.current?.scrollTo({top:0,behavior:"instant"});setArrived(false);
-    mediaBox.current=baseRect();surface.rebase([0,0,1,1,.3,1]);phase.current="opening";
+    mediaBox.current=baseRect();const related=[...endpoint.current];related[4]=.3;surface.rebase(related);phase.current="opening";
     previousGame.current=game.id;
     if(staticMotion()){settle();return;}
-    surface.moveTo(rest,420,frameLoop.now());paintSurface();schedule();
+    surface.moveTo(endpoint.current,420,frameLoop.now());paintSurface();schedule();
   },[open,game.id]);
   useEffect(()=>{
     const query=window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -220,6 +249,7 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
     <div className="spatialDetailTop"><span>BLACKCROWN / <DecodedText text={visualGame.genre} token={visualGame.id}/></span><div className="spatialDetailTools"><button className="spatialDetailPause" type="button" aria-pressed={paused} aria-label={paused ? "Продолжить сцену" : "Пауза сцены"} onClick={onTogglePause}>{paused ? "▷" : "Ⅱ"}</button><button ref={closeRef} type="button" onClick={onRequestClose} aria-label="Закрыть панель и вернуться к выбранной игре"><span aria-hidden="true">×</span></button></div></div>
     <div className="spatialDetailInner">
       <figure className="spatialDetailMedia" ref={mediaRef} onPointerDown={e=>{if(e.pointerType==="touch")swipe.current={x:e.clientX,y:e.clientY};}} onPointerCancel={()=>swipe.current=null} onPointerUp={e=>{const start=swipe.current;swipe.current=null;if(!start||!canCycle)return;const dx=e.clientX-start.x,dy=e.clientY-start.y;if(Math.abs(dx)>55&&Math.abs(dy)<35){if(dx<0)onNext();else onPrevious();}}}><CaseMedia game={visualGame} open={open && arrived} paused={paused} onPosterLoad={paintSurface}/><div className="spatialHandoffTitle" aria-hidden="true"><span>{visualGame.status}</span><strong>{visualGame.title}</strong></div></figure>
+      <div className="spatialDetailBody">
       <div className="spatialDetailCopy" ref={copyRef}>
         <div className="spatialDetailHeadingMeta"><p className="spatialDetailState"><DecodedText text={visualGame.status} token={visualGame.id}/></p></div>
         <h2 id="spatial-detail-title">{visualGame.title}</h2>
@@ -230,6 +260,7 @@ export function GameDetail({ open, origin, game, canCycle, paused, onTogglePause
       </div>
       <div className="spatialDetailBottom"><button type="button" aria-label="← Предыдущая игра" disabled={!canCycle} onClick={() => { if (phase.current === "open" || phase.current === "opening") onPrevious(); }}>← Предыдущая</button><span aria-hidden="true">/</span><button type="button" aria-label="Следующая игра →" disabled={!canCycle} onClick={() => { if (phase.current === "open" || phase.current === "opening") onNext(); }}>Следующая →</button></div>
       <button className="spatialCaseSearch" type="button" onClick={onSearch}>Найти другой мир <span aria-hidden="true">⌕</span></button>
+      </div>
     </div></div>
   </dialog>;
 }

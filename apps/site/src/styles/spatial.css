@@ -275,7 +275,7 @@ html[data-reduced-motion="1"] .spatialPage *,html[data-reduced-motion="1"] .spat
  .spatialMaterialCopy .spatialClothStatus { min-height:0; margin:0; }
  .spatialClothControl { width:100%; height:clamp(350px,48svh,470px); }
  .spatialAbout { justify-content:flex-start; padding-bottom:48px; --outro-scrim:linear-gradient(180deg,#090d1166,transparent 65%); }
- .spatialAboutText { max-width:none; }
+ .spatialAboutText { max-width:240px; }
  .spatialAboutText>.spatialActions { flex-direction:row; flex-wrap:wrap; gap:0 18px; }
  .spatialAboutText>.spatialActions>.platTextLink { font-size:11px; min-height:44px; }
  .spatialJourney[data-brand-ready="1"] .spatialOutroClothSlot { display:block; width:100%; height:clamp(230px,29svh,300px); margin-top:28px; flex-shrink:0; }

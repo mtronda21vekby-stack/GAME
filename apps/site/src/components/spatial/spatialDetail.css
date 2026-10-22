@@ -14,7 +14,7 @@
 .spatialDetail .spatialDetailTools button:last-child { border:1px solid #c1d3d029; color:#e0eae5; font-size:25px; font-weight:300; }
 .spatialDetailTools button:hover { background:#dae6e315; }
 .spatialDetailInner { display:grid; grid-template-columns:minmax(0,1.12fr) minmax(0,1fr); grid-template-areas:"media copy" "media information" "media bottom"; align-items:start; column-gap:30px; padding:28px; }
-.spatialDetailMedia { grid-area:media; position:relative; width:100%; margin:0; aspect-ratio:16/10; border:1px solid #c0d1d024; border-radius:6px; background:#071018; box-shadow:0 16px 46px #0004; transform-origin:center; will-change:transform; }
+.spatialDetailMedia { grid-area:media; position:relative; width:100%; margin:0; aspect-ratio:16/10; border:1px solid #c0d1d024; border-radius:6px; background:#071018; box-shadow:0 16px 46px #0004; transform-origin:0 0; will-change:transform; }
 .spatialDetailMedia>img { position:absolute; inset:0; width:100%; height:100%; display:block; object-fit:contain; border-radius:inherit; }
 .spatialDetailCopy { grid-area:copy; position:relative; margin:0 0 18px; }
 .spatialDetailHeadingMeta { margin-bottom:9px; }
@@ -102,20 +102,45 @@ html[data-reduced-motion="1"] .spatialCaseOptics>i { animation:none!important; }
 .spatialDetail { --detail-reveal:1; --detail-copy:1; --detail-source-title:0; --detail-tools:1; background:rgb(5 10 15 / calc(.15 * var(--detail-reveal))); }
 .spatialDetail::backdrop { background:#04080c18; }
 .spatialDetailFrame { background:transparent; border-color:transparent; box-shadow:0 36px 110px rgb(0 0 0 / calc(.5 * var(--detail-reveal))); }
-.spatialDetailFrame:before { content:""; position:absolute; inset:-1px; border:1px solid #c1d3d038; border-radius:inherit; background:linear-gradient(135deg,#17252bed,#0a1219f0); opacity:var(--detail-reveal); pointer-events:none; }
+.spatialDetailFrame:before { content:""; position:absolute; inset:-1px; border:1px solid #c1d3d02c; border-radius:inherit; background:linear-gradient(135deg,#122028b8,#0a1219cf); opacity:var(--detail-reveal); pointer-events:none; }
 .spatialDetailInner { position:relative; }
 .spatialDetailTop { background:rgb(16 27 34 / calc(.93 * var(--detail-reveal))); border-bottom-color:rgb(192 209 208 / calc(.09 * var(--detail-reveal))); }
 .spatialDetailTop>span,.spatialDetailCopy,.spatialDetailInformation,.spatialDetailBottom,.spatialDetail .spatialCaseSearch { opacity:var(--detail-copy); }
 .spatialDetailTools,.spatialCaseNav { opacity:var(--detail-tools); }
 .spatialCaseOptics { opacity:calc(.38 * var(--detail-reveal)); }
-.spatialDetailMedia { overflow:hidden; border-color:transparent; box-shadow:none; }
+.spatialDetailMedia { overflow:hidden; border:1px solid rgb(192 209 208 / calc(.25 * var(--detail-reveal))); border-radius:7px; background:linear-gradient(145deg,#15252d,#071018 65%); box-shadow:0 18px 34px rgb(0 0 0 / calc(.4 * var(--detail-reveal))),0 2px 0 rgb(2 7 11 / calc(.8 * var(--detail-reveal))); }
+.spatialDetailMedia:after { content:""; position:absolute; z-index:4; inset:0; border-radius:inherit; pointer-events:none; background:linear-gradient(135deg,#e0efeb0b,transparent 34%,#02060820); box-shadow:inset 0 1px 0 #d5e6e125,inset 0 -1px 0 #010509b3; opacity:var(--detail-reveal); }
 .spatialDetailMedia>img { inset:auto; top:50%; left:50%; max-width:none; transform:translate(-50%,-50%); object-fit:fill; border-radius:0; }
+.spatialDetailMedia>img,.spatialDetailMedia>.spatialCaseVideo { filter:saturate(calc(.72 + .28 * var(--detail-reveal))) contrast(calc(1.03 - .03 * var(--detail-reveal))); }
 .spatialDetail[data-media-arrived=false] .spatialMediaControl { visibility:hidden; }
 .spatialHandoffTitle { position:absolute; z-index:3; left:16px; right:12px; bottom:14px; transform-origin:left bottom; opacity:var(--detail-source-title); pointer-events:none; }
 .spatialHandoffTitle:before { content:""; position:absolute; z-index:-1; inset:-80px -40px -30px; background:linear-gradient(0deg,#050b11f2,transparent); }
 .spatialHandoffTitle>span { display:block; margin-bottom:8px; color:#a8b8b9; font:8px/1.4 ui-monospace,monospace; letter-spacing:.1em; text-transform:uppercase; }
 .spatialHandoffTitle>strong { display:block; color:#e9ece6; font-size:30px; line-height:1.05; letter-spacing:-.045em; font-weight:400; }
 .spatialGamePanel[data-case-handoff=true] .spatialPanelMedia { visibility:hidden; }
+
+@media(max-width:760px) {
+ .spatialDetailFrame { width:min(356px,calc(100% - 48px)); }
+ .spatialDetailMedia { width:calc(100% + 20px); margin-inline:-10px; }
+ .spatialDetailCopy { margin-top:26px; }
+}
+@media(max-width:380px) { .spatialDetailMedia { width:calc(100% + 16px); margin-inline:-8px; } }
+
+/* The measured media plane and native reading plate share the scene, rather
+   than settling into one opaque window. Only the media carries perspective. */
+.spatialDetailFrame { border:0; box-shadow:none; }
+.spatialDetailFrame:before { display:none; }
+.spatialDetailTop { margin-bottom:18px; border:1px solid rgb(192 209 208 / calc(.12 * var(--detail-reveal))); border-radius:10px; background:rgb(12 23 30 / calc(.84 * var(--detail-reveal))); }
+.spatialDetailInner { grid-template-areas:"media body"; align-items:start; gap:28px; padding:0; }
+.spatialDetailBody { grid-area:body; min-width:0; padding:22px; border:1px solid rgb(192 209 208 / calc(.15 * var(--detail-reveal))); border-radius:10px; background:linear-gradient(145deg,rgb(17 31 40 / calc(.78 * var(--detail-reveal))),rgb(7 16 24 / calc(.9 * var(--detail-reveal)))); box-shadow:0 12px 32px rgb(0 0 0 / calc(.28 * var(--detail-reveal))); }
+.spatialDetailBody>.spatialDetailCopy { margin:0 0 16px; }
+@media(max-width:760px) {
+ .spatialDetailFrame { width:min(304px,calc(100% - 56px)); }
+ .spatialDetailTop { margin-bottom:14px; }
+ .spatialDetailMedia { width:100%; margin-inline:0; }
+ .spatialDetailBody { margin-top:26px; padding:18px; }
+}
+@media(max-width:380px) { .spatialDetailFrame { width:calc(100% - 48px); } }
 
 /* Back releases native scroll immediately, but returning UI waits for the
    outgoing case's React commit. Covers/canvas keep their existing depth path. */

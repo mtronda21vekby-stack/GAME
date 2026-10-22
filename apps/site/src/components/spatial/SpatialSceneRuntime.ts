@@ -22,6 +22,7 @@ import { spatialAxisJourney, spatialAxisTurn, type SpatialJourneyStops } from ".
 import { SpatialCloth } from "./SpatialCloth";
 import { SpatialRefraction, SPATIAL_NATIVE_WARMUP_SIZE } from "./SpatialRefraction";
 import { panelFrontWidth, panelScreenPosition } from "./panelProjection";
+import { outroClothPose } from "./outroClothPose";
 import { ScrollJourney, SurfaceMotion, SPATIAL_TIMING } from "./spatialMotion";
 import { WORLD_ACCENTS, spatialProgress } from "./spatialState";
 
@@ -615,7 +616,8 @@ export class SpatialSceneRuntime {
     this.cloth.material.opacity=(interlude?interludeReveal:1)*(1-farewell*(this.compact?.12:.24));
     // A visible folded volume arrives only after the last game has cleared.
     // Its opening is continuous and reversible; it never spends a chapter edge-on.
-    this.cloth.setEntrance(this.reduced?1:THREE.MathUtils.lerp(Math.max(interlude?.46+interludeReveal*.2:0,lab),this.compact?.96:.66,farewell)*(1-closingFold*.35));
+    const entrance=THREE.MathUtils.lerp(Math.max(interlude?.46+interludeReveal*.2:0,lab),this.compact?.96:.66,farewell);
+    this.cloth.setEntrance(this.reduced?1:entrance*(1-closingFold*.35));
     if(sheet&&this.cloth.visible){
       // The sheet enters below the copy in its real native slot, never behind it.
       const slotX=sheet.left+sheet.width/2,slotY=sheet.top+sheet.height/2;
@@ -623,17 +625,16 @@ export class SpatialSceneRuntime {
       const nativeOutro=outroSlot&&outroSlot.width>0?outroSlot:undefined;
       const outroX=nativeOutro?nativeOutro.left+nativeOutro.width/2:this.viewportWidth*.79;
       const outroY=nativeOutro?nativeOutro.top+nativeOutro.height/2:this.viewportHeight*.54;
-      // The same sheet travels around the copy, then settles in a full native
-      // closing frame. It never remains as an accidentally cropped side strip.
-      const returnArc=nativeOutro?(.4*THREE.MathUtils.smoothstep(farewell,0,.5)+.8*Math.sin(Math.PI*closingTravel))*(1-closingTravel):0;
-      const centerX=THREE.MathUtils.lerp(slotX,outroX,farewell)+returnArc*this.viewportWidth;
-      const width=THREE.MathUtils.lerp(sheet.width,nativeOutro?.width??this.viewportWidth*(this.reduced?.34:.39),closingTravel);
-      const height=THREE.MathUtils.lerp(sheet.height,nativeOutro?.height??this.viewportHeight*.86,closingTravel);
-      let centerY=THREE.MathUtils.lerp(slotY,outroY,closingTravel);
-      if(nativeOutro){
-        const copy=this.options.stage.querySelector(".spatialAboutText")?.getBoundingClientRect();
-        if(copy)centerY=THREE.MathUtils.lerp(centerY,Math.max(centerY,copy.bottom+28+height*.55),THREE.MathUtils.smoothstep(closingTravel,.15,.35));
-      }
+      const copy=this.options.stage.querySelector(".spatialAboutText")?.getBoundingClientRect();
+      const heading=this.options.stage.querySelector(".spatialAboutCopy")?.getBoundingClientRect();
+      const closing=nativeOutro?outroClothPose({width:this.viewportWidth,height:this.viewportHeight,
+        headerBottom:document.querySelector(".platHeader")?.getBoundingClientRect().bottom??104,
+        copyRight:Math.max(copy?.right??0,heading?.right??0),farewell,sheet,slot:nativeOutro}):undefined;
+      if(closing){this.cloth.setSculpture(closing.sculpture);this.cloth.setEntrance(this.reduced?1:entrance);}
+      const centerX=closing?.x??THREE.MathUtils.lerp(slotX,outroX,farewell);
+      const centerY=closing?.y??THREE.MathUtils.lerp(slotY,outroY,closingTravel);
+      const width=closing?.width??THREE.MathUtils.lerp(sheet.width,this.viewportWidth*(this.reduced?.34:.39),closingTravel);
+      const height=closing?.height??THREE.MathUtils.lerp(sheet.height,this.viewportHeight*.86,closingTravel);
       // At the journey's end the sticky canvas leaves with its section. Native
       // slots remain in viewport coordinates, so map them into the canvas first.
       const canvasBox=this.options.host.getBoundingClientRect();
@@ -642,7 +643,7 @@ export class SpatialSceneRuntime {
       this.cloth.position.copy(position);this.cloth.position.y+=height/unit*.015;
       // Keep the authored loose hem inside the interactive slot at both sizes.
       // The deeper LAB folds need lateral room; the bounded farewell keeps its existing fit.
-      this.cloth.scale.set(worldWidth*THREE.MathUtils.lerp(this.compact?.74:.94,nativeOutro?.9:.94,farewell)*(1-closingFold*.65),height/unit*.88,worldWidth*.66);this.cloth.update(this.reduced?0:t);
+      this.cloth.scale.set(worldWidth*THREE.MathUtils.lerp(this.compact?.74:.94,nativeOutro?.9:.94,farewell)*(closing?1:1-closingFold*.65),height/unit*.88,worldWidth*.66);this.cloth.update(this.reduced?0:t);
       this.cloth.rotation.set(-.06,THREE.MathUtils.lerp(THREE.MathUtils.lerp(-.42,this.compact?-.035:-.14,this.reduced?1:lab),nativeOutro?-.16:-.48,farewell),THREE.MathUtils.lerp(-.035,nativeOutro?.025:-.1,farewell));
       this.lightAim.set(this.cloth.position.x-3,this.cloth.position.y+3,this.cloth.position.z+5.5);
       this.anatomyLight.position.lerp(this.lightAim,lab);
