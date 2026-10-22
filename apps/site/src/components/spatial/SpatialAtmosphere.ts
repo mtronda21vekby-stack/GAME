@@ -114,20 +114,22 @@ const hazeFragment = `
     float cloud=noise(vUv*vec2(2.4,3.1)+drift)*.66+noise(vUv*vec2(6.,7.)-drift*.5)*.34;
     float vertical=smoothstep(0.,.16,vUv.y)*(1.-smoothstep(.73,1.,vUv.y));
     float edge=pow(max(0.,sin(vUv.x*3.141593)),1.8)*vertical;
-    // One continuous field, sampled on the existing planes at their actual
-    // world positions. Its broad banks persist through the journey; the LAB
-    // reveals their medium structure instead of introducing another prop.
-    vec2 field=vFieldPosition.xy*vec2(.48,.34)+vFieldPosition.z*vec2(.13,-.09);
-    field+=vec2(uTime*.015,-uTime*.01);
-    float turn=noise(field*.72+vec2(.8,2.1));
-    vec2 flow=field+vec2(turn*.85,sin(field.x*.9+turn)*.42);
-    float bank=noise(flow)*.64+noise(flow*2.1-vec2(1.7,.4))*.36;
-    float ridge=smoothstep(.53,.76,bank+.14*sin(flow.y*2.4+flow.x*.7));
-    float density=.1+smoothstep(.26,.7,bank)*.58+ridge*.46;
-    float fieldPresence=.22+.78*uLab;
-    cloud=mix(cloud,clamp(density,0.,1.),fieldPresence);
     float sweep=vUv.x-.47+(vUv.y-.5)*.25;
-    sweep+=uLab*(sin(vUv.y*6.2+uTime*.08)*.10+sin(vUv.y*11.4-uTime*.04)*.012);
+    float bank=0.,ridge=0.,fieldPresence=uLab;
+    // The same moving medium becomes structured in the LAB. A uniform branch
+    // keeps its extra field samples out of the hero/catalogue GPU workload;
+    // the LAB envelope blends the field in continuously on the existing planes.
+    if(uLab>.001) {
+      vec2 field=vFieldPosition.xy*vec2(.48,.34)+vFieldPosition.z*vec2(.13,-.09);
+      field+=vec2(uTime*.015,-uTime*.01);
+      float turn=noise(field*.72+vec2(.8,2.1));
+      vec2 flow=field+vec2(turn*.85,sin(field.x*.9+turn)*.42);
+      bank=noise(flow)*.64+noise(flow*2.1-vec2(1.7,.4))*.36;
+      ridge=smoothstep(.53,.76,bank+.14*sin(flow.y*2.4+flow.x*.7));
+      float density=.1+smoothstep(.26,.7,bank)*.58+ridge*.46;
+      cloud=mix(cloud,clamp(density,0.,1.),fieldPresence);
+      sweep+=uLab*(sin(vUv.y*6.2+uTime*.08)*.10+sin(vUv.y*11.4-uTime*.04)*.012);
+    }
     float beam=(exp(-pow(sweep*mix(5.2,14.,uLab),2.))*mix(.68,.28,uLab)+exp(-pow((sweep-mix(.2,.14,uLab))*mix(12.,26.,uLab),2.))*mix(.24,.82,uLab))*vertical;
     vec2 pocketDelta=(vUv-vec2(.57,.58))*vec2(3.1,1.7);
     float pocket=.12+.88*exp(-dot(pocketDelta,pocketDelta));
