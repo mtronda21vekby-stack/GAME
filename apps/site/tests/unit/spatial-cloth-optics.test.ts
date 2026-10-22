@@ -92,4 +92,21 @@ describe("Sculptural LAB profiles and live background optics",()=>{
     expect(fragment).toContain("if(cloth.x<.26)discard");
     cloth.dispose();texture.dispose();
   });
+
+  it("limits the bend diagnostic to background UV displacement without changing the optical finish or form",()=>{
+    const cloth=new SpatialCloth(false),texture=background();cloth.setProfile("membrane");cloth.setSculpture(.8);cloth.setOptics(texture,1800,1125,.7);
+    const geometry=cloth.geometry,positions=geometry.attributes.position.array;
+    const material=()=>({color:cloth.material.color.toArray(),metalness:cloth.material.metalness,roughness:cloth.material.roughness,clearcoat:cloth.material.clearcoat,anisotropy:cloth.material.anisotropy,iridescence:cloth.material.iridescence});
+    const before=assembledShader(cloth),finish=material();expect(cloth.bendStrength.value).toBe(1);
+    cloth.bendStrength.value=0;const straight=assembledShader(cloth);
+    expect(straight.uniforms).toMatchObject({uClothBend:cloth.bendStrength});expect(cloth.bendStrength.value).toBe(0);
+    expect(straight.vertexShader).toBe(before.vertexShader);expect(straight.fragmentShader).toBe(before.fragmentShader);
+    expect(cloth.geometry).toBe(geometry);expect(cloth.geometry.attributes.position.array).toBe(positions);expect(material()).toEqual(finish);
+    expect(cloth.profile).toBe("membrane");expect(cloth.sculpture.value).toBe(.8);expect(cloth.refraction.value).toBe(.7);expect(cloth.background.value).toBe(texture);
+    const fragment=straight.fragmentShader,displacement=fragment.split("\n").find(line=>line.includes("vec2 displacement="))!,coating=fragment.split("\n").find(line=>line.includes("float coating="))!;
+    expect(fragment.match(/\buClothBend\b/g)).toHaveLength(2);expect(straight.vertexShader).not.toContain("uClothBend");
+    expect(displacement).toContain("clamp(uClothBend,0.,1.)");expect(coating).toContain("1.-coatingFresnel");expect(coating).not.toContain("Bend");
+    expect(fragment).not.toContain("bendVisibility");expect(cloth.material.customProgramCacheKey()).toContain("refraction-cloth-v3");
+    cloth.dispose();texture.dispose();
+  });
 });

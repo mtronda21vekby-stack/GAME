@@ -89,4 +89,26 @@ describe("LAB background depth and reverse continuity",()=>{
     }
     atmosphere.dispose();
   });
+
+  it("redistributes the existing LAB shaft into narrower edges with a bounded analytical light integral",()=>{
+    const atmosphere=new SpatialAtmosphere(true),shaft=planes(atmosphere,true)[0],beam=shaft.material.fragmentShader.split("\n").find(line=>line.includes("float beam="))!;
+    const mixPairs=Array.from(beam.matchAll(/mix\(([-.\d]+),([-.\d]+),uLab\)/g),match=>[Number(match[1]),Number(match[2])]);
+    expect(mixPairs).toHaveLength(5);
+    const [primaryWidth,primaryWeight,secondaryOffset,secondaryWidth,secondaryWeight]=mixPairs;
+    expect([primaryWidth[0],primaryWeight[0],secondaryOffset[0],secondaryWidth[0],secondaryWeight[0]]).toEqual([5.2,.68,.2,12,.24]);
+    const fwhm=(inverseWidth:number,pixelWidth:number)=>2*Math.sqrt(Math.log(2))/inverseWidth*pixelWidth;
+    const secondaryPixels=fwhm(secondaryWidth[1],353);
+    expect(secondaryPixels).toBeGreaterThan(14);expect(secondaryPixels).toBeLessThan(15.5);
+    expect(fwhm(primaryWidth[1],353)).toBeLessThan(fwhm(primaryWidth[0],353)*.35);
+    expect(secondaryWeight[1]).toBeGreaterThan(primaryWeight[1]);
+    update(atmosphere,0);const heroOpacity=shaft.material.uniforms.uOpacity.value as number;
+    update(atmosphere,1);const labOpacity=shaft.material.uniforms.uOpacity.value as number;
+    expect(labOpacity/(heroOpacity*.76)).toBeCloseTo(4.2,12);
+    // Integral of a*exp(-(k*x)^2) is a*sqrt(pi)/k. Compare the authored
+    // iteration2 pair (8.8/19, .68/.24, gain3.4), holding common fog factors.
+    const current=Math.sqrt(Math.PI)*(primaryWeight[1]/primaryWidth[1]+secondaryWeight[1]/secondaryWidth[1])*labOpacity;
+    const previous=Math.sqrt(Math.PI)*(.68/8.8+.24/19)*heroOpacity*.76*3.4;
+    expect(current).toBeLessThan(previous*.55);
+    atmosphere.dispose();
+  });
 });
