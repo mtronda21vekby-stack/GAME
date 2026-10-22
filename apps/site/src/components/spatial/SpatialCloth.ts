@@ -91,33 +91,48 @@ const weave=`
   uniform mat4 uClothProjection;
   uniform vec4 uClothExitPlane;
   uniform float uClothRefraction,uClothProfile,uClothBend,uClothSculpture;
-  // Molten is a nearly closed woven skin: broad ribbons carry the surface and
-  // only hairline spaces separate their crossings. The independent membrane
-  // profile retains an open lattice. Neither uses a micro-perforation texture.
+  // Staggered, shallow overlapping facets articulate the continuous metal skin.
+  // Each face has one planar tilt, not a rounded dimple or a cut-out grid. The
+  // membrane remains an independent open-weave material for comparison.
   vec4 clothWeave(vec2 uv) {
-    vec2 grid=uv*mix(vec2(32.,46.),vec2(12.,18.),uClothProfile),cell=fract(grid)-.5;
+    if(uClothProfile<.5) {
+      vec2 grid=uv*vec2(22.,30.);
+      float footprint=max(fwidth(grid.x),fwidth(grid.y));
+      float row=floor(grid.y);
+      grid.x+=mod(row,2.)*.5;
+      vec2 tile=floor(grid),cell=fract(grid)-.5;
+      float detail=1.-smoothstep(.65,1.35,footprint);
+      float border=min(.5-abs(cell.x),.5-abs(cell.y));
+      float seam=1.-smoothstep(.018,.055,border);
+      // A three-course cadence varies local face orientation without noise.
+      float turn=(tile.x+row*2.)*2.094395;
+      vec2 tilt=vec2(cos(turn)*.48,sin(turn+1.1)*.38);
+      float face=.52+dot(cell,tilt);
+      float bevel=smoothstep(.018,.105,border);
+      float lap=smoothstep(.25,.46,cell.y)*(1.-smoothstep(.46,.5,cell.y));
+      float relief=mix(.20,face,bevel)+lap*.10;
+      // The metal backing remains closed through every seam and under paint.
+      return vec4(1.,mix(.52,relief,detail),seam*detail,detail);
+    }
+    vec2 grid=uv*vec2(12.,18.),cell=fract(grid)-.5;
     float footprint=max(fwidth(grid.x),fwidth(grid.y));
     float detail=1.-smoothstep(.65,1.35,footprint);
-    vec2 width=mix(vec2(.475,.445),vec2(.17),uClothProfile);
-    float aa=max(footprint*mix(.3,.7,uClothProfile),mix(.008,.012,uClothProfile));
-    float vertical=1.-smoothstep(width.x-aa,width.x+aa,abs(cell.x));
-    float horizontal=1.-smoothstep(width.y-aa,width.y+aa,abs(cell.y));
+    float width=.17,aa=max(footprint*.7,.012);
+    float vertical=1.-smoothstep(width-aa,width+aa,abs(cell.x));
+    float horizontal=1.-smoothstep(width-aa,width+aa,abs(cell.y));
     float coverage=max(vertical,horizontal);
-    // Three-ribbon twill carries a diagonal over/under cadence across Molten's
-    // closed skin; only the open membrane keeps equal checkerboard crossings.
-    float crossing=mix(.5+.5*cos((grid.x-grid.y)*2.094395),.5+.5*cos((grid.x-.5)*3.141593)*cos((grid.y-.5)*3.141593),uClothProfile);
-    float verticalCrown=max(0.,1.-pow(cell.x/width.x,2.));
-    float horizontalCrown=max(0.,1.-pow(cell.y/width.y,2.));
-    float under=mix(.72,.42,uClothProfile);
-    float verticalLevel=vertical*(.28+verticalCrown*.72)*mix(under,1.,crossing);
-    float horizontalLevel=horizontal*(.28+horizontalCrown*.72)*mix(1.,under,crossing);
+    float crossing=.5+.5*cos((grid.x-.5)*3.141593)*cos((grid.y-.5)*3.141593);
+    float verticalCrown=max(0.,1.-pow(cell.x/width,2.));
+    float horizontalCrown=max(0.,1.-pow(cell.y/width,2.));
+    float verticalLevel=vertical*(.28+verticalCrown*.72)*mix(.42,1.,crossing);
+    float horizontalLevel=horizontal*(.28+horizontalCrown*.72)*mix(1.,.42,crossing);
     float relief=max(verticalLevel,horizontalLevel);
     float edge=max((1.-verticalCrown)*vertical,(1.-horizontalCrown)*horizontal);
-    float fill=1.-(1.-width.x*2.)*(1.-width.y*2.);
+    float fill=1.-pow(1.-width*2.,2.);
     return vec4(mix(fill,coverage,detail),relief*detail,edge*detail,detail);
   }
   vec3 clothWeaveNormal(vec3 n,float relief,float detail) {
-    float ridge=relief*mix(.0065,.023,uClothProfile)*detail;
+    float ridge=relief*mix(.026,.023,uClothProfile)*detail;
     vec3 dx=dFdx(-vViewPosition),dy=dFdy(-vViewPosition);
     vec3 a=cross(dy,n),b=cross(n,dx);
     float determinant=dot(dx,a);
@@ -249,10 +264,10 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
           if(cloth.x<.26)discard;
           diffuseColor.a*=smoothstep(.26,.62,cloth.x);
           float satin=.5+.5*sin(vClothUv.y*19.+sin(vClothUv.x*11.)*1.8);
-          diffuseColor.rgb*=mix(mix(.82,.67,uClothProfile),mix(1.02,1.05,uClothProfile),cloth.y)*(1.-cloth.z*mix(.06,.10,uClothProfile));
+          diffuseColor.rgb*=mix(mix(.80,.67,uClothProfile),mix(1.08,1.05,uClothProfile),cloth.y)*(1.-cloth.z*mix(.30,.10,uClothProfile));
           diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.48,.57,.59),mark*.94);`)
         .replace("#include <roughnessmap_fragment>",`#include <roughnessmap_fragment>
-          roughnessFactor=mix(clamp(roughnessFactor+(1.-cloth.y)*mix(.06,.08,uClothProfile)+cloth.z*mix(.025,.035,uClothProfile),.20,.48),.48,mark);`)
+          roughnessFactor=mix(clamp(roughnessFactor+(1.-cloth.y)*mix(.04,.08,uClothProfile)+cloth.z*mix(.08,.035,uClothProfile),.20,.48),.48,mark);`)
         .replace("#include <metalnessmap_fragment>",`#include <metalnessmap_fragment>
           metalnessFactor=mix(metalnessFactor,.15,mark);`)
         .replace("#include <normal_fragment_maps>",`#include <normal_fragment_maps>
@@ -331,7 +346,7 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
           }
           #include <opaque_fragment>`);
     };
-    this.material.customProgramCacheKey=()=>"blackcrown-woven-depth-tension-surface-v7";
+    this.material.customProgramCacheKey=()=>"blackcrown-faceted-depth-tension-surface-v8";
     this.applyProfileMaterial();
   }
   get profile(){return this.currentProfile;}
@@ -352,8 +367,8 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
   }
   private applyProfileMaterial(){
     const membrane=this.currentProfile==="membrane";
-    this.material.color.set(membrane?0x35444a:0x30454a);
-    this.material.metalness=membrane?.64:.90;this.material.roughness=membrane?.22:.31;
+    this.material.color.set(membrane?0x35444a:0x303b3e);
+    this.material.metalness=membrane?.64:.90;this.material.roughness=membrane?.22:.28;
     this.material.envMapIntensity=membrane?1.15:1.1;
     this.material.clearcoat=membrane?.12:.16;this.material.clearcoatRoughness=membrane?.22:.24;
     this.material.anisotropy=(membrane?.24:.42)*(this.compact?.85:1);

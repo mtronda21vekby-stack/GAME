@@ -131,15 +131,20 @@ const hazeFragment = `
     float beam=(exp(-pow(sweep*mix(5.2,14.,uLab),2.))*mix(.68,.28,uLab)+exp(-pow((sweep-mix(.2,.14,uLab))*mix(12.,26.,uLab),2.))*mix(.24,.82,uLab))*vertical;
     vec2 pocketDelta=(vUv-vec2(.57,.58))*vec2(3.1,1.7);
     float pocket=.12+.88*exp(-dot(pocketDelta,pocketDelta));
-    float fieldEdge=edge*pocket*mix(.24+.76*cloud,.12+cloud*.88,fieldPresence);
+    // The existing banks have broad, curved illuminated rims. They are part of
+    // the moving world-space medium, not a screen-space optical test pattern.
+    // Their silhouettes give the sheet recognisable content at several depths.
+    float bankRim=1.-smoothstep(.025,.085,abs(bank-.57));
+    float medium=.12+cloud*.38+bankRim*.82;
+    float fieldEdge=edge*pocket*mix(.24+.76*cloud,mix(.12+cloud*.88,medium,uLab),fieldPresence);
     float alpha=mix(fieldEdge,beam*(.2+.8*cloud),uShaft)*uOpacity;
     if(uBackgroundDepthCapture>.5) {
       if(alpha<.018)discard;
       gl_FragColor=packDepthToRGBA(gl_FragCoord.z);return;
     }
     vec3 tint=mix(uTint*vec3(.78,.7,1.12),uTint,smoothstep(.2,.75,vUv.x));
-    vec3 warm=uTint*vec3(1.38,.94,.64);
-    tint=mix(tint,warm,ridge*fieldPresence*.3*(1.-uShaft*.65));
+    vec3 warm=uTint*vec3(1.65,1.12,.68);
+    tint=mix(tint,warm,max(ridge*.3,bankRim*uLab*.65)*fieldPresence*(1.-uShaft*.65));
     gl_FragColor=vec4(tint,alpha);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>

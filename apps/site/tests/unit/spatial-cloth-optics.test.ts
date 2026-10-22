@@ -127,7 +127,7 @@ describe("Sculptural LAB profiles and live background optics",()=>{
     expect(fragment.indexOf(ray)).toBeLessThan(fragment.indexOf("clothTraceDepth(point,opticalRay"));
     const cap=fragment.split("\n").find(line=>line.includes("displacement*="))!;expect(cap).not.toContain("uClothBend");
     expect(coating).toContain("1.-coatingFresnel");expect(coating).not.toContain("Bend");
-    expect(fragment).not.toContain("bendVisibility");expect(cloth.material.customProgramCacheKey()).toContain("woven-depth-tension-surface-v7");
+    expect(fragment).not.toContain("bendVisibility");expect(cloth.material.customProgramCacheKey()).toContain("faceted-depth-tension-surface-v8");
     cloth.dispose();texture.dispose();
   });
 
@@ -198,39 +198,38 @@ describe("Sculptural LAB profiles and live background optics",()=>{
     expect(fragment.match(/texture2D\(uClothBackground,/g)).toHaveLength(1);cloth.dispose();
   });
 
-  it("keeps Molten nearly closed with resolved seams while preserving the independent open membrane",()=>{
-    const cloth=new SpatialCloth(true),fragment=assembledShader(cloth).fragmentShader;
-    const grid=fragment.match(/grid=uv\*mix\(vec2\(([\d.]+),([\d.]+)\),vec2\(([\d.]+),([\d.]+)\),uClothProfile\)/);
-    const width=fragment.match(/width=mix\(vec2\(([\d.]+),([\d.]+)\),vec2\(([\d.]+)\),uClothProfile\)/);
-    const aa=fragment.match(/footprint\*mix\(([\d.]+),([\d.]+),uClothProfile\),mix\(([\d.]+),([\d.]+),uClothProfile\)/);
-    const relief=fragment.match(/ridge=relief\*mix\(([\d.]+),([\d.]+),uClothProfile\)/);
-    expect(grid&&width&&aa&&relief).not.toBeNull();
-    const cells=grid!.slice(1).map(Number),widths=width!.slice(1).map(Number),filter=aa!.slice(1).map(Number),ridge=relief!.slice(1).map(Number);
-    expect(cells).toEqual([32,46,12,18]);expect(353/cells[0]).toBeGreaterThan(10);expect(353/cells[0]).toBeLessThan(12);
-    const fill=(x:number,y:number)=>1-(1-2*x)*(1-2*y),moltenFill=fill(widths[0],widths[1]);
-    expect(moltenFill).toBeCloseTo(.9945,4);expect(moltenFill).toBeGreaterThan(.99);
-    expect(2*widths[0]).toBeGreaterThan(.9);expect(2*widths[1]).toBeGreaterThan(.85);
-    expect((1-2*widths[0])*353/cells[0]).toBeLessThan(1);
-    expect(fill(widths[2],widths[2])).toBeCloseTo(.5644,4);expect(ridge[0]).toBeLessThan(.009);expect(ridge[0]/.018).toBeLessThan(.4);
-    // Aligned 353x500px plane fixture: evaluate the shader's parsed AA widths,
-    // union coverage and existing alpha thresholds, without claiming GPU QA.
+  it("keeps Molten continuous with planar staggered facets and preserves the open membrane",()=>{
+    const cloth=new SpatialCloth(true),fragment=assembledShader(cloth).fragmentShader,molten=fragment.match(/if\(uClothProfile<\.5\) \{([\s\S]*?)\n    \}/)?.[1];
+    expect(molten).toBeDefined();
+    expect(molten!.indexOf("float footprint=")).toBeGreaterThan(molten!.indexOf("vec2 grid=uv*"));expect(molten!.indexOf("float footprint=")).toBeLessThan(molten!.indexOf("float row=floor"));
+    const cells=Array.from(fragment.matchAll(/grid=uv\*vec2\(([\d.]+),([\d.]+)\)/g),match=>match.slice(1).map(Number));
+    expect(cells).toEqual([[22,30],[12,18]]);expect(250/cells[0][0]).toBeCloseTo(11.363636,5);
+    const read=(pattern:RegExp)=>{const match=molten!.match(pattern);expect(match).not.toBeNull();return match!.slice(1).map(Number);};
+    const [stagger]=read(/grid\.x\+=mod\(row,2\.\)\*([\d.]+)/),[stride,frequency]=read(/turn=\(tile\.x\+row\*([\d.]+)\)\*([\d.]+)/),[tiltX,phase,tiltY]=read(/tilt=vec2\(cos\(turn\)\*([\d.]+),sin\(turn\+([\d.]+)\)\*([\d.]+)\)/);
+    const [faceBase]=read(/face=([\d.]+)\+dot\(cell,tilt\)/),bevel=read(/bevel=smoothstep\(([\d.]+),([\d.]+),border\)/),lap=read(/lap=smoothstep\(([\d.]+),([\d.]+),cell\.y\)\*\(1\.-smoothstep\(([\d.]+),([\d.]+),cell\.y\)\)/),[edgeBase,lapHeight]=read(/relief=mix\(([\d.]+),face,bevel\)\+lap\*([\d.]+)/);
+    expect(stagger).toBe(.5);expect(2*Math.PI/frequency).toBeCloseTo(3,5);expect(Number(molten!.match(/return vec4\(([^,]+),/)?.[1])).toBe(1);
     const smooth=(a:number,b:number,value:number)=>{const t=Math.max(0,Math.min(1,(value-a)/(b-a)));return t*t*(3-2*t);};
-    for(const profile of [0,1]){
-      const wx=profile?widths[2]:widths[0],wy=profile?widths[2]:widths[1],footprint=Math.max(cells[profile*2]/353,cells[profile*2+1]/500),edge=Math.max(footprint*filter[profile],filter[profile+2]),detail=1-smooth(.65,1.35,footprint);
-      const rows=Array(128).fill(0),columns=Array(128).fill(0);
-      for(let y=0;y<128;y++)for(let x=0;x<128;x++){
-        const vertical=1-smooth(wx-edge,wx+edge,Math.abs((x+.5)/128-.5)),horizontal=1-smooth(wy-edge,wy+edge,Math.abs((y+.5)/128-.5));
-        const coverage=(1-detail)*fill(wx,wy)+detail*Math.max(vertical,horizontal),alpha=smooth(.26,.62,coverage);rows[y]+=alpha/128;columns[x]+=alpha/128;
+    const slope=(tile:number,row:number)=>{const turn=(tile+row*stride)*frequency;return [Math.cos(turn)*tiltX,Math.sin(turn+phase)*tiltY];};
+    const relief=(x:number,y:number,tile:number,row:number)=>{
+      const [sx,sy]=slope(tile,row),border=Math.min(.5-Math.abs(x),.5-Math.abs(y)),blend=smooth(bevel[0],bevel[1],border),overlap=smooth(lap[0],lap[1],y)*(1-smooth(lap[2],lap[3],y));
+      return edgeBase+(faceBase+x*sx+y*sy-edgeBase)*blend+overlap*lapHeight;
+    };
+    let peak=0;
+    for(let row=0;row<3;row++)for(let tile=0;tile<3;tile++){
+      const h=.05,center=relief(0,0,tile,row),gradient=[(relief(h,0,tile,row)-relief(-h,0,tile,row))/(2*h),(relief(0,h,tile,row)-relief(0,-h,tile,row))/(2*h)];
+      gradient.forEach((value,axis)=>expect(value).toBeCloseTo(slope(tile,row)[axis],10));
+      // Face interiors are affine planes: zero second difference excludes a
+      // rounded bubble while allowing the authored edge bevel and overlap.
+      expect(relief(h,0,tile,row)-2*center+relief(-h,0,tile,row)).toBeCloseTo(0,12);expect(relief(0,h,tile,row)-2*center+relief(0,-h,tile,row)).toBeCloseTo(0,12);
+      for(let y=0;y<=32;y++)for(let x=0;x<=32;x++){
+        const value=relief(x/32-.5,y/32-.5,tile,row);expect(Number.isFinite(value)).toBe(true);expect(value).toBeGreaterThanOrEqual(0);expect(value).toBeLessThan(1.1);peak=Math.max(peak,value);
       }
-      const average=rows.reduce((sum,value)=>sum+value,0)/128;
-      if(profile===0){expect(average).toBeGreaterThan(.985);expect(Math.min(...rows)).toBeGreaterThan(.9);expect(Math.min(...columns)).toBeGreaterThan(.84);}
-      else{expect(average).toBeGreaterThan(.5);expect(average).toBeLessThan(.65);}
     }
-    const twill=Number(fragment.match(/crossing=mix\(\.5\+\.5\*cos\(\(grid\.x-grid\.y\)\*([\d.]+)\)/)?.[1]);expect(2*Math.PI/twill).toBeCloseTo(3,5);
-    expect(fragment).toContain("coverage=max(vertical,horizontal)");
-    expect(fragment).toContain("relief=max(verticalLevel,horizontalLevel)");expect(fragment).toContain("clothWeaveNormal(normal,cloth.y,cloth.w)");
-    expect(fragment).not.toContain("floor(grid");expect(fragment).not.toContain("uv.x*240.");expect(fragment).not.toContain("502.65482");
-    cloth.dispose();
+    expect(Math.hypot(...slope(0,0).map((value,axis)=>value-slope(1,0)[axis]))).toBeGreaterThan(.3);
+    const amplitude=Number(fragment.match(/ridge=relief\*mix\(([\d.]+),/)?.[1]);expect(amplitude).toBe(.026);expect(peak*amplitude).toBeLessThan(.03);
+    const membraneWidth=Number(fragment.match(/float width=([\d.]+),aa=/)?.[1]);expect(1-(1-2*membraneWidth)**2).toBeCloseTo(.5644,4);
+    expect(fragment).toContain("coverage=max(vertical,horizontal)");expect(fragment).toContain("clothWeaveNormal(normal,cloth.y,cloth.w)");
+    expect(fragment).not.toContain("uv.x*240.");expect(fragment).not.toContain("502.65482");cloth.dispose();
   });
 
   it("bridges aperture holes with one protected matte crown sample before discard",()=>{
