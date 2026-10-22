@@ -20,7 +20,7 @@ import { SpatialGalleryStage } from "./SpatialGalleryStage";
 import { spatialArrivalEnd, spatialChoreography, spatialInterludeVisible, spatialWorldBlend } from "./SpatialChoreography";
 import { spatialAxisJourney, spatialAxisTurn, type SpatialJourneyStops } from "./SpatialAxis";
 import { SpatialCloth } from "./SpatialCloth";
-import { SpatialRefraction } from "./SpatialRefraction";
+import { SpatialRefraction, SPATIAL_NATIVE_WARMUP_SIZE } from "./SpatialRefraction";
 import { panelFrontWidth, panelScreenPosition } from "./panelProjection";
 import { ScrollJourney, SurfaceMotion, SPATIAL_TIMING } from "./spatialMotion";
 import { WORLD_ACCENTS, spatialProgress } from "./spatialState";
@@ -177,7 +177,7 @@ export class SpatialSceneRuntime {
     const nativeReady=await this.refraction.warmup(controller.signal,sampler=>{
       visibility={value:host.style.getPropertyValue("visibility"),priority:host.style.getPropertyPriority("visibility")};
       host.style.setProperty("visibility","hidden","important");
-      renderer.clear();this.drawOpticsPreparation(sampler,false);
+      renderer.clear();this.drawOpticsPreparation(sampler,false,SPATIAL_NATIVE_WARMUP_SIZE);
     },"canvas",()=>{
       try{this.repaintAfterOpticsPreparation(renderer,context);}
       finally{if(visibility?.value)host.style.setProperty("visibility",visibility.value,visibility.priority);else host.style.removeProperty("visibility");}
@@ -209,9 +209,10 @@ export class SpatialSceneRuntime {
     }
   }
 
-  /** One offscreen first-use submission during the existing loading owner.
-   * No live capture, camera changes or persistent hero allocation. */
-  private drawOpticsPreparation(sampler:THREE.Texture,depthMode=!this.compact){
+  /** One bounded first-use submission during the existing loading owner.
+   * Native MSAA uses an 8px tile; offscreen outputs remain 1px. No live capture,
+   * live camera changes or persistent hero allocation. */
+  private drawOpticsPreparation(sampler:THREE.Texture,depthMode=!this.compact,size=1){
     const cloth=this.cloth,capture=this.refraction;
     const saved={background:cloth.background.value,renderSize:cloth.renderSize.value.clone(),backgroundSize:cloth.backgroundSize.value.clone(),refraction:cloth.refraction.value,
       depth:cloth.depthBackground.value,depthRange:cloth.depthRange.value.clone(),depthReady:cloth.depthReady.value,
@@ -237,7 +238,7 @@ export class SpatialSceneRuntime {
       }
       for(const entry of materials)sides.set(entry,entry.side);
     });
-      cloth.setEntrance(1);cloth.setSculpture(1);cloth.setOptics(sampler,1,1,1);cloth.setDepthOptics(this.compact?null:sampler,camera.near,camera.far);
+      cloth.setEntrance(1);cloth.setSculpture(1);cloth.setOptics(sampler,size,size,1);cloth.setDepthOptics(this.compact?null:sampler,camera.near,camera.far);
       this.atmosphere.setBackgroundDepthCapture(depthMode&&!this.compact);
       this.rendererHost!.renderer.render(this.scene,camera);
     }finally{

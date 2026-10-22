@@ -2,6 +2,8 @@ import { Color, DataTexture, HalfFloatType, LinearFilter, LinearSRGBColorSpace, 
 import { prepareSceneShaders } from "../../experience/core/ShaderPreparation";
 
 export const SPATIAL_REFRACTION_PIXELS = { mobile:250_000, desktop:500_000 } as const;
+// A single native MSAA pixel can miss the fitted cloth at every subsample.
+export const SPATIAL_NATIVE_WARMUP_SIZE = 8;
 
 /** Half the final image in each direction, bounded by a real allocation budget. */
 export function refractionTargetSize(width:number,height:number,dpr:number,compact:boolean) {
@@ -95,7 +97,7 @@ export class SpatialRefraction {
           renderer.setRenderTarget(preparation.target);renderer.setScissorTest(false);renderer.autoClear=false;
           this.scene.background=null;renderer.setClearColor(0xffffff,1);
           if(output==="canvas"){
-            const pixel=1/renderer.getPixelRatio(),rect=new Vector4(0,0,pixel,pixel);
+            const size=SPATIAL_NATIVE_WARMUP_SIZE/renderer.getPixelRatio(),rect=new Vector4(0,0,size,size);
             renderer.setViewport(rect);renderer.setScissor(rect);renderer.setScissorTest(true);
             // The caller hides the host before its first native clear/draw.
           }else{

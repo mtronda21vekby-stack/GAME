@@ -71,8 +71,8 @@ describe("Owned refraction shader preparation",()=>{
     const pending=f.capture.warmup(external.signal,sampler=>{
       events.push("warm");expect(f.state.target).toBeNull();expect(f.state.scissorTest).toBe(true);
       expect(f.mock.getContext().checkFramebufferStatus).not.toHaveBeenCalled();
-      expect(f.state.viewport.toArray()).toEqual([0,0,.8,.8]);expect(f.state.scissor.toArray()).toEqual([0,0,.8,.8]);
-      expect(f.state.viewport.z*f.mock.getPixelRatio()).toBe(1);expect(f.state.viewport.w*f.mock.getPixelRatio()).toBe(1);
+      expect(f.state.viewport.toArray()).toEqual([0,0,6.4,6.4]);expect(f.state.scissor.toArray()).toEqual([0,0,6.4,6.4]);
+      expect(f.state.viewport.z*f.mock.getPixelRatio()).toBe(8);expect(f.state.viewport.w*f.mock.getPixelRatio()).toBe(8);
       expect(f.mock.clear).not.toHaveBeenCalled(); // Caller hides the native host before its first clear.
       samplerDisposal=vi.spyOn(sampler,"dispose");
       if(outcome==="abort")external.abort();if(outcome==="dispose")f.capture.dispose();

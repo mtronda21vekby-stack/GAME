@@ -77,13 +77,13 @@ describe("Significant atmospheric depth capture",()=>{
       expect(Math.abs(center.x)).toBeLessThan(1e-6);expect(Math.abs(center.y)).toBeLessThan(1e-6);expect(center.z).toBeGreaterThan(-1);expect(center.z).toBeLessThan(1);
       expect(framed.aspect).toBe(1);expect(framed).not.toBe(camera);
       if(format==="canvas"){
-        expect(f.state.viewport.toArray()).toEqual([0,0,.8,.8]);expect(f.state.scissor.toArray()).toEqual([0,0,.8,.8]);expect(f.state.scissorTest).toBe(true);expect(atmosphere.backgroundDepthCapture.value).toBe(0);
+        expect(f.state.viewport.toArray()).toEqual([0,0,6.4,6.4]);expect(f.state.scissor.toArray()).toEqual([0,0,6.4,6.4]);expect(f.state.scissorTest).toBe(true);expect(atmosphere.backgroundDepthCapture.value).toBe(0);expect(cloth.renderSize.value.toArray()).toEqual([8,8]);
         if(outcome!=="success")runtime.shaderAbort.abort();
         if(outcome==="lost"){lost=true;runtime.contextLost=true;runtime.releaseOptics();}
         if(outcome==="disposed"){runtime.disposed=true;runtime.releaseOptics();capture.dispose();}
         if(outcome==="replaced")activeContext=replacement;
         if(outcome==="warm throw")throw new Error("native warm draw failed");
-      }else expect(atmosphere.backgroundDepthCapture.value).toBe(format===HalfFloatType||compact?0:1);
+      }else {expect(atmosphere.backgroundDepthCapture.value).toBe(format===HalfFloatType||compact?0:1);expect(cloth.renderSize.value.toArray()).toEqual([1,1]);}
     });
     expect(await runtime.prepareShaders()).toBe(outcome==="success");
     expect(events[0]).toBe("warm clear");expect(events[1]).toBe("canvas");
