@@ -22,7 +22,7 @@ const folds=`
     float z=(sin(phase)*(.075+free*.075)+sin(p.x*5.2-free*4.6+.4)*.065)*loose;
     z+=pow(abs(p.x-.5)*2.,3.)*.105*loose;
     float breath=(sin(phase+uClothTime*.24)*.014+sin(p.y*6.-uClothTime*.19)*.01)*loose;
-    float response=0.;
+    float response=0.,touchTurn=0.;
     vec2 hoverDelta=(p-uClothHover.xy)*vec2(.86,1.);
     response-=exp(-dot(hoverDelta,hoverDelta)*21.)*uClothHover.z*.065;
     for(int i=0;i<4;i++) {
@@ -33,6 +33,7 @@ const folds=`
       float ring=sin(front*25.)*exp(-front*front*48.)*exp(-age*1.65)*smoothstep(0.,.07,age);
       float dent=-exp(-dot(d,d)*68.)*exp(-age*5.);
       response+=(ring+dent)*h.w*.065*(1.-smoothstep(2.,2.8,age));
+      touchTurn+=sin(age*2.)*exp(-age*1.3)*h.w*.08;
     }
     z+=(breath+response*loose)*uClothMotion;
     float x=p.x-.5+sin(free*3.1+.2)*.065*free;
@@ -44,34 +45,31 @@ const folds=`
     y+=hem*hem*(.08+sin(p.x*3.141593)*.035);
     x-=pow(p.x,5.)*free*.035;
     x+=sin(p.y*4.+uClothTime*.18)*free*.008*uClothMotion;
-    // A suspended tension wave carries a broad bulge and an offset trough
-    // through the LAB. The second profile reverses that volume into an open
-    // lattice bowl. Neither depends on the old fixed diagonal crease field.
+    // One deep, asymmetric shell, not a rectangular fabric sample. The cross
+    // section turns back into itself while its long axis counter-twists. Its
+    // silhouette and negative space carry the design before any surface grain.
     float clock=uClothTime*uClothMotion;
-    vec2 center=vec2(.46+sin(clock*.25)*.10,.48+sin(clock*.36)*.15);
-    vec2 domeDelta=(p-center)*vec2(2.8,2.3);
-    vec2 troughDelta=(p-center-vec2(.28,-.12))*vec2(3.5,2.8);
-    float dome=exp(-dot(domeDelta,domeDelta));
-    float trough=exp(-dot(troughDelta,troughDelta));
-    float suspension=smoothstep(0.,.22,free);
-    float tension=sin((p.y-center.y)*5.8-clock*.32+sin(p.x*3.141593)*.7)*loose;
-    float rollingHem=hem*hem*(.18+sin(clock*.38+p.x*3.8)*.12);
-    float metalFold=(dome*.52-trough*.32)*suspension+tension*.16+rollingHem;
-    float membraneFold=(-dome*.36+trough*.52)*suspension-tension*.21+rollingHem*.85;
-    float labZ=mix(metalFold,membraneFold,uClothProfile);
-    labZ+=(breath*.65+response*loose*1.7)*uClothMotion;
-    float waist=exp(-pow((p.y-center.y)*3.2,2.));
-    float labX=(p.x-.5)*(1.-waist*mix(.10,.18,uClothProfile));
-    labX+=sin(free*3.1+.2)*.045*free+sin(free*3.8-clock*.25)*.045*free;
-    float labY=p.y-.5-pow(sin(p.x*3.141593),2.)*free*.045;
-    labY+=hem*hem*(.10+sin(clock*.31+p.x*3.2)*.055);
+    float u=(p.x-.5)*2.,v=p.y-.5;
+    float sweep=u*2.35+v*.92+sin(clock*.16)*.10;
+    sweep+=(uClothDrag.z*.8+touchTurn)*uClothMotion;
+    float shoulder=.74+.26*cos(v*4.8);
+    float curl=cos(sweep)*shoulder;
+    float keel=sin(v*5.2-clock*.2)*.085;
+    float labX=sin(sweep)*(.40+.075*cos(v*4.1));
+    labX+=sin(v*4.4+clock*.15)*.09+v*.16;
+    float labY=v*1.18+u*.10+cos(u*2.6+v*1.7)*.075;
+    // The two finishes share the same architectural silhouette, but the open
+    // profile has a deeper concavity. Motion is a slow coherent torsion.
+    float labZ=(-curl*.54+.20+keel)*mix(1.,1.28,uClothProfile);
+    labZ+=sin(v*4.5+clock*.22)*.065;
+    labZ+=breath*.3*uClothMotion;
     x=mix(x,labX,uClothSculpture);y=mix(y,labY,uClothSculpture);z=mix(z,labZ,uClothSculpture);
     float opening=smoothstep(0.,1.,uClothEntrance);
     x*=mix(.08,1.,opening);
     z+=sin((p.x-.5)*6.283185)*.16*(1.-opening);
     y+=sin(p.x*3.141593)*.08*(1.-opening);
     vec2 grabDelta=(p-uClothDrag.xy)*vec2(.86,1.);
-    float grab=exp(-dot(grabDelta,grabDelta)*12.)*loose*uClothMotion;
+    float grab=exp(-dot(grabDelta,grabDelta)*12.)*loose*uClothMotion*(1.-uClothSculpture);
     x+=uClothDrag.z*grab;y+=uClothDrag.w*grab;
     z-=length(uClothDrag.zw)*.5*grab*mix(1.,mix(1.7,2.1,uClothProfile),uClothSculpture);
     // A conservative capture cutoff can now enclose every profile and gesture.
@@ -88,28 +86,17 @@ const weave=`
   uniform mat4 uClothProjection;
   uniform vec4 uClothExitPlane;
   uniform float uClothRefraction,uClothProfile,uClothBend,uClothSculpture;
-  // Staggered, shallow overlapping facets articulate the continuous metal skin.
-  // Each face has one planar tilt, not a rounded dimple or a cut-out grid. The
-  // membrane remains an independent open-weave material for comparison.
+  // Directional micro-etching follows the continuous shell. There are no
+  // tile boundaries, staggered courses, bricks or screen-sized checkerboards.
   vec4 clothWeave(vec2 uv) {
     if(uClothProfile<.5) {
-      vec2 grid=uv*vec2(22.,30.);
-      float footprint=max(fwidth(grid.x),fwidth(grid.y));
-      float row=floor(grid.y);
-      grid.x+=mod(row,2.)*.5;
-      vec2 tile=floor(grid),cell=fract(grid)-.5;
-      float detail=1.-smoothstep(.65,1.35,footprint);
-      float border=min(.5-abs(cell.x),.5-abs(cell.y));
-      float seam=1.-smoothstep(.018,.055,border);
-      // A three-course cadence varies local face orientation without noise.
-      float turn=(tile.x+row*2.)*2.094395;
-      vec2 tilt=vec2(cos(turn)*.48,sin(turn+1.1)*.38);
-      float face=.52+dot(cell,tilt);
-      float bevel=smoothstep(.018,.105,border);
-      float lap=smoothstep(.25,.46,cell.y)*(1.-smoothstep(.46,.5,cell.y));
-      float relief=mix(.20,face,bevel)+lap*.10;
-      // The metal backing remains closed through every seam and under paint.
-      return vec4(1.,mix(.52,relief,detail),seam*detail,detail);
+      float flow=uv.x*76.+sin(uv.y*7.2)*3.8+sin(uv.y*17.+uv.x*3.)*.65;
+      float footprint=fwidth(flow);
+      float detail=1.-smoothstep(.35,1.2,footprint);
+      float grain=.5+.5*sin(flow*6.283185);
+      float crossGrain=.5+.5*sin(uv.y*229.+sin(uv.x*19.)*1.2);
+      float relief=.5+(grain-.5)*.13+(crossGrain-.5)*.035;
+      return vec4(1.,mix(.5,relief,detail),0.,detail);
     }
     vec2 grid=uv*vec2(12.,18.),cell=fract(grid)-.5;
     float footprint=max(fwidth(grid.x),fwidth(grid.y));
@@ -129,7 +116,7 @@ const weave=`
     return vec4(mix(fill,coverage,detail),relief*detail,edge*detail,detail);
   }
   vec3 clothWeaveNormal(vec3 n,float relief,float detail) {
-    float ridge=relief*mix(.026,.023,uClothProfile)*detail;
+    float ridge=relief*mix(.006,.023,uClothProfile)*detail;
     vec3 dx=dFdx(-vViewPosition),dy=dFdy(-vViewPosition);
     vec3 a=cross(dy,n),b=cross(n,dx);
     float determinant=dot(dx,a);
@@ -179,7 +166,7 @@ const depthOptics=`
 
 export type SpatialClothProfile="molten"|"membrane";
 
-/** One draped metallic weave. Its authored folds stay visible in reduced motion;
+/** One continuous, counter-twisted metallic shell. Its silhouette survives reduced motion;
  * hover indentation and tap ripples are bounded analytic fields, not a cloth solver. */
 export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysicalMaterial> {
   readonly time={value:0};
@@ -214,7 +201,7 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
   private nextHit=0;
   constructor(compact:boolean) {
     super(new THREE.PlaneGeometry(1,1,compact?20:32,compact?26:48),new THREE.MeshPhysicalMaterial({
-      color:0x657881,metalness:1,roughness:.34,side:THREE.DoubleSide,envMapIntensity:1.08,transparent:true,depthWrite:false,
+      color:0x657881,metalness:1,roughness:.34,side:THREE.DoubleSide,envMapIntensity:1.08,transparent:true,depthWrite:true,
       clearcoat:.18,clearcoatRoughness:.23,anisotropy:compact?.38:.52,anisotropyRotation:Math.PI*.5,
       iridescence:compact?.12:.2,iridescenceIOR:1.3,iridescenceThicknessRange:[180,300],
     }));
@@ -262,7 +249,7 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
         .replace("#include <packing>","#include <packing>\n"+(useDepth?depthOptics:""))
         .replace("#include <color_fragment>",`#include <color_fragment>
           vec4 cloth=clothWeave(vClothUv);
-          float mark=texture2D(uClothMark,vClothUv).a;
+          float mark=texture2D(uClothMark,vClothUv).a*(1.-uClothSculpture);
           // Printed metal paint bridges the weave: crown strokes never vanish
           // into apertures or become a transparent optical mask.
           cloth.x=max(cloth.x,mark);
@@ -343,7 +330,7 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
             float facing=abs(dot(normal,eye));
             float coatingF0=pow((opticalIor-1.)/(opticalIor+1.),2.);
             float coatingFresnel=coatingF0+(1.-coatingF0)*pow(1.-facing,5.);
-            float coating=uClothRefraction*mix(.6,.78,uClothProfile)*(1.-coatingFresnel)*(1.-mark*.96)*screenEdge;
+            float coating=uClothRefraction*mix(.24,.78,uClothProfile)*(1.-coatingFresnel)*(1.-mark*.96)*screenEdge;
             // Same-frame scene colour is displaced by the deformed normal.
             // The finish transmits at the front and retains grazing reflection.
             vec3 reflection=outgoingLight;
@@ -351,7 +338,7 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
           }
           #include <opaque_fragment>`);
     };
-    this.material.customProgramCacheKey=()=>`blackcrown-faceted-depth-tension-surface-v8-${this.compact?"plane":"depth"}`;
+    this.material.customProgramCacheKey=()=>`blackcrown-spatial-shell-etched-surface-v9-${this.compact?"plane":"depth"}`;
     this.applyProfileMaterial();
   }
   get profile(){return this.currentProfile;}
@@ -372,9 +359,9 @@ export class SpatialCloth extends THREE.Mesh<THREE.PlaneGeometry,THREE.MeshPhysi
   }
   private applyProfileMaterial(){
     const membrane=this.currentProfile==="membrane";
-    this.material.color.set(membrane?0x35444a:0x303b3e);
-    this.material.metalness=membrane?.64:.90;this.material.roughness=membrane?.22:.28;
-    this.material.envMapIntensity=membrane?1.15:1.1;
+    this.material.color.set(membrane?0x35444a:0x71838a);
+    this.material.metalness=membrane?.64:.94;this.material.roughness=membrane?.19:.23;
+    this.material.envMapIntensity=membrane?1.15:1.32;
     this.material.clearcoat=membrane?.12:.16;this.material.clearcoatRoughness=membrane?.22:.24;
     this.material.anisotropy=(membrane?.24:.42)*(this.compact?.85:1);
     this.material.iridescence=0;

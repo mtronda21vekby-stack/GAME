@@ -127,7 +127,7 @@ describe("Sculptural LAB profiles and live background optics",()=>{
     expect(fragment.indexOf(ray)).toBeLessThan(fragment.indexOf("clothTraceDepth(point,opticalRay"));
     const cap=fragment.split("\n").find(line=>line.includes("displacement*="))!;expect(cap).not.toContain("uClothBend");
     expect(coating).toContain("1.-coatingFresnel");expect(coating).not.toContain("Bend");
-    expect(fragment).not.toContain("bendVisibility");expect(cloth.material.customProgramCacheKey()).toContain("faceted-depth-tension-surface-v8");
+    expect(fragment).not.toContain("bendVisibility");expect(cloth.material.customProgramCacheKey()).toContain("spatial-shell-etched-surface-v9");
     cloth.dispose();texture.dispose();
   });
 
@@ -198,38 +198,21 @@ describe("Sculptural LAB profiles and live background optics",()=>{
     expect(fragment.match(/texture2D\(uClothBackground,/g)).toHaveLength(1);cloth.dispose();
   });
 
-  it("keeps Molten continuous with planar staggered facets and preserves the open membrane",()=>{
+  it("keeps the shell closed with anti-aliased directional etching rather than brick courses",()=>{
     const cloth=new SpatialCloth(true),fragment=assembledShader(cloth).fragmentShader,molten=fragment.match(/if\(uClothProfile<\.5\) \{([\s\S]*?)\n    \}/)?.[1];
     expect(molten).toBeDefined();
-    expect(molten!.indexOf("float footprint=")).toBeGreaterThan(molten!.indexOf("vec2 grid=uv*"));expect(molten!.indexOf("float footprint=")).toBeLessThan(molten!.indexOf("float row=floor"));
-    const cells=Array.from(fragment.matchAll(/grid=uv\*vec2\(([\d.]+),([\d.]+)\)/g),match=>match.slice(1).map(Number));
-    expect(cells).toEqual([[22,30],[12,18]]);expect(250/cells[0][0]).toBeCloseTo(11.363636,5);
-    const read=(pattern:RegExp)=>{const match=molten!.match(pattern);expect(match).not.toBeNull();return match!.slice(1).map(Number);};
-    const [stagger]=read(/grid\.x\+=mod\(row,2\.\)\*([\d.]+)/),[stride,frequency]=read(/turn=\(tile\.x\+row\*([\d.]+)\)\*([\d.]+)/),[tiltX,phase,tiltY]=read(/tilt=vec2\(cos\(turn\)\*([\d.]+),sin\(turn\+([\d.]+)\)\*([\d.]+)\)/);
-    const [faceBase]=read(/face=([\d.]+)\+dot\(cell,tilt\)/),bevel=read(/bevel=smoothstep\(([\d.]+),([\d.]+),border\)/),lap=read(/lap=smoothstep\(([\d.]+),([\d.]+),cell\.y\)\*\(1\.-smoothstep\(([\d.]+),([\d.]+),cell\.y\)\)/),[edgeBase,lapHeight]=read(/relief=mix\(([\d.]+),face,bevel\)\+lap\*([\d.]+)/);
-    expect(stagger).toBe(.5);expect(2*Math.PI/frequency).toBeCloseTo(3,5);expect(Number(molten!.match(/return vec4\(([^,]+),/)?.[1])).toBe(1);
-    const smooth=(a:number,b:number,value:number)=>{const t=Math.max(0,Math.min(1,(value-a)/(b-a)));return t*t*(3-2*t);};
-    const slope=(tile:number,row:number)=>{const turn=(tile+row*stride)*frequency;return [Math.cos(turn)*tiltX,Math.sin(turn+phase)*tiltY];};
-    const relief=(x:number,y:number,tile:number,row:number)=>{
-      const [sx,sy]=slope(tile,row),border=Math.min(.5-Math.abs(x),.5-Math.abs(y)),blend=smooth(bevel[0],bevel[1],border),overlap=smooth(lap[0],lap[1],y)*(1-smooth(lap[2],lap[3],y));
-      return edgeBase+(faceBase+x*sx+y*sy-edgeBase)*blend+overlap*lapHeight;
-    };
-    let peak=0;
-    for(let row=0;row<3;row++)for(let tile=0;tile<3;tile++){
-      const h=.05,center=relief(0,0,tile,row),gradient=[(relief(h,0,tile,row)-relief(-h,0,tile,row))/(2*h),(relief(0,h,tile,row)-relief(0,-h,tile,row))/(2*h)];
-      gradient.forEach((value,axis)=>expect(value).toBeCloseTo(slope(tile,row)[axis],10));
-      // Face interiors are affine planes: zero second difference excludes a
-      // rounded bubble while allowing the authored edge bevel and overlap.
-      expect(relief(h,0,tile,row)-2*center+relief(-h,0,tile,row)).toBeCloseTo(0,12);expect(relief(0,h,tile,row)-2*center+relief(0,-h,tile,row)).toBeCloseTo(0,12);
-      for(let y=0;y<=32;y++)for(let x=0;x<=32;x++){
-        const value=relief(x/32-.5,y/32-.5,tile,row);expect(Number.isFinite(value)).toBe(true);expect(value).toBeGreaterThanOrEqual(0);expect(value).toBeLessThan(1.1);peak=Math.max(peak,value);
-      }
-    }
-    expect(Math.hypot(...slope(0,0).map((value,axis)=>value-slope(1,0)[axis]))).toBeGreaterThan(.3);
-    const amplitude=Number(fragment.match(/ridge=relief\*mix\(([\d.]+),/)?.[1]);expect(amplitude).toBe(.026);expect(peak*amplitude).toBeLessThan(.03);
-    const membraneWidth=Number(fragment.match(/float width=([\d.]+),aa=/)?.[1]);expect(1-(1-2*membraneWidth)**2).toBeCloseTo(.5644,4);
-    expect(fragment).toContain("coverage=max(vertical,horizontal)");expect(fragment).toContain("clothWeaveNormal(normal,cloth.y,cloth.w)");
-    expect(fragment).not.toContain("uv.x*240.");expect(fragment).not.toContain("502.65482");cloth.dispose();
+    expect(molten).toContain("fwidth(flow)");expect(molten).toContain("smoothstep(.35,1.2,footprint)");
+    expect(molten).not.toContain("floor(");expect(molten).not.toContain("fract(");expect(molten).not.toContain("border");
+    expect(molten).toContain("return vec4(1.,");
+    expect(fragment).toContain("ridge=relief*mix(.006,.023,uClothProfile)");
+    expect(fragment).toContain("coverage=max(vertical,horizontal)");
+    expect(fragment).toContain("clothWeaveNormal(normal,cloth.y,cloth.w)");
+    // The shell turns back across itself, so its own near surface must occlude
+    // its rear lip. Opacity is still available for the chapter handoff.
+    expect(cloth.material.depthWrite).toBe(true);
+    expect(fragment).toContain("uClothRefraction*mix(.24,.78,uClothProfile)");
+    expect(fragment).toContain("texture2D(uClothMark,vClothUv).a*(1.-uClothSculpture)");
+    cloth.dispose();
   });
 
   it("bridges aperture holes with one protected matte crown sample before discard",()=>{
@@ -280,7 +263,7 @@ describe("Sculptural LAB profiles and live background optics",()=>{
       const shader=assembledShader(cloth),fragment=shader.fragmentShader;
       expect(fragment.match(/texture2D\(uClothBackground,/g)).toHaveLength(1);
       expect(fragment).toContain("uClothProjection*vec4(point+opticalRay*bentTravel,1.)");
-      expect(cloth.material.customProgramCacheKey()).toBe(`blackcrown-faceted-depth-tension-surface-v8-${compact?"plane":"depth"}`);
+      expect(cloth.material.customProgramCacheKey()).toBe(`blackcrown-spatial-shell-etched-surface-v9-${compact?"plane":"depth"}`);
       if(compact){
         expect(Object.keys(shader.uniforms).filter(name=>name.startsWith("uClothDepth"))).toEqual([]);
         expect(fragment).not.toMatch(/uClothDepth|clothDepthCross|clothTraceDepth|windowDepth|farTravel|traceLimit/);

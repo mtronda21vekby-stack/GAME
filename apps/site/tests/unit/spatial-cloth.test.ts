@@ -106,14 +106,36 @@ describe("Spatial cloth interaction clock",()=>{
       }
       cloth.setSculpture(1);cloth.time.value=0;const start=Array.from({length:9},(_,index)=>surface((index%3+1)/4,(Math.floor(index/3)+1)/4));
       cloth.time.value=3;const moved=Array.from({length:9},(_,index)=>surface((index%3+1)/4,(Math.floor(index/3)+1)/4));
-      expect(Math.max(...moved.map((point,index)=>Math.hypot(...point.map((value,axis)=>value-start[index][axis]))))).toBeGreaterThan(.08);profilePoses.push(start);
+      const travel=Math.max(...moved.map((point,index)=>Math.hypot(...point.map((value,axis)=>value-start[index][axis]))));
+      // Ambient breathing is subordinate to the scroll-owned camera passage.
+      expect(travel).toBeGreaterThan(.02);expect(travel).toBeLessThan(.12);profilePoses.push(start);
     }
     expect(Math.max(...profilePoses[0].map((point,index)=>Math.hypot(...point.map((value,axis)=>value-profilePoses[1][index][axis]))))).toBeGreaterThan(.08);
     expect(cloth.geometry).toBe(geometry);expect(geometry.attributes.position.array).toBe(buffer);expect(buffer).toEqual(copy);cloth.dispose();
   });
 
-  it("keeps the real field's hit and grab response local and freezes it in reduced motion",()=>{
-    const cloth=new SpatialCloth(true),surface=actualSurface(cloth);cloth.update(.13);
+  it("uses whole-shell torsion rather than pretending a DOM rectangle is contact UV",()=>{
+    const first=new SpatialCloth(true),second=new SpatialCloth(true),surfaceA=actualSurface(first),surfaceB=actualSurface(second);
+    first.touch(.1,.1,0);second.touch(.9,.9,0);first.update(.4);second.update(.4);
+    for(const [x,y] of [[.2,.2],[.5,.5],[.8,.8]]){
+      expect(surfaceA(x,y)).toEqual(surfaceB(x,y));
+    }
+    first.dispose();second.dispose();
+  });
+
+  it("turns both silhouette edges back around a deep center without a closed ring",()=>{
+    const cloth=new SpatialCloth(true),surface=actualSurface(cloth);cloth.time.value=0;
+    const left=surface(0,.5),nearLeft=surface(.15,.5),right=surface(1,.5),nearRight=surface(.85,.5),center=surface(.5,.5);
+    expect(left[0]).toBeGreaterThan(nearLeft[0]+.08);
+    expect(right[0]).toBeLessThan(nearRight[0]-.08);
+    expect(left[2]-center[2]).toBeGreaterThan(.7);
+    expect(right[2]-center[2]).toBeGreaterThan(.7);
+    expect(Math.abs(left[0]-right[0])).toBeGreaterThan(.5);
+    cloth.dispose();
+  });
+
+  it("keeps the closing rest field's hit and grab response local and freezes it in reduced motion",()=>{
+    const cloth=new SpatialCloth(true),surface=actualSurface(cloth);cloth.setSculpture(0);cloth.update(.13);
     const before=surface(.5,.4),far=surface(.05,.98);cloth.touch(.5,.4,.1);
     const hit=surface(.5,.4),farHit=surface(.05,.98),localDelta=Math.abs(hit[2]-before[2]),farDelta=Math.abs(farHit[2]-far[2]);
     expect(localDelta).toBeGreaterThan(.001);expect(localDelta).toBeGreaterThan(farDelta*5);

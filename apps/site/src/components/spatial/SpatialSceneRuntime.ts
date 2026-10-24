@@ -23,6 +23,7 @@ import { SpatialCloth } from "./SpatialCloth";
 import { SpatialRefraction, SPATIAL_NATIVE_WARMUP_SIZE } from "./SpatialRefraction";
 import { panelFrontWidth, panelScreenPosition } from "./panelProjection";
 import { outroClothPose } from "./outroClothPose";
+import { fitLabComposition, labCameraPass, labAnnotationPosition } from "./labComposition";
 import { ScrollJourney, SurfaceMotion, SPATIAL_TIMING } from "./spatialMotion";
 import { WORLD_ACCENTS, spatialProgress } from "./spatialState";
 
@@ -52,6 +53,11 @@ export class SpatialSceneRuntime {
   private readonly lightAim = new THREE.Vector3();
   private readonly gallery:SpatialGalleryStage;
   private axisHeight=1;
+  private labComposition?:ReturnType<typeof fitLabComposition>;
+  private labTravelEnd=1;
+  private readonly labAnchor=new THREE.Vector3();
+  private readonly labRim=new THREE.SpotLight(0x9dc5cf,0,18,.46,.72,2);
+  private readonly labBounce=new THREE.PointLight(0xc9b596,0,13,2);
   private brandAbort?:AbortController;
   private shaderAbort?:AbortController;
   private readonly atmosphere:SpatialAtmosphere;
@@ -119,7 +125,7 @@ export class SpatialSceneRuntime {
     this.edgeLight.position.set(5,2,-3);this.edgeLight.intensity=this.compact?2.65:2.4;
     this.accentLight.position.set(2,2,4);
     this.scene.add(this.keyLight,this.faceLight,this.edgeLight,this.accentLight);
-    this.scene.add(this.anatomyLight,this.anatomyLight.target,this.spineLight,this.spineLight.target);
+    this.scene.add(this.anatomyLight,this.anatomyLight.target,this.spineLight,this.spineLight.target,this.labRim,this.labRim.target,this.labBounce);
   }
 
   private async loadBrand() {
@@ -421,7 +427,6 @@ export class SpatialSceneRuntime {
     const panels=[...this.options.stage.querySelectorAll<HTMLElement>(".spatialGamePanel")].map(element=>element.getBoundingClientRect());
     const material=this.options.stage.querySelector(".spatialMaterial")?.getBoundingClientRect();
     const transition=this.options.stage.querySelector(".spatialTransition")?.getBoundingClientRect();
-    const cloth=this.clothSlot?.getBoundingClientRect();
     const span=Math.max(1,this.stageHeight-this.viewportHeight);
     const at=(y:number)=>Math.max(0,Math.min(.98,(y+window.scrollY-this.stageTop)/span));
     if(hero&&heading&&panels.length&&material)this.journeyStops={
@@ -429,8 +434,9 @@ export class SpatialSceneRuntime {
       intro:at(heading.top-this.viewportHeight*.35),
       projects:panels.map(panel=>at(panel.top+panel.height*.5-this.viewportHeight*.5)),
       exit:at((transition??material).top-this.viewportHeight*.65),
-      lab:at(cloth?cloth.top+cloth.height*.5-this.viewportHeight*.5:material.top-this.viewportHeight*.18),
+      lab:at(material.top),
     };
+    this.labTravelEnd=material?at(material.bottom-this.viewportHeight):1;
     this.fitBrand();this.onScroll();
   };
   private fitBrand(){
@@ -442,6 +448,12 @@ export class SpatialSceneRuntime {
     this.anatomyLight.position.set(-this.axisHeight*.1,this.axisHeight*.285,5.5);
     this.anatomyLight.target.position.set(-.1,this.axisHeight*.275,.5);
     this.atmosphere.setAxisHeight(journey.axisHeight);
+    // Capture a world-space layout at the chapter's arrival, once per resize.
+    // The live camera then passes it; the button no longer drives geometry.
+    const labCamera=this.camera.clone(),labRig=new CameraRig(labCamera,journey.frames,true);
+    labRig.update({...INITIAL_SCROLL_SNAPSHOT,progress:this.journeyStops?.lab??.9,viewportWidth:this.viewportWidth,viewportHeight:this.viewportHeight,reducedMotion:true},{x:0,y:0},0);
+    labCamera.updateMatrixWorld(true);
+    this.labComposition=fitLabComposition(labCamera,this.viewportWidth,this.viewportHeight,this.compact);
   }
   private onScroll=()=>{
     // Native dialog scroll locking must never rewind the sculpture timeline.
@@ -465,7 +477,7 @@ export class SpatialSceneRuntime {
     const cloth=(event.target as Element).closest(".spatialClothControl");
     if(cloth){
       const box=cloth.getBoundingClientRect();
-      this.cloth.setHover((event.clientX-box.left)/box.width,1-(event.clientY-box.top)/box.height,1);
+      this.cloth.setHover((event.clientX-box.left)/box.width,1-(event.clientY-box.top)/box.height,1-this.cloth.sculpture.value);
       this.desiredPointer.x=this.desiredPointer.y=0;this.requestFrame();return;
     }
     this.cloth.setHover(.5,.5,0);
@@ -533,6 +545,12 @@ export class SpatialSceneRuntime {
       this.camera.position.z+=2.2*(1-THREE.MathUtils.smoothstep(this.elapsed-this.brandArrival,0,2.2))*opening;
     }
     if(this.detail>0&&!this.reduced){this.camera.position.x+=this.focusSide*(this.compact?.55:1.15)*this.detail;this.camera.position.z-=(this.compact?1.1:2)*this.detail;this.camera.lookAt(this.camera.position.x,this.camera.position.y,0);}
+    if(!this.detailOpen&&this.journeyStops){
+      const pass=labCameraPass(this.progress,this.journeyStops.lab,this.labTravelEnd,this.reduced);
+      const targetX=this.camera.position.x+pass.targetX,targetY=this.camera.position.y+pass.y*.35;
+      this.camera.position.x+=pass.x;this.camera.position.y+=pass.y;this.camera.position.z+=pass.z;
+      this.camera.lookAt(targetX,targetY,0);
+    }
     this.camera.updateMatrixWorld();
     this.updateObjects();
     this.scene.updateMatrixWorld();
@@ -584,7 +602,8 @@ export class SpatialSceneRuntime {
     this.keyLight.intensity=3.05+opening*1.2-lab*.85;
     this.faceLight.intensity=((this.compact?1.05:.82)+opening*.55)*(1-lab*.35);
     this.edgeLight.intensity=((this.compact?2.65:2.4)+opening*.45)*(1-lab*.25);
-    this.anatomyLight.intensity=(this.compact?55:40)*(.65+choreography.arrival*.35)*(1-lab)+(this.compact?95:75)*lab;
+    this.anatomyLight.intensity=(this.compact?55:40)*(.65+choreography.arrival*.35)*(1-lab)+(this.compact?70:65)*lab;
+    this.labRim.intensity=lab*(this.compact?95:115);this.labBounce.intensity=lab*(this.compact?14:20);
     this.anatomyLight.position.set(-this.axisHeight*.1,this.axisHeight*.285,5.5);
     this.anatomyLight.target.position.set(-.1,this.axisHeight*.275,.5);
     const galleryPresence=this.journeyStops?THREE.MathUtils.smoothstep(p,this.journeyStops.intro*.6,this.journeyStops.intro*1.05):THREE.MathUtils.smoothstep(p,.08,.2);
@@ -610,6 +629,7 @@ export class SpatialSceneRuntime {
     const closingTravel=this.compact?THREE.MathUtils.smoothstep(farewell,.5,1):farewell;
     const closingFold=this.compact?Math.sin(Math.PI*THREE.MathUtils.smoothstep(farewell,.18,1)):0;
     this.options.stage.style.setProperty("--spatial-cloth-hint-opacity",String(1-THREE.MathUtils.smoothstep(farewell,.15,.4)));
+    this.options.stage.style.setProperty("--lab-annotation-opacity",String(1-THREE.MathUtils.smoothstep(farewell,0,.34)));
     const catalogueCleared=!!transition&&transition.top<=0;
     this.cloth.visible=this.brandReady&&!!sheet&&catalogueCleared&&((sheet.bottom>0&&sheet.top<this.viewportHeight)||interlude||outroPresence)&&!this.detailOpen;
     const interludeReveal=transition?THREE.MathUtils.smoothstep(-transition.top,0,this.viewportHeight*.24):0;
@@ -645,6 +665,27 @@ export class SpatialSceneRuntime {
       // The deeper LAB folds need lateral room; the bounded farewell keeps its existing fit.
       this.cloth.scale.set(worldWidth*THREE.MathUtils.lerp(this.compact?.74:.94,nativeOutro?.9:.94,farewell)*(closing?1:1-closingFold*.65),height/unit*.88,worldWidth*.66);this.cloth.update(this.reduced?0:t);
       this.cloth.rotation.set(-.06,THREE.MathUtils.lerp(THREE.MathUtils.lerp(-.42,this.compact?-.035:-.14,this.reduced?1:lab),nativeOutro?-.16:-.48,farewell),THREE.MathUtils.lerp(-.035,nativeOutro?.025:-.1,farewell));
+      if(this.labComposition){
+        const composition=this.labComposition,hold=1-THREE.MathUtils.smootherstep(farewell,0,.42);
+        this.cloth.position.lerp(composition.center,hold);
+        this.cloth.scale.lerp(composition.scale,hold);
+        this.cloth.rotation.x=THREE.MathUtils.lerp(this.cloth.rotation.x,composition.rotation.x,hold);
+        this.cloth.rotation.y=THREE.MathUtils.lerp(this.cloth.rotation.y,composition.rotation.y,hold);
+        this.cloth.rotation.z=THREE.MathUtils.lerp(this.cloth.rotation.z,composition.rotation.z,hold);
+        this.cloth.updateMatrixWorld(true);
+        // DOM stays crisp and native. Two world anchors give it restrained
+        // parallax, with mobile-safe bounds rather than perspective-skewed text.
+        const labStage=this.options.stage.querySelector(".spatialLabStage")?.getBoundingClientRect();
+        for(const [kind,point] of [["title",[-.40,.25,.12]],["note",[.02,-.17,.12]]] as const){
+          this.labAnchor.set(point[0],point[1],point[2]).applyMatrix4(this.cloth.matrixWorld);
+          const annotation=labAnnotationPosition(this.labAnchor,this.camera,this.viewportWidth,this.viewportHeight,kind,this.compact);
+          this.options.stage.style.setProperty(`--lab-${kind}-x`,`${(annotation.x+canvasBox.left-(labStage?.left??0)).toFixed(2)}px`);
+          this.options.stage.style.setProperty(`--lab-${kind}-y`,`${(annotation.y+canvasBox.top-(labStage?.top??0)).toFixed(2)}px`);
+        }
+        this.labRim.position.set(composition.center.x-3.4,composition.center.y+2.5,composition.center.z-1.6);
+        this.labRim.target.position.copy(this.cloth.position);
+        this.labBounce.position.set(composition.center.x+3,composition.center.y-2.3,composition.center.z+2.6);
+      }
       this.lightAim.set(this.cloth.position.x-3,this.cloth.position.y+3,this.cloth.position.z+5.5);
       this.anatomyLight.position.lerp(this.lightAim,lab);
       this.anatomyLight.target.position.lerp(this.cloth.position,lab);
@@ -664,6 +705,8 @@ export class SpatialSceneRuntime {
     this.cloth.setOptics(null,1,1,0);this.cloth.setDepthOptics(null,this.camera.near,this.camera.far);this.refraction?.dispose();
     this.options.stage.style.removeProperty("--spatial-hero-ui-opacity");this.gallery.dispose();this.atmosphere.dispose();this.cloth.dispose();this.bloom?.dispose();
     this.options.stage.style.removeProperty("--spatial-cloth-hint-opacity");
+    this.options.stage.style.removeProperty("--lab-annotation-opacity");
+    for(const kind of ["title","note"])for(const axis of ["x","y"])this.options.stage.style.removeProperty(`--lab-${kind}-${axis}`);
     disposeModel(this.scene);this.scene.clear();this.scene.environment=null;this.environment?.dispose();this.rendererHost?.dispose();
   }
 }

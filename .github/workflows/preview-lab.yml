@@ -1,0 +1,103 @@
+# Every pushed candidate commit must begin [CF-Pages-Skip]. This suppresses
+# native Cloudflare Git builds without suppressing this GitHub Actions workflow.
+# https://developers.cloudflare.com/pages/configuration/git-integration/github-integration/
+name: Isolated LAB visual preview
+
+on:
+  push:
+    branches: [work/lab-spatial-cloud-20261024]
+    paths:
+      - 'apps/site/**'
+      - 'scripts/prepare-lab-preview.mjs'
+      - 'scripts/preview/**'
+      - 'scripts/tests/lab-preview-isolation.test.mjs'
+      - '.github/workflows/preview-lab.yml'
+
+permissions:
+  contents: read
+concurrency:
+  group: blackcrown-lab-isolated-preview
+  cancel-in-progress: true
+
+env:
+  VITE_BC_EXPERIENCE_MODE: home
+  VITE_BC_EXPERIENCE_DEBUG: '0'
+  VITE_BC_CROWN_ASSET_OVERRIDE: candidate-b
+  VITE_BC_ENVIRONMENT_ASSET_MODE: blender
+
+jobs:
+  preview:
+    if: github.ref == 'refs/heads/work/lab-spatial-cloud-20261024' && github.repository == 'mtronda21vekby-stack/GAME' && startsWith(github.event.head_commit.message, '[CF-Pages-Skip]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Validate exact preview scope and source
+        run: |
+          test "$GITHUB_REF" = refs/heads/work/lab-spatial-cloud-20261024
+          node --test scripts/tests/lab-preview-isolation.test.mjs
+          pnpm --filter @blackcrown/site typecheck
+          VITE_BC_CROWN_ASSET_OVERRIDE= pnpm --filter @blackcrown/site test
+      - name: Build visual site only
+        run: pnpm --filter @blackcrown/site build
+      - name: Stage outside production Functions discovery
+        run: node scripts/prepare-lab-preview.mjs "$RUNNER_TEMP/blackcrown-lab-static"
+      - name: Publish non-main static preview
+        working-directory: ${{ runner.temp }}/blackcrown-lab-static
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test "$GITHUB_REF" = refs/heads/work/lab-spatial-cloud-20261024
+          test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID"
+          python - <<'PYCODE'
+          import os,json,urllib.request
+          account=os.environ['CLOUDFLARE_ACCOUNT_ID']
+          req=urllib.request.Request(f'https://api.cloudflare.com/client/v4/accounts/{account}/pages/projects/siteblcrown',headers={'Authorization':'Bearer '+os.environ['CLOUDFLARE_API_TOKEN']})
+          with urllib.request.urlopen(req,timeout=30) as response:
+              project=json.load(response)
+          if not project.get('success') or project.get('result',{}).get('production_branch')!='main':
+              raise SystemExit('Production branch configuration could not be verified; preview publication stopped.')
+          print('Verified production branch main; separate preview target only.')
+          PYCODE
+          set -o pipefail
+          pnpm dlx wrangler@3.90.0 pages deploy . --project-name=siteblcrown --branch=lab-spatial-cloud-20261024 --commit-hash="$GITHUB_SHA" --commit-dirty=true 2>&1 | tee "$RUNNER_TEMP/preview-deploy.log"
+          grep -Eo 'https://[a-z0-9-]+\.siteblcrown\.pages\.dev' "$RUNNER_TEMP/preview-deploy.log" | head -1 > "$RUNNER_TEMP/preview-url.txt"
+          test -s "$RUNNER_TEMP/preview-url.txt"
+      - name: Verify preview isolation and exact commit
+        run: |
+          URL=$(cat "$RUNNER_TEMP/preview-url.txt")
+          curl -fsS "$URL/preview-build.json" > "$RUNNER_TEMP/preview-build.json"
+          node -e "const f=require('fs');const p=JSON.parse(f.readFileSync(process.env.RUNNER_TEMP+'/preview-build.json'));if(p.commit!==process.env.GITHUB_SHA||p.mode!=='static-read-only'||p.production!==false)process.exit(1)"
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$URL/api/auth/guest")" = 403
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$URL/account")" = 403
+          curl -fsSI "$URL/" | grep -qi "x-blackcrown-preview: static-read-only"
+      - name: Install official browser test engines
+        run: pnpm --filter @blackcrown/site exec playwright install --with-deps chromium webkit
+      - name: Capture visual browser evidence
+        run: node apps/site/scripts/capture-lab-preview.mjs "$(cat "$RUNNER_TEMP/preview-url.txt")" "$RUNNER_TEMP/lab-browser-evidence"
+      - name: Keep deployment receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lab-preview-deployment-receipt
+          path: |
+            ${{ runner.temp }}/preview-url.txt
+            ${{ runner.temp }}/preview-build.json
+          retention-days: 3
+      - name: Keep browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lab-preview-browser-evidence
+          path: ${{ runner.temp }}/lab-browser-evidence
+          retention-days: 3

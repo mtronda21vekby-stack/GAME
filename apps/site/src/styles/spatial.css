@@ -293,3 +293,51 @@ html[data-reduced-motion="1"] .spatialPage *,html[data-reduced-motion="1"] .spat
  .spatialSceneNav .spatialNavLabel,.spatialSceneNav .spatialNavChapter,.spatialSceneNav>a { display:none; }
  .spatialIntro { min-height:100svh; }
 }
+
+/* LAB is one tall camera passage. Its native DOM remains accessible, while
+   the sculpture lives in world space rather than inside a button-sized tile. */
+.spatialMaterial { display:block; min-height:168svh; padding:0; isolation:isolate; }
+.spatialLabStage { position:sticky; top:0; height:100svh; min-height:620px; overflow:hidden; }
+.spatialMaterialCopy { position:absolute; z-index:3; left:var(--lab-title-x,14%); top:var(--lab-title-y,27%); max-width:300px; pointer-events:none; text-shadow:0 2px 30px #050a0cb0; }
+.spatialMaterial .spatialEyebrow { margin:0 0 14px; font-size:9px; letter-spacing:.18em; color:#adbdc1; }
+.spatialMaterial h2 { display:flex; align-items:flex-start; gap:34px; margin:0; color:#e7ede8; font-size:clamp(66px,8.3vw,118px); font-weight:300; line-height:.92; letter-spacing:-.075em; }
+.spatialMaterial h2>span { color:#cadbd8; font:300 .42em/.95 var(--spatial-type); padding-top:7px; }
+.spatialLabAnnotation { position:absolute; z-index:3; left:var(--lab-note-x,72%); top:var(--lab-note-y,66%); width:205px; color:#c4d0d0; pointer-events:none; }
+.spatialLabIndex { display:block; color:#849ca6; font:8px/1.6 var(--spatial-mono); letter-spacing:.12em; }
+.spatialLabAnnotation>p { margin:16px 0 20px; font:300 22px/1.12 var(--spatial-type); letter-spacing:-.025em; }
+.spatialLabAnnotation>span:last-child { display:block; max-width:175px; color:#8fa4ab; font:10px/1.65 var(--spatial-type); }
+.spatialClothControl { position:absolute; z-index:2; inset:12% 16% 7% 25%; width:auto; height:auto; margin:0; cursor:grab!important; }
+.spatialClothControl:active { cursor:grabbing!important; }
+.spatialClothControl:focus-visible { outline:1px solid #c3d8d479; outline-offset:8px; }
+.spatialClothHint { inset:auto 0 -18px; justify-content:center; min-height:44px; font:9px var(--spatial-mono); letter-spacing:.025em; color:#9aafb5; }
+.spatialClothHint>span { display:inline; width:auto; height:auto; border:0; border-radius:0; background:none; font-size:17px; }
+.spatialClothStatus { position:absolute; width:1px; height:1px; margin:-1px; clip-path:inset(50%); overflow:hidden; }
+.spatialLabEdgeLabel { position:absolute; left:28px; bottom:38px; font:8px var(--spatial-mono); letter-spacing:.12em; color:#647f8a; writing-mode:vertical-rl; transform:rotate(180deg); }
+.spatialClothFallback { inset:3% 15% 3% 6%; border-radius:58% 24% 44% 34% / 22% 40% 38% 65%; transform:perspective(700px) rotateY(-27deg) rotateZ(-9deg); background:linear-gradient(102deg,#071016 4%,#41555b 12%,#b9c9c9 18%,#3e535a 23%,#0b171f 43%,#121e26 64%,#657d84 80%,#d0d5c6 86%,#233a43 92%); box-shadow:inset -30px 8px 45px #02070bab,22px 15px 55px #010609; }
+@media(max-width:760px), (max-width:1000px) and (max-height:520px) {
+ .spatialMaterial { min-height:172svh; padding:0; }
+ .spatialLabStage { min-height:620px; }
+ .spatialMaterialCopy { left:var(--lab-title-x,9%); top:var(--lab-title-y,29%); max-width:240px; }
+ .spatialMaterial .spatialEyebrow { font-size:8px; margin-bottom:13px; }
+ .spatialMaterial h2 { font-size:70px; gap:29px; }
+ .spatialClothControl { inset:18% 4% 10% 6%; width:auto; height:auto; }
+ .spatialClothHint { bottom:-17px; font-size:8px; gap:14px; }
+ .spatialLabAnnotation { left:var(--lab-note-x,56%); top:var(--lab-note-y,68%); width:150px; }
+ .spatialLabAnnotation>p { font-size:18px; margin:12px 0 14px; }
+ .spatialLabAnnotation>span:last-child { font-size:9px; max-width:136px; }
+ .spatialLabIndex { font-size:7px; }
+ .spatialLabEdgeLabel { left:17px; bottom:70px; font-size:7px; }
+}
+@media(max-height:620px) {
+ .spatialLabStage { min-height:100svh; }
+ .spatialMaterial h2 { font-size:56px; }
+ .spatialLabAnnotation>p { font-size:15px; margin:8px 0; }
+ .spatialLabAnnotation>span:last-child { display:none; }
+}
+
+.spatialClothControl:disabled { opacity:1;cursor:default!important; }
+[data-scene-state=fallback] .spatialMaterial { min-height:100svh; }
+@media(prefers-reduced-motion:reduce) { .spatialMaterial { min-height:110svh; } }
+html[data-reduced-motion="1"] .spatialMaterial { min-height:110svh; }
+
+.spatialMaterialCopy,.spatialLabAnnotation,.spatialLabEdgeLabel { opacity:var(--lab-annotation-opacity,1); }

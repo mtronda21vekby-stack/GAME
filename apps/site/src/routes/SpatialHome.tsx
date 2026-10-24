@@ -181,13 +181,18 @@ export default function SpatialHome() {
             </section>
             <section className="spatialTransition" id="spatial-transition" aria-labelledby="spatial-transition-title"><div><p className="spatialEyebrow">03 / МЕЖДУ МИРАМИ</p><h2 id="spatial-transition-title">Форма.<br/><span>В движении.</span></h2><p>Металл, свет и твой жест.</p></div></section>
             <section className="spatialMaterial" id="spatial-lab" aria-labelledby="spatial-material-title">
-              <div className="spatialMaterialCopy"><p className="spatialEyebrow">04 / BLACKCROWN LAB</p><h2 id="spatial-material-title">Коснись.<br/><span>Оставь волну.</span></h2><p id="spatial-cloth-help">Потяни поверхность по горизонтали.<br/>Или коснись, чтобы оставить волну.</p><p className="spatialClothStatus" role="status">{clothTouch?(paused?"Сцена на паузе.":clothTouch.accepted?"Касание принято.":"Движение отключено."):""}</p></div>
-              <button className="spatialClothControl" type="button" aria-label="Коснуться металлического полотна" aria-describedby="spatial-cloth-help" onClick={event=>{
-                const box=event.currentTarget.getBoundingClientRect(),keyboard=event.detail===0;
-                const x=keyboard?box.width/2:event.clientX-box.left,y=keyboard?box.height/2:event.clientY-box.top;
-                const accepted=sceneRef.current?.touchCloth(keyboard?undefined:event.clientX,keyboard?undefined:event.clientY)??false;
-                setClothTouch({x,y,key:(clothTouch?.key??0)+1,accepted});
-              }}><span className="spatialClothFallback" aria-hidden="true"/>{clothTouch?.accepted&&<span key={clothTouch.key} className="spatialClothPulse" style={{left:clothTouch.x,top:clothTouch.y}} aria-hidden="true"/>}<span className="spatialClothHint" aria-hidden="true">Коснись поверхности <span>+</span></span></button>
+              <div className="spatialLabStage">
+                <div className="spatialMaterialCopy"><p className="spatialEyebrow">04 / BLACKCROWN</p><h2 id="spatial-material-title">LAB<span aria-hidden="true">↗</span></h2></div>
+                <div className="spatialLabAnnotation"><span className="spatialLabIndex" aria-hidden="true">EXPERIMENT / 004</span><p>Форма.<br/>Свет.<br/>Движение.</p><span id="spatial-cloth-help">Лёгкий жест меняет движение.</span></div>
+                <button className="spatialClothControl" type="button" disabled={sceneStatus==="fallback"} aria-label="Изменить движение металлической формы" aria-describedby="spatial-cloth-help" onClick={event=>{
+                  const bounds=event.currentTarget.getBoundingClientRect(),keyboard=event.detail===0;
+                  const x=keyboard?bounds.width/2:event.clientX-bounds.left,y=keyboard?bounds.height/2:event.clientY-bounds.top;
+                  const accepted=sceneRef.current?.touchCloth(keyboard?undefined:event.clientX,keyboard?undefined:event.clientY)??false;
+                  setClothTouch({x,y,key:(clothTouch?.key??0)+1,accepted});
+                }}><span className="spatialClothFallback" aria-hidden="true"/><span className="spatialClothHint" aria-hidden="true">{sceneStatus==="fallback"?"Статичная версия":"Проведи, чтобы повернуть"} <span>↔</span></span></button>
+                <p className="spatialClothStatus" role="status">{clothTouch?(paused?"Сцена на паузе.":clothTouch.accepted?"Движение изменилось.":"Движение отключено."):""}</p>
+                <span className="spatialLabEdgeLabel" aria-hidden="true">BLACKCROWN — MATERIAL STUDIES</span>
+              </div>
             </section>
             <section className="spatialAbout" aria-labelledby="spatial-about-title">
               <div className="spatialAboutCopy"><p className="spatialEyebrow">05 / ПРОДОЛЖЕНИЕ</p><h2 id="spatial-about-title">Какой мир —<br/><span>следующий?</span></h2></div><div className="spatialAboutText"><p>Быстрый бой или тихая долина.<br/>Выбери, куда вернуться.</p><a className="platButton spatialReturnLink" href="#spatial-worlds">К коллекции <span aria-hidden="true">↑</span></a><div className="spatialActions"><a className="platTextLink" href="/about">О проекте <span aria-hidden="true">↗</span></a><a className="platTextLink" href="/support">Нужна помощь? <span aria-hidden="true">↗</span></a><a className="platTextLink" href="/nexus-lab">Сцена короны <span aria-hidden="true">↗</span></a></div></div>
