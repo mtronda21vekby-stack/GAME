@@ -2,7 +2,7 @@ import {chromium,webkit} from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
 const base=process.argv[2],out=path.resolve(process.argv[3]||'lab-browser-evidence');
-if(!/^https:\/\/[a-z0-9-]+\.siteblcrown\.pages\.dev$/.test(base||''))throw new Error('Requires a returned isolated preview URL');
+if(!/^https:\/\/[a-z0-9-]+\.game-6wa\.pages\.dev$/.test(base||''))throw new Error('Requires a returned isolated preview URL');
 fs.mkdirSync(out,{recursive:true});
 const results=[];
 for(const [name,engine,width,height] of [['chromium-393',chromium,393,852],['chromium-430',chromium,430,932],['chromium-1440',chromium,1440,900],['webkit-393',webkit,393,852]]){
@@ -42,7 +42,7 @@ for(const [name,engine,width,height] of [['chromium-393',chromium,393,852],['chr
     await opener.click();await page.waitForTimeout(1500);checks.push({name:'reopen',passed:await detail.isVisible()});
     await detail.getByRole('button',{name:'Закрыть панель и вернуться к выбранной игре',exact:true}).click();await page.waitForTimeout(1400);
     await page.setViewportSize({width,height});await page.evaluate(()=>scrollTo({top:0,behavior:'instant'}));await page.waitForTimeout(1200);
-    await page.getByRole('link',{name:/Профиль/}).click();checks.push({name:'profile-disabled',passed:new URL(page.url()).pathname==='/'});
+    await page.getByRole('link',{name:/Профиль/}).first().click();checks.push({name:'profile-disabled',passed:new URL(page.url()).pathname==='/'});
     results.push({name,readyMs,layout,checks,errors,failed});
   }catch(error){results.push({name,failure:String(error),checks,errors,failed});}
   await context.close();await browser.close();

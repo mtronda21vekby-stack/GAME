@@ -71,7 +71,7 @@ jobs:
           PYCODE
           set -o pipefail
           pnpm dlx wrangler@3.90.0 pages deploy . --project-name=siteblcrown --branch=lab-spatial-cloud-20261024 --commit-hash="$GITHUB_SHA" --commit-dirty=true 2>&1 | tee "$RUNNER_TEMP/preview-deploy.log"
-          grep -Eo 'https://[a-z0-9-]+\.siteblcrown\.pages\.dev' "$RUNNER_TEMP/preview-deploy.log" | head -1 > "$RUNNER_TEMP/preview-url.txt"
+          grep -Eo 'https://[a-z0-9-]+\.game-6wa\.pages\.dev' "$RUNNER_TEMP/preview-deploy.log" | head -1 > "$RUNNER_TEMP/preview-url.txt"
           test -s "$RUNNER_TEMP/preview-url.txt"
       - name: Verify preview isolation and exact commit
         run: |
