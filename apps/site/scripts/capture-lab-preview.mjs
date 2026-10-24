@@ -4,12 +4,13 @@ import path from 'node:path';
 const base=process.argv[2],out=path.resolve(process.argv[3]||'lab-browser-evidence');
 if(!/^https:\/\/[a-z0-9-]+\.game-6wa\.pages\.dev$/.test(base||''))throw new Error('Requires a returned isolated preview URL');
 fs.mkdirSync(out,{recursive:true});
-const results=[];
+const results=[],systemChrome=process.env.BC_CAPTURE_SYSTEM_CHROME==='1';
 for(const [name,engine,width,height] of [['chromium-393',chromium,393,852],['chromium-430',chromium,430,932],['chromium-1440',chromium,1440,900],['webkit-393',webkit,393,852]]){
-  const browser=await engine.launch({headless:true,args:engine===chromium?['--enable-unsafe-swiftshader']:[]});
+  if(systemChrome&&engine===webkit)continue;
+  const browser=await engine.launch({headless:true,...(systemChrome?{channel:'chrome'}:{}),args:engine===chromium?['--enable-unsafe-swiftshader']:[]});
   const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:1,isMobile:width<500,hasTouch:width<500,recordVideo:{dir:path.join(out,name),size:{width,height}}});
-  const page=await context.newPage(),errors=[],failed=[],checks=[];
-  page.on('pageerror',e=>errors.push(e.message));page.on('requestfailed',r=>failed.push({url:r.url(),error:r.failure()?.errorText}));
+  const page=await context.newPage(),errors=[],consoleErrors=[],failed=[],badResponses=[],checks=[];
+  page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')consoleErrors.push(m.text());});page.on('requestfailed',r=>failed.push({url:r.url(),error:r.failure()?.errorText}));page.on('response',r=>{if(r.status()>=400)badResponses.push({url:r.url(),status:r.status()});});
   const started=Date.now();
   try{
     await page.goto(base,{waitUntil:'domcontentloaded'});
@@ -43,13 +44,14 @@ for(const [name,engine,width,height] of [['chromium-393',chromium,393,852],['chr
     await detail.getByRole('button',{name:'Закрыть панель и вернуться к выбранной игре',exact:true}).click();await page.waitForTimeout(1400);
     await page.setViewportSize({width,height});await page.evaluate(()=>scrollTo({top:0,behavior:'instant'}));await page.waitForTimeout(1200);
     await page.getByRole('link',{name:/Профиль/}).first().click();checks.push({name:'profile-disabled',passed:new URL(page.url()).pathname==='/'});
-    results.push({name,readyMs,layout,checks,errors,failed});
-  }catch(error){results.push({name,failure:String(error),checks,errors,failed});}
+    checks.push({name:'no-page-errors',passed:errors.length===0},{name:'no-console-errors',passed:consoleErrors.length===0},{name:'no-http-resource-errors',passed:badResponses.length===0});
+    results.push({name,readyMs,layout,checks,errors,consoleErrors,badResponses,failed});
+  }catch(error){await page.screenshot({path:path.join(out,`${name}-failure.png`)}).catch(()=>{});results.push({name,failure:String(error),checks,errors,consoleErrors,badResponses,failed});}
   await context.close();await browser.close();
 }
 // A separate context actually denies WebGL rather than relabelling a screenshot.
 {
- const browser=await chromium.launch({headless:true});const context=await browser.newContext({viewport:{width:393,height:852}});
+ const browser=await chromium.launch({headless:true,...(systemChrome?{channel:'chrome'}:{})});const context=await browser.newContext({viewport:{width:393,height:852}});
  await context.addInitScript(()=>{const original=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(kind,...args){return /^webgl|experimental-webgl/.test(kind)?null:original.call(this,kind,...args);};});
  const page=await context.newPage();await page.goto(base);await page.locator('.spatialPage[data-scene-state="fallback"]').waitFor({timeout:20000});
  await page.locator('#spatial-lab').scrollIntoViewIfNeeded();await page.screenshot({path:path.join(out,'chromium-393-08-no-webgl.png')});

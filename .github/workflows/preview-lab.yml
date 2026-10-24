@@ -81,9 +81,14 @@ jobs:
           test "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$URL/api/auth/guest")" = 403
           test "$(curl -s -o /dev/null -w '%{http_code}' "$URL/account")" = 403
           curl -fsSI "$URL/" | grep -qi "x-blackcrown-preview: static-read-only"
-      - name: Install official browser test engines
-        run: pnpm --filter @blackcrown/site exec playwright install --with-deps chromium webkit
+      - name: Use official runner Chrome and install video encoder
+        timeout-minutes: 3
+        run: |
+          google-chrome --version
+          pnpm --filter @blackcrown/site exec playwright install ffmpeg
       - name: Capture visual browser evidence
+        env:
+          BC_CAPTURE_SYSTEM_CHROME: '1'
         run: node apps/site/scripts/capture-lab-preview.mjs "$(cat "$RUNNER_TEMP/preview-url.txt")" "$RUNNER_TEMP/lab-browser-evidence"
       - name: Keep deployment receipt
         if: always()
